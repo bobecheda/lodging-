@@ -1,0 +1,7 @@
+# GitGuardian secret scanning config (version 2).
+version: 2
+secret:
+  # Tests use made-up passwords against throwaway in-memory databases.
+  # Real keys never live in the repo at all (see .gitignore).
+  ignored_paths:
+    - "lodging_pos/test/**"

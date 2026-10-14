@@ -51,6 +51,7 @@ Features: `auth`, `shifts`, `setup`, `guests`, `bed_board`, `stays`, `payments`,
 - **Business rules live in `domain/`** as pure functions with unit tests. Screens never calculate prices, times or statuses.
 - Every screen and service must work with **no internet**.
 - UI text in English, amounts shown as `KES 1,000`.
+- **Secrets are never written in code, tests or committed config.** Keys (e.g. the Supabase URL and anon key in sprint 2) are passed at build time with `--dart-define-from-file=secrets.json` from an untracked file and read with `String.fromEnvironment`. The repo-root `.gitignore` blocks `.env`, `*.env` and `secrets*.json`. Test passwords are made-up values for in-memory databases; `.gitguardian.yaml` excludes `lodging_pos/test/**` from secret scanning.
 
 ## Workflow
 

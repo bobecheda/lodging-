@@ -1,0 +1,6 @@
+# Secrets never enter the repo. Keys (e.g. Supabase, sprint 2) are passed at
+# build time with --dart-define-from-file from an untracked file; see
+# lodging_pos/CLAUDE.md. These patterns match at any depth.
+.env
+*.env
+secrets*.json
