@@ -122,20 +122,22 @@ class AuditedWrites {
 
   /// Inserts [row] and returns it as stored.
   ///
+  /// Build [row] with the companion's `.insert(...)`, so business fields are
+  /// checked at compile time. `id` defaults to a new UUID (client default).
+  ///
   /// On synced tables, stamps `created_at`, `updated_at` (= [now]) and
-  /// `device_id`, overriding any value in [row], and generates `id` if [row]
-  /// has none. Build [row] with the companion's default constructor.
+  /// `device_id`, overriding any value in [row]. Their client defaults throw,
+  /// so only this method can insert synced rows.
   Future<D> insert<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     Insertable<D> row,
   ) async {
     final name = _writableName(table);
+    // The generic equivalent of companion.copyWith(...): Insertable has no
+    // copyWith, but its column map can be overridden.
     final values = row.toColumns(false);
     final synced = !_localOnlyTables.contains(name);
     if (synced) {
-      if (table.columnsByName.containsKey('id')) {
-        values.putIfAbsent('id', () => Variable<String>(newId()));
-      }
       values['created_at'] = Variable<DateTime>(now);
       values['updated_at'] = Variable<DateTime>(now);
       values['device_id'] = Variable<String>(deviceId);
@@ -214,10 +216,9 @@ class AuditedWrites {
         .into(_db.auditLog)
         .insertReturning(
           AuditLogCompanion.insert(
-            id: newId(),
-            createdAt: now,
-            updatedAt: now,
-            deviceId: deviceId,
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            deviceId: Value(deviceId),
             at: now,
             userId: Value(userId),
             action: action,

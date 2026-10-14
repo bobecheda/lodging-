@@ -22,7 +22,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -32,7 +32,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -42,7 +42,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -52,7 +52,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -211,7 +211,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -221,7 +221,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -231,7 +231,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           }
         ],
@@ -258,7 +258,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -268,7 +268,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -278,7 +278,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -288,7 +288,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -384,7 +384,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -394,7 +394,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -404,7 +404,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -414,7 +414,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -494,7 +494,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -504,7 +504,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -514,7 +514,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -524,7 +524,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -671,7 +671,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -681,7 +681,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -691,7 +691,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -701,7 +701,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -762,7 +762,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -772,7 +772,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -782,7 +782,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -792,7 +792,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -877,7 +877,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -887,7 +887,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -897,7 +897,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -907,7 +907,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1079,7 +1079,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1089,7 +1089,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1099,7 +1099,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1109,7 +1109,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1299,7 +1299,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1309,7 +1309,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1319,7 +1319,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1329,7 +1329,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1514,7 +1514,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1524,7 +1524,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1534,7 +1534,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1544,7 +1544,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1742,7 +1742,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1752,7 +1752,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1762,7 +1762,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1772,7 +1772,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1925,7 +1925,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1935,7 +1935,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1945,7 +1945,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1955,7 +1955,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2054,7 +2054,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2064,7 +2064,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2074,7 +2074,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2084,7 +2084,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2228,7 +2228,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2238,7 +2238,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2248,7 +2248,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2258,7 +2258,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2397,7 +2397,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2407,7 +2407,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2417,7 +2417,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2427,7 +2427,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2579,7 +2579,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2589,7 +2589,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2599,7 +2599,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2609,7 +2609,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('stamped by writeWithAudit')",
             "dsl_features": []
           },
           {

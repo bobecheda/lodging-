@@ -26,12 +26,12 @@ void main() {
       userId: null,
       body: (w) => w.insert(
         db.users,
-        const UsersCompanion(
-          fullName: Value('Owner'),
-          username: Value('owner'),
-          passwordHash: Value('hash'),
-          role: Value('admin'),
-          mustChangePassword: Value(false),
+        UsersCompanion.insert(
+          fullName: 'Owner',
+          username: 'owner',
+          passwordHash: 'hash',
+          role: 'admin',
+          mustChangePassword: false,
         ),
       ),
     )).id;
@@ -46,7 +46,7 @@ void main() {
   Future<RoomRow> createRoom(String number) => audit.writeWithAudit(
     action: 'room.create',
     userId: adminId,
-    body: (w) => w.insert(db.rooms, RoomsCompanion(roomNumber: Value(number))),
+    body: (w) => w.insert(db.rooms, RoomsCompanion.insert(roomNumber: number)),
   );
 
   Future<List<OutboxRow>> outbox() =>
@@ -116,11 +116,42 @@ void main() {
         userId: adminId,
         body: (w) => w.insert(
           db.rooms,
-          const RoomsCompanion(id: Value('room-fixed'), roomNumber: Value('4')),
+          RoomsCompanion.insert(id: const Value('room-fixed'), roomNumber: '4'),
         ),
       );
       expect(room.id, 'room-fixed');
     });
+  });
+
+  group('stamped columns', () {
+    test('a direct insert that bypasses the writer throws', () async {
+      await expectLater(
+        () => db.into(db.rooms).insert(RoomsCompanion.insert(roomNumber: '3')),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            'stamped by writeWithAudit',
+          ),
+        ),
+      );
+      expect(await count(db.rooms), 0);
+    });
+
+    test(
+      'the same row through writeWithAudit gets created_at from the clock',
+      () async {
+        final room = await audit.writeWithAudit(
+          action: 'room.create',
+          userId: adminId,
+          body: (w) =>
+              w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '3')),
+        );
+        expect(room.roomNumber, '3');
+        expect(room.createdAt, DateTime.utc(2026, 10, 14, 19, 5));
+        expect(room.createdAt, clock.now());
+      },
+    );
   });
 
   group('update', () {
@@ -223,15 +254,15 @@ void main() {
           body: (w) async {
             final room = await w.insert(
               db.rooms,
-              const RoomsCompanion(roomNumber: Value('5')),
+              RoomsCompanion.insert(roomNumber: '5'),
             );
             final bedA = await w.insert(
               db.beds,
-              BedsCompanion(
-                roomId: Value(room.id),
-                label: const Value('A'),
-                categoryId: const Value(SeedIds.vip),
-                cleanliness: const Value('clean'),
+              BedsCompanion.insert(
+                roomId: room.id,
+                label: 'A',
+                categoryId: SeedIds.vip,
+                cleanliness: 'clean',
               ),
             );
             return [room.id, bedA.id];
@@ -259,16 +290,16 @@ void main() {
           body: (w) async {
             final room = await w.insert(
               db.rooms,
-              const RoomsCompanion(roomNumber: Value('6')),
+              RoomsCompanion.insert(roomNumber: '6'),
             );
             // Bed label C violates a CHECK constraint.
             await w.insert(
               db.beds,
-              BedsCompanion(
-                roomId: Value(room.id),
-                label: const Value('C'),
-                categoryId: const Value(SeedIds.vip),
-                cleanliness: const Value('clean'),
+              BedsCompanion.insert(
+                roomId: room.id,
+                label: 'C',
+                categoryId: SeedIds.vip,
+                cleanliness: 'clean',
               ),
             );
           },
@@ -287,10 +318,7 @@ void main() {
           action: 'room.create',
           userId: adminId,
           body: (w) async {
-            await w.insert(
-              db.rooms,
-              const RoomsCompanion(roomNumber: Value('7')),
-            );
+            await w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '7'));
             throw Exception('cancelled');
           },
         ),
@@ -313,10 +341,7 @@ void main() {
               deviceId,
               const ReceiptCounterCompanion(nextNumber: Value(2)),
             );
-            await w.insert(
-              db.rooms,
-              const RoomsCompanion(roomNumber: Value('8')),
-            );
+            await w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '8'));
           },
         );
         expect((await db.select(db.receiptCounter).getSingle()).nextNumber, 2);

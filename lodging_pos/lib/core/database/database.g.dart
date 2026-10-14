@@ -15,7 +15,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -26,7 +27,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -37,7 +39,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -48,7 +51,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _fullNameMeta = const VerificationMeta(
     'fullName',
@@ -149,32 +153,24 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('full_name')) {
       context.handle(
@@ -492,10 +488,10 @@ class UsersCompanion extends UpdateCompanion<UserRow> {
     this.rowid = const Value.absent(),
   });
   UsersCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String fullName,
     required String username,
     required String passwordHash,
@@ -503,11 +499,7 @@ class UsersCompanion extends UpdateCompanion<UserRow> {
     this.isActive = const Value.absent(),
     required bool mustChangePassword,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       fullName = Value(fullName),
+  }) : fullName = Value(fullName),
        username = Value(username),
        passwordHash = Value(passwordHash),
        role = Value(role),
@@ -674,7 +666,8 @@ class $SettingsTable extends Settings
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -685,7 +678,8 @@ class $SettingsTable extends Settings
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -696,7 +690,8 @@ class $SettingsTable extends Settings
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -746,24 +741,18 @@ class $SettingsTable extends Settings
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     return context;
   }
@@ -951,15 +940,12 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     required String key,
     required String value,
     this.updatedBy = const Value.absent(),
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : key = Value(key),
-       value = Value(value),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId);
+       value = Value(value);
   static Insertable<SettingRow> custom({
     Expression<String>? key,
     Expression<String>? value,
@@ -1055,7 +1041,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1066,7 +1053,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -1077,7 +1065,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -1088,7 +1077,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -1163,32 +1153,24 @@ class $BedCategoriesTable extends BedCategories
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -1447,20 +1429,16 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     this.rowid = const Value.absent(),
   });
   BedCategoriesCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String name,
     required int pricePerBlock,
     required int sortOrder,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       name = Value(name),
+  }) : name = Value(name),
        pricePerBlock = Value(pricePerBlock),
        sortOrder = Value(sortOrder);
   static Insertable<BedCategoryRow> custom({
@@ -1573,7 +1551,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1584,7 +1563,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -1595,7 +1575,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -1606,7 +1587,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _roomNumberMeta = const VerificationMeta(
     'roomNumber',
@@ -1678,32 +1660,24 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('room_number')) {
       context.handle(
@@ -1963,20 +1937,16 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     this.rowid = const Value.absent(),
   });
   RoomsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String roomNumber,
     this.floor = const Value.absent(),
     this.notes = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       roomNumber = Value(roomNumber);
+  }) : roomNumber = Value(roomNumber);
   static Insertable<RoomRow> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -2087,7 +2057,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2098,7 +2069,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -2109,7 +2081,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -2120,7 +2093,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
   @override
@@ -2211,32 +2185,24 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('room_id')) {
       context.handle(
@@ -2527,21 +2493,17 @@ class BedsCompanion extends UpdateCompanion<BedRow> {
     this.rowid = const Value.absent(),
   });
   BedsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String roomId,
     required String label,
     required String categoryId,
     required String cleanliness,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       roomId = Value(roomId),
+  }) : roomId = Value(roomId),
        label = Value(label),
        categoryId = Value(categoryId),
        cleanliness = Value(cleanliness);
@@ -2664,7 +2626,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2675,7 +2638,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -2686,7 +2650,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -2697,7 +2662,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _fullNameMeta = const VerificationMeta(
     'fullName',
@@ -2758,32 +2724,24 @@ class $HousekeepersTable extends Housekeepers
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('full_name')) {
       context.handle(
@@ -3013,19 +2971,15 @@ class HousekeepersCompanion extends UpdateCompanion<HousekeeperRow> {
     this.rowid = const Value.absent(),
   });
   HousekeepersCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String fullName,
     this.phone = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       fullName = Value(fullName);
+  }) : fullName = Value(fullName);
   static Insertable<HousekeeperRow> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -3128,7 +3082,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3139,7 +3094,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -3150,7 +3106,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -3161,7 +3118,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _fullNameMeta = const VerificationMeta(
     'fullName',
@@ -3229,32 +3187,24 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('full_name')) {
       context.handle(
@@ -3514,20 +3464,16 @@ class GuestsCompanion extends UpdateCompanion<GuestRow> {
     this.rowid = const Value.absent(),
   });
   GuestsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String fullName,
     required String phone,
     this.idType = const Value.absent(),
     this.idNumber = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       fullName = Value(fullName),
+  }) : fullName = Value(fullName),
        phone = Value(phone);
   static Insertable<GuestRow> custom({
     Expression<String>? id,
@@ -3639,7 +3585,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3650,7 +3597,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -3661,7 +3609,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -3672,7 +3621,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
@@ -3804,32 +3754,24 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('user_id')) {
       context.handle(
@@ -4247,10 +4189,10 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.rowid = const Value.absent(),
   });
   ShiftsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String userId,
     required DateTime openedAt,
     required int openingFloat,
@@ -4261,11 +4203,7 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.variance = const Value.absent(),
     required String status,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       userId = Value(userId),
+  }) : userId = Value(userId),
        openedAt = Value(openedAt),
        openingFloat = Value(openingFloat),
        status = Value(status);
@@ -4419,7 +4357,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -4430,7 +4369,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -4441,7 +4381,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -4452,7 +4393,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _guestIdMeta = const VerificationMeta(
     'guestId',
@@ -4580,32 +4522,24 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('guest_id')) {
       context.handle(
@@ -4984,10 +4918,10 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     this.rowid = const Value.absent(),
   });
   StaysCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String guestId,
     required String bedId,
     required DateTime checkInAt,
@@ -4997,11 +4931,7 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     required String checkedInBy,
     this.checkedOutBy = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       guestId = Value(guestId),
+  }) : guestId = Value(guestId),
        bedId = Value(bedId),
        checkInAt = Value(checkInAt),
        paidUntil = Value(paidUntil),
@@ -5150,7 +5080,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -5161,7 +5092,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -5172,7 +5104,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -5183,7 +5116,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _receiptNumberMeta = const VerificationMeta(
     'receiptNumber',
@@ -5309,32 +5243,24 @@ class $PaymentsTable extends Payments
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('receipt_number')) {
       context.handle(
@@ -5705,10 +5631,10 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRow> {
     this.rowid = const Value.absent(),
   });
   PaymentsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String receiptNumber,
     required String shiftId,
     required String receivedBy,
@@ -5718,11 +5644,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRow> {
     this.mpesaCode = const Value.absent(),
     this.printCount = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       receiptNumber = Value(receiptNumber),
+  }) : receiptNumber = Value(receiptNumber),
        shiftId = Value(shiftId),
        receivedBy = Value(receivedBy),
        receivedAt = Value(receivedAt),
@@ -5871,7 +5793,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -5882,7 +5805,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -5893,7 +5817,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -5904,7 +5829,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _stayIdMeta = const VerificationMeta('stayId');
   @override
@@ -6024,32 +5950,24 @@ class $StayChargesTable extends StayCharges
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('stay_id')) {
       context.handle(
@@ -6419,10 +6337,10 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     this.rowid = const Value.absent(),
   });
   StayChargesCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String stayId,
     required String paymentId,
     required String kind,
@@ -6432,11 +6350,7 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     required DateTime periodStart,
     required DateTime periodEnd,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       stayId = Value(stayId),
+  }) : stayId = Value(stayId),
        paymentId = Value(paymentId),
        kind = Value(kind),
        blocks = Value(blocks),
@@ -6587,7 +6501,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -6598,7 +6513,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -6609,7 +6525,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -6620,7 +6537,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _bedIdMeta = const VerificationMeta('bedId');
   @override
@@ -6725,32 +6643,24 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('bed_id')) {
       context.handle(
@@ -7082,10 +6992,10 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     this.rowid = const Value.absent(),
   });
   HousekeepingTasksCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String bedId,
     required String housekeeperId,
     required String assignedBy,
@@ -7093,11 +7003,7 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     this.completedAt = const Value.absent(),
     this.completedBy = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       bedId = Value(bedId),
+  }) : bedId = Value(bedId),
        housekeeperId = Value(housekeeperId),
        assignedBy = Value(assignedBy),
        assignedAt = Value(assignedAt);
@@ -7228,7 +7134,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7239,7 +7146,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -7250,7 +7158,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -7261,7 +7170,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -7334,32 +7244,24 @@ class $InventoryItemsTable extends InventoryItems
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -7619,20 +7521,16 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItemRow> {
     this.rowid = const Value.absent(),
   });
   InventoryItemsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String name,
     required String unit,
     required int lowStockLevel,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       name = Value(name),
+  }) : name = Value(name),
        unit = Value(unit),
        lowStockLevel = Value(lowStockLevel);
   static Insertable<InventoryItemRow> custom({
@@ -7746,7 +7644,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7757,7 +7656,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -7768,7 +7668,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -7779,7 +7680,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
   @override
@@ -7866,32 +7768,24 @@ class $InventoryMovementsTable extends InventoryMovements
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('item_id')) {
       context.handle(
@@ -8177,21 +8071,17 @@ class InventoryMovementsCompanion
     this.rowid = const Value.absent(),
   });
   InventoryMovementsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String itemId,
     required String direction,
     required int quantity,
     required String reason,
     required String recordedBy,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       itemId = Value(itemId),
+  }) : itemId = Value(itemId),
        direction = Value(direction),
        quantity = Value(quantity),
        reason = Value(reason),
@@ -8314,7 +8204,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -8325,7 +8216,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -8336,7 +8228,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -8347,7 +8240,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _targetTypeMeta = const VerificationMeta(
     'targetType',
@@ -8435,32 +8329,24 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('target_type')) {
       context.handle(
@@ -8748,21 +8634,17 @@ class VoidsCompanion extends UpdateCompanion<VoidRow> {
     this.rowid = const Value.absent(),
   });
   VoidsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String targetType,
     required String targetId,
     required String reason,
     required String voidedBy,
     required DateTime voidedAt,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       targetType = Value(targetType),
+  }) : targetType = Value(targetType),
        targetId = Value(targetId),
        reason = Value(reason),
        voidedBy = Value(voidedBy),
@@ -8886,7 +8768,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -8897,7 +8780,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -8908,7 +8792,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -8919,7 +8804,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _categoryMeta = const VerificationMeta(
     'category',
@@ -9013,32 +8899,24 @@ class $ExpensesTable extends Expenses
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('category')) {
       context.handle(
@@ -9322,21 +9200,17 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String category,
     required int amount,
     required String spentOn,
     this.note = const Value.absent(),
     required String recordedBy,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       category = Value(category),
+  }) : category = Value(category),
        amount = Value(amount),
        spentOn = Value(spentOn),
        recordedBy = Value(recordedBy);
@@ -9459,7 +9333,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -9470,7 +9345,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -9481,7 +9357,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -9492,7 +9369,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('stamped by writeWithAudit'),
   );
   static const VerificationMeta _atMeta = const VerificationMeta('at');
   @override
@@ -9594,32 +9472,24 @@ class $AuditLogTable extends AuditLog
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('at')) {
       context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
@@ -9960,10 +9830,10 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     this.rowid = const Value.absent(),
   });
   AuditLogCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required DateTime at,
     this.userId = const Value.absent(),
     required String action,
@@ -9972,11 +9842,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     this.beforeJson = const Value.absent(),
     required String afterJson,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       at = Value(at),
+  }) : at = Value(at),
        action = Value(action),
        entity = Value(entity),
        entityId = Value(entityId),
@@ -11197,10 +11063,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 }
 
 typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String fullName,
   required String username,
   required String passwordHash,
@@ -12224,10 +12090,10 @@ class $$UsersTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String fullName,
                 required String username,
                 required String passwordHash,
@@ -12549,9 +12415,9 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   required String key,
   required String value,
   Value<String?> updatedBy,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   Value<int> rowid,
 });
 typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
@@ -12799,9 +12665,9 @@ class $$SettingsTableTableManager
                 required String key,
                 required String value,
                 Value<String?> updatedBy = const Value.absent(),
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SettingsCompanion.insert(
                 key: key,
@@ -12879,10 +12745,10 @@ typedef $$SettingsTableProcessedTableManager =
     >;
 typedef $$BedCategoriesTableCreateCompanionBuilder =
     BedCategoriesCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String name,
       required int pricePerBlock,
       required int sortOrder,
@@ -13166,10 +13032,10 @@ class $$BedCategoriesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String name,
                 required int pricePerBlock,
                 required int sortOrder,
@@ -13243,10 +13109,10 @@ typedef $$BedCategoriesTableProcessedTableManager =
       PrefetchHooks Function({bool bedsRefs})
     >;
 typedef $$RoomsTableCreateCompanionBuilder = RoomsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String roomNumber,
   Value<String?> floor,
   Value<String?> notes,
@@ -13524,10 +13390,10 @@ class $$RoomsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String roomNumber,
                 Value<String?> floor = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -13594,10 +13460,10 @@ typedef $$RoomsTableProcessedTableManager =
       PrefetchHooks Function({bool bedsRefs})
     >;
 typedef $$BedsTableCreateCompanionBuilder = BedsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String roomId,
   required String label,
   required String categoryId,
@@ -14114,10 +13980,10 @@ class $$BedsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String roomId,
                 required String label,
                 required String categoryId,
@@ -14263,10 +14129,10 @@ typedef $$BedsTableProcessedTableManager =
     >;
 typedef $$HousekeepersTableCreateCompanionBuilder =
     HousekeepersCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String fullName,
       Value<String?> phone,
       Value<bool> isActive,
@@ -14530,10 +14396,10 @@ class $$HousekeepersTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String fullName,
                 Value<String?> phone = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
@@ -14609,10 +14475,10 @@ typedef $$HousekeepersTableProcessedTableManager =
       PrefetchHooks Function({bool housekeepingTasksRefs})
     >;
 typedef $$GuestsTableCreateCompanionBuilder = GuestsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String fullName,
   required String phone,
   Value<String?> idType,
@@ -14889,10 +14755,10 @@ class $$GuestsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String fullName,
                 required String phone,
                 Value<String?> idType = const Value.absent(),
@@ -14959,10 +14825,10 @@ typedef $$GuestsTableProcessedTableManager =
       PrefetchHooks Function({bool staysRefs})
     >;
 typedef $$ShiftsTableCreateCompanionBuilder = ShiftsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String userId,
   required DateTime openedAt,
   required int openingFloat,
@@ -15404,10 +15270,10 @@ class $$ShiftsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String userId,
                 required DateTime openedAt,
                 required int openingFloat,
@@ -15517,10 +15383,10 @@ typedef $$ShiftsTableProcessedTableManager =
       PrefetchHooks Function({bool userId, bool paymentsRefs})
     >;
 typedef $$StaysTableCreateCompanionBuilder = StaysCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String guestId,
   required String bedId,
   required DateTime checkInAt,
@@ -16163,10 +16029,10 @@ class $$StaysTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String guestId,
                 required String bedId,
                 required DateTime checkInAt,
@@ -16328,10 +16194,10 @@ typedef $$StaysTableProcessedTableManager =
       })
     >;
 typedef $$PaymentsTableCreateCompanionBuilder = PaymentsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String receiptNumber,
   required String shiftId,
   required String receivedBy,
@@ -16831,10 +16697,10 @@ class $$PaymentsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String receiptNumber,
                 required String shiftId,
                 required String receivedBy,
@@ -16966,10 +16832,10 @@ typedef $$PaymentsTableProcessedTableManager =
     >;
 typedef $$StayChargesTableCreateCompanionBuilder =
     StayChargesCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String stayId,
       required String paymentId,
       required String kind,
@@ -17396,10 +17262,10 @@ class $$StayChargesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String stayId,
                 required String paymentId,
                 required String kind,
@@ -17502,10 +17368,10 @@ typedef $$StayChargesTableProcessedTableManager =
     >;
 typedef $$HousekeepingTasksTableCreateCompanionBuilder =
     HousekeepingTasksCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String bedId,
       required String housekeeperId,
       required String assignedBy,
@@ -18064,10 +17930,10 @@ class $$HousekeepingTasksTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String bedId,
                 required String housekeeperId,
                 required String assignedBy,
@@ -18201,10 +18067,10 @@ typedef $$HousekeepingTasksTableProcessedTableManager =
     >;
 typedef $$InventoryItemsTableCreateCompanionBuilder =
     InventoryItemsCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String name,
       required String unit,
       required int lowStockLevel,
@@ -18497,10 +18363,10 @@ class $$InventoryItemsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String name,
                 required String unit,
                 required int lowStockLevel,
@@ -18577,10 +18443,10 @@ typedef $$InventoryItemsTableProcessedTableManager =
     >;
 typedef $$InventoryMovementsTableCreateCompanionBuilder =
     InventoryMovementsCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String itemId,
       required String direction,
       required int quantity,
@@ -18967,10 +18833,10 @@ class $$InventoryMovementsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String itemId,
                 required String direction,
                 required int quantity,
@@ -19068,10 +18934,10 @@ typedef $$InventoryMovementsTableProcessedTableManager =
       PrefetchHooks Function({bool itemId, bool recordedBy})
     >;
 typedef $$VoidsTableCreateCompanionBuilder = VoidsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String targetType,
   required String targetId,
   required String reason,
@@ -19370,10 +19236,10 @@ class $$VoidsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String targetType,
                 required String targetId,
                 required String reason,
@@ -19459,10 +19325,10 @@ typedef $$VoidsTableProcessedTableManager =
       PrefetchHooks Function({bool voidedBy})
     >;
 typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String category,
   required int amount,
   required String spentOn,
@@ -19760,10 +19626,10 @@ class $$ExpensesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String category,
                 required int amount,
                 required String spentOn,
@@ -19848,10 +19714,10 @@ typedef $$ExpensesTableProcessedTableManager =
       PrefetchHooks Function({bool recordedBy})
     >;
 typedef $$AuditLogTableCreateCompanionBuilder = AuditLogCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required DateTime at,
   Value<String?> userId,
   required String action,
@@ -20185,10 +20051,10 @@ class $$AuditLogTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required DateTime at,
                 Value<String?> userId = const Value.absent(),
                 required String action,

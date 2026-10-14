@@ -25,9 +25,16 @@ class Settings extends Table {
   TextColumn get key => text()();
   TextColumn get value => text()();
   TextColumn get updatedBy => text().nullable().references(Users, #id)();
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get deviceId => text()();
+  // Stamped by writeWithAudit, as in SyncedColumns.
+  DateTimeColumn get createdAt => dateTime().clientDefault(
+    () => throw StateError('stamped by writeWithAudit'),
+  )();
+  DateTimeColumn get updatedAt => dateTime().clientDefault(
+    () => throw StateError('stamped by writeWithAudit'),
+  )();
+  TextColumn get deviceId => text().clientDefault(
+    () => throw StateError('stamped by writeWithAudit'),
+  )();
 
   @override
   Set<Column<Object>> get primaryKey => {key};
