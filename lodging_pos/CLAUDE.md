@@ -11,7 +11,7 @@ One Flutter codebase: **Windows** build = front desk (offline-first), **Android/
 
 - Flutter (stable), Dart 3
 - State: `flutter_riverpod` · Navigation: `go_router`
-- Local database: `drift` + `sqlite3_flutter_libs`
+- Local database: `drift` + `drift_flutter` (`sqlite3` 3.x bundles SQLite via build hooks; `sqlite3_flutter_libs` is obsolete)
 - Passwords: `bcrypt` · IDs: `uuid` · Receipts/reports: `pdf` + `printing`
 - Cloud (sprint 2): Supabase (PostgreSQL, auth, row-level security)
 
@@ -69,7 +69,8 @@ Features: `auth`, `shifts`, `setup`, `guests`, `bed_board`, `stays`, `payments`,
 
 ```
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs   # drift + riverpod codegen
+dart run build_runner build                 # drift + riverpod codegen
+dart run drift_dev make-migrations          # after bumping schemaVersion
 flutter analyze
 flutter test
 flutter run -d windows

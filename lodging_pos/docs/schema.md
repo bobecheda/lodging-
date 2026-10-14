@@ -4,9 +4,9 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 
 ## Common rules
 
-- Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT.
+- Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
-- `outbox` is local only and never synced. `audit_log` is append-only.
+- `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
 - Ownership for sync: the **desk** owns operational tables, the **admin** owns setup tables, `voids`, `expenses` and `inventory_items`. A row is only ever written by its owner.
 
 ## Relationships
@@ -37,9 +37,14 @@ bed_categories 1──* beds *──1 rooms
 |---|---|---|
 | key | TEXT | primary key |
 | value | TEXT | |
-| updated_by | TEXT → users | |
+| updated_by | TEXT → users | null for seeded values |
+| created_at | DATETIME | |
+| updated_at | DATETIME | |
+| device_id | TEXT | |
 
-Seed keys: `lodging_name`, `block_hours` = `12`, `grace_minutes` = `60`, `receipt_prefix` = `R`.
+The one exception to the `id` rule: `key` is the primary key and sync upserts by `key`.
+
+Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `block_hours` = `12`, `grace_minutes` = `60`, `receipt_prefix` = `R`.
 
 ### bed_categories
 | Column | Type | Notes |
@@ -49,7 +54,9 @@ Seed keys: `lodging_name`, `block_hours` = `12`, `grace_minutes` = `60`, `receip
 | sort_order | INT | |
 | is_active | BOOL | |
 
-Seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500.
+Seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500, with fixed UUIDs so the cloud can seed the same rows.
+
+Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No user is seeded: when `users` is empty the desk shows a first-run setup screen that creates the admin (FD-1).
 
 ### rooms
 | Column | Type | Notes |
@@ -200,6 +207,16 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 
 ### receipt_counter (local only)
 `device_id` primary key, `next_number` INT. Incremented inside the same transaction as the payment.
+
+> **TODO (sprint 2, sync):** if the database is deleted or the PC replaced, the new `device_id` starts `receipt_counter` at 1 and `R-000001` would collide with receipts already in the cloud. On a fresh install, sync must seed `next_number` from the cloud's highest receipt number before the first payment.
+
+### device (local only, never synced)
+| Column | Type | Notes |
+|---|---|---|
+| device_id | TEXT | primary key, UUID v4 generated in `onCreate` |
+| created_at | DATETIME | |
+
+Exactly one row. Its `device_id` is stamped on every synced row written by this install.
 
 ## Worked example
 

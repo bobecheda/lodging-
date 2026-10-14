@@ -1,0 +1,150 @@
+// drift column checks refer to their own column by design.
+// ignore_for_file: recursive_getters
+
+import 'package:drift/drift.dart';
+
+import 'admin_tables.dart';
+import 'common.dart';
+import 'setup_tables.dart';
+
+// Front desk tables: owned by the desk.
+
+@DataClassName('GuestRow')
+@TableIndex(name: 'guests_phone', columns: {#phone})
+@TableIndex(name: 'guests_id_number', columns: {#idNumber})
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX guests_id_unique ON guests (id_type, id_number) '
+  'WHERE id_number IS NOT NULL',
+)
+class Guests extends Table with SyncedColumns {
+  TextColumn get fullName => text()();
+  TextColumn get phone => text()();
+  TextColumn get idType => text().nullable().check(
+    idType.isIn(['national_id', 'passport', 'alien_id']),
+  )();
+  TextColumn get idNumber => text().nullable()();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (id_number IS NULL OR id_type IS NOT NULL)',
+  ];
+}
+
+/// Close fields (expected_*, counted_cash, variance) are set on close.
+@DataClassName('ShiftRow')
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX shifts_one_open_per_device ON shifts (device_id) '
+  "WHERE status = 'open'",
+)
+class Shifts extends Table with SyncedColumns {
+  TextColumn get userId => text().references(Users, #id)();
+  DateTimeColumn get openedAt => dateTime()();
+  IntColumn get openingFloat =>
+      integer().check(openingFloat.isBiggerOrEqualValue(0))();
+  DateTimeColumn get closedAt => dateTime().nullable()();
+  IntColumn get expectedCash => integer().nullable()();
+  IntColumn get expectedPaybill => integer().nullable()();
+  IntColumn get countedCash => integer().nullable()();
+  IntColumn get variance => integer().nullable()();
+  TextColumn get status => text().check(status.isIn(['open', 'closed']))();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK ((status = 'open') = (closed_at IS NULL))",
+  ];
+}
+
+/// `paid_until` = the latest `stay_charges.period_end` of the stay.
+@DataClassName('StayRow')
+@TableIndex(name: 'stays_guest', columns: {#guestId})
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX stays_one_active_per_bed ON stays (bed_id) '
+  "WHERE status = 'active'",
+)
+class Stays extends Table with SyncedColumns {
+  TextColumn get guestId => text().references(Guests, #id)();
+  TextColumn get bedId => text().references(Beds, #id)();
+  DateTimeColumn get checkInAt => dateTime()();
+  DateTimeColumn get paidUntil => dateTime()();
+  DateTimeColumn get checkedOutAt => dateTime().nullable()();
+  TextColumn get status => text().check(status.isIn(['active', 'closed']))();
+  @ReferenceName('staysCheckedIn')
+  TextColumn get checkedInBy => text().references(Users, #id)();
+  @ReferenceName('staysCheckedOut')
+  TextColumn get checkedOutBy => text().nullable().references(Users, #id)();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK ((status = 'active') = (checked_out_at IS NULL))",
+  ];
+}
+
+/// A payment is also the receipt.
+@DataClassName('PaymentRow')
+@TableIndex(name: 'payments_shift', columns: {#shiftId})
+class Payments extends Table with SyncedColumns {
+  TextColumn get receiptNumber => text().unique()();
+  TextColumn get shiftId => text().references(Shifts, #id)();
+  TextColumn get receivedBy => text().references(Users, #id)();
+  DateTimeColumn get receivedAt => dateTime()();
+  IntColumn get amount => integer().check(amount.isBiggerThanValue(0))();
+  TextColumn get method => text().check(method.isIn(['cash', 'paybill']))();
+  TextColumn get mpesaCode =>
+      text().nullable().customConstraint('UNIQUE COLLATE NOCASE')();
+  IntColumn get printCount => integer().withDefault(const Constant(0))();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK ((method = 'paybill') = (mpesa_code IS NOT NULL))",
+  ];
+}
+
+@DataClassName('StayChargeRow')
+@TableIndex(name: 'stay_charges_stay', columns: {#stayId})
+@TableIndex(name: 'stay_charges_payment', columns: {#paymentId})
+class StayCharges extends Table with SyncedColumns {
+  TextColumn get stayId => text().references(Stays, #id)();
+  TextColumn get paymentId => text().references(Payments, #id)();
+  TextColumn get kind => text().check(kind.isIn(['check_in', 'renewal']))();
+  IntColumn get blocks => integer().check(blocks.isBiggerOrEqualValue(1))();
+  IntColumn get pricePerBlock =>
+      integer().check(pricePerBlock.isBiggerThanValue(0))();
+  IntColumn get amount => integer()();
+  DateTimeColumn get periodStart => dateTime()();
+  DateTimeColumn get periodEnd => dateTime()();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (amount = blocks * price_per_block)',
+    'CHECK (period_end > period_start)',
+  ];
+}
+
+@DataClassName('HousekeepingTaskRow')
+@TableIndex(name: 'housekeeping_tasks_bed', columns: {#bedId})
+class HousekeepingTasks extends Table with SyncedColumns {
+  TextColumn get bedId => text().references(Beds, #id)();
+  TextColumn get housekeeperId => text().references(Housekeepers, #id)();
+  @ReferenceName('housekeepingTasksAssigned')
+  TextColumn get assignedBy => text().references(Users, #id)();
+  DateTimeColumn get assignedAt => dateTime()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  @ReferenceName('housekeepingTasksCompleted')
+  TextColumn get completedBy => text().nullable().references(Users, #id)();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK ((completed_at IS NULL) = (completed_by IS NULL))',
+  ];
+}
+
+/// Sprint 3. Stock out may not take an item below zero (repository).
+@DataClassName('InventoryMovementRow')
+@TableIndex(name: 'inventory_movements_item', columns: {#itemId})
+class InventoryMovements extends Table with SyncedColumns {
+  TextColumn get itemId => text().references(InventoryItems, #id)();
+  TextColumn get direction => text().check(direction.isIn(['in', 'out']))();
+  IntColumn get quantity => integer().check(quantity.isBiggerThanValue(0))();
+  TextColumn get reason => text()();
+  TextColumn get recordedBy => text().references(Users, #id)();
+}
