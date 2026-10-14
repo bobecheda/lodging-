@@ -70,7 +70,7 @@
             "getter_name": "username",
             "moor_type": "string",
             "nullable": false,
-            "customConstraints": "NOT NULL UNIQUE COLLATE NOCASE",
+            "customConstraints": "NOT NULL UNIQUE CHECK (username = lower(trim(username)))",
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": [
@@ -160,7 +160,7 @@
           0
         ],
         "name": "users_stamped_update",
-        "sql": "CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -270,7 +270,7 @@
           2
         ],
         "name": "settings_stamped_update",
-        "sql": "CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -411,7 +411,7 @@
           4
         ],
         "name": "bed_categories_stamped_update",
-        "sql": "CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -533,7 +533,7 @@
           6
         ],
         "name": "rooms_stamped_update",
-        "sql": "CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -728,7 +728,7 @@
           8
         ],
         "name": "beds_stamped_update",
-        "sql": "CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -834,7 +834,7 @@
           10
         ],
         "name": "housekeepers_stamped_update",
-        "sql": "CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -962,7 +962,7 @@
           12
         ],
         "name": "guests_stamped_update",
-        "sql": "CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1178,7 +1178,7 @@
           14
         ],
         "name": "shifts_stamped_update",
-        "sql": "CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1415,7 +1415,7 @@
           16
         ],
         "name": "stays_stamped_update",
-        "sql": "CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1645,7 +1645,7 @@
           18
         ],
         "name": "payments_stamped_update",
-        "sql": "CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1887,7 +1887,7 @@
           20
         ],
         "name": "stay_charges_stamped_update",
-        "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -2089,7 +2089,7 @@
           22
         ],
         "name": "housekeeping_tasks_stamped_update",
-        "sql": "CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -2405,7 +2405,7 @@
           25
         ],
         "name": "inventory_movements_stamped_update",
-        "sql": "CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -2589,7 +2589,7 @@
           27
         ],
         "name": "voids_stamped_update",
-        "sql": "CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -2764,7 +2764,7 @@
           29
         ],
         "name": "expenses_stamped_update",
-        "sql": "CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -2779,7 +2779,7 @@
           24
         ],
         "name": "inventory_items_stamped_update",
-        "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -2949,7 +2949,7 @@
           32
         ],
         "name": "audit_log_no_update",
-        "sql": "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
+        "sql": "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log\r\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
       }
     },
     {
@@ -2964,7 +2964,7 @@
           16
         ],
         "name": "stays_no_delete",
-        "sql": "CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays\n  BEGIN SELECT RAISE(ABORT, 'stays rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays\r\n  BEGIN SELECT RAISE(ABORT, 'stays rows are never deleted'); END;"
       }
     },
     {
@@ -2979,7 +2979,7 @@
           18
         ],
         "name": "payments_no_delete",
-        "sql": "CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments\n  BEGIN SELECT RAISE(ABORT, 'payments rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments\r\n  BEGIN SELECT RAISE(ABORT, 'payments rows are never deleted'); END;"
       }
     },
     {
@@ -2994,7 +2994,7 @@
           20
         ],
         "name": "stay_charges_no_delete",
-        "sql": "CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges\n  BEGIN SELECT RAISE(ABORT, 'stay_charges rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges\r\n  BEGIN SELECT RAISE(ABORT, 'stay_charges rows are never deleted'); END;"
       }
     },
     {
@@ -3009,7 +3009,7 @@
           27
         ],
         "name": "voids_no_delete",
-        "sql": "CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids\n  BEGIN SELECT RAISE(ABORT, 'voids rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids\r\n  BEGIN SELECT RAISE(ABORT, 'voids rows are never deleted'); END;"
       }
     },
     {
@@ -3024,7 +3024,7 @@
           32
         ],
         "name": "audit_log_no_delete",
-        "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
+        "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log\r\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
       }
     },
     {
@@ -3566,7 +3566,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"full_name\" TEXT NOT NULL, \"username\" TEXT NOT NULL UNIQUE COLLATE NOCASE, \"password_hash\" TEXT NOT NULL, \"role\" TEXT NOT NULL CHECK(\"role\" IN ('admin', 'receptionist')), \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), \"must_change_password\" INTEGER NOT NULL CHECK (\"must_change_password\" IN (0, 1)), PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"full_name\" TEXT NOT NULL, \"username\" TEXT NOT NULL UNIQUE CHECK (username = lower(trim(username))), \"password_hash\" TEXT NOT NULL, \"role\" TEXT NOT NULL CHECK(\"role\" IN ('admin', 'receptionist')), \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), \"must_change_password\" INTEGER NOT NULL CHECK (\"must_change_password\" IN (0, 1)), PRIMARY KEY (\"id\"));"
         }
       ]
     },

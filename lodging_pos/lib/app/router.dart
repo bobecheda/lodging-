@@ -2,20 +2,62 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../core/auth/session.dart';
+import '../features/auth/presentation/auth_providers.dart';
+import '../features/auth/presentation/change_password_screen.dart';
+import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/setup_screen.dart';
+import '../features/shifts/domain/shift_rules.dart';
+import '../features/shifts/presentation/open_shift_screen.dart';
+import '../features/shifts/presentation/shift_providers.dart';
+import 'gate.dart';
+import 'home_screen.dart';
+import 'splash_screen.dart';
+
 part 'router.g.dart';
 
 @Riverpod(keepAlive: true)
-GoRouter router(Ref ref) => GoRouter(
-  routes: [
-    // Placeholder until FD-1 adds first-run setup and login.
-    GoRoute(path: '/', builder: (context, state) => const _HomePlaceholder()),
-  ],
-);
+GoRouter router(Ref ref) {
+  // Re-run the redirect whenever the gate's inputs change.
+  final refresh = ValueNotifier(0);
+  void bump() => refresh.value++;
+  ref
+    ..listen(setupStatusProvider, (_, _) => bump())
+    ..listen(sessionProvider, (_, _) => bump())
+    ..listen(currentShiftProvider, (_, _) => bump())
+    ..onDispose(refresh.dispose);
 
-class _HomePlaceholder extends StatelessWidget {
-  const _HomePlaceholder();
+  String? redirect(BuildContext context, GoRouterState state) {
+    final user = ref.read(sessionProvider);
+    final shift = ref.read(currentShiftProvider);
+    return redirectFor(
+      state.matchedLocation,
+      hasUsers: ref.read(setupStatusProvider).value,
+      user: user,
+      shiftStart: user == null || !shift.hasValue
+          ? null
+          : shiftStartFor(
+              openShift: shift.value,
+              userId: user.id,
+              role: user.role,
+            ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: Text('lodging_pos')));
+  return GoRouter(
+    initialLocation: Routes.splash,
+    refreshListenable: refresh,
+    redirect: redirect,
+    routes: [
+      GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
+      GoRoute(path: Routes.setup, builder: (_, _) => const SetupScreen()),
+      GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
+      GoRoute(
+        path: Routes.changePassword,
+        builder: (_, _) => const ChangePasswordScreen(),
+      ),
+      GoRoute(path: Routes.shift, builder: (_, _) => const OpenShiftScreen()),
+      GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+    ],
+  );
 }

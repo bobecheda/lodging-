@@ -320,9 +320,11 @@ void main() {
   });
 
   group('users', () {
-    test('username is unique, ignoring case', () async {
+    test('username is stored trimmed and lowercase, and unique', () async {
       await user(username: 'jane');
-      await expectLater(user(username: 'JANE'), _violates('UNIQUE'));
+      await expectLater(user(username: 'jane'), _violates('UNIQUE'));
+      await expectLater(user(username: 'JANE'), _violates('CHECK'));
+      await expectLater(user(username: ' jane2'), _violates('CHECK'));
     });
 
     test('role must be admin or receptionist', () async {

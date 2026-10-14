@@ -10,8 +10,11 @@ import 'common.dart';
 @DataClassName('UserRow')
 class Users extends Table with SyncedColumns {
   TextColumn get fullName => text()();
-  TextColumn get username =>
-      text().customConstraint('NOT NULL UNIQUE COLLATE NOCASE')();
+
+  /// Stored trimmed and lowercase, so UNIQUE is case-insensitive.
+  TextColumn get username => text().customConstraint(
+    'NOT NULL UNIQUE CHECK (username = lower(trim(username)))',
+  )();
   TextColumn get passwordHash => text()();
   TextColumn get role => text().check(role.isIn(['admin', 'receptionist']))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();

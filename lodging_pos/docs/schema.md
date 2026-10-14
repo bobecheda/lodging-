@@ -28,7 +28,7 @@ bed_categories 1──* beds *──1 rooms
 | Column | Type | Notes |
 |---|---|---|
 | full_name | TEXT | required |
-| username | TEXT | UNIQUE |
+| username | TEXT | UNIQUE; stored trimmed and lowercase (CHECK `username = lower(trim(username))`), so uniqueness is case-insensitive |
 | password_hash | TEXT | bcrypt |
 | role | TEXT | `admin` \| `receptionist` |
 | is_active | BOOL | disabled users cannot log in |
