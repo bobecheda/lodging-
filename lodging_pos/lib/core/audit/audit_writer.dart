@@ -139,29 +139,26 @@ class AuditedWrites {
   /// Inserts [row] and returns it as stored.
   ///
   /// Build [row] with the companion's `.insert(...)`, so business fields are
-  /// checked at compile time.
+  /// checked at compile time. `id` gets a new UUID (client default) unless
+  /// [row] has one to link rows in this transaction.
   ///
-  /// On synced tables, stamps `id` (a new UUID, unless [row] has one to link
-  /// rows in this transaction), `created_at`, `updated_at` (= [now]) and
-  /// `device_id` (overriding any value in [row]). Their client defaults
-  /// throw, so only this method can fill them.
+  /// On synced tables, stamps `created_at`, `updated_at` (= [now]) and
+  /// `device_id` in the column map, overriding any value in [row]. Their
+  /// client defaults throw, so only this method can fill them.
   Future<D> insert<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     Insertable<D> row,
   ) async {
     final name = _writableName(table);
-    // The generic equivalent of companion.copyWith(...): Insertable has no
-    // copyWith, but its column map can be overridden.
-    final values = row.toColumns(false);
     final synced = !_localOnlyTables.contains(name);
-    if (synced) {
-      if (table.columnsByName.containsKey('id')) {
-        values.putIfAbsent('id', () => Variable<String>(newId()));
-      }
-      values['created_at'] = Variable<DateTime>(now);
-      values['updated_at'] = Variable<DateTime>(now);
-      values['device_id'] = Variable<String>(deviceId);
-    }
+    final values = {
+      ...row.toColumns(true),
+      if (synced) ...{
+        'created_at': Variable<DateTime>(now),
+        'updated_at': Variable<DateTime>(now),
+        'device_id': Variable<String>(deviceId),
+      },
+    };
 
     final inserted = await _db
         .into(table)
@@ -173,8 +170,9 @@ class AuditedWrites {
   /// Updates the row whose primary key is [id] with [changes] and returns it
   /// as stored. Throws if the row does not exist.
   ///
-  /// On synced tables, stamps `updated_at` = [now]. [changes] may not touch
-  /// the primary key, `created_at` or `device_id`.
+  /// On synced tables, stamps `updated_at` = [now] and `device_id`. Never
+  /// writes `created_at`: [changes] may not touch it, the primary key or
+  /// `device_id`.
   Future<D> update<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     String id,
@@ -182,26 +180,32 @@ class AuditedWrites {
   ) async {
     final name = _writableName(table);
     final pk = _primaryKey(table);
-    final values = changes.toColumns(false);
+    final changed = changes.toColumns(true);
     for (final column in {pk.name, 'created_at', 'device_id'}) {
-      if (values.containsKey(column)) {
+      if (changed.containsKey(column)) {
         throw ArgumentError('$name.$column cannot be changed by an update');
       }
     }
-    if (values.isEmpty) throw ArgumentError('No changes for $name $id');
+    if (changed.isEmpty) throw ArgumentError('No changes for $name $id');
 
     final synced = !_localOnlyTables.contains(name);
-    if (synced) values['updated_at'] = Variable<DateTime>(now);
+    final values = {
+      ...changed,
+      if (synced) ...{
+        'updated_at': Variable<DateTime>(now),
+        'device_id': Variable<String>(deviceId),
+      },
+    };
 
-    final before = await (_db.select(
-      table,
-    )..where((_) => pk.equals(id))).getSingleOrNull();
+    Future<D?> read() =>
+        (_db.select(table)..where((_) => pk.equals(id))).getSingleOrNull();
+
+    final before = await read();
     if (before == null) throw StateError('$name $id not found');
-
-    final after =
-        (await (_db.update(table)..where((_) => pk.equals(id))).writeReturning(
-          RawValuesInsertable<D>(values),
-        )).single;
+    await (_db.update(
+      table,
+    )..where((_) => pk.equals(id))).write(RawValuesInsertable<D>(values));
+    final after = (await read())!;
     if (synced) _record(table, before: before, after: after);
     return after;
   }

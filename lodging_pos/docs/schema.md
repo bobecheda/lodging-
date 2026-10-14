@@ -5,7 +5,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 ## Common rules
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
-- `id`, `created_at`, `updated_at` and `device_id` are stamped by `writeWithAudit`. Their drift client defaults throw, so a row inserted any other way fails (the seed passes them explicitly).
+- `id` defaults to a new UUID. `created_at`, `updated_at` and `device_id` are stamped by `writeWithAudit` (on update: `updated_at` and `device_id`, never `created_at`). Their drift client defaults throw, so a row inserted any other way fails (the seed passes them explicitly).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
 - Ownership for sync: the **desk** owns operational tables, the **admin** owns setup tables, `voids`, `expenses` and `inventory_items`. A row is only ever written by its owner.

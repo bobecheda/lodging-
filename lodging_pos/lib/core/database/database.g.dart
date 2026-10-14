@@ -16,7 +16,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1042,7 +1042,7 @@ class $BedCategoriesTable extends BedCategories
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1552,7 +1552,7 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2058,7 +2058,7 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2627,7 +2627,7 @@ class $HousekeepersTable extends Housekeepers
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3083,7 +3083,7 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3586,7 +3586,7 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -4358,7 +4358,7 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -5081,7 +5081,7 @@ class $PaymentsTable extends Payments
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -5794,7 +5794,7 @@ class $StayChargesTable extends StayCharges
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -6502,7 +6502,7 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7135,7 +7135,7 @@ class $InventoryItemsTable extends InventoryItems
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7645,7 +7645,7 @@ class $InventoryMovementsTable extends InventoryMovements
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -8205,7 +8205,7 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -8769,7 +8769,7 @@ class $ExpensesTable extends Expenses
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -9334,7 +9334,7 @@ class $AuditLogTable extends AuditLog
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',

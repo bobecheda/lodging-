@@ -7,6 +7,7 @@ import 'package:lodging_pos/core/audit/audit_writer.dart';
 import 'package:lodging_pos/core/clock/clock.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
   final t0 = DateTime.utc(2026, 10, 14, 19);
@@ -109,37 +110,13 @@ void main() {
         expect(o.sentAt, isNull);
       }
     });
-
-    test('keeps an id supplied by the caller', () async {
-      final room = await audit.writeWithAudit(
-        action: 'room.create',
-        userId: adminId,
-        body: (w) => w.insert(
-          db.rooms,
-          RoomsCompanion.insert(id: const Value('room-fixed'), roomNumber: '4'),
-        ),
-      );
-      expect(room.id, 'room-fixed');
-    });
   });
 
+  // Column-map stamping, verified against the drift version in pubspec.lock.
   group('stamped columns', () {
-    test('a direct insert that bypasses the writer throws', () async {
-      await expectLater(
-        () => db.into(db.rooms).insert(RoomsCompanion.insert(roomNumber: '3')),
-        throwsA(
-          isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            'must be stamped by writeWithAudit',
-          ),
-        ),
-      );
-      expect(await count(db.rooms), 0);
-    });
-
     test(
-      'the same row through writeWithAudit gets created_at from the clock',
+      '1. a .insert(...) row with no stamped fields saves through the writer '
+      'with created_at from the clock',
       () async {
         final room = await audit.writeWithAudit(
           action: 'room.create',
@@ -150,8 +127,89 @@ void main() {
         expect(room.roomNumber, '3');
         expect(room.createdAt, DateTime.utc(2026, 10, 14, 19, 5));
         expect(room.createdAt, clock.now());
+        expect(room.updatedAt, clock.now());
+        expect(room.deviceId, deviceId);
       },
     );
+
+    test(
+      '2. a direct insert without the writer throws the StateError',
+      () async {
+        await expectLater(
+          () =>
+              db.into(db.rooms).insert(RoomsCompanion.insert(roomNumber: '3')),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'must be stamped by writeWithAudit',
+            ),
+          ),
+        );
+        expect(await count(db.rooms), 0);
+      },
+    );
+
+    test(
+      '3. an id passed by the caller is kept; an omitted id gets a UUID',
+      () async {
+        final kept = await audit.writeWithAudit(
+          action: 'room.create',
+          userId: adminId,
+          body: (w) => w.insert(
+            db.rooms,
+            RoomsCompanion.insert(
+              id: const Value('room-fixed'),
+              roomNumber: '4',
+            ),
+          ),
+        );
+        expect(kept.id, 'room-fixed');
+
+        final generated = await createRoom('5');
+        expect(Uuid.isValidUUID(fromString: generated.id), isTrue);
+        expect(generated.id, isNot(kept.id));
+        expect(
+          [for (final e in await auditRows()) e.entityId],
+          ['room-fixed', generated.id],
+        );
+      },
+    );
+
+    test('4. DateTimes round-trip in UTC through Variable<DateTime>', () async {
+      clock.set(DateTime.utc(2026, 10, 14, 21, 30, 15, 123));
+      final room = await createRoom('3');
+      expect(room.createdAt.isUtc, isTrue);
+      expect(room.createdAt, DateTime.utc(2026, 10, 14, 21, 30, 15, 123));
+
+      final reread = await (db.select(
+        db.rooms,
+      )..where((r) => r.id.equals(room.id))).getSingle();
+      expect(reread.createdAt.isUtc, isTrue);
+      expect(reread.createdAt, room.createdAt);
+
+      final raw = await db
+          .customSelect(
+            'SELECT created_at FROM rooms WHERE id = ?',
+            variables: [Variable(room.id)],
+          )
+          .getSingle();
+      expect(raw.read<String>('created_at'), '2026-10-14T21:30:15.123Z');
+
+      clock.advance(const Duration(hours: 1));
+      final updated = await audit.writeWithAudit(
+        action: 'room.update',
+        userId: adminId,
+        body: (w) => w.update(
+          db.rooms,
+          room.id,
+          const RoomsCompanion(floor: Value('1st')),
+        ),
+      );
+      expect(updated.updatedAt.isUtc, isTrue);
+      expect(updated.updatedAt, DateTime.utc(2026, 10, 14, 22, 30, 15, 123));
+      expect(updated.createdAt, room.createdAt);
+    });
   });
 
   group('update', () {
@@ -185,6 +243,25 @@ void main() {
         'rooms',
         'audit_log',
       ]);
+    });
+
+    test('stamps device_id and never writes created_at', () async {
+      final updated = await audit.writeWithAudit(
+        action: 'price.update',
+        userId: adminId,
+        body: (w) => w.update(
+          db.bedCategories,
+          SeedIds.deluxe,
+          const BedCategoriesCompanion(pricePerBlock: Value(800)),
+        ),
+      );
+      expect(updated.pricePerBlock, 800);
+      expect(updated.deviceId, deviceId); // was 'seed'
+      expect(updated.createdAt, t0);
+      expect(updated.updatedAt, clock.now());
+      final entry = (await auditRows()).single;
+      expect(jsonDecode(entry.beforeJson!)['device_id'], seedDeviceId);
+      expect(jsonDecode(entry.afterJson)['price_per_block'], 800);
     });
 
     test('works on settings, keyed by key', () async {
