@@ -810,7 +810,7 @@
             "getter_name": "phone",
             "moor_type": "string",
             "nullable": false,
-            "customConstraints": null,
+            "customConstraints": "NOT NULL COLLATE NOCASE",
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
@@ -844,7 +844,7 @@
             "getter_name": "idNumber",
             "moor_type": "string",
             "nullable": true,
-            "customConstraints": null,
+            "customConstraints": "COLLATE NOCASE",
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
@@ -1053,7 +1053,8 @@
         "is_virtual": false,
         "without_rowid": false,
         "constraints": [
-          "CHECK ((status = 'open') = (closed_at IS NULL))"
+          "CHECK ((status = 'open') = (closed_at IS NULL))",
+          "CHECK (status = 'open' OR (expected_cash IS NOT NULL AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL AND variance IS NOT NULL AND variance = counted_cash - expected_cash))"
         ],
         "explicit_pk": [
           "id"
@@ -1274,7 +1275,8 @@
         "is_virtual": false,
         "without_rowid": false,
         "constraints": [
-          "CHECK ((status = 'active') = (checked_out_at IS NULL))"
+          "CHECK ((status = 'active') = (checked_out_at IS NULL))",
+          "CHECK ((status = 'active') = (checked_out_by IS NULL))"
         ],
         "explicit_pk": [
           "id"
@@ -2491,31 +2493,7 @@
             "customConstraints": null,
             "default_dart": null,
             "default_client_dart": null,
-            "dsl_features": [
-              {
-                "check": {
-                  "dart_expression": {
-                    "elements": [
-                      {
-                        "lexeme": "StringExpressionOperators",
-                        "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
-                      },
-                      "(",
-                      {
-                        "lexeme": "spentOn",
-                        "tag": "spentOn"
-                      },
-                      ").like('____-__-__') & ",
-                      {
-                        "lexeme": "spentOn",
-                        "tag": "spentOn"
-                      },
-                      ".length.equals(10)"
-                    ]
-                  }
-                }
-              }
-            ]
+            "dsl_features": []
           },
           {
             "name": "note",
@@ -2556,7 +2534,9 @@
         ],
         "is_virtual": false,
         "without_rowid": false,
-        "constraints": [],
+        "constraints": [
+          "CHECK (spent_on GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]')"
+        ],
         "explicit_pk": [
           "id"
         ]
@@ -3096,6 +3076,20 @@
     {
       "id": 30,
       "references": [
+        11
+      ],
+      "type": "index",
+      "data": {
+        "on": 11,
+        "name": "housekeeping_tasks_one_open_per_bed",
+        "sql": "CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 31,
+      "references": [
         13
       ],
       "type": "index",
@@ -3113,7 +3107,7 @@
       }
     },
     {
-      "id": 31,
+      "id": 32,
       "references": [
         16
       ],
@@ -3132,7 +3126,7 @@
       }
     },
     {
-      "id": 32,
+      "id": 33,
       "references": [
         16
       ],
@@ -3151,7 +3145,7 @@
       }
     },
     {
-      "id": 33,
+      "id": 34,
       "references": [
         16
       ],
@@ -3170,7 +3164,7 @@
       }
     },
     {
-      "id": 34,
+      "id": 35,
       "references": [
         16
       ],
@@ -3193,7 +3187,7 @@
       }
     },
     {
-      "id": 35,
+      "id": 36,
       "references": [
         17
       ],
@@ -3267,7 +3261,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"guests\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"full_name\" TEXT NOT NULL, \"phone\" TEXT NOT NULL, \"id_type\" TEXT NULL CHECK(\"id_type\" IN ('national_id', 'passport', 'alien_id')), \"id_number\" TEXT NULL, PRIMARY KEY (\"id\"), CHECK (id_number IS NULL OR id_type IS NOT NULL));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"guests\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"full_name\" TEXT NOT NULL, \"phone\" TEXT NOT NULL COLLATE NOCASE, \"id_type\" TEXT NULL CHECK(\"id_type\" IN ('national_id', 'passport', 'alien_id')), \"id_number\" TEXT COLLATE NOCASE, PRIMARY KEY (\"id\"), CHECK (id_number IS NULL OR id_type IS NOT NULL));"
         }
       ]
     },
@@ -3276,7 +3270,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"shifts\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL REFERENCES users (id), \"opened_at\" TEXT NOT NULL, \"opening_float\" INTEGER NOT NULL CHECK(\"opening_float\" >= 0), \"closed_at\" TEXT NULL, \"expected_cash\" INTEGER NULL, \"expected_paybill\" INTEGER NULL, \"counted_cash\" INTEGER NULL, \"variance\" INTEGER NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('open', 'closed')), PRIMARY KEY (\"id\"), CHECK ((status = 'open') = (closed_at IS NULL)));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"shifts\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL REFERENCES users (id), \"opened_at\" TEXT NOT NULL, \"opening_float\" INTEGER NOT NULL CHECK(\"opening_float\" >= 0), \"closed_at\" TEXT NULL, \"expected_cash\" INTEGER NULL, \"expected_paybill\" INTEGER NULL, \"counted_cash\" INTEGER NULL, \"variance\" INTEGER NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('open', 'closed')), PRIMARY KEY (\"id\"), CHECK ((status = 'open') = (closed_at IS NULL)), CHECK (status = 'open' OR (expected_cash IS NOT NULL AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL AND variance IS NOT NULL AND variance = counted_cash - expected_cash)));"
         }
       ]
     },
@@ -3285,7 +3279,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"stays\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"guest_id\" TEXT NOT NULL REFERENCES guests (id), \"bed_id\" TEXT NOT NULL REFERENCES beds (id), \"check_in_at\" TEXT NOT NULL, \"paid_until\" TEXT NOT NULL, \"checked_out_at\" TEXT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('active', 'closed')), \"checked_in_by\" TEXT NOT NULL REFERENCES users (id), \"checked_out_by\" TEXT NULL REFERENCES users (id), PRIMARY KEY (\"id\"), CHECK ((status = 'active') = (checked_out_at IS NULL)));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"stays\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"guest_id\" TEXT NOT NULL REFERENCES guests (id), \"bed_id\" TEXT NOT NULL REFERENCES beds (id), \"check_in_at\" TEXT NOT NULL, \"paid_until\" TEXT NOT NULL, \"checked_out_at\" TEXT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('active', 'closed')), \"checked_in_by\" TEXT NOT NULL REFERENCES users (id), \"checked_out_by\" TEXT NULL REFERENCES users (id), PRIMARY KEY (\"id\"), CHECK ((status = 'active') = (checked_out_at IS NULL)), CHECK ((status = 'active') = (checked_out_by IS NULL)));"
         }
       ]
     },
@@ -3348,7 +3342,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"expenses\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"category\" TEXT NOT NULL CHECK(\"category\" IN ('laundry', 'utilities', 'wages', 'supplies', 'repairs', 'other')), \"amount\" INTEGER NOT NULL CHECK(\"amount\" > 0), \"spent_on\" TEXT NOT NULL CHECK(\"spent_on\" LIKE '____-__-__' AND LENGTH(\"spent_on\") = 10), \"note\" TEXT NULL, \"recorded_by\" TEXT NOT NULL REFERENCES users (id), PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"expenses\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"category\" TEXT NOT NULL CHECK(\"category\" IN ('laundry', 'utilities', 'wages', 'supplies', 'repairs', 'other')), \"amount\" INTEGER NOT NULL CHECK(\"amount\" > 0), \"spent_on\" TEXT NOT NULL, \"note\" TEXT NULL, \"recorded_by\" TEXT NOT NULL REFERENCES users (id), PRIMARY KEY (\"id\"), CHECK (spent_on GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]'));"
         }
       ]
     },
@@ -3475,6 +3469,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE INDEX housekeeping_tasks_bed ON housekeeping_tasks (bed_id)"
+        }
+      ]
+    },
+    {
+      "name": "housekeeping_tasks_one_open_per_bed",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL"
         }
       ]
     },

@@ -18,11 +18,14 @@ import 'setup_tables.dart';
 )
 class Guests extends Table with SyncedColumns {
   TextColumn get fullName => text()();
-  TextColumn get phone => text()();
+  // NOCASE lets type-ahead `LIKE 'prefix%'` use the phone and ID indexes, and
+  // makes the ID pair unique regardless of case.
+  TextColumn get phone => text().customConstraint('NOT NULL COLLATE NOCASE')();
   TextColumn get idType => text().nullable().check(
     idType.isIn(['national_id', 'passport', 'alien_id']),
   )();
-  TextColumn get idNumber => text().nullable()();
+  TextColumn get idNumber =>
+      text().nullable().customConstraint('COLLATE NOCASE')();
 
   @override
   List<String> get customConstraints => [
@@ -51,6 +54,9 @@ class Shifts extends Table with SyncedColumns {
   @override
   List<String> get customConstraints => [
     "CHECK ((status = 'open') = (closed_at IS NULL))",
+    "CHECK (status = 'open' OR (expected_cash IS NOT NULL "
+        'AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL '
+        'AND variance IS NOT NULL AND variance = counted_cash - expected_cash))',
   ];
 }
 
@@ -76,6 +82,7 @@ class Stays extends Table with SyncedColumns {
   @override
   List<String> get customConstraints => [
     "CHECK ((status = 'active') = (checked_out_at IS NULL))",
+    "CHECK ((status = 'active') = (checked_out_by IS NULL))",
   ];
 }
 
@@ -122,6 +129,10 @@ class StayCharges extends Table with SyncedColumns {
 
 @DataClassName('HousekeepingTaskRow')
 @TableIndex(name: 'housekeeping_tasks_bed', columns: {#bedId})
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed '
+  'ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL',
+)
 class HousekeepingTasks extends Table with SyncedColumns {
   TextColumn get bedId => text().references(Beds, #id)();
   TextColumn get housekeeperId => text().references(Housekeepers, #id)();

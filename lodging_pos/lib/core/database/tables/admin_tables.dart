@@ -40,10 +40,14 @@ class Expenses extends Table with SyncedColumns {
     ]),
   )();
   IntColumn get amount => integer().check(amount.isBiggerThanValue(0))();
-  TextColumn get spentOn =>
-      text().check(spentOn.like('____-__-__') & spentOn.length.equals(10))();
+  TextColumn get spentOn => text()();
   TextColumn get note => text().nullable()();
   TextColumn get recordedBy => text().references(Users, #id)();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (spent_on GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]')",
+  ];
 }
 
 /// Sprint 3.

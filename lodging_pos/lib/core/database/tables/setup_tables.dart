@@ -50,7 +50,9 @@ class Rooms extends Table with SyncedColumns {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }
 
-/// Max 2 active beds per room is enforced in the repository.
+/// At most 2 beds per room, active or not: `label` is A or B and unique per
+/// room. A bed under repair is deactivated and later reactivated (or
+/// re-categorised), never replaced by a new row.
 @DataClassName('BedRow')
 class Beds extends Table with SyncedColumns {
   TextColumn get roomId => text().references(Rooms, #id)();
