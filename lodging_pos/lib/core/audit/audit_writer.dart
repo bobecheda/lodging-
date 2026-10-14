@@ -157,10 +157,15 @@ class AuditedWrites {
   /// On synced tables, stamps `created_at`, `updated_at` (= [now]) and
   /// `device_id` in the column map, overriding any value in [row]. Their
   /// client defaults throw, so only this method can fill them.
+  ///
+  /// [action] overrides the call's action for this row's audit entry, so one
+  /// call (one `operation_id`) can record several actions.
   Future<D> insert<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
-    Insertable<D> row,
-  ) => _track(() async {
+    Insertable<D> row, {
+    String? action,
+  }) => _track(() async {
+    if (action != null) AuditWriter._checkAction(action);
     final name = _writableName(table);
     final synced = !_localOnlyTables.contains(name);
     final values = {
@@ -173,7 +178,9 @@ class AuditedWrites {
     };
 
     final inserted = await _db.into(table).insertReturning(_raw(values));
-    if (synced) await _log(table, before: null, after: inserted);
+    if (synced) {
+      await _log(table, action: action, before: null, after: inserted);
+    }
     return inserted;
   });
 
@@ -185,11 +192,15 @@ class AuditedWrites {
   /// update in the same call, or a clock set back): the database rejects
   /// updates that leave it unchanged. Never writes `created_at`: [changes]
   /// may not touch it, the primary key or `device_id`.
+  ///
+  /// [action] overrides the call's action for this row's audit entry.
   Future<D> update<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     String id,
-    Insertable<D> changes,
-  ) => _track(() async {
+    Insertable<D> changes, {
+    String? action,
+  }) => _track(() async {
+    if (action != null) AuditWriter._checkAction(action);
     final name = _writableName(table);
     final pk = _primaryKey(table);
     final changed = changes.toColumns(true);
@@ -220,7 +231,9 @@ class AuditedWrites {
     }
     await (_db.update(table)..where((_) => pk.equals(id))).write(_raw(values));
     final after = (await read())!;
-    if (synced) await _log(table, before: before, after: after);
+    if (synced) {
+      await _log(table, action: action, before: before, after: after);
+    }
     return after;
   });
 
@@ -241,6 +254,7 @@ class AuditedWrites {
   /// holds only the columns that changed.
   Future<void> _log(
     TableInfo table, {
+    required String? action,
     required DataClass? before,
     required DataClass after,
   }) async {
@@ -261,6 +275,7 @@ class AuditedWrites {
       auditAfter = {for (final k in changedKeys) k: afterRow[k]};
     }
     await _audit(
+      action: action ?? _action,
       entity: name,
       entityId: id,
       beforeJson: auditBefore == null
@@ -272,6 +287,7 @@ class AuditedWrites {
   }
 
   Future<void> _audit({
+    String? action,
     required String entity,
     required String entityId,
     required String? beforeJson,
@@ -288,7 +304,7 @@ class AuditedWrites {
             at: now,
             operationId: operationId,
             userId: Value(_userId),
-            action: _action,
+            action: action ?? _action,
             entity: entity,
             entityId: entityId,
             beforeJson: Value(beforeJson),

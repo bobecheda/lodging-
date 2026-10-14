@@ -75,7 +75,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL UNIQUE COLLATE NOCASE',
+    $customConstraints:
+        'NOT NULL UNIQUE CHECK (username = lower(trim(username)))',
   );
   static const VerificationMeta _passwordHashMeta = const VerificationMeta(
     'passwordHash',
@@ -289,6 +290,8 @@ class UserRow extends DataClass implements Insertable<UserRow> {
   final DateTime updatedAt;
   final String deviceId;
   final String fullName;
+
+  /// Stored trimmed and lowercase, so UNIQUE is case-insensitive.
   final String username;
   final String passwordHash;
   final String role;

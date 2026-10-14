@@ -589,6 +589,58 @@ void main() {
     });
   });
 
+  group('per-write action', () {
+    test(
+      'one call can record several actions under one operation_id',
+      () async {
+        await audit.writeWithAudit(
+          action: 'user.create',
+          userId: adminId,
+          body: (w) async {
+            await w.insert(
+              db.users,
+              UsersCompanion.insert(
+                fullName: 'Second',
+                username: 'second',
+                passwordHash: 'hash',
+                role: 'admin',
+                mustChangePassword: false,
+              ),
+            );
+            await w.update(
+              db.settings,
+              'lodging_name',
+              const SettingsCompanion(value: Value('Sunrise Lodge')),
+              action: 'settings.update',
+            );
+          },
+        );
+        final entries = await auditRows();
+        expect(
+          [for (final e in entries) (e.action, e.entity)],
+          [('user.create', 'users'), ('settings.update', 'settings')],
+        );
+        expect(entries.map((e) => e.operationId).toSet(), hasLength(1));
+      },
+    );
+
+    test('an override must be entity.verb too', () async {
+      await expectLater(
+        audit.writeWithAudit(
+          action: 'room.create',
+          userId: adminId,
+          body: (w) => w.insert(
+            db.rooms,
+            RoomsCompanion.insert(roomNumber: '20'),
+            action: 'Create',
+          ),
+        ),
+        throwsArgumentError,
+      );
+      expect(await count(db.rooms), 0);
+    });
+  });
+
   group('write order and lifetime', () {
     test('a nested writeWithAudit queues rows in actual write order', () async {
       await audit.writeWithAudit(
