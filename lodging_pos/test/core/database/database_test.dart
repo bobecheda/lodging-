@@ -114,7 +114,12 @@ void main() {
     return id;
   }
 
-  Future<String> shift(String userId, {bool closed = false}) async {
+  Future<String> shift(
+    String userId, {
+    bool closed = false,
+    int counted = 1000,
+    int? variance,
+  }) async {
     final id = newId();
     await db
         .into(db.shifts)
@@ -129,6 +134,10 @@ void main() {
             openingFloat: 1000,
             status: closed ? 'closed' : 'open',
             closedAt: Value(closed ? t0.add(const Duration(hours: 8)) : null),
+            expectedCash: Value(closed ? 1000 : null),
+            expectedPaybill: Value(closed ? 0 : null),
+            countedCash: Value(closed ? counted : null),
+            variance: Value(closed ? variance ?? counted - 1000 : null),
           ),
         );
     return id;
@@ -279,10 +288,12 @@ void main() {
       final file = File('${dir.path}${Platform.pathSeparator}db.sqlite');
 
       final first = AppDatabase(NativeDatabase(file), clock: FixedClock(t0));
+      addTearDown(first.close);
       final firstId = await first.deviceId();
       await first.close();
 
       final second = AppDatabase(NativeDatabase(file), clock: FixedClock(t0));
+      addTearDown(second.close);
       expect(await second.deviceId(), firstId);
       expect(await second.select(second.device).get(), hasLength(1));
       expect(await second.select(second.bedCategories).get(), hasLength(4));
@@ -349,6 +360,30 @@ void main() {
     test('ID number requires an ID type', () async {
       await expectLater(guest(idNumber: '12345678'), _violates('CHECK'));
     });
+
+    test('ID pair is unique ignoring case', () async {
+      await guest(idType: 'passport', idNumber: 'ak123456');
+      await expectLater(
+        guest(idType: 'passport', idNumber: 'AK123456'),
+        _violates('UNIQUE'),
+      );
+    });
+
+    test('type-ahead prefix search uses the phone and ID indexes', () async {
+      Future<String> plan(String where) async =>
+          (await db
+                  .customSelect(
+                    'EXPLAIN QUERY PLAN SELECT id FROM guests $where',
+                  )
+                  .get())
+              .map((r) => r.read<String>('detail'))
+              .join(' | ');
+      expect(await plan("WHERE phone LIKE '0712%'"), contains('guests_phone'));
+      expect(
+        await plan("WHERE id_number LIKE 'AK12%'"),
+        contains('guests_id_number'),
+      );
+    });
   });
 
   group('shifts', () {
@@ -358,6 +393,36 @@ void main() {
       await shift(u);
       await expectLater(shift(u), _violates('UNIQUE'));
     });
+
+    test(
+      'a closed shift needs its cash-up and variance = counted - expected',
+      () async {
+        final u = await user();
+        await shift(u, closed: true, counted: 900); // variance -100
+        await expectLater(
+          shift(u, closed: true, counted: 900, variance: 0),
+          _violates('CHECK'),
+        );
+        await expectLater(
+          db
+              .into(db.shifts)
+              .insert(
+                ShiftsCompanion.insert(
+                  id: Value(newId()),
+                  createdAt: Value(t0),
+                  updatedAt: Value(t0),
+                  deviceId: Value(deviceId),
+                  userId: u,
+                  openedAt: t0,
+                  openingFloat: 1000,
+                  status: 'closed',
+                  closedAt: Value(t0.add(const Duration(hours: 8))),
+                ),
+              ),
+          _violates('CHECK'),
+        );
+      },
+    );
   });
 
   group('stays (BR-4)', () {
@@ -368,6 +433,68 @@ void main() {
       await stay(g, b, u, closed: true);
       await stay(g, b, u);
       await expectLater(stay(g, b, u), _violates('UNIQUE'));
+    });
+
+    test('checked_out_by is set exactly when the stay is closed', () async {
+      final u = await user();
+      final s = await stay(await guest(), await bed(await room('3')), u);
+      // Moves updated_at so the stamped-update trigger lets it reach the CHECK.
+      Future<int> write(StaysCompanion c) =>
+          (db.update(db.stays)..where((t) => t.id.equals(s))).write(
+            c.copyWith(updatedAt: Value(t0.add(const Duration(hours: 2)))),
+          );
+
+      await expectLater(
+        write(
+          StaysCompanion(
+            status: const Value('closed'),
+            checkedOutAt: Value(t0.add(const Duration(hours: 1))),
+          ),
+        ),
+        _violates('CHECK'),
+      );
+      await expectLater(
+        write(StaysCompanion(checkedOutBy: Value(u))),
+        _violates('CHECK'),
+      );
+    });
+  });
+
+  group('housekeeping_tasks', () {
+    test('at most one open task per bed', () async {
+      final u = await user();
+      final b = await bed(await room('3'));
+      final hk = newId();
+      await db
+          .into(db.housekeepers)
+          .insert(
+            HousekeepersCompanion.insert(
+              id: Value(hk),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
+              fullName: 'Mary',
+            ),
+          );
+      Future<int> assign({bool completed = false}) => db
+          .into(db.housekeepingTasks)
+          .insert(
+            HousekeepingTasksCompanion.insert(
+              id: Value(newId()),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
+              bedId: b,
+              housekeeperId: hk,
+              assignedBy: u,
+              assignedAt: t0,
+              completedAt: Value(completed ? t0 : null),
+              completedBy: Value(completed ? u : null),
+            ),
+          );
+      await assign(completed: true);
+      await assign();
+      await expectLater(assign(), _violates('UNIQUE'));
     });
   });
 
@@ -485,7 +612,9 @@ void main() {
             ),
           );
       await expense('2026-10-14');
-      await expectLater(expense('14/10/2026'), _violates('CHECK'));
+      for (final bad in ['14/10/2026', 'abcd-ef-gh', '2026-1-14x']) {
+        await expectLater(expense(bad), _violates('CHECK'), reason: bad);
+      }
     });
 
     test('stock movement quantity must be positive', () async {

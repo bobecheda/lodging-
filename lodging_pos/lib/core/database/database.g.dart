@@ -3140,6 +3140,7 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL COLLATE NOCASE',
   );
   static const VerificationMeta _idTypeMeta = const VerificationMeta('idType');
   @override
@@ -3161,6 +3162,7 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'COLLATE NOCASE',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -8844,9 +8846,6 @@ class $ExpensesTable extends Expenses
     'spent_on',
     aliasedName,
     false,
-    check: () =>
-        StringExpressionOperators(spentOn).like('____-__-__') &
-        spentOn.length.equals(10),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -11158,6 +11157,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'housekeeping_tasks_bed',
     'CREATE INDEX housekeeping_tasks_bed ON housekeeping_tasks (bed_id)',
   );
+  late final Index housekeepingTasksOneOpenPerBed = Index(
+    'housekeeping_tasks_one_open_per_bed',
+    'CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL',
+  );
   late final Index inventoryMovementsItem = Index(
     'inventory_movements_item',
     'CREATE INDEX inventory_movements_item ON inventory_movements (item_id)',
@@ -11225,6 +11228,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stayChargesStay,
     stayChargesPayment,
     housekeepingTasksBed,
+    housekeepingTasksOneOpenPerBed,
     inventoryMovementsItem,
   ];
   @override

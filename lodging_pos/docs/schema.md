@@ -77,7 +77,7 @@ Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No use
 | cleanliness | TEXT | `clean` \| `not_cleaned` |
 | is_active | BOOL | |
 
-UNIQUE(room_id, label). Max 2 active beds per room (enforced in repository).
+UNIQUE(room_id, label), so a room has at most 2 beds, active or not. A bed under repair is deactivated and later reactivated, never replaced by a new row.
 
 ### housekeepers
 | Column | Type | Notes |
@@ -92,11 +92,11 @@ UNIQUE(room_id, label). Max 2 active beds per room (enforced in repository).
 | Column | Type | Notes |
 |---|---|---|
 | full_name | TEXT | required |
-| phone | TEXT | required, INDEX |
+| phone | TEXT | required, INDEX, COLLATE NOCASE (prefix search uses the index) |
 | id_type | TEXT | optional: `national_id` \| `passport` \| `alien_id` |
-| id_number | TEXT | optional |
+| id_number | TEXT | optional, INDEX, COLLATE NOCASE |
 
-Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL. If `id_number` is set, `id_type` is required.
+Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL, ignoring case. If `id_number` is set, `id_type` is required.
 
 ### shifts
 | Column | Type | Notes |
@@ -111,7 +111,7 @@ Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL. If `id_number` i
 | variance | INT | counted − expected |
 | status | TEXT | `open` \| `closed` |
 
-At most one open shift per device.
+At most one open shift per device. A closed shift must have `closed_at`, `expected_cash`, `expected_paybill`, `counted_cash` and `variance`, with `variance = counted_cash − expected_cash`.
 
 ### stays
 | Column | Type | Notes |
@@ -125,7 +125,7 @@ At most one open shift per device.
 | checked_in_by | TEXT → users | |
 | checked_out_by | TEXT → users | |
 
-Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced by the database.
+Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced by the database. `checked_out_at` and `checked_out_by` are set exactly when `status = 'closed'`.
 
 ### payments (also the receipt)
 | Column | Type | Notes |
@@ -161,6 +161,8 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | completed_at | DATETIME | null until done |
 | completed_by | TEXT → users | receptionist who marked it done |
 
+Partial UNIQUE(bed_id) WHERE completed_at IS NULL: at most one open task per bed. `completed_at` and `completed_by` are set together.
+
 ## Admin-owned records
 
 ### voids
@@ -173,7 +175,7 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | voided_at | DATETIME | |
 
 ### expenses (sprint 3)
-`category` (laundry \| utilities \| wages \| supplies \| repairs \| other), `amount` INT, `spent_on` DATE, `note`, `recorded_by` → users.
+`category` (laundry \| utilities \| wages \| supplies \| repairs \| other), `amount` INT, `spent_on` TEXT `YYYY-MM-DD` (Nairobi date, CHECKed by GLOB), `note`, `recorded_by` → users.
 
 ### inventory_items (sprint 3)
 `name` UNIQUE, `unit`, `low_stock_level` INT, `is_active`.
