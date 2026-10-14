@@ -4,9 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/app.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
-import 'package:lodging_pos/core/auth/password_hasher.dart';
-import 'package:lodging_pos/core/clock/clock.dart';
-import 'package:lodging_pos/core/database/database_provider.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../helpers/fixtures.dart';
@@ -18,13 +15,7 @@ void main() {
   tearDown(() => env.close());
 
   Future<ProviderContainer> pumpApp(WidgetTester tester) async {
-    final container = ProviderContainer(
-      overrides: [
-        appDatabaseProvider.overrideWithValue(env.db),
-        clockProvider.overrideWithValue(env.clock),
-        passwordHasherProvider.overrideWithValue(env.hasher),
-      ],
-    );
+    final container = ProviderContainer(overrides: env.overrides);
     addTearDown(container.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container, child: const App()),

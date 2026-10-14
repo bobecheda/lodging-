@@ -1,0 +1,4 @@
+# drift_dev compares schema snapshots as raw text against what it generates
+# (LF). Keep them LF on Windows checkouts too, or make-migrations reports a
+# spurious "schema differs".
+lodging_pos/drift_schemas/** text eol=lf

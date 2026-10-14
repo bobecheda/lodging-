@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../settings/setting_defaults.dart';
 import 'database.dart';
 
 /// `device_id` stamped on seed rows. The cloud seeds the same rows with the
@@ -33,12 +34,9 @@ Future<void> seedV1(
         ReceiptCounterCompanion.insert(deviceId: deviceId, nextNumber: 1),
       );
 
-  const settings = {
-    'lodging_name': '',
-    'block_hours': '12',
-    'grace_minutes': '60',
-    'receipt_prefix': 'R',
-  };
+  // Every default from the one map, plus the lodging name, which the
+  // first-run setup screen fills in.
+  const settings = {SettingKeys.lodgingName: '', ...settingDefaults};
   await db.batch((b) {
     b.insertAll(db.settings, [
       for (final MapEntry(:key, :value) in settings.entries)
