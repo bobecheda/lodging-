@@ -6,6 +6,9 @@ targets:
           # ISO-8601 text keeps milliseconds and the UTC marker, and maps
           # directly to Postgres timestamptz for sync.
           store_date_time_values_as_text: true
+          # toJson keys match the SQL columns, so outbox payloads map 1:1 to
+          # the Postgres mirror.
+          use_sql_column_name_as_json_key: true
           databases:
             app_database: lib/core/database/database.dart
           schema_dir: drift_schemas/

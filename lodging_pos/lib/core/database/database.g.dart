@@ -15,7 +15,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -26,7 +27,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -37,7 +39,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -48,7 +51,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _fullNameMeta = const VerificationMeta(
     'fullName',
@@ -149,32 +153,24 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('full_name')) {
       context.handle(
@@ -348,15 +344,17 @@ class UserRow extends DataClass implements Insertable<UserRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return UserRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      fullName: serializer.fromJson<String>(json['fullName']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      fullName: serializer.fromJson<String>(json['full_name']),
       username: serializer.fromJson<String>(json['username']),
-      passwordHash: serializer.fromJson<String>(json['passwordHash']),
+      passwordHash: serializer.fromJson<String>(json['password_hash']),
       role: serializer.fromJson<String>(json['role']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
-      mustChangePassword: serializer.fromJson<bool>(json['mustChangePassword']),
+      isActive: serializer.fromJson<bool>(json['is_active']),
+      mustChangePassword: serializer.fromJson<bool>(
+        json['must_change_password'],
+      ),
     );
   }
   @override
@@ -364,15 +362,15 @@ class UserRow extends DataClass implements Insertable<UserRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'fullName': serializer.toJson<String>(fullName),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'full_name': serializer.toJson<String>(fullName),
       'username': serializer.toJson<String>(username),
-      'passwordHash': serializer.toJson<String>(passwordHash),
+      'password_hash': serializer.toJson<String>(passwordHash),
       'role': serializer.toJson<String>(role),
-      'isActive': serializer.toJson<bool>(isActive),
-      'mustChangePassword': serializer.toJson<bool>(mustChangePassword),
+      'is_active': serializer.toJson<bool>(isActive),
+      'must_change_password': serializer.toJson<bool>(mustChangePassword),
     };
   }
 
@@ -490,10 +488,10 @@ class UsersCompanion extends UpdateCompanion<UserRow> {
     this.rowid = const Value.absent(),
   });
   UsersCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String fullName,
     required String username,
     required String passwordHash,
@@ -501,11 +499,7 @@ class UsersCompanion extends UpdateCompanion<UserRow> {
     this.isActive = const Value.absent(),
     required bool mustChangePassword,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       fullName = Value(fullName),
+  }) : fullName = Value(fullName),
        username = Value(username),
        passwordHash = Value(passwordHash),
        role = Value(role),
@@ -672,7 +666,8 @@ class $SettingsTable extends Settings
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -683,7 +678,8 @@ class $SettingsTable extends Settings
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -694,7 +690,8 @@ class $SettingsTable extends Settings
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -744,24 +741,18 @@ class $SettingsTable extends Settings
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     return context;
   }
@@ -855,10 +846,10 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     return SettingRow(
       key: serializer.fromJson<String>(json['key']),
       value: serializer.fromJson<String>(json['value']),
-      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
+      updatedBy: serializer.fromJson<String?>(json['updated_by']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
     );
   }
   @override
@@ -867,10 +858,10 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
       'value': serializer.toJson<String>(value),
-      'updatedBy': serializer.toJson<String?>(updatedBy),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
+      'updated_by': serializer.toJson<String?>(updatedBy),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
     };
   }
 
@@ -949,15 +940,12 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     required String key,
     required String value,
     this.updatedBy = const Value.absent(),
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : key = Value(key),
-       value = Value(value),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId);
+       value = Value(value);
   static Insertable<SettingRow> custom({
     Expression<String>? key,
     Expression<String>? value,
@@ -1053,7 +1041,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1064,7 +1053,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -1075,7 +1065,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -1086,7 +1077,8 @@ class $BedCategoriesTable extends BedCategories
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -1161,32 +1153,24 @@ class $BedCategoriesTable extends BedCategories
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -1325,13 +1309,13 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BedCategoryRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
       name: serializer.fromJson<String>(json['name']),
-      pricePerBlock: serializer.fromJson<int>(json['pricePerBlock']),
-      sortOrder: serializer.fromJson<int>(json['sortOrder']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
+      pricePerBlock: serializer.fromJson<int>(json['price_per_block']),
+      sortOrder: serializer.fromJson<int>(json['sort_order']),
+      isActive: serializer.fromJson<bool>(json['is_active']),
     );
   }
   @override
@@ -1339,13 +1323,13 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
       'name': serializer.toJson<String>(name),
-      'pricePerBlock': serializer.toJson<int>(pricePerBlock),
-      'sortOrder': serializer.toJson<int>(sortOrder),
-      'isActive': serializer.toJson<bool>(isActive),
+      'price_per_block': serializer.toJson<int>(pricePerBlock),
+      'sort_order': serializer.toJson<int>(sortOrder),
+      'is_active': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -1445,20 +1429,16 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     this.rowid = const Value.absent(),
   });
   BedCategoriesCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String name,
     required int pricePerBlock,
     required int sortOrder,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       name = Value(name),
+  }) : name = Value(name),
        pricePerBlock = Value(pricePerBlock),
        sortOrder = Value(sortOrder);
   static Insertable<BedCategoryRow> custom({
@@ -1571,7 +1551,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1582,7 +1563,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -1593,7 +1575,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -1604,7 +1587,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _roomNumberMeta = const VerificationMeta(
     'roomNumber',
@@ -1676,32 +1660,24 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('room_number')) {
       context.handle(
@@ -1841,13 +1817,13 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return RoomRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      roomNumber: serializer.fromJson<String>(json['roomNumber']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      roomNumber: serializer.fromJson<String>(json['room_number']),
       floor: serializer.fromJson<String?>(json['floor']),
       notes: serializer.fromJson<String?>(json['notes']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
+      isActive: serializer.fromJson<bool>(json['is_active']),
     );
   }
   @override
@@ -1855,13 +1831,13 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'roomNumber': serializer.toJson<String>(roomNumber),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'room_number': serializer.toJson<String>(roomNumber),
       'floor': serializer.toJson<String?>(floor),
       'notes': serializer.toJson<String?>(notes),
-      'isActive': serializer.toJson<bool>(isActive),
+      'is_active': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -1961,20 +1937,16 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     this.rowid = const Value.absent(),
   });
   RoomsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String roomNumber,
     this.floor = const Value.absent(),
     this.notes = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       roomNumber = Value(roomNumber);
+  }) : roomNumber = Value(roomNumber);
   static Insertable<RoomRow> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -2085,7 +2057,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2096,7 +2069,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -2107,7 +2081,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -2118,7 +2093,8 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
   @override
@@ -2209,32 +2185,24 @@ class $BedsTable extends Beds with TableInfo<$BedsTable, BedRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('room_id')) {
       context.handle(
@@ -2393,14 +2361,14 @@ class BedRow extends DataClass implements Insertable<BedRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BedRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      roomId: serializer.fromJson<String>(json['roomId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      roomId: serializer.fromJson<String>(json['room_id']),
       label: serializer.fromJson<String>(json['label']),
-      categoryId: serializer.fromJson<String>(json['categoryId']),
+      categoryId: serializer.fromJson<String>(json['category_id']),
       cleanliness: serializer.fromJson<String>(json['cleanliness']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
+      isActive: serializer.fromJson<bool>(json['is_active']),
     );
   }
   @override
@@ -2408,14 +2376,14 @@ class BedRow extends DataClass implements Insertable<BedRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'roomId': serializer.toJson<String>(roomId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'room_id': serializer.toJson<String>(roomId),
       'label': serializer.toJson<String>(label),
-      'categoryId': serializer.toJson<String>(categoryId),
+      'category_id': serializer.toJson<String>(categoryId),
       'cleanliness': serializer.toJson<String>(cleanliness),
-      'isActive': serializer.toJson<bool>(isActive),
+      'is_active': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -2525,21 +2493,17 @@ class BedsCompanion extends UpdateCompanion<BedRow> {
     this.rowid = const Value.absent(),
   });
   BedsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String roomId,
     required String label,
     required String categoryId,
     required String cleanliness,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       roomId = Value(roomId),
+  }) : roomId = Value(roomId),
        label = Value(label),
        categoryId = Value(categoryId),
        cleanliness = Value(cleanliness);
@@ -2662,7 +2626,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2673,7 +2638,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -2684,7 +2650,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -2695,7 +2662,8 @@ class $HousekeepersTable extends Housekeepers
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _fullNameMeta = const VerificationMeta(
     'fullName',
@@ -2756,32 +2724,24 @@ class $HousekeepersTable extends Housekeepers
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('full_name')) {
       context.handle(
@@ -2903,12 +2863,12 @@ class HousekeeperRow extends DataClass implements Insertable<HousekeeperRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HousekeeperRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      fullName: serializer.fromJson<String>(json['fullName']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      fullName: serializer.fromJson<String>(json['full_name']),
       phone: serializer.fromJson<String?>(json['phone']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
+      isActive: serializer.fromJson<bool>(json['is_active']),
     );
   }
   @override
@@ -2916,12 +2876,12 @@ class HousekeeperRow extends DataClass implements Insertable<HousekeeperRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'fullName': serializer.toJson<String>(fullName),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'full_name': serializer.toJson<String>(fullName),
       'phone': serializer.toJson<String?>(phone),
-      'isActive': serializer.toJson<bool>(isActive),
+      'is_active': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -3011,19 +2971,15 @@ class HousekeepersCompanion extends UpdateCompanion<HousekeeperRow> {
     this.rowid = const Value.absent(),
   });
   HousekeepersCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String fullName,
     this.phone = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       fullName = Value(fullName);
+  }) : fullName = Value(fullName);
   static Insertable<HousekeeperRow> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -3126,7 +3082,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3137,7 +3094,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -3148,7 +3106,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -3159,7 +3118,8 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _fullNameMeta = const VerificationMeta(
     'fullName',
@@ -3229,32 +3189,24 @@ class $GuestsTable extends Guests with TableInfo<$GuestsTable, GuestRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('full_name')) {
       context.handle(
@@ -3396,13 +3348,13 @@ class GuestRow extends DataClass implements Insertable<GuestRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return GuestRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      fullName: serializer.fromJson<String>(json['fullName']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      fullName: serializer.fromJson<String>(json['full_name']),
       phone: serializer.fromJson<String>(json['phone']),
-      idType: serializer.fromJson<String?>(json['idType']),
-      idNumber: serializer.fromJson<String?>(json['idNumber']),
+      idType: serializer.fromJson<String?>(json['id_type']),
+      idNumber: serializer.fromJson<String?>(json['id_number']),
     );
   }
   @override
@@ -3410,13 +3362,13 @@ class GuestRow extends DataClass implements Insertable<GuestRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'fullName': serializer.toJson<String>(fullName),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'full_name': serializer.toJson<String>(fullName),
       'phone': serializer.toJson<String>(phone),
-      'idType': serializer.toJson<String?>(idType),
-      'idNumber': serializer.toJson<String?>(idNumber),
+      'id_type': serializer.toJson<String?>(idType),
+      'id_number': serializer.toJson<String?>(idNumber),
     };
   }
 
@@ -3514,20 +3466,16 @@ class GuestsCompanion extends UpdateCompanion<GuestRow> {
     this.rowid = const Value.absent(),
   });
   GuestsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String fullName,
     required String phone,
     this.idType = const Value.absent(),
     this.idNumber = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       fullName = Value(fullName),
+  }) : fullName = Value(fullName),
        phone = Value(phone);
   static Insertable<GuestRow> custom({
     Expression<String>? id,
@@ -3639,7 +3587,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3650,7 +3599,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -3661,7 +3611,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -3672,7 +3623,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
@@ -3804,32 +3756,24 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('user_id')) {
       context.handle(
@@ -4069,16 +4013,16 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ShiftRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      userId: serializer.fromJson<String>(json['userId']),
-      openedAt: serializer.fromJson<DateTime>(json['openedAt']),
-      openingFloat: serializer.fromJson<int>(json['openingFloat']),
-      closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
-      expectedCash: serializer.fromJson<int?>(json['expectedCash']),
-      expectedPaybill: serializer.fromJson<int?>(json['expectedPaybill']),
-      countedCash: serializer.fromJson<int?>(json['countedCash']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      userId: serializer.fromJson<String>(json['user_id']),
+      openedAt: serializer.fromJson<DateTime>(json['opened_at']),
+      openingFloat: serializer.fromJson<int>(json['opening_float']),
+      closedAt: serializer.fromJson<DateTime?>(json['closed_at']),
+      expectedCash: serializer.fromJson<int?>(json['expected_cash']),
+      expectedPaybill: serializer.fromJson<int?>(json['expected_paybill']),
+      countedCash: serializer.fromJson<int?>(json['counted_cash']),
       variance: serializer.fromJson<int?>(json['variance']),
       status: serializer.fromJson<String>(json['status']),
     );
@@ -4088,16 +4032,16 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'userId': serializer.toJson<String>(userId),
-      'openedAt': serializer.toJson<DateTime>(openedAt),
-      'openingFloat': serializer.toJson<int>(openingFloat),
-      'closedAt': serializer.toJson<DateTime?>(closedAt),
-      'expectedCash': serializer.toJson<int?>(expectedCash),
-      'expectedPaybill': serializer.toJson<int?>(expectedPaybill),
-      'countedCash': serializer.toJson<int?>(countedCash),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'user_id': serializer.toJson<String>(userId),
+      'opened_at': serializer.toJson<DateTime>(openedAt),
+      'opening_float': serializer.toJson<int>(openingFloat),
+      'closed_at': serializer.toJson<DateTime?>(closedAt),
+      'expected_cash': serializer.toJson<int?>(expectedCash),
+      'expected_paybill': serializer.toJson<int?>(expectedPaybill),
+      'counted_cash': serializer.toJson<int?>(countedCash),
       'variance': serializer.toJson<int?>(variance),
       'status': serializer.toJson<String>(status),
     };
@@ -4247,10 +4191,10 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.rowid = const Value.absent(),
   });
   ShiftsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String userId,
     required DateTime openedAt,
     required int openingFloat,
@@ -4261,11 +4205,7 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.variance = const Value.absent(),
     required String status,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       userId = Value(userId),
+  }) : userId = Value(userId),
        openedAt = Value(openedAt),
        openingFloat = Value(openingFloat),
        status = Value(status);
@@ -4419,7 +4359,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -4430,7 +4371,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -4441,7 +4383,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -4452,7 +4395,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _guestIdMeta = const VerificationMeta(
     'guestId',
@@ -4580,32 +4524,24 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('guest_id')) {
       context.handle(
@@ -4820,17 +4756,17 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return StayRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      guestId: serializer.fromJson<String>(json['guestId']),
-      bedId: serializer.fromJson<String>(json['bedId']),
-      checkInAt: serializer.fromJson<DateTime>(json['checkInAt']),
-      paidUntil: serializer.fromJson<DateTime>(json['paidUntil']),
-      checkedOutAt: serializer.fromJson<DateTime?>(json['checkedOutAt']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      guestId: serializer.fromJson<String>(json['guest_id']),
+      bedId: serializer.fromJson<String>(json['bed_id']),
+      checkInAt: serializer.fromJson<DateTime>(json['check_in_at']),
+      paidUntil: serializer.fromJson<DateTime>(json['paid_until']),
+      checkedOutAt: serializer.fromJson<DateTime?>(json['checked_out_at']),
       status: serializer.fromJson<String>(json['status']),
-      checkedInBy: serializer.fromJson<String>(json['checkedInBy']),
-      checkedOutBy: serializer.fromJson<String?>(json['checkedOutBy']),
+      checkedInBy: serializer.fromJson<String>(json['checked_in_by']),
+      checkedOutBy: serializer.fromJson<String?>(json['checked_out_by']),
     );
   }
   @override
@@ -4838,17 +4774,17 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'guestId': serializer.toJson<String>(guestId),
-      'bedId': serializer.toJson<String>(bedId),
-      'checkInAt': serializer.toJson<DateTime>(checkInAt),
-      'paidUntil': serializer.toJson<DateTime>(paidUntil),
-      'checkedOutAt': serializer.toJson<DateTime?>(checkedOutAt),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'guest_id': serializer.toJson<String>(guestId),
+      'bed_id': serializer.toJson<String>(bedId),
+      'check_in_at': serializer.toJson<DateTime>(checkInAt),
+      'paid_until': serializer.toJson<DateTime>(paidUntil),
+      'checked_out_at': serializer.toJson<DateTime?>(checkedOutAt),
       'status': serializer.toJson<String>(status),
-      'checkedInBy': serializer.toJson<String>(checkedInBy),
-      'checkedOutBy': serializer.toJson<String?>(checkedOutBy),
+      'checked_in_by': serializer.toJson<String>(checkedInBy),
+      'checked_out_by': serializer.toJson<String?>(checkedOutBy),
     };
   }
 
@@ -4984,10 +4920,10 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     this.rowid = const Value.absent(),
   });
   StaysCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String guestId,
     required String bedId,
     required DateTime checkInAt,
@@ -4997,11 +4933,7 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     required String checkedInBy,
     this.checkedOutBy = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       guestId = Value(guestId),
+  }) : guestId = Value(guestId),
        bedId = Value(bedId),
        checkInAt = Value(checkInAt),
        paidUntil = Value(paidUntil),
@@ -5150,7 +5082,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -5161,7 +5094,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -5172,7 +5106,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -5183,7 +5118,8 @@ class $PaymentsTable extends Payments
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _receiptNumberMeta = const VerificationMeta(
     'receiptNumber',
@@ -5309,32 +5245,24 @@ class $PaymentsTable extends Payments
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('receipt_number')) {
       context.handle(
@@ -5539,17 +5467,17 @@ class PaymentRow extends DataClass implements Insertable<PaymentRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PaymentRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      receiptNumber: serializer.fromJson<String>(json['receiptNumber']),
-      shiftId: serializer.fromJson<String>(json['shiftId']),
-      receivedBy: serializer.fromJson<String>(json['receivedBy']),
-      receivedAt: serializer.fromJson<DateTime>(json['receivedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      receiptNumber: serializer.fromJson<String>(json['receipt_number']),
+      shiftId: serializer.fromJson<String>(json['shift_id']),
+      receivedBy: serializer.fromJson<String>(json['received_by']),
+      receivedAt: serializer.fromJson<DateTime>(json['received_at']),
       amount: serializer.fromJson<int>(json['amount']),
       method: serializer.fromJson<String>(json['method']),
-      mpesaCode: serializer.fromJson<String?>(json['mpesaCode']),
-      printCount: serializer.fromJson<int>(json['printCount']),
+      mpesaCode: serializer.fromJson<String?>(json['mpesa_code']),
+      printCount: serializer.fromJson<int>(json['print_count']),
     );
   }
   @override
@@ -5557,17 +5485,17 @@ class PaymentRow extends DataClass implements Insertable<PaymentRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'receiptNumber': serializer.toJson<String>(receiptNumber),
-      'shiftId': serializer.toJson<String>(shiftId),
-      'receivedBy': serializer.toJson<String>(receivedBy),
-      'receivedAt': serializer.toJson<DateTime>(receivedAt),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'receipt_number': serializer.toJson<String>(receiptNumber),
+      'shift_id': serializer.toJson<String>(shiftId),
+      'received_by': serializer.toJson<String>(receivedBy),
+      'received_at': serializer.toJson<DateTime>(receivedAt),
       'amount': serializer.toJson<int>(amount),
       'method': serializer.toJson<String>(method),
-      'mpesaCode': serializer.toJson<String?>(mpesaCode),
-      'printCount': serializer.toJson<int>(printCount),
+      'mpesa_code': serializer.toJson<String?>(mpesaCode),
+      'print_count': serializer.toJson<int>(printCount),
     };
   }
 
@@ -5705,10 +5633,10 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRow> {
     this.rowid = const Value.absent(),
   });
   PaymentsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String receiptNumber,
     required String shiftId,
     required String receivedBy,
@@ -5718,11 +5646,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRow> {
     this.mpesaCode = const Value.absent(),
     this.printCount = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       receiptNumber = Value(receiptNumber),
+  }) : receiptNumber = Value(receiptNumber),
        shiftId = Value(shiftId),
        receivedBy = Value(receivedBy),
        receivedAt = Value(receivedAt),
@@ -5871,7 +5795,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -5882,7 +5807,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -5893,7 +5819,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -5904,7 +5831,8 @@ class $StayChargesTable extends StayCharges
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _stayIdMeta = const VerificationMeta('stayId');
   @override
@@ -6024,32 +5952,24 @@ class $StayChargesTable extends StayCharges
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('stay_id')) {
       context.handle(
@@ -6257,17 +6177,17 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return StayChargeRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      stayId: serializer.fromJson<String>(json['stayId']),
-      paymentId: serializer.fromJson<String>(json['paymentId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      stayId: serializer.fromJson<String>(json['stay_id']),
+      paymentId: serializer.fromJson<String>(json['payment_id']),
       kind: serializer.fromJson<String>(json['kind']),
       blocks: serializer.fromJson<int>(json['blocks']),
-      pricePerBlock: serializer.fromJson<int>(json['pricePerBlock']),
+      pricePerBlock: serializer.fromJson<int>(json['price_per_block']),
       amount: serializer.fromJson<int>(json['amount']),
-      periodStart: serializer.fromJson<DateTime>(json['periodStart']),
-      periodEnd: serializer.fromJson<DateTime>(json['periodEnd']),
+      periodStart: serializer.fromJson<DateTime>(json['period_start']),
+      periodEnd: serializer.fromJson<DateTime>(json['period_end']),
     );
   }
   @override
@@ -6275,17 +6195,17 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'stayId': serializer.toJson<String>(stayId),
-      'paymentId': serializer.toJson<String>(paymentId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'stay_id': serializer.toJson<String>(stayId),
+      'payment_id': serializer.toJson<String>(paymentId),
       'kind': serializer.toJson<String>(kind),
       'blocks': serializer.toJson<int>(blocks),
-      'pricePerBlock': serializer.toJson<int>(pricePerBlock),
+      'price_per_block': serializer.toJson<int>(pricePerBlock),
       'amount': serializer.toJson<int>(amount),
-      'periodStart': serializer.toJson<DateTime>(periodStart),
-      'periodEnd': serializer.toJson<DateTime>(periodEnd),
+      'period_start': serializer.toJson<DateTime>(periodStart),
+      'period_end': serializer.toJson<DateTime>(periodEnd),
     };
   }
 
@@ -6419,10 +6339,10 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     this.rowid = const Value.absent(),
   });
   StayChargesCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String stayId,
     required String paymentId,
     required String kind,
@@ -6432,11 +6352,7 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     required DateTime periodStart,
     required DateTime periodEnd,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       stayId = Value(stayId),
+  }) : stayId = Value(stayId),
        paymentId = Value(paymentId),
        kind = Value(kind),
        blocks = Value(blocks),
@@ -6587,7 +6503,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -6598,7 +6515,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -6609,7 +6527,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -6620,7 +6539,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _bedIdMeta = const VerificationMeta('bedId');
   @override
@@ -6725,32 +6645,24 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('bed_id')) {
       context.handle(
@@ -6934,15 +6846,15 @@ class HousekeepingTaskRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HousekeepingTaskRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      bedId: serializer.fromJson<String>(json['bedId']),
-      housekeeperId: serializer.fromJson<String>(json['housekeeperId']),
-      assignedBy: serializer.fromJson<String>(json['assignedBy']),
-      assignedAt: serializer.fromJson<DateTime>(json['assignedAt']),
-      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
-      completedBy: serializer.fromJson<String?>(json['completedBy']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      bedId: serializer.fromJson<String>(json['bed_id']),
+      housekeeperId: serializer.fromJson<String>(json['housekeeper_id']),
+      assignedBy: serializer.fromJson<String>(json['assigned_by']),
+      assignedAt: serializer.fromJson<DateTime>(json['assigned_at']),
+      completedAt: serializer.fromJson<DateTime?>(json['completed_at']),
+      completedBy: serializer.fromJson<String?>(json['completed_by']),
     );
   }
   @override
@@ -6950,15 +6862,15 @@ class HousekeepingTaskRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'bedId': serializer.toJson<String>(bedId),
-      'housekeeperId': serializer.toJson<String>(housekeeperId),
-      'assignedBy': serializer.toJson<String>(assignedBy),
-      'assignedAt': serializer.toJson<DateTime>(assignedAt),
-      'completedAt': serializer.toJson<DateTime?>(completedAt),
-      'completedBy': serializer.toJson<String?>(completedBy),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'bed_id': serializer.toJson<String>(bedId),
+      'housekeeper_id': serializer.toJson<String>(housekeeperId),
+      'assigned_by': serializer.toJson<String>(assignedBy),
+      'assigned_at': serializer.toJson<DateTime>(assignedAt),
+      'completed_at': serializer.toJson<DateTime?>(completedAt),
+      'completed_by': serializer.toJson<String?>(completedBy),
     };
   }
 
@@ -7082,10 +6994,10 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     this.rowid = const Value.absent(),
   });
   HousekeepingTasksCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String bedId,
     required String housekeeperId,
     required String assignedBy,
@@ -7093,11 +7005,7 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     this.completedAt = const Value.absent(),
     this.completedBy = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       bedId = Value(bedId),
+  }) : bedId = Value(bedId),
        housekeeperId = Value(housekeeperId),
        assignedBy = Value(assignedBy),
        assignedAt = Value(assignedAt);
@@ -7228,7 +7136,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7239,7 +7148,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -7250,7 +7160,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -7261,7 +7172,8 @@ class $InventoryItemsTable extends InventoryItems
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -7334,32 +7246,24 @@ class $InventoryItemsTable extends InventoryItems
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -7499,13 +7403,13 @@ class InventoryItemRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return InventoryItemRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
       name: serializer.fromJson<String>(json['name']),
       unit: serializer.fromJson<String>(json['unit']),
-      lowStockLevel: serializer.fromJson<int>(json['lowStockLevel']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
+      lowStockLevel: serializer.fromJson<int>(json['low_stock_level']),
+      isActive: serializer.fromJson<bool>(json['is_active']),
     );
   }
   @override
@@ -7513,13 +7417,13 @@ class InventoryItemRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
       'name': serializer.toJson<String>(name),
       'unit': serializer.toJson<String>(unit),
-      'lowStockLevel': serializer.toJson<int>(lowStockLevel),
-      'isActive': serializer.toJson<bool>(isActive),
+      'low_stock_level': serializer.toJson<int>(lowStockLevel),
+      'is_active': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -7619,20 +7523,16 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItemRow> {
     this.rowid = const Value.absent(),
   });
   InventoryItemsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String name,
     required String unit,
     required int lowStockLevel,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       name = Value(name),
+  }) : name = Value(name),
        unit = Value(unit),
        lowStockLevel = Value(lowStockLevel);
   static Insertable<InventoryItemRow> custom({
@@ -7746,7 +7646,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7757,7 +7658,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -7768,7 +7670,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -7779,7 +7682,8 @@ class $InventoryMovementsTable extends InventoryMovements
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
   @override
@@ -7866,32 +7770,24 @@ class $InventoryMovementsTable extends InventoryMovements
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('item_id')) {
       context.handle(
@@ -8046,14 +7942,14 @@ class InventoryMovementRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return InventoryMovementRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      itemId: serializer.fromJson<String>(json['itemId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      itemId: serializer.fromJson<String>(json['item_id']),
       direction: serializer.fromJson<String>(json['direction']),
       quantity: serializer.fromJson<int>(json['quantity']),
       reason: serializer.fromJson<String>(json['reason']),
-      recordedBy: serializer.fromJson<String>(json['recordedBy']),
+      recordedBy: serializer.fromJson<String>(json['recorded_by']),
     );
   }
   @override
@@ -8061,14 +7957,14 @@ class InventoryMovementRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'itemId': serializer.toJson<String>(itemId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'item_id': serializer.toJson<String>(itemId),
       'direction': serializer.toJson<String>(direction),
       'quantity': serializer.toJson<int>(quantity),
       'reason': serializer.toJson<String>(reason),
-      'recordedBy': serializer.toJson<String>(recordedBy),
+      'recorded_by': serializer.toJson<String>(recordedBy),
     };
   }
 
@@ -8177,21 +8073,17 @@ class InventoryMovementsCompanion
     this.rowid = const Value.absent(),
   });
   InventoryMovementsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String itemId,
     required String direction,
     required int quantity,
     required String reason,
     required String recordedBy,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       itemId = Value(itemId),
+  }) : itemId = Value(itemId),
        direction = Value(direction),
        quantity = Value(quantity),
        reason = Value(reason),
@@ -8314,7 +8206,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -8325,7 +8218,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -8336,7 +8230,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -8347,7 +8242,8 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _targetTypeMeta = const VerificationMeta(
     'targetType',
@@ -8435,32 +8331,24 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('target_type')) {
       context.handle(
@@ -8618,14 +8506,14 @@ class VoidRow extends DataClass implements Insertable<VoidRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return VoidRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      targetType: serializer.fromJson<String>(json['targetType']),
-      targetId: serializer.fromJson<String>(json['targetId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      targetType: serializer.fromJson<String>(json['target_type']),
+      targetId: serializer.fromJson<String>(json['target_id']),
       reason: serializer.fromJson<String>(json['reason']),
-      voidedBy: serializer.fromJson<String>(json['voidedBy']),
-      voidedAt: serializer.fromJson<DateTime>(json['voidedAt']),
+      voidedBy: serializer.fromJson<String>(json['voided_by']),
+      voidedAt: serializer.fromJson<DateTime>(json['voided_at']),
     );
   }
   @override
@@ -8633,14 +8521,14 @@ class VoidRow extends DataClass implements Insertable<VoidRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
-      'targetType': serializer.toJson<String>(targetType),
-      'targetId': serializer.toJson<String>(targetId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'target_type': serializer.toJson<String>(targetType),
+      'target_id': serializer.toJson<String>(targetId),
       'reason': serializer.toJson<String>(reason),
-      'voidedBy': serializer.toJson<String>(voidedBy),
-      'voidedAt': serializer.toJson<DateTime>(voidedAt),
+      'voided_by': serializer.toJson<String>(voidedBy),
+      'voided_at': serializer.toJson<DateTime>(voidedAt),
     };
   }
 
@@ -8748,21 +8636,17 @@ class VoidsCompanion extends UpdateCompanion<VoidRow> {
     this.rowid = const Value.absent(),
   });
   VoidsCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String targetType,
     required String targetId,
     required String reason,
     required String voidedBy,
     required DateTime voidedAt,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       targetType = Value(targetType),
+  }) : targetType = Value(targetType),
        targetId = Value(targetId),
        reason = Value(reason),
        voidedBy = Value(voidedBy),
@@ -8886,7 +8770,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -8897,7 +8782,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -8908,7 +8794,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -8919,7 +8806,8 @@ class $ExpensesTable extends Expenses
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _categoryMeta = const VerificationMeta(
     'category',
@@ -9010,32 +8898,24 @@ class $ExpensesTable extends Expenses
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('category')) {
       context.handle(
@@ -9189,14 +9069,14 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ExpenseRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
       category: serializer.fromJson<String>(json['category']),
       amount: serializer.fromJson<int>(json['amount']),
-      spentOn: serializer.fromJson<String>(json['spentOn']),
+      spentOn: serializer.fromJson<String>(json['spent_on']),
       note: serializer.fromJson<String?>(json['note']),
-      recordedBy: serializer.fromJson<String>(json['recordedBy']),
+      recordedBy: serializer.fromJson<String>(json['recorded_by']),
     );
   }
   @override
@@ -9204,14 +9084,14 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
       'category': serializer.toJson<String>(category),
       'amount': serializer.toJson<int>(amount),
-      'spentOn': serializer.toJson<String>(spentOn),
+      'spent_on': serializer.toJson<String>(spentOn),
       'note': serializer.toJson<String?>(note),
-      'recordedBy': serializer.toJson<String>(recordedBy),
+      'recorded_by': serializer.toJson<String>(recordedBy),
     };
   }
 
@@ -9319,21 +9199,17 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required String category,
     required int amount,
     required String spentOn,
     this.note = const Value.absent(),
     required String recordedBy,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       category = Value(category),
+  }) : category = Value(category),
        amount = Value(amount),
        spentOn = Value(spentOn),
        recordedBy = Value(recordedBy);
@@ -9456,7 +9332,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -9467,7 +9344,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -9478,7 +9356,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _deviceIdMeta = const VerificationMeta(
     'deviceId',
@@ -9489,7 +9368,8 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
   );
   static const VerificationMeta _atMeta = const VerificationMeta('at');
   @override
@@ -9498,6 +9378,17 @@ class $AuditLogTable extends AuditLog
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operationIdMeta = const VerificationMeta(
+    'operationId',
+  );
+  @override
+  late final GeneratedColumn<String> operationId = GeneratedColumn<String>(
+    'operation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
@@ -9570,6 +9461,7 @@ class $AuditLogTable extends AuditLog
     updatedAt,
     deviceId,
     at,
+    operationId,
     userId,
     action,
     entity,
@@ -9591,37 +9483,40 @@ class $AuditLogTable extends AuditLog
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('device_id')) {
       context.handle(
         _deviceIdMeta,
         deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_deviceIdMeta);
     }
     if (data.containsKey('at')) {
       context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
     } else if (isInserting) {
       context.missing(_atMeta);
+    }
+    if (data.containsKey('operation_id')) {
+      context.handle(
+        _operationIdMeta,
+        operationId.isAcceptableOrUnknown(
+          data['operation_id']!,
+          _operationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationIdMeta);
     }
     if (data.containsKey('user_id')) {
       context.handle(
@@ -9696,6 +9591,10 @@ class $AuditLogTable extends AuditLog
         DriftSqlType.dateTime,
         data['${effectivePrefix}at'],
       )!,
+      operationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_id'],
+      )!,
       userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}user_id'],
@@ -9737,6 +9636,9 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
   final String deviceId;
   final DateTime at;
 
+  /// Same UUID on every row written by one writeWithAudit call.
+  final String operationId;
+
   /// Null for failed logins.
   final String? userId;
   final String action;
@@ -9752,6 +9654,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     required this.updatedAt,
     required this.deviceId,
     required this.at,
+    required this.operationId,
     this.userId,
     required this.action,
     required this.entity,
@@ -9767,6 +9670,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['device_id'] = Variable<String>(deviceId);
     map['at'] = Variable<DateTime>(at);
+    map['operation_id'] = Variable<String>(operationId);
     if (!nullToAbsent || userId != null) {
       map['user_id'] = Variable<String>(userId);
     }
@@ -9787,6 +9691,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
       updatedAt: Value(updatedAt),
       deviceId: Value(deviceId),
       at: Value(at),
+      operationId: Value(operationId),
       userId: userId == null && nullToAbsent
           ? const Value.absent()
           : Value(userId),
@@ -9807,16 +9712,17 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AuditLogRow(
       id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deviceId: serializer.fromJson<String>(json['deviceId']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
       at: serializer.fromJson<DateTime>(json['at']),
-      userId: serializer.fromJson<String?>(json['userId']),
+      operationId: serializer.fromJson<String>(json['operation_id']),
+      userId: serializer.fromJson<String?>(json['user_id']),
       action: serializer.fromJson<String>(json['action']),
       entity: serializer.fromJson<String>(json['entity']),
-      entityId: serializer.fromJson<String>(json['entityId']),
-      beforeJson: serializer.fromJson<String?>(json['beforeJson']),
-      afterJson: serializer.fromJson<String>(json['afterJson']),
+      entityId: serializer.fromJson<String>(json['entity_id']),
+      beforeJson: serializer.fromJson<String?>(json['before_json']),
+      afterJson: serializer.fromJson<String>(json['after_json']),
     );
   }
   @override
@@ -9824,16 +9730,17 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deviceId': serializer.toJson<String>(deviceId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
       'at': serializer.toJson<DateTime>(at),
-      'userId': serializer.toJson<String?>(userId),
+      'operation_id': serializer.toJson<String>(operationId),
+      'user_id': serializer.toJson<String?>(userId),
       'action': serializer.toJson<String>(action),
       'entity': serializer.toJson<String>(entity),
-      'entityId': serializer.toJson<String>(entityId),
-      'beforeJson': serializer.toJson<String?>(beforeJson),
-      'afterJson': serializer.toJson<String>(afterJson),
+      'entity_id': serializer.toJson<String>(entityId),
+      'before_json': serializer.toJson<String?>(beforeJson),
+      'after_json': serializer.toJson<String>(afterJson),
     };
   }
 
@@ -9843,6 +9750,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     DateTime? updatedAt,
     String? deviceId,
     DateTime? at,
+    String? operationId,
     Value<String?> userId = const Value.absent(),
     String? action,
     String? entity,
@@ -9855,6 +9763,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     updatedAt: updatedAt ?? this.updatedAt,
     deviceId: deviceId ?? this.deviceId,
     at: at ?? this.at,
+    operationId: operationId ?? this.operationId,
     userId: userId.present ? userId.value : this.userId,
     action: action ?? this.action,
     entity: entity ?? this.entity,
@@ -9869,6 +9778,9 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
       at: data.at.present ? data.at.value : this.at,
+      operationId: data.operationId.present
+          ? data.operationId.value
+          : this.operationId,
       userId: data.userId.present ? data.userId.value : this.userId,
       action: data.action.present ? data.action.value : this.action,
       entity: data.entity.present ? data.entity.value : this.entity,
@@ -9888,6 +9800,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deviceId: $deviceId, ')
           ..write('at: $at, ')
+          ..write('operationId: $operationId, ')
           ..write('userId: $userId, ')
           ..write('action: $action, ')
           ..write('entity: $entity, ')
@@ -9905,6 +9818,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
     updatedAt,
     deviceId,
     at,
+    operationId,
     userId,
     action,
     entity,
@@ -9921,6 +9835,7 @@ class AuditLogRow extends DataClass implements Insertable<AuditLogRow> {
           other.updatedAt == this.updatedAt &&
           other.deviceId == this.deviceId &&
           other.at == this.at &&
+          other.operationId == this.operationId &&
           other.userId == this.userId &&
           other.action == this.action &&
           other.entity == this.entity &&
@@ -9935,6 +9850,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
   final Value<DateTime> updatedAt;
   final Value<String> deviceId;
   final Value<DateTime> at;
+  final Value<String> operationId;
   final Value<String?> userId;
   final Value<String> action;
   final Value<String> entity;
@@ -9948,6 +9864,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     this.updatedAt = const Value.absent(),
     this.deviceId = const Value.absent(),
     this.at = const Value.absent(),
+    this.operationId = const Value.absent(),
     this.userId = const Value.absent(),
     this.action = const Value.absent(),
     this.entity = const Value.absent(),
@@ -9957,11 +9874,12 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     this.rowid = const Value.absent(),
   });
   AuditLogCompanion.insert({
-    required String id,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required String deviceId,
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
     required DateTime at,
+    required String operationId,
     this.userId = const Value.absent(),
     required String action,
     required String entity,
@@ -9969,11 +9887,8 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     this.beforeJson = const Value.absent(),
     required String afterJson,
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       deviceId = Value(deviceId),
-       at = Value(at),
+  }) : at = Value(at),
+       operationId = Value(operationId),
        action = Value(action),
        entity = Value(entity),
        entityId = Value(entityId),
@@ -9984,6 +9899,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     Expression<DateTime>? updatedAt,
     Expression<String>? deviceId,
     Expression<DateTime>? at,
+    Expression<String>? operationId,
     Expression<String>? userId,
     Expression<String>? action,
     Expression<String>? entity,
@@ -9998,6 +9914,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deviceId != null) 'device_id': deviceId,
       if (at != null) 'at': at,
+      if (operationId != null) 'operation_id': operationId,
       if (userId != null) 'user_id': userId,
       if (action != null) 'action': action,
       if (entity != null) 'entity': entity,
@@ -10014,6 +9931,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     Value<DateTime>? updatedAt,
     Value<String>? deviceId,
     Value<DateTime>? at,
+    Value<String>? operationId,
     Value<String?>? userId,
     Value<String>? action,
     Value<String>? entity,
@@ -10028,6 +9946,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
       updatedAt: updatedAt ?? this.updatedAt,
       deviceId: deviceId ?? this.deviceId,
       at: at ?? this.at,
+      operationId: operationId ?? this.operationId,
       userId: userId ?? this.userId,
       action: action ?? this.action,
       entity: entity ?? this.entity,
@@ -10055,6 +9974,9 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
     }
     if (at.present) {
       map['at'] = Variable<DateTime>(at.value);
+    }
+    if (operationId.present) {
+      map['operation_id'] = Variable<String>(operationId.value);
     }
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
@@ -10088,6 +10010,7 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deviceId: $deviceId, ')
           ..write('at: $at, ')
+          ..write('operationId: $operationId, ')
           ..write('userId: $userId, ')
           ..write('action: $action, ')
           ..write('entity: $entity, ')
@@ -10392,13 +10315,13 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return OutboxRow(
       seq: serializer.fromJson<int>(json['seq']),
-      targetTable: serializer.fromJson<String>(json['targetTable']),
-      targetRowId: serializer.fromJson<String>(json['targetRowId']),
-      payloadJson: serializer.fromJson<String>(json['payloadJson']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      targetTable: serializer.fromJson<String>(json['table_name']),
+      targetRowId: serializer.fromJson<String>(json['row_id']),
+      payloadJson: serializer.fromJson<String>(json['payload_json']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
       attempts: serializer.fromJson<int>(json['attempts']),
-      lastError: serializer.fromJson<String?>(json['lastError']),
-      sentAt: serializer.fromJson<DateTime?>(json['sentAt']),
+      lastError: serializer.fromJson<String?>(json['last_error']),
+      sentAt: serializer.fromJson<DateTime?>(json['sent_at']),
     );
   }
   @override
@@ -10406,13 +10329,13 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'seq': serializer.toJson<int>(seq),
-      'targetTable': serializer.toJson<String>(targetTable),
-      'targetRowId': serializer.toJson<String>(targetRowId),
-      'payloadJson': serializer.toJson<String>(payloadJson),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'table_name': serializer.toJson<String>(targetTable),
+      'row_id': serializer.toJson<String>(targetRowId),
+      'payload_json': serializer.toJson<String>(payloadJson),
+      'created_at': serializer.toJson<DateTime>(createdAt),
       'attempts': serializer.toJson<int>(attempts),
-      'lastError': serializer.toJson<String?>(lastError),
-      'sentAt': serializer.toJson<DateTime?>(sentAt),
+      'last_error': serializer.toJson<String?>(lastError),
+      'sent_at': serializer.toJson<DateTime?>(sentAt),
     };
   }
 
@@ -10724,16 +10647,16 @@ class DeviceRow extends DataClass implements Insertable<DeviceRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DeviceRow(
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'deviceId': serializer.toJson<String>(deviceId),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
     };
   }
 
@@ -10946,16 +10869,16 @@ class ReceiptCounterRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ReceiptCounterRow(
-      deviceId: serializer.fromJson<String>(json['deviceId']),
-      nextNumber: serializer.fromJson<int>(json['nextNumber']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      nextNumber: serializer.fromJson<int>(json['next_number']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'deviceId': serializer.toJson<String>(deviceId),
-      'nextNumber': serializer.toJson<int>(nextNumber),
+      'device_id': serializer.toJson<String>(deviceId),
+      'next_number': serializer.toJson<int>(nextNumber),
     };
   }
 
@@ -11061,27 +10984,139 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $UsersTable users = $UsersTable(this);
+  late final Trigger usersStampedUpdate = Trigger(
+    'CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'users_stamped_update',
+  );
   late final $SettingsTable settings = $SettingsTable(this);
+  late final Trigger settingsStampedUpdate = Trigger(
+    'CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'settings_stamped_update',
+  );
   late final $BedCategoriesTable bedCategories = $BedCategoriesTable(this);
+  late final Trigger bedCategoriesStampedUpdate = Trigger(
+    'CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'bed_categories_stamped_update',
+  );
   late final $RoomsTable rooms = $RoomsTable(this);
+  late final Trigger roomsStampedUpdate = Trigger(
+    'CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'rooms_stamped_update',
+  );
   late final $BedsTable beds = $BedsTable(this);
+  late final Trigger bedsStampedUpdate = Trigger(
+    'CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'beds_stamped_update',
+  );
   late final $HousekeepersTable housekeepers = $HousekeepersTable(this);
+  late final Trigger housekeepersStampedUpdate = Trigger(
+    'CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'housekeepers_stamped_update',
+  );
   late final $GuestsTable guests = $GuestsTable(this);
+  late final Trigger guestsStampedUpdate = Trigger(
+    'CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'guests_stamped_update',
+  );
   late final $ShiftsTable shifts = $ShiftsTable(this);
+  late final Trigger shiftsStampedUpdate = Trigger(
+    'CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'shifts_stamped_update',
+  );
   late final $StaysTable stays = $StaysTable(this);
+  late final Trigger staysStampedUpdate = Trigger(
+    'CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'stays_stamped_update',
+  );
   late final $PaymentsTable payments = $PaymentsTable(this);
+  late final Trigger paymentsStampedUpdate = Trigger(
+    'CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'payments_stamped_update',
+  );
   late final $StayChargesTable stayCharges = $StayChargesTable(this);
+  late final Trigger stayChargesStampedUpdate = Trigger(
+    'CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'stay_charges_stamped_update',
+  );
   late final $HousekeepingTasksTable housekeepingTasks =
       $HousekeepingTasksTable(this);
+  late final Trigger housekeepingTasksStampedUpdate = Trigger(
+    'CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'housekeeping_tasks_stamped_update',
+  );
   late final $InventoryItemsTable inventoryItems = $InventoryItemsTable(this);
   late final $InventoryMovementsTable inventoryMovements =
       $InventoryMovementsTable(this);
+  late final Trigger inventoryMovementsStampedUpdate = Trigger(
+    'CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'inventory_movements_stamped_update',
+  );
   late final $VoidsTable voids = $VoidsTable(this);
+  late final Trigger voidsStampedUpdate = Trigger(
+    'CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'voids_stamped_update',
+  );
   late final $ExpensesTable expenses = $ExpensesTable(this);
+  late final Trigger expensesStampedUpdate = Trigger(
+    'CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'expenses_stamped_update',
+  );
+  late final Trigger inventoryItemsStampedUpdate = Trigger(
+    'CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'inventory_items_stamped_update',
+  );
   late final $AuditLogTable auditLog = $AuditLogTable(this);
+  late final Trigger auditLogNoUpdate = Trigger(
+    'CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
+    'audit_log_no_update',
+  );
+  late final Trigger staysNoDelete = Trigger(
+    'CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays BEGIN SELECT RAISE (ABORT, \'stays rows are never deleted\');END',
+    'stays_no_delete',
+  );
+  late final Trigger paymentsNoDelete = Trigger(
+    'CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments BEGIN SELECT RAISE (ABORT, \'payments rows are never deleted\');END',
+    'payments_no_delete',
+  );
+  late final Trigger stayChargesNoDelete = Trigger(
+    'CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges BEGIN SELECT RAISE (ABORT, \'stay_charges rows are never deleted\');END',
+    'stay_charges_no_delete',
+  );
+  late final Trigger voidsNoDelete = Trigger(
+    'CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids BEGIN SELECT RAISE (ABORT, \'voids rows are never deleted\');END',
+    'voids_no_delete',
+  );
+  late final Trigger auditLogNoDelete = Trigger(
+    'CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
+    'audit_log_no_delete',
+  );
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $DeviceTable device = $DeviceTable(this);
   late final $ReceiptCounterTable receiptCounter = $ReceiptCounterTable(this);
+  late final Index auditLogAt = Index(
+    'audit_log_at',
+    'CREATE INDEX audit_log_at ON audit_log (at)',
+  );
+  late final Index auditLogUser = Index(
+    'audit_log_user',
+    'CREATE INDEX audit_log_user ON audit_log (user_id)',
+  );
+  late final Index auditLogAction = Index(
+    'audit_log_action',
+    'CREATE INDEX audit_log_action ON audit_log ("action")',
+  );
+  late final Index auditLogEntity = Index(
+    'audit_log_entity',
+    'CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)',
+  );
+  late final Index auditLogOperation = Index(
+    'audit_log_operation',
+    'CREATE INDEX audit_log_operation ON audit_log (operation_id)',
+  );
+  late final Index outboxUnsent = Index(
+    'outbox_unsent',
+    'CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL',
+  );
   late final Index guestsPhone = Index(
     'guests_phone',
     'CREATE INDEX guests_phone ON guests (phone)',
@@ -11130,51 +11165,59 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'inventory_movements_item',
     'CREATE INDEX inventory_movements_item ON inventory_movements (item_id)',
   );
-  late final Index auditLogAt = Index(
-    'audit_log_at',
-    'CREATE INDEX audit_log_at ON audit_log (at)',
-  );
-  late final Index auditLogUser = Index(
-    'audit_log_user',
-    'CREATE INDEX audit_log_user ON audit_log (user_id)',
-  );
-  late final Index auditLogAction = Index(
-    'audit_log_action',
-    'CREATE INDEX audit_log_action ON audit_log ("action")',
-  );
-  late final Index auditLogEntity = Index(
-    'audit_log_entity',
-    'CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)',
-  );
-  late final Index outboxUnsent = Index(
-    'outbox_unsent',
-    'CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL',
-  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     users,
+    usersStampedUpdate,
     settings,
+    settingsStampedUpdate,
     bedCategories,
+    bedCategoriesStampedUpdate,
     rooms,
+    roomsStampedUpdate,
     beds,
+    bedsStampedUpdate,
     housekeepers,
+    housekeepersStampedUpdate,
     guests,
+    guestsStampedUpdate,
     shifts,
+    shiftsStampedUpdate,
     stays,
+    staysStampedUpdate,
     payments,
+    paymentsStampedUpdate,
     stayCharges,
+    stayChargesStampedUpdate,
     housekeepingTasks,
+    housekeepingTasksStampedUpdate,
     inventoryItems,
     inventoryMovements,
+    inventoryMovementsStampedUpdate,
     voids,
+    voidsStampedUpdate,
     expenses,
+    expensesStampedUpdate,
+    inventoryItemsStampedUpdate,
     auditLog,
+    auditLogNoUpdate,
+    staysNoDelete,
+    paymentsNoDelete,
+    stayChargesNoDelete,
+    voidsNoDelete,
+    auditLogNoDelete,
     outbox,
     device,
     receiptCounter,
+    auditLogAt,
+    auditLogUser,
+    auditLogAction,
+    auditLogEntity,
+    auditLogOperation,
+    outboxUnsent,
     guestsPhone,
     guestsIdNumber,
     guestsIdUnique,
@@ -11187,22 +11230,174 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     housekeepingTasksBed,
     housekeepingTasksOneOpenPerBed,
     inventoryMovementsItem,
-    auditLogAt,
-    auditLogUser,
-    auditLogAction,
-    auditLogEntity,
-    outboxUnsent,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'settings',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'bed_categories',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'rooms',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'beds',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'housekeepers',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'guests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shifts',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stays',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stay_charges',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'housekeeping_tasks',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'inventory_movements',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'voids',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'expenses',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'inventory_items',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'audit_log',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stays',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stay_charges',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'voids',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'audit_log',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+  ]);
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 }
 
 typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String fullName,
   required String username,
   required String passwordHash,
@@ -12226,10 +12421,10 @@ class $$UsersTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String fullName,
                 required String username,
                 required String passwordHash,
@@ -12551,9 +12746,9 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   required String key,
   required String value,
   Value<String?> updatedBy,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   Value<int> rowid,
 });
 typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
@@ -12801,9 +12996,9 @@ class $$SettingsTableTableManager
                 required String key,
                 required String value,
                 Value<String?> updatedBy = const Value.absent(),
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SettingsCompanion.insert(
                 key: key,
@@ -12881,10 +13076,10 @@ typedef $$SettingsTableProcessedTableManager =
     >;
 typedef $$BedCategoriesTableCreateCompanionBuilder =
     BedCategoriesCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String name,
       required int pricePerBlock,
       required int sortOrder,
@@ -13168,10 +13363,10 @@ class $$BedCategoriesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String name,
                 required int pricePerBlock,
                 required int sortOrder,
@@ -13245,10 +13440,10 @@ typedef $$BedCategoriesTableProcessedTableManager =
       PrefetchHooks Function({bool bedsRefs})
     >;
 typedef $$RoomsTableCreateCompanionBuilder = RoomsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String roomNumber,
   Value<String?> floor,
   Value<String?> notes,
@@ -13526,10 +13721,10 @@ class $$RoomsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String roomNumber,
                 Value<String?> floor = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -13596,10 +13791,10 @@ typedef $$RoomsTableProcessedTableManager =
       PrefetchHooks Function({bool bedsRefs})
     >;
 typedef $$BedsTableCreateCompanionBuilder = BedsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String roomId,
   required String label,
   required String categoryId,
@@ -14116,10 +14311,10 @@ class $$BedsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String roomId,
                 required String label,
                 required String categoryId,
@@ -14265,10 +14460,10 @@ typedef $$BedsTableProcessedTableManager =
     >;
 typedef $$HousekeepersTableCreateCompanionBuilder =
     HousekeepersCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String fullName,
       Value<String?> phone,
       Value<bool> isActive,
@@ -14532,10 +14727,10 @@ class $$HousekeepersTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String fullName,
                 Value<String?> phone = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
@@ -14611,10 +14806,10 @@ typedef $$HousekeepersTableProcessedTableManager =
       PrefetchHooks Function({bool housekeepingTasksRefs})
     >;
 typedef $$GuestsTableCreateCompanionBuilder = GuestsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String fullName,
   required String phone,
   Value<String?> idType,
@@ -14891,10 +15086,10 @@ class $$GuestsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String fullName,
                 required String phone,
                 Value<String?> idType = const Value.absent(),
@@ -14961,10 +15156,10 @@ typedef $$GuestsTableProcessedTableManager =
       PrefetchHooks Function({bool staysRefs})
     >;
 typedef $$ShiftsTableCreateCompanionBuilder = ShiftsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String userId,
   required DateTime openedAt,
   required int openingFloat,
@@ -15406,10 +15601,10 @@ class $$ShiftsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String userId,
                 required DateTime openedAt,
                 required int openingFloat,
@@ -15519,10 +15714,10 @@ typedef $$ShiftsTableProcessedTableManager =
       PrefetchHooks Function({bool userId, bool paymentsRefs})
     >;
 typedef $$StaysTableCreateCompanionBuilder = StaysCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String guestId,
   required String bedId,
   required DateTime checkInAt,
@@ -16165,10 +16360,10 @@ class $$StaysTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String guestId,
                 required String bedId,
                 required DateTime checkInAt,
@@ -16330,10 +16525,10 @@ typedef $$StaysTableProcessedTableManager =
       })
     >;
 typedef $$PaymentsTableCreateCompanionBuilder = PaymentsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String receiptNumber,
   required String shiftId,
   required String receivedBy,
@@ -16833,10 +17028,10 @@ class $$PaymentsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String receiptNumber,
                 required String shiftId,
                 required String receivedBy,
@@ -16968,10 +17163,10 @@ typedef $$PaymentsTableProcessedTableManager =
     >;
 typedef $$StayChargesTableCreateCompanionBuilder =
     StayChargesCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String stayId,
       required String paymentId,
       required String kind,
@@ -17398,10 +17593,10 @@ class $$StayChargesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String stayId,
                 required String paymentId,
                 required String kind,
@@ -17504,10 +17699,10 @@ typedef $$StayChargesTableProcessedTableManager =
     >;
 typedef $$HousekeepingTasksTableCreateCompanionBuilder =
     HousekeepingTasksCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String bedId,
       required String housekeeperId,
       required String assignedBy,
@@ -18066,10 +18261,10 @@ class $$HousekeepingTasksTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String bedId,
                 required String housekeeperId,
                 required String assignedBy,
@@ -18203,10 +18398,10 @@ typedef $$HousekeepingTasksTableProcessedTableManager =
     >;
 typedef $$InventoryItemsTableCreateCompanionBuilder =
     InventoryItemsCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String name,
       required String unit,
       required int lowStockLevel,
@@ -18499,10 +18694,10 @@ class $$InventoryItemsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String name,
                 required String unit,
                 required int lowStockLevel,
@@ -18579,10 +18774,10 @@ typedef $$InventoryItemsTableProcessedTableManager =
     >;
 typedef $$InventoryMovementsTableCreateCompanionBuilder =
     InventoryMovementsCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      required String deviceId,
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
       required String itemId,
       required String direction,
       required int quantity,
@@ -18969,10 +19164,10 @@ class $$InventoryMovementsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String itemId,
                 required String direction,
                 required int quantity,
@@ -19070,10 +19265,10 @@ typedef $$InventoryMovementsTableProcessedTableManager =
       PrefetchHooks Function({bool itemId, bool recordedBy})
     >;
 typedef $$VoidsTableCreateCompanionBuilder = VoidsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String targetType,
   required String targetId,
   required String reason,
@@ -19372,10 +19567,10 @@ class $$VoidsTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String targetType,
                 required String targetId,
                 required String reason,
@@ -19461,10 +19656,10 @@ typedef $$VoidsTableProcessedTableManager =
       PrefetchHooks Function({bool voidedBy})
     >;
 typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required String category,
   required int amount,
   required String spentOn,
@@ -19762,10 +19957,10 @@ class $$ExpensesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required String category,
                 required int amount,
                 required String spentOn,
@@ -19850,11 +20045,12 @@ typedef $$ExpensesTableProcessedTableManager =
       PrefetchHooks Function({bool recordedBy})
     >;
 typedef $$AuditLogTableCreateCompanionBuilder = AuditLogCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String deviceId,
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
   required DateTime at,
+  required String operationId,
   Value<String?> userId,
   required String action,
   required String entity,
@@ -19869,6 +20065,7 @@ typedef $$AuditLogTableUpdateCompanionBuilder = AuditLogCompanion Function({
   Value<DateTime> updatedAt,
   Value<String> deviceId,
   Value<DateTime> at,
+  Value<String> operationId,
   Value<String?> userId,
   Value<String> action,
   Value<String> entity,
@@ -19931,6 +20128,11 @@ class $$AuditLogTableFilterComposer
 
   ColumnFilters<DateTime> get at => $composableBuilder(
     column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operationId => $composableBuilder(
+    column: $table.operationId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -20017,6 +20219,11 @@ class $$AuditLogTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get operationId => $composableBuilder(
+    column: $table.operationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get action => $composableBuilder(
     column: $table.action,
     builder: (column) => ColumnOrderings(column),
@@ -20089,6 +20296,11 @@ class $$AuditLogTableAnnotationComposer
 
   GeneratedColumn<DateTime> get at =>
       $composableBuilder(column: $table.at, builder: (column) => column);
+
+  GeneratedColumn<String> get operationId => $composableBuilder(
+    column: $table.operationId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get action =>
       $composableBuilder(column: $table.action, builder: (column) => column);
@@ -20164,6 +20376,7 @@ class $$AuditLogTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> deviceId = const Value.absent(),
                 Value<DateTime> at = const Value.absent(),
+                Value<String> operationId = const Value.absent(),
                 Value<String?> userId = const Value.absent(),
                 Value<String> action = const Value.absent(),
                 Value<String> entity = const Value.absent(),
@@ -20177,6 +20390,7 @@ class $$AuditLogTableTableManager
                 updatedAt: updatedAt,
                 deviceId: deviceId,
                 at: at,
+                operationId: operationId,
                 userId: userId,
                 action: action,
                 entity: entity,
@@ -20187,11 +20401,12 @@ class $$AuditLogTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                required String deviceId,
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
                 required DateTime at,
+                required String operationId,
                 Value<String?> userId = const Value.absent(),
                 required String action,
                 required String entity,
@@ -20205,6 +20420,7 @@ class $$AuditLogTableTableManager
                 updatedAt: updatedAt,
                 deviceId: deviceId,
                 at: at,
+                operationId: operationId,
                 userId: userId,
                 action: action,
                 entity: entity,

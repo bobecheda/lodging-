@@ -1,0 +1,92 @@
+-- Database-level guards for the single write path (see CLAUDE.md).
+--
+-- Every UPDATE of a synced table must move updated_at, which only
+-- writeWithAudit does; a direct update would skip audit_log and outbox.
+-- Stays, payments, charges and voids are never deleted (BR-11), and
+-- audit_log is append-only.
+import 'tables/admin_tables.dart';
+import 'tables/desk_tables.dart';
+import 'tables/setup_tables.dart';
+import 'tables/system_tables.dart';
+
+CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log
+  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
+
+CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays
+  BEGIN SELECT RAISE(ABORT, 'stays rows are never deleted'); END;
+
+CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments
+  BEGIN SELECT RAISE(ABORT, 'payments rows are never deleted'); END;
+
+CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges
+  BEGIN SELECT RAISE(ABORT, 'stay_charges rows are never deleted'); END;
+
+CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids
+  BEGIN SELECT RAISE(ABORT, 'voids rows are never deleted'); END;
+
+CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log
+  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;

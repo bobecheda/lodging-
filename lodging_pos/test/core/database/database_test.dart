@@ -33,7 +33,8 @@ void main() {
 
   String newId() => const Uuid().v4();
 
-  // Direct inserts are fine in tests; app code writes through writeWithAudit.
+  // Direct inserts to test constraints, so they pass the stamped columns
+  // explicitly. App code writes through writeWithAudit.
 
   Future<String> user({String username = 'jane', String role = 'admin'}) async {
     final id = newId();
@@ -41,10 +42,10 @@ void main() {
         .into(db.users)
         .insert(
           UsersCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             fullName: 'Jane Doe',
             username: username,
             passwordHash: 'hash',
@@ -61,10 +62,10 @@ void main() {
         .into(db.rooms)
         .insert(
           RoomsCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             roomNumber: number,
           ),
         );
@@ -81,10 +82,10 @@ void main() {
         .into(db.beds)
         .insert(
           BedsCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             roomId: roomId,
             label: label,
             categoryId: categoryId ?? SeedIds.deluxe,
@@ -100,10 +101,10 @@ void main() {
         .into(db.guests)
         .insert(
           GuestsCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             fullName: 'John Guest',
             phone: '0712345678',
             idType: Value(idType),
@@ -124,10 +125,10 @@ void main() {
         .into(db.shifts)
         .insert(
           ShiftsCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             userId: userId,
             openedAt: t0,
             openingFloat: 1000,
@@ -153,10 +154,10 @@ void main() {
         .into(db.stays)
         .insert(
           StaysCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             guestId: guestId,
             bedId: bedId,
             checkInAt: t0,
@@ -184,10 +185,10 @@ void main() {
         .into(db.payments)
         .insert(
           PaymentsCompanion.insert(
-            id: id,
-            createdAt: t0,
-            updatedAt: t0,
-            deviceId: deviceId,
+            id: Value(id),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
             receiptNumber: receipt,
             shiftId: shiftId,
             receivedBy: userId,
@@ -210,10 +211,10 @@ void main() {
       .into(db.stayCharges)
       .insert(
         StayChargesCompanion.insert(
-          id: newId(),
-          createdAt: t0,
-          updatedAt: t0,
-          deviceId: deviceId,
+          id: Value(newId()),
+          createdAt: Value(t0),
+          updatedAt: Value(t0),
+          deviceId: Value(deviceId),
           stayId: stayId,
           paymentId: paymentId,
           kind: 'check_in',
@@ -407,10 +408,10 @@ void main() {
               .into(db.shifts)
               .insert(
                 ShiftsCompanion.insert(
-                  id: newId(),
-                  createdAt: t0,
-                  updatedAt: t0,
-                  deviceId: deviceId,
+                  id: Value(newId()),
+                  createdAt: Value(t0),
+                  updatedAt: Value(t0),
+                  deviceId: Value(deviceId),
                   userId: u,
                   openedAt: t0,
                   openingFloat: 1000,
@@ -437,8 +438,11 @@ void main() {
     test('checked_out_by is set exactly when the stay is closed', () async {
       final u = await user();
       final s = await stay(await guest(), await bed(await room('3')), u);
+      // Moves updated_at so the stamped-update trigger lets it reach the CHECK.
       Future<int> write(StaysCompanion c) =>
-          (db.update(db.stays)..where((t) => t.id.equals(s))).write(c);
+          (db.update(db.stays)..where((t) => t.id.equals(s))).write(
+            c.copyWith(updatedAt: Value(t0.add(const Duration(hours: 2)))),
+          );
 
       await expectLater(
         write(
@@ -465,10 +469,10 @@ void main() {
           .into(db.housekeepers)
           .insert(
             HousekeepersCompanion.insert(
-              id: hk,
-              createdAt: t0,
-              updatedAt: t0,
-              deviceId: deviceId,
+              id: Value(hk),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
               fullName: 'Mary',
             ),
           );
@@ -476,10 +480,10 @@ void main() {
           .into(db.housekeepingTasks)
           .insert(
             HousekeepingTasksCompanion.insert(
-              id: newId(),
-              createdAt: t0,
-              updatedAt: t0,
-              deviceId: deviceId,
+              id: Value(newId()),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
               bedId: b,
               housekeeperId: hk,
               assignedBy: u,
@@ -576,10 +580,10 @@ void main() {
           .into(db.voids)
           .insert(
             VoidsCompanion.insert(
-              id: newId(),
-              createdAt: t0,
-              updatedAt: t0,
-              deviceId: deviceId,
+              id: Value(newId()),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
               targetType: 'payment',
               targetId: newId(),
               reason: reason,
@@ -597,10 +601,10 @@ void main() {
           .into(db.expenses)
           .insert(
             ExpensesCompanion.insert(
-              id: newId(),
-              createdAt: t0,
-              updatedAt: t0,
-              deviceId: deviceId,
+              id: Value(newId()),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
               category: 'laundry',
               amount: 300,
               spentOn: spentOn,
@@ -620,10 +624,10 @@ void main() {
           .into(db.inventoryItems)
           .insert(
             InventoryItemsCompanion.insert(
-              id: item,
-              createdAt: t0,
-              updatedAt: t0,
-              deviceId: deviceId,
+              id: Value(item),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
               name: 'Soap',
               unit: 'bar',
               lowStockLevel: 5,
@@ -634,10 +638,10 @@ void main() {
             .into(db.inventoryMovements)
             .insert(
               InventoryMovementsCompanion.insert(
-                id: newId(),
-                createdAt: t0,
-                updatedAt: t0,
-                deviceId: deviceId,
+                id: Value(newId()),
+                createdAt: Value(t0),
+                updatedAt: Value(t0),
+                deviceId: Value(deviceId),
                 itemId: item,
                 direction: 'in',
                 quantity: 0,

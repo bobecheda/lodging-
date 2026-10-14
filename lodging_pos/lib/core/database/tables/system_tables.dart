@@ -15,8 +15,12 @@ import 'setup_tables.dart';
 @TableIndex(name: 'audit_log_user', columns: {#userId})
 @TableIndex(name: 'audit_log_action', columns: {#action})
 @TableIndex(name: 'audit_log_entity', columns: {#entity, #entityId})
+@TableIndex(name: 'audit_log_operation', columns: {#operationId})
 class AuditLog extends Table with SyncedColumns {
   DateTimeColumn get at => dateTime()();
+
+  /// Same UUID on every row written by one writeWithAudit call.
+  TextColumn get operationId => text()();
 
   /// Null for failed logins.
   TextColumn get userId => text().nullable().references(Users, #id)();

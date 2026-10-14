@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import 'database.dart';
 
 /// `device_id` stamped on seed rows. The cloud seeds the same rows with the
@@ -14,7 +16,8 @@ abstract final class SeedIds {
 
 /// Writes the v1 seed rows. Runs once, inside `onCreate`.
 ///
-/// Seed rows have no audit_log or outbox rows. No user is seeded: the
+/// Seed rows bypass writeWithAudit, so they pass the stamped columns
+/// explicitly and have no audit_log or outbox rows. No user is seeded: the
 /// first-run setup screen creates the admin.
 Future<void> seedV1(
   AppDatabase db, {
@@ -42,9 +45,9 @@ Future<void> seedV1(
         SettingsCompanion.insert(
           key: key,
           value: value,
-          createdAt: now,
-          updatedAt: now,
-          deviceId: seedDeviceId,
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          deviceId: const Value(seedDeviceId),
         ),
     ]);
     b.insertAll(db.bedCategories, [
@@ -55,10 +58,10 @@ Future<void> seedV1(
         (SeedIds.normal, 'Normal', 500),
       ].indexed)
         BedCategoriesCompanion.insert(
-          id: id,
-          createdAt: now,
-          updatedAt: now,
-          deviceId: seedDeviceId,
+          id: Value(id),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          deviceId: const Value(seedDeviceId),
           name: name,
           pricePerBlock: price,
           sortOrder: i + 1,

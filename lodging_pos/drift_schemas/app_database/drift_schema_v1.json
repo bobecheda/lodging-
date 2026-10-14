@@ -22,7 +22,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -32,7 +32,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -42,7 +42,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -52,7 +52,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -153,6 +153,21 @@
       "references": [
         0
       ],
+      "type": "trigger",
+      "data": {
+        "on": 0,
+        "references_in_body": [
+          0
+        ],
+        "name": "users_stamped_update",
+        "sql": "CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 2,
+      "references": [
+        0
+      ],
       "type": "table",
       "data": {
         "name": "settings",
@@ -211,7 +226,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -221,7 +236,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -231,7 +246,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           }
         ],
@@ -244,7 +259,22 @@
       }
     },
     {
-      "id": 2,
+      "id": 3,
+      "references": [
+        2
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 2,
+        "references_in_body": [
+          2
+        ],
+        "name": "settings_stamped_update",
+        "sql": "CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 4,
       "references": [],
       "type": "table",
       "data": {
@@ -258,7 +288,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -268,7 +298,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -278,7 +308,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -288,7 +318,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -370,7 +400,22 @@
       }
     },
     {
-      "id": 3,
+      "id": 5,
+      "references": [
+        4
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 4,
+        "references_in_body": [
+          4
+        ],
+        "name": "bed_categories_stamped_update",
+        "sql": "CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 6,
       "references": [],
       "type": "table",
       "data": {
@@ -384,7 +429,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -394,7 +439,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -404,7 +449,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -414,7 +459,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -477,10 +522,25 @@
       }
     },
     {
-      "id": 4,
+      "id": 7,
       "references": [
-        3,
-        2
+        6
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 6,
+        "references_in_body": [
+          6
+        ],
+        "name": "rooms_stamped_update",
+        "sql": "CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 8,
+      "references": [
+        6,
+        4
       ],
       "type": "table",
       "data": {
@@ -494,7 +554,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -504,7 +564,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -514,7 +574,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -524,7 +584,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -657,7 +717,22 @@
       }
     },
     {
-      "id": 5,
+      "id": 9,
+      "references": [
+        8
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 8,
+        "references_in_body": [
+          8
+        ],
+        "name": "beds_stamped_update",
+        "sql": "CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 10,
       "references": [],
       "type": "table",
       "data": {
@@ -671,7 +746,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -681,7 +756,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -691,7 +766,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -701,7 +776,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -748,7 +823,22 @@
       }
     },
     {
-      "id": 6,
+      "id": 11,
+      "references": [
+        10
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 10,
+        "references_in_body": [
+          10
+        ],
+        "name": "housekeepers_stamped_update",
+        "sql": "CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 12,
       "references": [],
       "type": "table",
       "data": {
@@ -762,7 +852,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -772,7 +862,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -782,7 +872,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -792,7 +882,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -861,7 +951,22 @@
       }
     },
     {
-      "id": 7,
+      "id": 13,
+      "references": [
+        12
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 12,
+        "references_in_body": [
+          12
+        ],
+        "name": "guests_stamped_update",
+        "sql": "CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 14,
       "references": [
         0
       ],
@@ -877,7 +982,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -887,7 +992,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -897,7 +1002,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -907,7 +1012,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1062,10 +1167,25 @@
       }
     },
     {
-      "id": 8,
+      "id": 15,
       "references": [
-        6,
-        4,
+        14
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 14,
+        "references_in_body": [
+          14
+        ],
+        "name": "shifts_stamped_update",
+        "sql": "CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 16,
+      "references": [
+        12,
+        8,
         0
       ],
       "type": "table",
@@ -1080,7 +1200,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1090,7 +1210,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1100,7 +1220,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1110,7 +1230,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1284,9 +1404,24 @@
       }
     },
     {
-      "id": 9,
+      "id": 17,
       "references": [
-        7,
+        16
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 16,
+        "references_in_body": [
+          16
+        ],
+        "name": "stays_stamped_update",
+        "sql": "CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 18,
+      "references": [
+        14,
         0
       ],
       "type": "table",
@@ -1301,7 +1436,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1311,7 +1446,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1321,7 +1456,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1331,7 +1466,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1499,10 +1634,25 @@
       }
     },
     {
-      "id": 10,
+      "id": 19,
       "references": [
-        8,
-        9
+        18
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 18,
+        "references_in_body": [
+          18
+        ],
+        "name": "payments_stamped_update",
+        "sql": "CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 20,
+      "references": [
+        16,
+        18
       ],
       "type": "table",
       "data": {
@@ -1516,7 +1666,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1526,7 +1676,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1536,7 +1686,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1546,7 +1696,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1726,10 +1876,25 @@
       }
     },
     {
-      "id": 11,
+      "id": 21,
       "references": [
-        4,
-        5,
+        20
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 20,
+        "references_in_body": [
+          20
+        ],
+        "name": "stay_charges_stamped_update",
+        "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 22,
+      "references": [
+        8,
+        10,
         0
       ],
       "type": "table",
@@ -1744,7 +1909,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1754,7 +1919,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1764,7 +1929,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1774,7 +1939,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1913,7 +2078,22 @@
       }
     },
     {
-      "id": 12,
+      "id": 23,
+      "references": [
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22
+        ],
+        "name": "housekeeping_tasks_stamped_update",
+        "sql": "CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 24,
       "references": [],
       "type": "table",
       "data": {
@@ -1927,7 +2107,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -1937,7 +2117,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1947,7 +2127,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -1957,7 +2137,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2039,9 +2219,9 @@
       }
     },
     {
-      "id": 13,
+      "id": 25,
       "references": [
-        12,
+        24,
         0
       ],
       "type": "table",
@@ -2056,7 +2236,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2066,7 +2246,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2076,7 +2256,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2086,7 +2266,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2214,7 +2394,22 @@
       }
     },
     {
-      "id": 14,
+      "id": 26,
+      "references": [
+        25
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 25,
+        "references_in_body": [
+          25
+        ],
+        "name": "inventory_movements_stamped_update",
+        "sql": "CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 27,
       "references": [
         0
       ],
@@ -2230,7 +2425,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2240,7 +2435,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2250,7 +2445,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2260,7 +2455,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2383,7 +2578,22 @@
       }
     },
     {
-      "id": 15,
+      "id": 28,
+      "references": [
+        27
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 27,
+        "references_in_body": [
+          27
+        ],
+        "name": "voids_stamped_update",
+        "sql": "CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 29,
       "references": [
         0
       ],
@@ -2399,7 +2609,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2409,7 +2619,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2419,7 +2629,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2429,7 +2639,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2543,7 +2753,37 @@
       }
     },
     {
-      "id": 16,
+      "id": 30,
+      "references": [
+        29
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 29,
+        "references_in_body": [
+          29
+        ],
+        "name": "expenses_stamped_update",
+        "sql": "CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 31,
+      "references": [
+        24
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 24,
+        "references_in_body": [
+          24
+        ],
+        "name": "inventory_items_stamped_update",
+        "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 32,
       "references": [
         0
       ],
@@ -2559,7 +2799,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
             "dsl_features": []
           },
           {
@@ -2569,7 +2809,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2579,7 +2819,7 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
@@ -2589,13 +2829,23 @@
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
-            "default_client_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
             "dsl_features": []
           },
           {
             "name": "at",
             "getter_name": "at",
             "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "operation_id",
+            "getter_name": "operationId",
+            "moor_type": "string",
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
@@ -2688,7 +2938,97 @@
       }
     },
     {
-      "id": 17,
+      "id": 33,
+      "references": [
+        32
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 32,
+        "references_in_body": [
+          32
+        ],
+        "name": "audit_log_no_update",
+        "sql": "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
+      }
+    },
+    {
+      "id": 34,
+      "references": [
+        16
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 16,
+        "references_in_body": [
+          16
+        ],
+        "name": "stays_no_delete",
+        "sql": "CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays\n  BEGIN SELECT RAISE(ABORT, 'stays rows are never deleted'); END;"
+      }
+    },
+    {
+      "id": 35,
+      "references": [
+        18
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 18,
+        "references_in_body": [
+          18
+        ],
+        "name": "payments_no_delete",
+        "sql": "CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments\n  BEGIN SELECT RAISE(ABORT, 'payments rows are never deleted'); END;"
+      }
+    },
+    {
+      "id": 36,
+      "references": [
+        20
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 20,
+        "references_in_body": [
+          20
+        ],
+        "name": "stay_charges_no_delete",
+        "sql": "CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges\n  BEGIN SELECT RAISE(ABORT, 'stay_charges rows are never deleted'); END;"
+      }
+    },
+    {
+      "id": 37,
+      "references": [
+        27
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 27,
+        "references_in_body": [
+          27
+        ],
+        "name": "voids_no_delete",
+        "sql": "CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids\n  BEGIN SELECT RAISE(ABORT, 'voids rows are never deleted'); END;"
+      }
+    },
+    {
+      "id": 38,
+      "references": [
+        32
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 32,
+        "references_in_body": [
+          32
+        ],
+        "name": "audit_log_no_delete",
+        "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
+      }
+    },
+    {
+      "id": 39,
       "references": [],
       "type": "table",
       "data": {
@@ -2788,7 +3128,7 @@
       }
     },
     {
-      "id": 18,
+      "id": 40,
       "references": [],
       "type": "table",
       "data": {
@@ -2825,9 +3165,9 @@
       }
     },
     {
-      "id": 19,
+      "id": 41,
       "references": [
-        18
+        40
       ],
       "type": "table",
       "data": {
@@ -2899,221 +3239,13 @@
       }
     },
     {
-      "id": 20,
+      "id": 42,
       "references": [
-        6
+        32
       ],
       "type": "index",
       "data": {
-        "on": 6,
-        "name": "guests_phone",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "phone",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 21,
-      "references": [
-        6
-      ],
-      "type": "index",
-      "data": {
-        "on": 6,
-        "name": "guests_id_number",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "id_number",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 22,
-      "references": [
-        6
-      ],
-      "type": "index",
-      "data": {
-        "on": 6,
-        "name": "guests_id_unique",
-        "sql": "CREATE UNIQUE INDEX guests_id_unique ON guests (id_type, id_number) WHERE id_number IS NOT NULL",
-        "unique": true,
-        "columns": []
-      }
-    },
-    {
-      "id": 23,
-      "references": [
-        7
-      ],
-      "type": "index",
-      "data": {
-        "on": 7,
-        "name": "shifts_one_open_per_device",
-        "sql": "CREATE UNIQUE INDEX shifts_one_open_per_device ON shifts (device_id) WHERE status = 'open'",
-        "unique": true,
-        "columns": []
-      }
-    },
-    {
-      "id": 24,
-      "references": [
-        8
-      ],
-      "type": "index",
-      "data": {
-        "on": 8,
-        "name": "stays_guest",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "guest_id",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 25,
-      "references": [
-        8
-      ],
-      "type": "index",
-      "data": {
-        "on": 8,
-        "name": "stays_one_active_per_bed",
-        "sql": "CREATE UNIQUE INDEX stays_one_active_per_bed ON stays (bed_id) WHERE status = 'active'",
-        "unique": true,
-        "columns": []
-      }
-    },
-    {
-      "id": 26,
-      "references": [
-        9
-      ],
-      "type": "index",
-      "data": {
-        "on": 9,
-        "name": "payments_shift",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "shift_id",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 27,
-      "references": [
-        10
-      ],
-      "type": "index",
-      "data": {
-        "on": 10,
-        "name": "stay_charges_stay",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "stay_id",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 28,
-      "references": [
-        10
-      ],
-      "type": "index",
-      "data": {
-        "on": 10,
-        "name": "stay_charges_payment",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "payment_id",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 29,
-      "references": [
-        11
-      ],
-      "type": "index",
-      "data": {
-        "on": 11,
-        "name": "housekeeping_tasks_bed",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "bed_id",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 30,
-      "references": [
-        11
-      ],
-      "type": "index",
-      "data": {
-        "on": 11,
-        "name": "housekeeping_tasks_one_open_per_bed",
-        "sql": "CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL",
-        "unique": true,
-        "columns": []
-      }
-    },
-    {
-      "id": 31,
-      "references": [
-        13
-      ],
-      "type": "index",
-      "data": {
-        "on": 13,
-        "name": "inventory_movements_item",
-        "sql": null,
-        "unique": false,
-        "columns": [
-          {
-            "column": "item_id",
-            "order_by": null
-          }
-        ]
-      }
-    },
-    {
-      "id": 32,
-      "references": [
-        16
-      ],
-      "type": "index",
-      "data": {
-        "on": 16,
+        "on": 32,
         "name": "audit_log_at",
         "sql": null,
         "unique": false,
@@ -3126,13 +3258,13 @@
       }
     },
     {
-      "id": 33,
+      "id": 43,
       "references": [
-        16
+        32
       ],
       "type": "index",
       "data": {
-        "on": 16,
+        "on": 32,
         "name": "audit_log_user",
         "sql": null,
         "unique": false,
@@ -3145,13 +3277,13 @@
       }
     },
     {
-      "id": 34,
+      "id": 44,
       "references": [
-        16
+        32
       ],
       "type": "index",
       "data": {
-        "on": 16,
+        "on": 32,
         "name": "audit_log_action",
         "sql": null,
         "unique": false,
@@ -3164,13 +3296,13 @@
       }
     },
     {
-      "id": 35,
+      "id": 45,
       "references": [
-        16
+        32
       ],
       "type": "index",
       "data": {
-        "on": 16,
+        "on": 32,
         "name": "audit_log_entity",
         "sql": null,
         "unique": false,
@@ -3187,17 +3319,244 @@
       }
     },
     {
-      "id": 36,
+      "id": 46,
       "references": [
-        17
+        32
       ],
       "type": "index",
       "data": {
-        "on": 17,
+        "on": 32,
+        "name": "audit_log_operation",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "operation_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 47,
+      "references": [
+        39
+      ],
+      "type": "index",
+      "data": {
+        "on": 39,
         "name": "outbox_unsent",
         "sql": "CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL",
         "unique": false,
         "columns": []
+      }
+    },
+    {
+      "id": 48,
+      "references": [
+        12
+      ],
+      "type": "index",
+      "data": {
+        "on": 12,
+        "name": "guests_phone",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "phone",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 49,
+      "references": [
+        12
+      ],
+      "type": "index",
+      "data": {
+        "on": 12,
+        "name": "guests_id_number",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "id_number",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 50,
+      "references": [
+        12
+      ],
+      "type": "index",
+      "data": {
+        "on": 12,
+        "name": "guests_id_unique",
+        "sql": "CREATE UNIQUE INDEX guests_id_unique ON guests (id_type, id_number) WHERE id_number IS NOT NULL",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 51,
+      "references": [
+        14
+      ],
+      "type": "index",
+      "data": {
+        "on": 14,
+        "name": "shifts_one_open_per_device",
+        "sql": "CREATE UNIQUE INDEX shifts_one_open_per_device ON shifts (device_id) WHERE status = 'open'",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 52,
+      "references": [
+        16
+      ],
+      "type": "index",
+      "data": {
+        "on": 16,
+        "name": "stays_guest",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "guest_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 53,
+      "references": [
+        16
+      ],
+      "type": "index",
+      "data": {
+        "on": 16,
+        "name": "stays_one_active_per_bed",
+        "sql": "CREATE UNIQUE INDEX stays_one_active_per_bed ON stays (bed_id) WHERE status = 'active'",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 54,
+      "references": [
+        18
+      ],
+      "type": "index",
+      "data": {
+        "on": 18,
+        "name": "payments_shift",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "shift_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 55,
+      "references": [
+        20
+      ],
+      "type": "index",
+      "data": {
+        "on": 20,
+        "name": "stay_charges_stay",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "stay_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 56,
+      "references": [
+        20
+      ],
+      "type": "index",
+      "data": {
+        "on": 20,
+        "name": "stay_charges_payment",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "payment_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 57,
+      "references": [
+        22
+      ],
+      "type": "index",
+      "data": {
+        "on": 22,
+        "name": "housekeeping_tasks_bed",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "bed_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 58,
+      "references": [
+        22
+      ],
+      "type": "index",
+      "data": {
+        "on": 22,
+        "name": "housekeeping_tasks_one_open_per_bed",
+        "sql": "CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 59,
+      "references": [
+        25
+      ],
+      "type": "index",
+      "data": {
+        "on": 25,
+        "name": "inventory_movements_item",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "item_id",
+            "order_by": null
+          }
+        ]
       }
     }
   ],
@@ -3212,11 +3571,29 @@
       ]
     },
     {
+      "name": "users_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "settings",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"settings\" (\"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, \"updated_by\" TEXT NULL REFERENCES users (id), \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, PRIMARY KEY (\"key\"));"
+        }
+      ]
+    },
+    {
+      "name": "settings_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3230,11 +3607,29 @@
       ]
     },
     {
+      "name": "bed_categories_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "rooms",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"rooms\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"room_number\" TEXT NOT NULL UNIQUE, \"floor\" TEXT NULL, \"notes\" TEXT NULL, \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "rooms_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3248,11 +3643,29 @@
       ]
     },
     {
+      "name": "beds_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "housekeepers",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"housekeepers\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"full_name\" TEXT NOT NULL, \"phone\" TEXT NULL, \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "housekeepers_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3266,11 +3679,29 @@
       ]
     },
     {
+      "name": "guests_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "shifts",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"shifts\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL REFERENCES users (id), \"opened_at\" TEXT NOT NULL, \"opening_float\" INTEGER NOT NULL CHECK(\"opening_float\" >= 0), \"closed_at\" TEXT NULL, \"expected_cash\" INTEGER NULL, \"expected_paybill\" INTEGER NULL, \"counted_cash\" INTEGER NULL, \"variance\" INTEGER NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('open', 'closed')), PRIMARY KEY (\"id\"), CHECK ((status = 'open') = (closed_at IS NULL)), CHECK (status = 'open' OR (expected_cash IS NOT NULL AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL AND variance IS NOT NULL AND variance = counted_cash - expected_cash)));"
+        }
+      ]
+    },
+    {
+      "name": "shifts_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3284,11 +3715,29 @@
       ]
     },
     {
+      "name": "stays_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "payments",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"payments\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"receipt_number\" TEXT NOT NULL UNIQUE, \"shift_id\" TEXT NOT NULL REFERENCES shifts (id), \"received_by\" TEXT NOT NULL REFERENCES users (id), \"received_at\" TEXT NOT NULL, \"amount\" INTEGER NOT NULL CHECK(\"amount\" > 0), \"method\" TEXT NOT NULL CHECK(\"method\" IN ('cash', 'paybill')), \"mpesa_code\" TEXT UNIQUE COLLATE NOCASE, \"print_count\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"id\"), CHECK ((method = 'paybill') = (mpesa_code IS NOT NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "payments_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3302,11 +3751,29 @@
       ]
     },
     {
+      "name": "stay_charges_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "housekeeping_tasks",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"housekeeping_tasks\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"bed_id\" TEXT NOT NULL REFERENCES beds (id), \"housekeeper_id\" TEXT NOT NULL REFERENCES housekeepers (id), \"assigned_by\" TEXT NOT NULL REFERENCES users (id), \"assigned_at\" TEXT NOT NULL, \"completed_at\" TEXT NULL, \"completed_by\" TEXT NULL REFERENCES users (id), PRIMARY KEY (\"id\"), CHECK ((completed_at IS NULL) = (completed_by IS NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "housekeeping_tasks_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3329,11 +3796,29 @@
       ]
     },
     {
+      "name": "inventory_movements_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "voids",
       "sql": [
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"voids\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"target_type\" TEXT NOT NULL CHECK(\"target_type\" IN ('payment', 'stay')), \"target_id\" TEXT NOT NULL, \"reason\" TEXT NOT NULL CHECK(LENGTH(TRIM(\"reason\")) > 0), \"voided_by\" TEXT NOT NULL REFERENCES users (id), \"voided_at\" TEXT NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"target_type\", \"target_id\"));"
+        }
+      ]
+    },
+    {
+      "name": "voids_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3347,11 +3832,83 @@
       ]
     },
     {
+      "name": "expenses_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
+      "name": "inventory_items_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
       "name": "audit_log",
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"audit_log\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"at\" TEXT NOT NULL, \"user_id\" TEXT NULL REFERENCES users (id), \"action\" TEXT NOT NULL, \"entity\" TEXT NOT NULL, \"entity_id\" TEXT NOT NULL, \"before_json\" TEXT NULL, \"after_json\" TEXT NOT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"audit_log\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"at\" TEXT NOT NULL, \"operation_id\" TEXT NOT NULL, \"user_id\" TEXT NULL REFERENCES users (id), \"action\" TEXT NOT NULL, \"entity\" TEXT NOT NULL, \"entity_id\" TEXT NOT NULL, \"before_json\" TEXT NULL, \"after_json\" TEXT NOT NULL, PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_no_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE (ABORT, 'audit_log is append-only');END"
+        }
+      ]
+    },
+    {
+      "name": "stays_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays BEGIN SELECT RAISE (ABORT, 'stays rows are never deleted');END"
+        }
+      ]
+    },
+    {
+      "name": "payments_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments BEGIN SELECT RAISE (ABORT, 'payments rows are never deleted');END"
+        }
+      ]
+    },
+    {
+      "name": "stay_charges_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges BEGIN SELECT RAISE (ABORT, 'stay_charges rows are never deleted');END"
+        }
+      ]
+    },
+    {
+      "name": "voids_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids BEGIN SELECT RAISE (ABORT, 'voids rows are never deleted');END"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE (ABORT, 'audit_log is append-only');END"
         }
       ]
     },
@@ -3379,6 +3936,60 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"receipt_counter\" (\"device_id\" TEXT NOT NULL REFERENCES device (device_id), \"next_number\" INTEGER NOT NULL CHECK(\"next_number\" >= 1), PRIMARY KEY (\"device_id\"));"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_at",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX audit_log_at ON audit_log (at)"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_user",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX audit_log_user ON audit_log (user_id)"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_action",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX audit_log_action ON audit_log (\"action\")"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_entity",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)"
+        }
+      ]
+    },
+    {
+      "name": "audit_log_operation",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX audit_log_operation ON audit_log (operation_id)"
+        }
+      ]
+    },
+    {
+      "name": "outbox_unsent",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL"
         }
       ]
     },
@@ -3487,51 +4098,6 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE INDEX inventory_movements_item ON inventory_movements (item_id)"
-        }
-      ]
-    },
-    {
-      "name": "audit_log_at",
-      "sql": [
-        {
-          "dialect": "sqlite",
-          "sql": "CREATE INDEX audit_log_at ON audit_log (at)"
-        }
-      ]
-    },
-    {
-      "name": "audit_log_user",
-      "sql": [
-        {
-          "dialect": "sqlite",
-          "sql": "CREATE INDEX audit_log_user ON audit_log (user_id)"
-        }
-      ]
-    },
-    {
-      "name": "audit_log_action",
-      "sql": [
-        {
-          "dialect": "sqlite",
-          "sql": "CREATE INDEX audit_log_action ON audit_log (\"action\")"
-        }
-      ]
-    },
-    {
-      "name": "audit_log_entity",
-      "sql": [
-        {
-          "dialect": "sqlite",
-          "sql": "CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)"
-        }
-      ]
-    },
-    {
-      "name": "outbox_unsent",
-      "sql": [
-        {
-          "dialect": "sqlite",
-          "sql": "CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL"
         }
       ]
     }
