@@ -34,7 +34,8 @@ class AuditWriter {
   /// Runs [body] in one transaction. For every synced row [body] inserts or
   /// updates through [AuditedWrites], it also writes one `audit_log` row
   /// (before/after of that row, tagged with [action]) and outbox rows for the
-  /// business row and the audit row, in write order.
+  /// business row and the audit row, in write order. All audit rows of one
+  /// call share an `operation_id`.
   ///
   /// If anything throws, nothing is saved.
   ///
@@ -47,7 +48,7 @@ class AuditWriter {
   }) {
     _checkAction(action);
     return _db.transaction(() async {
-      final w = AuditedWrites._(_db, _clock.now(), await _db.deviceId());
+      final w = await _start();
       final result = await body(w);
       if (w._changes.isEmpty) {
         throw StateError(
@@ -81,7 +82,7 @@ class AuditWriter {
   }) {
     _checkAction(action);
     return _db.transaction(() async {
-      final w = AuditedWrites._(_db, _clock.now(), await _db.deviceId());
+      final w = await _start();
       await w._audit(
         action: action,
         userId: userId,
@@ -92,6 +93,13 @@ class AuditWriter {
       );
     });
   }
+
+  Future<AuditedWrites> _start() async => AuditedWrites._(
+    _db,
+    now: _clock.now(),
+    deviceId: await _db.deviceId(),
+    operationId: const Uuid().v4(),
+  );
 
   static void _checkAction(String action) {
     if (!_actionPattern.hasMatch(action)) {
@@ -105,7 +113,12 @@ class AuditWriter {
 /// Reads through the database inside the body see the transaction, so
 /// repositories may query `db` directly before writing.
 class AuditedWrites {
-  AuditedWrites._(this._db, this.now, this.deviceId);
+  AuditedWrites._(
+    this._db, {
+    required this.now,
+    required this.deviceId,
+    required this.operationId,
+  });
 
   final AppDatabase _db;
 
@@ -116,6 +129,9 @@ class AuditedWrites {
   /// This install's device id.
   final String deviceId;
 
+  /// `audit_log.operation_id` for every audit row of this call.
+  final String operationId;
+
   final _changes = <_Change>[];
 
   String newId() => const Uuid().v4();
@@ -123,11 +139,12 @@ class AuditedWrites {
   /// Inserts [row] and returns it as stored.
   ///
   /// Build [row] with the companion's `.insert(...)`, so business fields are
-  /// checked at compile time. `id` defaults to a new UUID (client default).
+  /// checked at compile time.
   ///
-  /// On synced tables, stamps `created_at`, `updated_at` (= [now]) and
-  /// `device_id`, overriding any value in [row]. Their client defaults throw,
-  /// so only this method can insert synced rows.
+  /// On synced tables, stamps `id` (a new UUID, unless [row] has one to link
+  /// rows in this transaction), `created_at`, `updated_at` (= [now]) and
+  /// `device_id` (overriding any value in [row]). Their client defaults
+  /// throw, so only this method can fill them.
   Future<D> insert<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     Insertable<D> row,
@@ -138,6 +155,9 @@ class AuditedWrites {
     final values = row.toColumns(false);
     final synced = !_localOnlyTables.contains(name);
     if (synced) {
+      if (table.columnsByName.containsKey('id')) {
+        values.putIfAbsent('id', () => Variable<String>(newId()));
+      }
       values['created_at'] = Variable<DateTime>(now);
       values['updated_at'] = Variable<DateTime>(now);
       values['device_id'] = Variable<String>(deviceId);
@@ -216,10 +236,12 @@ class AuditedWrites {
         .into(_db.auditLog)
         .insertReturning(
           AuditLogCompanion.insert(
+            id: Value(newId()),
             createdAt: Value(now),
             updatedAt: Value(now),
             deviceId: Value(deviceId),
             at: now,
+            operationId: operationId,
             userId: Value(userId),
             action: action,
             entity: entity,

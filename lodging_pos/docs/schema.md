@@ -5,6 +5,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 ## Common rules
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
+- `id`, `created_at`, `updated_at` and `device_id` are stamped by `writeWithAudit`. Their drift client defaults throw, so a row inserted any other way fails (the seed passes them explicitly).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
 - Ownership for sync: the **desk** owns operational tables, the **admin** owns setup tables, `voids`, `expenses` and `inventory_items`. A row is only ever written by its owner.
@@ -185,6 +186,7 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | Column | Type | Notes |
 |---|---|---|
 | at | DATETIME | |
+| operation_id | TEXT | UUID, INDEX. Same value on every row written by one `writeWithAudit` call; AD-8 groups by it |
 | user_id | TEXT → users | null for failed logins |
 | device_id | TEXT | |
 | action | TEXT | `entity.verb`, e.g. `stay.check_in` |
@@ -228,4 +230,4 @@ Guest checks in 22:00 on bed 3A (Deluxe, 700) for 1 block, renews at 10:40, then
 | Renew at 10:40 | `payments` R-000042, 700 · `stay_charges` renewal, 1 × 700, 10:00→22:00 · `stays` paid_until 22:00 |
 | Checkout | `stays` closed, checked_out_at · `beds` not_cleaned |
 
-Each step also writes `audit_log` and `outbox` rows in the same transaction.
+Each step also writes, in the same transaction, one `audit_log` row per changed row (all sharing the step's `operation_id`) and `outbox` rows for the business and audit rows.

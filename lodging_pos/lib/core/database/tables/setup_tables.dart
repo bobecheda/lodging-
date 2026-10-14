@@ -27,13 +27,13 @@ class Settings extends Table {
   TextColumn get updatedBy => text().nullable().references(Users, #id)();
   // Stamped by writeWithAudit, as in SyncedColumns.
   DateTimeColumn get createdAt => dateTime().clientDefault(
-    () => throw StateError('stamped by writeWithAudit'),
+    () => throw StateError('must be stamped by writeWithAudit'),
   )();
   DateTimeColumn get updatedAt => dateTime().clientDefault(
-    () => throw StateError('stamped by writeWithAudit'),
+    () => throw StateError('must be stamped by writeWithAudit'),
   )();
   TextColumn get deviceId => text().clientDefault(
-    () => throw StateError('stamped by writeWithAudit'),
+    () => throw StateError('must be stamped by writeWithAudit'),
   )();
 
   @override

@@ -131,7 +131,7 @@ void main() {
           isA<StateError>().having(
             (e) => e.message,
             'message',
-            'stamped by writeWithAudit',
+            'must be stamped by writeWithAudit',
           ),
         ),
       );
@@ -282,6 +282,32 @@ void main() {
       },
     );
 
+    test(
+      'rows of one call share an operation_id; another call gets a new one',
+      () async {
+        await audit.writeWithAudit(
+          action: 'room.create',
+          userId: adminId,
+          body: (w) async {
+            await w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '9'));
+            await w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '10'));
+          },
+        );
+        await createRoom('11');
+
+        final entries = await auditRows();
+        expect(entries, hasLength(3));
+        final firstCall = entries[0].operationId;
+        expect(firstCall, hasLength(36));
+        expect(entries[1].operationId, firstCall);
+        expect(entries[2].operationId, isNot(firstCall));
+        expect(
+          jsonDecode((await outbox())[1].payloadJson)['operation_id'],
+          firstCall,
+        );
+      },
+    );
+
     test('a failure part-way saves nothing', () async {
       await expectLater(
         audit.writeWithAudit(
@@ -425,6 +451,7 @@ void main() {
       final entry = (await auditRows()).single;
       expect(entry.userId, isNull);
       expect(entry.action, 'user.login_failed');
+      expect(entry.operationId, hasLength(36));
       expect(entry.beforeJson, isNull);
       expect(jsonDecode(entry.afterJson), {'username': 'owner'});
       expect(
