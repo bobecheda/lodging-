@@ -251,6 +251,7 @@ void main() {
           'block_hours': '12',
           'grace_minutes': '60',
           'receipt_prefix': 'R',
+          'idle_lock_minutes': '10',
         },
       );
       for (final r in rows) {

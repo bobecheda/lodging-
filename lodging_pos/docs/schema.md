@@ -46,7 +46,7 @@ bed_categories 1──* beds *──1 rooms
 
 The one exception to the `id` rule: `key` is the primary key and sync upserts by `key`.
 
-Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `block_hours` = `12`, `grace_minutes` = `60`, `receipt_prefix` = `R`.
+Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `block_hours` = `12`, `grace_minutes` = `60`, `receipt_prefix` = `R`, `idle_lock_minutes` = `10`. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
 
 ### bed_categories
 | Column | Type | Notes |

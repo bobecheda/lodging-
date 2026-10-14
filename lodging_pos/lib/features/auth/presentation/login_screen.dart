@@ -5,6 +5,7 @@ import '../../../app/widgets/gate_card.dart';
 import '../../../core/auth/session.dart';
 import '../domain/login.dart';
 import 'auth_providers.dart';
+import 'idle_lock.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -56,32 +57,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => GateCard(
-    title: 'Sign in',
-    children: [
-      TextField(
-        key: const ValueKey('login.username'),
-        controller: _username,
-        autofocus: true,
-        decoration: const InputDecoration(labelText: 'Username'),
-        textInputAction: TextInputAction.next,
-      ),
-      const SizedBox(height: 16),
-      TextField(
-        key: const ValueKey('login.password'),
-        controller: _password,
-        obscureText: true,
-        decoration: const InputDecoration(labelText: 'Password'),
-        onSubmitted: (_) => _submit(),
-      ),
-      const SizedBox(height: 16),
-      FormError(_error),
-      BusyButton(
-        key: const ValueKey('login.submit'),
-        label: 'Sign in',
-        busy: _busy,
-        onPressed: _submit,
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final lockedAfter = ref.watch(idleLockProvider);
+    return GateCard(
+      title: 'Sign in',
+      // The username stays empty, so whoever sits down signs in as themselves.
+      subtitle: lockedAfter == null
+          ? null
+          : 'Signed out after $lockedAfter minutes of inactivity. '
+                'Your shift is still open.',
+      children: [
+        TextField(
+          key: const ValueKey('login.username'),
+          controller: _username,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Username'),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          key: const ValueKey('login.password'),
+          controller: _password,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Password'),
+          onSubmitted: (_) => _submit(),
+        ),
+        const SizedBox(height: 16),
+        FormError(_error),
+        BusyButton(
+          key: const ValueKey('login.submit'),
+          label: 'Sign in',
+          busy: _busy,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
 }
