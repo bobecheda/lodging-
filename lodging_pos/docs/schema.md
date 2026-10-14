@@ -6,6 +6,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
 - `id` defaults to a new UUID. `created_at`, `updated_at` and `device_id` are stamped by `writeWithAudit` (on update: `updated_at` and `device_id`, never `created_at`). Their drift client defaults throw, so a row inserted any other way fails (the seed passes them explicitly).
+- Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges` and `voids` rows cannot be deleted, and `audit_log` cannot be updated or deleted.
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
 - Ownership for sync: the **desk** owns operational tables, the **admin** owns setup tables, `voids`, `expenses` and `inventory_items`. A row is only ever written by its owner.
@@ -192,8 +193,10 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | action | TEXT | `entity.verb`, e.g. `stay.check_in` |
 | entity | TEXT | table name |
 | entity_id | TEXT | |
-| before_json | TEXT | null on create |
-| after_json | TEXT | |
+| before_json | TEXT | null on create; on update, only the columns that changed |
+| after_json | TEXT | full row on create; on update, only the columns that changed |
+
+Audit JSON redacts `users.password_hash` and guests' `full_name`, `phone` and `id_number` as `"[redacted]"`, so personal data stays purgeable; the business row's outbox payload keeps them.
 
 ### outbox (local only)
 | Column | Type | Notes |

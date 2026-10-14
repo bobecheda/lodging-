@@ -10985,27 +10985,139 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $UsersTable users = $UsersTable(this);
+  late final Trigger usersStampedUpdate = Trigger(
+    'CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'users_stamped_update',
+  );
   late final $SettingsTable settings = $SettingsTable(this);
+  late final Trigger settingsStampedUpdate = Trigger(
+    'CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'settings_stamped_update',
+  );
   late final $BedCategoriesTable bedCategories = $BedCategoriesTable(this);
+  late final Trigger bedCategoriesStampedUpdate = Trigger(
+    'CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'bed_categories_stamped_update',
+  );
   late final $RoomsTable rooms = $RoomsTable(this);
+  late final Trigger roomsStampedUpdate = Trigger(
+    'CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'rooms_stamped_update',
+  );
   late final $BedsTable beds = $BedsTable(this);
+  late final Trigger bedsStampedUpdate = Trigger(
+    'CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'beds_stamped_update',
+  );
   late final $HousekeepersTable housekeepers = $HousekeepersTable(this);
+  late final Trigger housekeepersStampedUpdate = Trigger(
+    'CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'housekeepers_stamped_update',
+  );
   late final $GuestsTable guests = $GuestsTable(this);
+  late final Trigger guestsStampedUpdate = Trigger(
+    'CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'guests_stamped_update',
+  );
   late final $ShiftsTable shifts = $ShiftsTable(this);
+  late final Trigger shiftsStampedUpdate = Trigger(
+    'CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'shifts_stamped_update',
+  );
   late final $StaysTable stays = $StaysTable(this);
+  late final Trigger staysStampedUpdate = Trigger(
+    'CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'stays_stamped_update',
+  );
   late final $PaymentsTable payments = $PaymentsTable(this);
+  late final Trigger paymentsStampedUpdate = Trigger(
+    'CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'payments_stamped_update',
+  );
   late final $StayChargesTable stayCharges = $StayChargesTable(this);
+  late final Trigger stayChargesStampedUpdate = Trigger(
+    'CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'stay_charges_stamped_update',
+  );
   late final $HousekeepingTasksTable housekeepingTasks =
       $HousekeepingTasksTable(this);
+  late final Trigger housekeepingTasksStampedUpdate = Trigger(
+    'CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'housekeeping_tasks_stamped_update',
+  );
   late final $InventoryItemsTable inventoryItems = $InventoryItemsTable(this);
   late final $InventoryMovementsTable inventoryMovements =
       $InventoryMovementsTable(this);
+  late final Trigger inventoryMovementsStampedUpdate = Trigger(
+    'CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'inventory_movements_stamped_update',
+  );
   late final $VoidsTable voids = $VoidsTable(this);
+  late final Trigger voidsStampedUpdate = Trigger(
+    'CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'voids_stamped_update',
+  );
   late final $ExpensesTable expenses = $ExpensesTable(this);
+  late final Trigger expensesStampedUpdate = Trigger(
+    'CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'expenses_stamped_update',
+  );
+  late final Trigger inventoryItemsStampedUpdate = Trigger(
+    'CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'inventory_items_stamped_update',
+  );
   late final $AuditLogTable auditLog = $AuditLogTable(this);
+  late final Trigger auditLogNoUpdate = Trigger(
+    'CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
+    'audit_log_no_update',
+  );
+  late final Trigger staysNoDelete = Trigger(
+    'CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays BEGIN SELECT RAISE (ABORT, \'stays rows are never deleted\');END',
+    'stays_no_delete',
+  );
+  late final Trigger paymentsNoDelete = Trigger(
+    'CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments BEGIN SELECT RAISE (ABORT, \'payments rows are never deleted\');END',
+    'payments_no_delete',
+  );
+  late final Trigger stayChargesNoDelete = Trigger(
+    'CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges BEGIN SELECT RAISE (ABORT, \'stay_charges rows are never deleted\');END',
+    'stay_charges_no_delete',
+  );
+  late final Trigger voidsNoDelete = Trigger(
+    'CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids BEGIN SELECT RAISE (ABORT, \'voids rows are never deleted\');END',
+    'voids_no_delete',
+  );
+  late final Trigger auditLogNoDelete = Trigger(
+    'CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
+    'audit_log_no_delete',
+  );
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $DeviceTable device = $DeviceTable(this);
   late final $ReceiptCounterTable receiptCounter = $ReceiptCounterTable(this);
+  late final Index auditLogAt = Index(
+    'audit_log_at',
+    'CREATE INDEX audit_log_at ON audit_log (at)',
+  );
+  late final Index auditLogUser = Index(
+    'audit_log_user',
+    'CREATE INDEX audit_log_user ON audit_log (user_id)',
+  );
+  late final Index auditLogAction = Index(
+    'audit_log_action',
+    'CREATE INDEX audit_log_action ON audit_log ("action")',
+  );
+  late final Index auditLogEntity = Index(
+    'audit_log_entity',
+    'CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)',
+  );
+  late final Index auditLogOperation = Index(
+    'audit_log_operation',
+    'CREATE INDEX audit_log_operation ON audit_log (operation_id)',
+  );
+  late final Index outboxUnsent = Index(
+    'outbox_unsent',
+    'CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL',
+  );
   late final Index guestsPhone = Index(
     'guests_phone',
     'CREATE INDEX guests_phone ON guests (phone)',
@@ -11050,55 +11162,59 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'inventory_movements_item',
     'CREATE INDEX inventory_movements_item ON inventory_movements (item_id)',
   );
-  late final Index auditLogAt = Index(
-    'audit_log_at',
-    'CREATE INDEX audit_log_at ON audit_log (at)',
-  );
-  late final Index auditLogUser = Index(
-    'audit_log_user',
-    'CREATE INDEX audit_log_user ON audit_log (user_id)',
-  );
-  late final Index auditLogAction = Index(
-    'audit_log_action',
-    'CREATE INDEX audit_log_action ON audit_log ("action")',
-  );
-  late final Index auditLogEntity = Index(
-    'audit_log_entity',
-    'CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)',
-  );
-  late final Index auditLogOperation = Index(
-    'audit_log_operation',
-    'CREATE INDEX audit_log_operation ON audit_log (operation_id)',
-  );
-  late final Index outboxUnsent = Index(
-    'outbox_unsent',
-    'CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL',
-  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     users,
+    usersStampedUpdate,
     settings,
+    settingsStampedUpdate,
     bedCategories,
+    bedCategoriesStampedUpdate,
     rooms,
+    roomsStampedUpdate,
     beds,
+    bedsStampedUpdate,
     housekeepers,
+    housekeepersStampedUpdate,
     guests,
+    guestsStampedUpdate,
     shifts,
+    shiftsStampedUpdate,
     stays,
+    staysStampedUpdate,
     payments,
+    paymentsStampedUpdate,
     stayCharges,
+    stayChargesStampedUpdate,
     housekeepingTasks,
+    housekeepingTasksStampedUpdate,
     inventoryItems,
     inventoryMovements,
+    inventoryMovementsStampedUpdate,
     voids,
+    voidsStampedUpdate,
     expenses,
+    expensesStampedUpdate,
+    inventoryItemsStampedUpdate,
     auditLog,
+    auditLogNoUpdate,
+    staysNoDelete,
+    paymentsNoDelete,
+    stayChargesNoDelete,
+    voidsNoDelete,
+    auditLogNoDelete,
     outbox,
     device,
     receiptCounter,
+    auditLogAt,
+    auditLogUser,
+    auditLogAction,
+    auditLogEntity,
+    auditLogOperation,
+    outboxUnsent,
     guestsPhone,
     guestsIdNumber,
     guestsIdUnique,
@@ -11110,13 +11226,164 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stayChargesPayment,
     housekeepingTasksBed,
     inventoryMovementsItem,
-    auditLogAt,
-    auditLogUser,
-    auditLogAction,
-    auditLogEntity,
-    auditLogOperation,
-    outboxUnsent,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'settings',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'bed_categories',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'rooms',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'beds',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'housekeepers',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'guests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shifts',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stays',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stay_charges',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'housekeeping_tasks',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'inventory_movements',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'voids',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'expenses',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'inventory_items',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'audit_log',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stays',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stay_charges',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'voids',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'audit_log',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+  ]);
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);

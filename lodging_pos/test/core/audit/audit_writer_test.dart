@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -16,6 +17,10 @@ void main() {
   late AuditWriter audit;
   late String deviceId;
   late String adminId;
+
+  /// Rows written before this are setup; audit_log is append-only, so tests
+  /// look only at what came after instead of deleting.
+  late DateTime since;
 
   setUp(() async {
     clock = FixedClock(t0);
@@ -36,10 +41,8 @@ void main() {
         ),
       ),
     )).id;
-    // Start each test from an empty audit trail and outbox.
-    await db.delete(db.outbox).go();
-    await db.delete(db.auditLog).go();
     clock.advance(const Duration(minutes: 5));
+    since = clock.now();
   });
 
   tearDown(() => db.close());
@@ -51,9 +54,14 @@ void main() {
   );
 
   Future<List<OutboxRow>> outbox() =>
-      (db.select(db.outbox)..orderBy([(o) => OrderingTerm.asc(o.seq)])).get();
+      (db.select(db.outbox)
+            ..where((o) => o.createdAt.isBiggerOrEqualValue(since))
+            ..orderBy([(o) => OrderingTerm.asc(o.seq)]))
+          .get();
 
-  Future<List<AuditLogRow>> auditRows() => db.select(db.auditLog).get();
+  Future<List<AuditLogRow>> auditRows() => (db.select(
+    db.auditLog,
+  )..where((a) => a.at.isBiggerOrEqualValue(since))).get();
 
   Future<int> count(TableInfo table) async =>
       (await db
@@ -215,9 +223,8 @@ void main() {
   group('update', () {
     test('records before and after, bumps updated_at only', () async {
       final room = await createRoom('3');
-      await db.delete(db.auditLog).go();
-      await db.delete(db.outbox).go();
       clock.advance(const Duration(hours: 1));
+      since = clock.now();
 
       final updated = await audit.writeWithAudit(
         action: 'room.update',
@@ -236,9 +243,17 @@ void main() {
       final entry = (await auditRows()).single;
       final before = jsonDecode(entry.beforeJson!) as Map;
       final after = jsonDecode(entry.afterJson) as Map;
+      // Only the columns that changed.
+      expect(before.keys, unorderedEquals(['floor', 'updated_at']));
+      expect(after.keys, unorderedEquals(['floor', 'updated_at']));
       expect(before['floor'], isNull);
       expect(after['floor'], '1st');
       expect(after['updated_at'], '2026-10-14T20:05:00.000Z');
+      // The outbox still gets the full row.
+      expect(
+        jsonDecode((await outbox()).first.payloadJson)['room_number'],
+        '3',
+      );
       expect((await outbox()).map((o) => o.targetTable), [
         'rooms',
         'audit_log',
@@ -513,6 +528,252 @@ void main() {
           throwsArgumentError,
         );
       }
+    });
+  });
+
+  group('redaction', () {
+    test(
+      'password_hash is redacted in audit JSON but synced in the outbox',
+      () async {
+        final user = await audit.writeWithAudit(
+          action: 'user.create',
+          userId: adminId,
+          body: (w) => w.insert(
+            db.users,
+            UsersCompanion.insert(
+              fullName: 'Desk',
+              username: 'desk',
+              passwordHash: r'$2b$10$secret',
+              role: 'receptionist',
+              mustChangePassword: true,
+            ),
+          ),
+        );
+        final entry = (await auditRows()).single;
+        expect(jsonDecode(entry.afterJson)['password_hash'], '[redacted]');
+        expect(jsonDecode(entry.afterJson)['username'], 'desk');
+        final queued = (await outbox()).first;
+        expect(queued.targetRowId, user.id);
+        expect(
+          jsonDecode(queued.payloadJson)['password_hash'],
+          r'$2b$10$secret',
+        );
+        expect(
+          jsonDecode((await outbox()).last.payloadJson)['after_json'],
+          isNot(contains('secret')),
+        );
+      },
+    );
+
+    test('guest personal data is redacted in audit JSON', () async {
+      await audit.writeWithAudit(
+        action: 'guest.create',
+        userId: adminId,
+        body: (w) => w.insert(
+          db.guests,
+          GuestsCompanion.insert(
+            fullName: 'John Guest',
+            phone: '0712345678',
+            idType: const Value('national_id'),
+            idNumber: const Value('12345678'),
+          ),
+        ),
+      );
+      final after = jsonDecode((await auditRows()).single.afterJson) as Map;
+      expect(after['full_name'], '[redacted]');
+      expect(after['phone'], '[redacted]');
+      expect(after['id_number'], '[redacted]');
+      expect(after['id_type'], 'national_id');
+      final payload = jsonDecode((await outbox()).first.payloadJson) as Map;
+      expect(payload['id_number'], '12345678');
+    });
+  });
+
+  group('write order and lifetime', () {
+    test('a nested writeWithAudit queues rows in actual write order', () async {
+      await audit.writeWithAudit(
+        action: 'room.create',
+        userId: adminId,
+        body: (w) async {
+          final room = await w.insert(
+            db.rooms,
+            RoomsCompanion.insert(roomNumber: '12'),
+          );
+          await audit.writeWithAudit(
+            action: 'bed.create',
+            userId: adminId,
+            body: (inner) => inner.insert(
+              db.beds,
+              BedsCompanion.insert(
+                roomId: room.id,
+                label: 'A',
+                categoryId: SeedIds.vip,
+                cleanliness: 'clean',
+              ),
+            ),
+          );
+        },
+      );
+      expect(
+        [for (final o in await outbox()) o.targetTable],
+        ['rooms', 'audit_log', 'beds', 'audit_log'],
+      );
+    });
+
+    test('a write the body did not await is still saved and audited', () async {
+      await audit.writeWithAudit(
+        action: 'room.create',
+        userId: adminId,
+        body: (w) async {
+          unawaited(
+            w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '13')),
+          );
+        },
+      );
+      expect(await count(db.rooms), 1);
+      expect((await auditRows()).map((e) => e.entity), ['rooms']);
+    });
+
+    test('a failed write the body did not await saves nothing', () async {
+      await expectLater(
+        audit.writeWithAudit(
+          action: 'room.create',
+          userId: adminId,
+          body: (w) async {
+            final room = await w.insert(
+              db.rooms,
+              RoomsCompanion.insert(roomNumber: '14'),
+            );
+            unawaited(
+              w.insert(
+                db.beds,
+                BedsCompanion.insert(
+                  roomId: room.id,
+                  label: 'C', // violates the label CHECK
+                  categoryId: SeedIds.vip,
+                  cleanliness: 'clean',
+                ),
+              ),
+            );
+          },
+        ),
+        throwsA(anything),
+      );
+      expect(await count(db.rooms), 0);
+      expect(await auditRows(), isEmpty);
+    });
+
+    test('using the writes after the call returns throws', () async {
+      late AuditedWrites escaped;
+      await audit.writeWithAudit(
+        action: 'room.create',
+        userId: adminId,
+        body: (w) {
+          escaped = w;
+          return w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '15'));
+        },
+      );
+      expect(
+        () => escaped.insert(db.rooms, RoomsCompanion.insert(roomNumber: '16')),
+        throwsStateError,
+      );
+      expect(await count(db.rooms), 1);
+    });
+
+    test('two updates of one row in one call both apply', () async {
+      final room = await createRoom('17');
+      clock.advance(const Duration(minutes: 1));
+      final updated = await audit.writeWithAudit(
+        action: 'room.update',
+        userId: adminId,
+        body: (w) async {
+          await w.update(
+            db.rooms,
+            room.id,
+            const RoomsCompanion(floor: Value('1st')),
+          );
+          return w.update(
+            db.rooms,
+            room.id,
+            const RoomsCompanion(notes: Value('quiet')),
+          );
+        },
+      );
+      expect(updated.floor, '1st');
+      expect(updated.notes, 'quiet');
+      expect(
+        updated.updatedAt,
+        clock.now().add(const Duration(milliseconds: 1)),
+      );
+    });
+  });
+
+  group('database guards', () {
+    test('a direct update that does not move updated_at is rejected', () async {
+      final room = await createRoom('18');
+      await expectLater(
+        (db.update(db.rooms)..where((r) => r.id.equals(room.id))).write(
+          const RoomsCompanion(floor: Value('2nd')),
+        ),
+        throwsA(
+          predicate((e) => '$e'.contains('must be stamped by writeWithAudit')),
+        ),
+      );
+    });
+
+    test('audit_log rows cannot be updated or deleted', () async {
+      await createRoom('19');
+      final entry = (await auditRows()).single;
+      await expectLater(
+        (db.update(db.auditLog)..where((a) => a.id.equals(entry.id))).write(
+          const AuditLogCompanion(action: Value('room.delete')),
+        ),
+        throwsA(predicate((e) => '$e'.contains('audit_log is append-only'))),
+      );
+      await expectLater(
+        db.delete(db.auditLog).go(),
+        throwsA(predicate((e) => '$e'.contains('audit_log is append-only'))),
+      );
+    });
+
+    test('stays, payments, charges and voids cannot be deleted', () async {
+      final triggers = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+            "AND name LIKE '%_no_delete'",
+          )
+          .map((r) => r.read<String>('name'))
+          .get();
+      expect(
+        triggers,
+        unorderedEquals([
+          'stays_no_delete',
+          'payments_no_delete',
+          'stay_charges_no_delete',
+          'voids_no_delete',
+          'audit_log_no_delete',
+        ]),
+      );
+      await audit.writeWithAudit(
+        action: 'void.create',
+        userId: adminId,
+        body: (w) => w.insert(
+          db.voids,
+          VoidsCompanion.insert(
+            targetType: 'payment',
+            targetId: w.newId(),
+            reason: 'Wrong amount',
+            voidedBy: adminId,
+            voidedAt: w.now,
+          ),
+        ),
+      );
+      await expectLater(
+        db.delete(db.voids).go(),
+        throwsA(
+          predicate((e) => '$e'.contains('voids rows are never deleted')),
+        ),
+      );
     });
   });
 

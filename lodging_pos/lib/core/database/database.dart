@@ -37,6 +37,7 @@ part 'database.g.dart';
     Device,
     ReceiptCounter,
   ],
+  include: {'triggers.drift'},
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor, {required this._clock});

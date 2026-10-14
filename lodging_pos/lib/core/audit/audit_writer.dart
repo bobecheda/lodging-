@@ -24,6 +24,15 @@ const _systemTables = {'audit_log', 'outbox', 'device'};
 /// Changed inside the transaction, but never audited or synced.
 const _localOnlyTables = {'receipt_counter'};
 
+/// Columns replaced by [_redacted] in audit JSON (never in the business row's
+/// outbox payload): secrets, and guest personal data that must stay
+/// purgeable under the Data Protection Act while audit_log is append-only.
+const _redactedColumns = {
+  'users': {'password_hash'},
+  'guests': {'full_name', 'phone', 'id_number'},
+};
+const _redacted = '[redacted]';
+
 /// The single write path. Repositories never write to drift directly.
 class AuditWriter {
   AuditWriter(this._db, this._clock);
@@ -32,12 +41,14 @@ class AuditWriter {
   final Clock _clock;
 
   /// Runs [body] in one transaction. For every synced row [body] inserts or
-  /// updates through [AuditedWrites], it also writes one `audit_log` row
-  /// (before/after of that row, tagged with [action]) and outbox rows for the
-  /// business row and the audit row, in write order. All audit rows of one
-  /// call share an `operation_id`.
+  /// updates through [AuditedWrites], it writes, at that moment, the outbox
+  /// row for the business row, one `audit_log` row (tagged with [action]) and
+  /// the outbox row for the audit row. All audit rows of one call share an
+  /// `operation_id`.
   ///
-  /// If anything throws, nothing is saved.
+  /// Writes [body] started but did not await are awaited before commit;
+  /// using the [AuditedWrites] after this call returns throws. If any write
+  /// fails, nothing is saved.
   ///
   /// [action] is `entity.verb`, e.g. `stay.check_in`. [userId] is the user
   /// doing it.
@@ -48,26 +59,20 @@ class AuditWriter {
   }) {
     _checkAction(action);
     return _db.transaction(() async {
-      final w = await _start();
-      final result = await body(w);
-      if (w._changes.isEmpty) {
-        throw StateError(
-          '$action changed no synced rows; use recordEvent for audit-only '
-          'entries',
-        );
+      final w = await _start(action, userId);
+      try {
+        final result = await body(w);
+        await Future.wait(w._pending);
+        if (w._writes == 0) {
+          throw StateError(
+            '$action changed no synced rows; use recordEvent for audit-only '
+            'entries',
+          );
+        }
+        return result;
+      } finally {
+        w._closed = true;
       }
-      for (final c in w._changes) {
-        await w._enqueue(c.table, c.id, c.afterJson);
-        await w._audit(
-          action: action,
-          userId: userId,
-          entity: c.table,
-          entityId: c.id,
-          beforeJson: c.beforeJson,
-          afterJson: c.afterJson,
-        );
-      }
-      return result;
     });
   }
 
@@ -82,10 +87,8 @@ class AuditWriter {
   }) {
     _checkAction(action);
     return _db.transaction(() async {
-      final w = await _start();
+      final w = await _start(action, userId);
       await w._audit(
-        action: action,
-        userId: userId,
         entity: entity,
         entityId: entityId,
         beforeJson: null,
@@ -94,12 +97,15 @@ class AuditWriter {
     });
   }
 
-  Future<AuditedWrites> _start() async => AuditedWrites._(
-    _db,
-    now: _clock.now(),
-    deviceId: await _db.deviceId(),
-    operationId: const Uuid().v4(),
-  );
+  Future<AuditedWrites> _start(String action, String? userId) async =>
+      AuditedWrites._(
+        _db,
+        now: _clock.now(),
+        deviceId: await _db.deviceId(),
+        operationId: const Uuid().v4(),
+        action: action,
+        userId: userId,
+      );
 
   static void _checkAction(String action) {
     if (!_actionPattern.hasMatch(action)) {
@@ -118,9 +124,13 @@ class AuditedWrites {
     required this.now,
     required this.deviceId,
     required this.operationId,
+    required this._action,
+    required this._userId,
   });
 
   final AppDatabase _db;
+  final String _action;
+  final String? _userId;
 
   /// "Now" for this whole write. Use it for business timestamps too
   /// (e.g. `check_in_at`) so they match the audit entry.
@@ -132,7 +142,9 @@ class AuditedWrites {
   /// `audit_log.operation_id` for every audit row of this call.
   final String operationId;
 
-  final _changes = <_Change>[];
+  final _pending = <Future<Object?>>[];
+  var _writes = 0;
+  var _closed = false;
 
   String newId() => const Uuid().v4();
 
@@ -148,7 +160,7 @@ class AuditedWrites {
   Future<D> insert<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     Insertable<D> row,
-  ) async {
+  ) => _track(() async {
     final name = _writableName(table);
     final synced = !_localOnlyTables.contains(name);
     final values = {
@@ -160,24 +172,24 @@ class AuditedWrites {
       },
     };
 
-    final inserted = await _db
-        .into(table)
-        .insertReturning(RawValuesInsertable<D>(values));
-    if (synced) _record(table, before: null, after: inserted);
+    final inserted = await _db.into(table).insertReturning(_raw(values));
+    if (synced) await _log(table, before: null, after: inserted);
     return inserted;
-  }
+  });
 
   /// Updates the row whose primary key is [id] with [changes] and returns it
   /// as stored. Throws if the row does not exist.
   ///
-  /// On synced tables, stamps `updated_at` = [now] and `device_id`. Never
-  /// writes `created_at`: [changes] may not touch it, the primary key or
-  /// `device_id`.
+  /// On synced tables, stamps `updated_at` and `device_id`. `updated_at` is
+  /// [now], or 1 ms past the stored value when that is not earlier (a second
+  /// update in the same call, or a clock set back): the database rejects
+  /// updates that leave it unchanged. Never writes `created_at`: [changes]
+  /// may not touch it, the primary key or `device_id`.
   Future<D> update<T extends Table, D extends DataClass>(
     TableInfo<T, D> table,
     String id,
     Insertable<D> changes,
-  ) async {
+  ) => _track(() async {
     final name = _writableName(table);
     final pk = _primaryKey(table);
     final changed = changes.toColumns(true);
@@ -188,49 +200,78 @@ class AuditedWrites {
     }
     if (changed.isEmpty) throw ArgumentError('No changes for $name $id');
 
-    final synced = !_localOnlyTables.contains(name);
-    final values = {
-      ...changed,
-      if (synced) ...{
-        'updated_at': Variable<DateTime>(now),
-        'device_id': Variable<String>(deviceId),
-      },
-    };
-
     Future<D?> read() =>
         (_db.select(table)..where((_) => pk.equals(id))).getSingleOrNull();
 
     final before = await read();
     if (before == null) throw StateError('$name $id not found');
-    await (_db.update(
-      table,
-    )..where((_) => pk.equals(id))).write(RawValuesInsertable<D>(values));
+
+    final synced = !_localOnlyTables.contains(name);
+    var values = changed;
+    if (synced) {
+      final old = DateTime.parse(_json(before)['updated_at']! as String);
+      values = {
+        ...changed,
+        'updated_at': Variable<DateTime>(
+          now.isAfter(old) ? now : old.add(const Duration(milliseconds: 1)),
+        ),
+        'device_id': Variable<String>(deviceId),
+      };
+    }
+    await (_db.update(table)..where((_) => pk.equals(id))).write(_raw(values));
     final after = (await read())!;
-    if (synced) _record(table, before: before, after: after);
+    if (synced) await _log(table, before: before, after: after);
     return after;
+  });
+
+  /// Runs [op] unless the call has returned, and keeps it so writeWithAudit
+  /// awaits it even if the body did not.
+  Future<R> _track<R>(Future<R> Function() op) {
+    if (_closed) {
+      throw StateError('AuditedWrites used after writeWithAudit returned');
+    }
+    final future = op();
+    _pending.add(future..ignore());
+    return future;
   }
 
-  void _record(
+  /// Queues the business row, then writes and queues its audit row.
+  ///
+  /// The outbox gets the full row. The audit JSON is redacted and, on update,
+  /// holds only the columns that changed.
+  Future<void> _log(
     TableInfo table, {
     required DataClass? before,
     required DataClass after,
-  }) {
-    final afterMap = after.toJson(serializer: auditJsonSerializer);
-    _changes.add(
-      _Change(
-        table: table.actualTableName,
-        id: afterMap[_primaryKey(table).name] as String,
-        beforeJson: before == null
-            ? null
-            : jsonEncode(before.toJson(serializer: auditJsonSerializer)),
-        afterJson: jsonEncode(afterMap),
-      ),
+  }) async {
+    final name = table.actualTableName;
+    final afterRow = _json(after);
+    final id = afterRow[_primaryKey(table).name]! as String;
+    await _enqueue(name, id, jsonEncode(afterRow));
+
+    Map<String, Object?>? auditBefore;
+    var auditAfter = afterRow;
+    if (before != null) {
+      final beforeRow = _json(before);
+      final changedKeys = [
+        for (final k in afterRow.keys)
+          if (beforeRow[k] != afterRow[k]) k,
+      ];
+      auditBefore = {for (final k in changedKeys) k: beforeRow[k]};
+      auditAfter = {for (final k in changedKeys) k: afterRow[k]};
+    }
+    await _audit(
+      entity: name,
+      entityId: id,
+      beforeJson: auditBefore == null
+          ? null
+          : jsonEncode(_redact(name, auditBefore)),
+      afterJson: jsonEncode(_redact(name, auditAfter)),
     );
+    _writes++;
   }
 
   Future<void> _audit({
-    required String action,
-    required String? userId,
     required String entity,
     required String entityId,
     required String? beforeJson,
@@ -246,19 +287,15 @@ class AuditedWrites {
             deviceId: Value(deviceId),
             at: now,
             operationId: operationId,
-            userId: Value(userId),
-            action: action,
+            userId: Value(_userId),
+            action: _action,
             entity: entity,
             entityId: entityId,
             beforeJson: Value(beforeJson),
             afterJson: afterJson,
           ),
         );
-    await _enqueue(
-      'audit_log',
-      row.id,
-      jsonEncode(row.toJson(serializer: auditJsonSerializer)),
-    );
+    await _enqueue('audit_log', row.id, jsonEncode(_json(row)));
   }
 
   Future<void> _enqueue(String table, String rowId, String payloadJson) => _db
@@ -272,6 +309,25 @@ class AuditedWrites {
         ),
       );
 
+  /// Column values for drift. Typed `Never` because `D` can be inferred
+  /// wider than the table's row type (e.g. `unawaited(w.insert(...))` infers
+  /// `DataClass`), and drift checks the insertable's type at runtime;
+  /// `Insertable<Never>` fits every table.
+  static Insertable<Never> _raw(Map<String, Expression> values) =>
+      RawValuesInsertable<Never>(values);
+
+  static Map<String, Object?> _json(DataClass row) =>
+      row.toJson(serializer: auditJsonSerializer);
+
+  static Map<String, Object?> _redact(String table, Map<String, Object?> json) {
+    final hidden = _redactedColumns[table];
+    if (hidden == null) return json;
+    return {
+      for (final MapEntry(:key, :value) in json.entries)
+        key: hidden.contains(key) && value != null ? _redacted : value,
+    };
+  }
+
   static String _writableName(TableInfo table) {
     final name = table.actualTableName;
     if (_systemTables.contains(name)) {
@@ -282,20 +338,6 @@ class AuditedWrites {
 
   static GeneratedColumn<String> _primaryKey(TableInfo table) =>
       table.$primaryKey.single as GeneratedColumn<String>;
-}
-
-class _Change {
-  const _Change({
-    required this.table,
-    required this.id,
-    required this.beforeJson,
-    required this.afterJson,
-  });
-
-  final String table;
-  final String id;
-  final String? beforeJson;
-  final String afterJson;
 }
 
 @Riverpod(keepAlive: true)
