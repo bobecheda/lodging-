@@ -11,6 +11,7 @@ import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
 import 'gate.dart';
+import '../features/setup/presentation/rooms_screen.dart';
 import 'home_screen.dart';
 import 'shell/desk_shell.dart';
 import 'splash_screen.dart';
@@ -66,6 +67,10 @@ GoRouter router(Ref ref) {
             DeskShell(location: state.matchedLocation, child: child),
         routes: [
           GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+          GoRoute(
+            path: Routes.adminRooms,
+            builder: (_, _) => const RoomsScreen(),
+          ),
         ],
       ),
     ],

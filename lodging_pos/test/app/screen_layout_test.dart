@@ -1,8 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
+
+import 'package:lodging_pos/core/database/seed.dart';
+import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
+import 'package:lodging_pos/features/setup/domain/rooms.dart';
+import 'package:lodging_pos/features/setup/presentation/widgets/room_table.dart';
 
 import '../helpers/fixtures.dart';
 
@@ -173,5 +179,94 @@ void main() {
       Routes.home,
       'Receptionist · shift since 22:00',
     );
+  });
+
+  group('Rooms & beds (AD-2)', () {
+    /// 12 rooms as on the artboard, a guest in Room 5 bed B, Room 13 closed.
+    Future<void> seedTwelveRooms() async {
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final repo = RoomsRepository(env.db, env.audit);
+      for (var n = 1; n <= 12; n++) {
+        final room = await repo.createRoom(
+          owner,
+          NewRoom(
+            number: '$n',
+            floor: n <= 5 ? 'Ground' : 'First',
+            notes: null,
+            bedACategoryId: SeedIds.vip,
+            bedBCategoryId: n.isEven || n == 5 ? SeedIds.deluxe : null,
+          ),
+        );
+        if (n == 5) await env.checkIn(room.beds.last.id, by: owner);
+      }
+      final closed = await repo.createRoom(
+        owner,
+        const NewRoom(
+          number: '13',
+          floor: 'First',
+          notes: null,
+          bedACategoryId: SeedIds.normal,
+          bedBCategoryId: SeedIds.comfort,
+        ),
+      );
+      await repo.deactivateBed(owner, closed.beds.last.id);
+      await repo.deactivateRoom(owner, closed.id);
+    }
+
+    Future<ProviderContainer> openRooms(WidgetTester tester) async {
+      await withOwner();
+      await seedTwelveRooms();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'nav.${Routes.adminRooms}');
+      return app;
+    }
+
+    testWidgets('table of 13 rooms', (tester) async {
+      final app = await openRooms(tester);
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.adminRooms,
+        '13 rooms · 19 beds active · 1 room closed',
+      );
+    });
+
+    testWidgets('edit panel with guest blockers', (tester) async {
+      final app = await openRooms(tester);
+      await tapKey(tester, 'rooms.edit.5');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.adminRooms,
+        'Bed B has a guest right now. Check them out first.',
+      );
+    });
+
+    testWidgets('edit panel for a closed room with a closed bed', (
+      tester,
+    ) async {
+      final app = await openRooms(tester);
+      // The table builds rows lazily; Room 13 is below the fold at 768px.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('rooms.edit.13')),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(RoomTable),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tapKey(tester, 'rooms.edit.13');
+      await expectCleanLayout(tester, app, Routes.adminRooms, 'Reopen room');
+    });
+
+    testWidgets('add panel with two beds', (tester) async {
+      final app = await openRooms(tester);
+      await tapKey(tester, 'rooms.add');
+      await tapKey(tester, 'choice.2');
+      await expectCleanLayout(tester, app, Routes.adminRooms, 'Bed B category');
+    });
   });
 }

@@ -8,6 +8,13 @@ abstract final class Routes {
   static const changePassword = '/change-password';
   static const shift = '/shift';
   static const home = '/home';
+  static const adminRooms = '/admin/rooms';
+
+  /// Owner-only screens (AD-1) live under this prefix.
+  static const ownerOnlyPrefix = '/admin';
+
+  static bool isOwnerOnly(String location) =>
+      location == ownerOnlyPrefix || location.startsWith('$ownerOnlyPrefix/');
 
   /// Screens that only exist to get the user ready to work.
   static const gates = {splash, setup, login, changePassword, shift};
@@ -47,7 +54,13 @@ String? redirectFor(
     user: user,
     shiftStart: shiftStart,
   );
-  // Once ready, any working screen is fine; only the gates send you home.
-  if (target == Routes.home && !Routes.gates.contains(location)) return null;
+  if (target == Routes.home) {
+    // AD-1: receptionists never reach owner-only screens.
+    if (Routes.isOwnerOnly(location) && user?.role != Role.admin) {
+      return Routes.home;
+    }
+    // Once ready, any working screen is fine; only the gates send you home.
+    if (!Routes.gates.contains(location)) return null;
+  }
   return target == location ? null : target;
 }
