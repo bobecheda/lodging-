@@ -1,9 +1,9 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lodging_pos/app/app.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
+import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../helpers/fixtures.dart';
@@ -14,56 +14,31 @@ void main() {
   setUp(() => env = TestEnv());
   tearDown(() => env.close());
 
-  Future<ProviderContainer> pumpApp(WidgetTester tester) async {
-    final container = ProviderContainer(overrides: env.overrides);
-    addTearDown(container.dispose);
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const App()),
-    );
-    await tester.pumpAndSettle();
-    return container;
-  }
-
-  Future<void> enter(WidgetTester tester, String key, String text) =>
-      tester.enterText(find.byKey(ValueKey(key)), text);
-
-  Future<void> tap(WidgetTester tester, String key) async {
-    await tester.tap(find.byKey(ValueKey(key)));
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> signIn(WidgetTester tester, String user, String password) async {
-    await enter(tester, 'login.username', user);
-    await enter(tester, 'login.password', password);
-    await tap(tester, 'login.submit');
-  }
-
-  String location(ProviderContainer c) =>
-      c.read(routerProvider).routerDelegate.currentConfiguration.uri.path;
-
-  testWidgets('first run: setup creates the admin, then goes to login', (
+  testWidgets('first run: setup creates the owner, then goes to sign in', (
     tester,
   ) async {
-    final app = await pumpApp(tester);
+    final app = await pumpDeskApp(tester, env);
     expect(find.text('Set up this lodging'), findsOneWidget);
 
-    await enter(tester, 'setup.lodgingName', 'Sunrise Lodge');
-    await enter(tester, 'setup.fullName', 'Grace Owner');
-    await enter(tester, 'setup.username', 'Owner');
-    await enter(tester, 'setup.password', 'owner-pass');
-    await enter(tester, 'setup.confirmPassword', 'owner-pass');
-    await tap(tester, 'setup.submit');
+    await enterKey(tester, 'setup.lodgingName', 'Sunrise Lodge');
+    await enterKey(tester, 'setup.fullName', 'Grace Owner');
+    await enterKey(tester, 'setup.username', 'Owner');
+    await enterKey(tester, 'setup.password', 'owner-pass');
+    await enterKey(tester, 'setup.confirmPassword', 'owner-pass');
+    await tapKey(tester, 'setup.submit');
 
-    expect(location(app), Routes.login);
+    expect(locationOf(app), Routes.login);
     expect(
       (await env.users.findByUsername('owner'))?.account.fullName,
       'Grace Owner',
     );
+    // The brand panel now shows the lodging name.
+    expect(find.text('Sunrise Lodge'), findsOneWidget);
   });
 
   testWidgets('setup shows field errors and saves nothing', (tester) async {
-    await pumpApp(tester);
-    await tap(tester, 'setup.submit');
+    await pumpDeskApp(tester, env);
+    await tapKey(tester, 'setup.submit');
     expect(find.text('Enter the lodging name'), findsOneWidget);
     expect(await env.users.hasAnyUser(), isFalse);
   });
@@ -72,43 +47,43 @@ void main() {
     tester,
   ) async {
     await env.users.createFirstAdmin(testSetup);
-    final app = await pumpApp(tester);
-    expect(location(app), Routes.login);
+    final app = await pumpDeskApp(tester, env);
+    expect(locationOf(app), Routes.login);
 
-    // Signed out: navigating to setup lands on login.
+    // Signed out: navigating to setup lands on sign in.
     app.read(routerProvider).go(Routes.setup);
     await tester.pumpAndSettle();
-    expect(location(app), Routes.login);
+    expect(locationOf(app), Routes.login);
     expect(find.text('Set up this lodging'), findsNothing);
 
     // Signed in: it lands on home instead.
-    await signIn(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'owner', 'owner-pass');
     app.read(routerProvider).go(Routes.setup);
     await tester.pumpAndSettle();
-    expect(location(app), Routes.home);
+    expect(locationOf(app), Routes.home);
     expect(find.text('Set up this lodging'), findsNothing);
   });
 
-  testWidgets('an admin signs in straight to home without a shift', (
+  testWidgets('the owner signs in straight to home without a shift', (
     tester,
   ) async {
     await env.users.createFirstAdmin(testSetup);
-    final app = await pumpApp(tester);
-    await signIn(tester, 'OWNER', 'owner-pass');
-    expect(location(app), Routes.home);
-    expect(
-      find.textContaining('Signed in as Grace Owner (Admin)'),
-      findsOneWidget,
-    );
+    final app = await pumpDeskApp(tester, env);
+    await signInAs(tester, 'OWNER', 'owner-pass');
+    expect(locationOf(app), Routes.home);
+    expect(find.text('Grace Owner'), findsOneWidget);
+    expect(find.text('Owner · admin'), findsOneWidget);
     expect(find.textContaining('No shift open'), findsOneWidget);
   });
 
-  testWidgets('a wrong password stays on login with a message', (tester) async {
+  testWidgets('a wrong password stays on sign in with a message', (
+    tester,
+  ) async {
     await env.users.createFirstAdmin(testSetup);
-    final app = await pumpApp(tester);
-    await signIn(tester, 'owner', 'wrong-pass');
-    expect(location(app), Routes.login);
-    expect(find.text('Wrong username or password.'), findsOneWidget);
+    final app = await pumpDeskApp(tester, env);
+    await signInAs(tester, 'owner', 'wrong-pass');
+    expect(locationOf(app), Routes.login);
+    expect(find.text('Wrong username or password. Try again.'), findsOneWidget);
   });
 
   testWidgets('must change password, then open a shift, then home (FD-1)', (
@@ -116,42 +91,45 @@ void main() {
   ) async {
     await env.users.createFirstAdmin(testSetup);
     await env.addReceptionist('desk', mustChangePassword: true);
-    final app = await pumpApp(tester);
-    await signIn(tester, 'desk', 'desk-pass');
-    expect(location(app), Routes.changePassword);
+    final app = await pumpDeskApp(tester, env);
+    await signInAs(tester, 'desk', 'desk-pass');
+    expect(locationOf(app), Routes.changePassword);
 
     // Nothing else is reachable until the password is changed.
     for (final route in [Routes.home, Routes.shift, Routes.login]) {
       app.read(routerProvider).go(route);
       await tester.pumpAndSettle();
-      expect(location(app), Routes.changePassword, reason: route);
+      expect(locationOf(app), Routes.changePassword, reason: route);
     }
 
-    await enter(tester, 'password.new', 'my-own-pass');
-    await enter(tester, 'password.confirm', 'my-own-pass');
-    await tap(tester, 'password.submit');
-    expect(location(app), Routes.shift);
+    await enterKey(tester, 'password.new', 'my-own-pass');
+    await enterKey(tester, 'password.confirm', 'my-own-pass');
+    await tapKey(tester, 'password.submit');
+    expect(locationOf(app), Routes.shift);
+    expect(find.text('Good evening, Desk'), findsOneWidget);
 
     // No check-in or payment screen is reachable without an open shift.
     app.read(routerProvider).go(Routes.home);
     await tester.pumpAndSettle();
-    expect(location(app), Routes.shift);
+    expect(locationOf(app), Routes.shift);
 
-    await enter(tester, 'shift.float', '1,500');
-    await tap(tester, 'shift.submit');
-    expect(location(app), Routes.home);
+    await enterKey(tester, 'shift.float', '1500');
+    // The money input groups thousands as you type.
+    expect(find.text('1,500'), findsOneWidget);
+    await tapKey(tester, 'shift.submit');
+    expect(locationOf(app), Routes.home);
     expect(find.textContaining('float KES 1,500'), findsOneWidget);
+    expect(find.text('Receptionist · shift since 22:00'), findsOneWidget);
     expect(await env.auditFor('shift.open'), hasLength(1));
   });
 
-  testWidgets('an invalid float is rejected on screen', (tester) async {
+  testWidgets('an empty float is rejected on screen', (tester) async {
     await env.users.createFirstAdmin(testSetup);
     await env.addReceptionist('desk');
-    await pumpApp(tester);
-    await signIn(tester, 'desk', 'desk-pass');
-    await enter(tester, 'shift.float', '12.50');
-    await tap(tester, 'shift.submit');
-    expect(find.textContaining('whole amount'), findsOneWidget);
+    await pumpDeskApp(tester, env);
+    await signInAs(tester, 'desk', 'desk-pass');
+    await tapKey(tester, 'shift.submit');
+    expect(find.text('Enter the opening cash float'), findsOneWidget);
     expect(await env.auditFor('shift.open'), isEmpty);
   });
 
@@ -165,25 +143,90 @@ void main() {
       env.db,
       env.audit,
     ).openShift(user: desk, openingFloat: 1000);
-    final app = await pumpApp(tester);
-    await signIn(tester, 'tom', 'desk-pass');
-    expect(location(app), Routes.shift);
-    expect(find.text('Another shift is open'), findsOneWidget);
-    expect(find.textContaining("Desk DESK's shift"), findsOneWidget);
+    final app = await pumpDeskApp(tester, env);
+    await signInAs(tester, 'tom', 'desk-pass');
+    expect(locationOf(app), Routes.shift);
+    expect(find.text("Desk's shift must be closed first"), findsOneWidget);
+    expect(
+      find.textContaining('Desk DESK has had a shift open'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('the shift owner resumes their shift after signing in again', (
-    tester,
-  ) async {
-    await env.users.createFirstAdmin(testSetup);
-    final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 800);
-    final app = await pumpApp(tester);
-    await signIn(tester, 'desk', 'desk-pass');
-    expect(location(app), Routes.home);
-    expect(find.textContaining('float KES 800'), findsOneWidget);
-  });
+  testWidgets(
+    'the shift owner sees the resume card with takings, then continues',
+    (tester) async {
+      final owner = await env.users.createFirstAdmin(testSetup);
+      final desk = await env.addReceptionist('desk');
+      await ShiftRepository(
+        env.db,
+        env.audit,
+      ).openShift(user: desk, openingFloat: 800);
+      // Two payments on the shift, one voided, to show takings.
+      await _twoPaymentsOneVoided(env, desk.id, owner.id);
+
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'desk', 'desk-pass');
+      expect(locationOf(app), Routes.shift);
+      expect(find.text('Welcome back, Desk'), findsOneWidget);
+      final total = tester.widget<Text>(
+        find.byKey(const ValueKey('shift.takenTotal')),
+      );
+      expect(total.data, 'KES 700'); // the voided 1,000 is not counted
+      expect(find.text('KES 800'), findsOneWidget); // opening float
+
+      await tapKey(tester, 'shift.continue');
+      expect(locationOf(app), Routes.home);
+      expect(find.textContaining('float KES 800'), findsOneWidget);
+    },
+  );
+}
+
+/// A cash payment of 700 and a Paybill payment of 1,000 that is voided.
+Future<void> _twoPaymentsOneVoided(
+  TestEnv env,
+  String deskId,
+  String ownerId,
+) async {
+  final shift = await env.db.select(env.db.shifts).getSingle();
+  await env.audit.writeWithAudit(
+    action: 'payment.create',
+    userId: deskId,
+    body: (w) async {
+      await w.insert(
+        env.db.payments,
+        PaymentsCompanion.insert(
+          receiptNumber: 'R-000001',
+          shiftId: shift.id,
+          receivedBy: deskId,
+          receivedAt: env.clock.now(),
+          amount: 700,
+          method: 'cash',
+        ),
+      );
+      final paybill = await w.insert(
+        env.db.payments,
+        PaymentsCompanion.insert(
+          receiptNumber: 'R-000002',
+          shiftId: shift.id,
+          receivedBy: deskId,
+          receivedAt: env.clock.now(),
+          amount: 1000,
+          method: 'paybill',
+          mpesaCode: const Value('SJK4H7XQ2P'),
+        ),
+      );
+      await w.insert(
+        env.db.voids,
+        VoidsCompanion.insert(
+          targetType: 'payment',
+          targetId: paybill.id,
+          reason: 'Wrong amount',
+          voidedBy: ownerId,
+          voidedAt: env.clock.now(),
+        ),
+        action: 'void.create',
+      );
+    },
+  );
 }

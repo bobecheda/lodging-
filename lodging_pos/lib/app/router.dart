@@ -12,6 +12,7 @@ import '../features/shifts/presentation/open_shift_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
 import 'gate.dart';
 import 'home_screen.dart';
+import 'shell/desk_shell.dart';
 import 'splash_screen.dart';
 
 part 'router.g.dart';
@@ -25,6 +26,7 @@ GoRouter router(Ref ref) {
     ..listen(setupStatusProvider, (_, _) => bump())
     ..listen(sessionProvider, (_, _) => bump())
     ..listen(currentShiftProvider, (_, _) => bump())
+    ..listen(shiftContinuedProvider, (_, _) => bump())
     ..onDispose(refresh.dispose);
 
   String? redirect(BuildContext context, GoRouterState state) {
@@ -40,6 +42,7 @@ GoRouter router(Ref ref) {
               openShift: shift.value,
               userId: user.id,
               role: user.role,
+              resumeConfirmed: ref.read(shiftContinuedProvider),
             ),
     );
   }
@@ -57,7 +60,14 @@ GoRouter router(Ref ref) {
         builder: (_, _) => const ChangePasswordScreen(),
       ),
       GoRoute(path: Routes.shift, builder: (_, _) => const OpenShiftScreen()),
-      GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+      // Working screens live inside the desk shell (sidebar + content).
+      ShellRoute(
+        builder: (context, state, child) =>
+            DeskShell(location: state.matchedLocation, child: child),
+        routes: [
+          GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+        ],
+      ),
     ],
   );
 }

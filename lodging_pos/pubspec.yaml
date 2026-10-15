@@ -70,6 +70,26 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Bundled so the desk renders offline. Sources and hashes:
+  # assets/fonts/README.md. Family names are used only in lib/app/theme/.
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/manrope/manrope-medium.ttf
+          weight: 500
+        - asset: assets/fonts/manrope/manrope-semibold.ttf
+          weight: 600
+        - asset: assets/fonts/manrope/manrope-bold.ttf
+          weight: 700
+        - asset: assets/fonts/manrope/manrope-extrabold.ttf
+          weight: 800
+    - family: IBMPlexMono
+      fonts:
+        - asset: assets/fonts/ibm_plex_mono/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ibm_plex_mono/IBMPlexMono-SemiBold.ttf
+          weight: 600
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

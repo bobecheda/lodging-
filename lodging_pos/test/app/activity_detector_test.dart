@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lodging_pos/app/app.dart';
 import 'package:lodging_pos/app/gate.dart';
-import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
@@ -17,6 +15,7 @@ void main() {
   setUp(() => env = TestEnv());
   tearDown(() => env.close());
 
+  /// The receptionist signed in on the desk, working in their open shift.
   Future<ProviderContainer> signedInApp(WidgetTester tester) async {
     await env.users.createFirstAdmin(testSetup);
     final desk = await env.addReceptionist('desk');
@@ -24,27 +23,11 @@ void main() {
       env.db,
       env.audit,
     ).openShift(user: desk, openingFloat: 1000);
-    final app = ProviderContainer(overrides: env.overrides);
-    addTearDown(app.dispose);
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: app, child: const App()),
-    );
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('login.username')),
-      'desk',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('login.password')),
-      'desk-pass',
-    );
-    await tester.tap(find.byKey(const ValueKey('login.submit')));
-    await tester.pumpAndSettle();
+    final app = await pumpDeskApp(tester, env);
+    await signInAs(tester, 'desk', 'desk-pass');
+    await tapKey(tester, 'shift.continue');
     return app;
   }
-
-  String location(ProviderContainer app) =>
-      app.read(routerProvider).routerDelegate.currentConfiguration.uri.path;
 
   /// Moves the clock on, then checks whether an input counted as activity.
   Future<void> expectActivity(
@@ -62,7 +45,7 @@ void main() {
     tester,
   ) async {
     final app = await signedInApp(tester);
-    final centre = tester.getCenter(find.byType(Scaffold).first);
+    final centre = tester.getCenter(find.text('Bed board').last);
 
     // Click.
     await expectActivity(tester, app, () => tester.tapAt(centre));
@@ -90,40 +73,47 @@ void main() {
     );
   });
 
-  testWidgets('after 10 idle minutes: login with an empty username and a message; '
-      'signing back in resumes the open shift', (tester) async {
+  testWidgets(
+    'after 10 idle minutes: lock screen with an empty username; signing back '
+    'in resumes the open shift',
+    (tester) async {
+      final app = await signedInApp(tester);
+      expect(locationOf(app), Routes.home);
+
+      env.clock.advance(const Duration(minutes: 10));
+      await app.read(idleLockProvider.notifier).check();
+      await tester.pumpAndSettle();
+
+      expect(locationOf(app), Routes.login);
+      expect(find.text('Screen locked after 10 minutes idle'), findsOneWidget);
+      expect(
+        find.text('The open shift is kept. Sign in to carry on.'),
+        findsOneWidget,
+      );
+      final username = tester.widget<TextField>(
+        find.byKey(const ValueKey('login.username')),
+      );
+      expect(username.controller!.text, isEmpty);
+      expect(await env.auditFor('user.auto_lock'), hasLength(1));
+
+      await signInAs(tester, 'desk', 'desk-pass');
+      // Back to the same shift: the resume card first.
+      expect(locationOf(app), Routes.shift);
+      await tapKey(tester, 'shift.continue');
+      expect(locationOf(app), Routes.home);
+      expect(find.textContaining('float KES 1,000'), findsOneWidget);
+      expect(await env.auditFor('shift.open'), hasLength(1));
+    },
+  );
+
+  testWidgets('the sidebar Lock screen button locks now (user.lock)', (
+    tester,
+  ) async {
     final app = await signedInApp(tester);
-    expect(location(app), Routes.home);
-
-    env.clock.advance(const Duration(minutes: 10));
-    await app.read(idleLockProvider.notifier).check();
-    await tester.pumpAndSettle();
-
-    expect(location(app), Routes.login);
-    expect(
-      find.text(
-        'Signed out after 10 minutes of inactivity. Your shift is still open.',
-      ),
-      findsOneWidget,
-    );
-    final username = tester.widget<TextField>(
-      find.byKey(const ValueKey('login.username')),
-    );
-    expect(username.controller!.text, isEmpty);
-    expect(await env.auditFor('user.auto_lock'), hasLength(1));
-
-    await tester.enterText(
-      find.byKey(const ValueKey('login.username')),
-      'desk',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('login.password')),
-      'desk-pass',
-    );
-    await tester.tap(find.byKey(const ValueKey('login.submit')));
-    await tester.pumpAndSettle();
-    expect(location(app), Routes.home);
-    expect(find.textContaining('float KES 1,000'), findsOneWidget);
-    expect(await env.auditFor('shift.open'), hasLength(1));
+    await tapKey(tester, 'shell.lock');
+    expect(locationOf(app), Routes.login);
+    expect(find.text('Screen locked'), findsWidgets);
+    expect(await env.auditFor('user.lock'), hasLength(1));
+    expect(await env.auditFor('user.auto_lock'), isEmpty);
   });
 }

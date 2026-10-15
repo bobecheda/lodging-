@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/widgets/gate_card.dart';
+import '../../../app/widgets/buttons.dart';
+import '../../../app/widgets/labeled_field.dart';
+import '../../../app/widgets/notes.dart';
+import '../../../app/widgets/split_gate_layout.dart';
 import '../../../core/auth/session.dart';
 import '../domain/credentials.dart';
 import 'auth_providers.dart';
 
-/// Shown right after login when `must_change_password` is set; the router
+/// Shown right after sign-in when `must_change_password` is set; the router
 /// keeps every other screen out of reach until it is done.
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -53,46 +56,44 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => GateCard(
+  Widget build(BuildContext context) => SplitGateLayout(
     title: 'Choose a new password',
     subtitle:
-        'Your password was set by the admin. Choose your own to continue.',
+        'The owner gave you a temporary password. Choose your own to carry on.',
     children: [
-      TextField(
-        key: const ValueKey('password.new'),
+      LabeledField(
+        label: 'New password',
         controller: _password,
+        fieldKey: const ValueKey('password.new'),
         obscureText: true,
         autofocus: true,
-        decoration: InputDecoration(
-          labelText: 'New password',
-          helperText: 'At least $minPasswordLength characters',
-          errorText: _errors[PasswordField.password],
-        ),
+        helperText: 'At least $minPasswordLength characters',
+        errorText: _errors[PasswordField.password],
         textInputAction: TextInputAction.next,
       ),
-      const SizedBox(height: 16),
-      TextField(
-        key: const ValueKey('password.confirm'),
+      formGap,
+      LabeledField(
+        label: 'Confirm new password',
         controller: _confirm,
+        fieldKey: const ValueKey('password.confirm'),
         obscureText: true,
-        decoration: InputDecoration(
-          labelText: 'Confirm new password',
-          errorText: _errors[PasswordField.confirm],
-        ),
+        errorText: _errors[PasswordField.confirm],
         onSubmitted: (_) => _submit(),
       ),
-      const SizedBox(height: 16),
-      FormError(_formError),
-      BusyButton(
+      formGap,
+      if (_formError != null) ...[Note.error(_formError!), formGap],
+      AppButton.primary(
         key: const ValueKey('password.submit'),
         label: 'Save password',
+        large: true,
         busy: _busy,
         onPressed: _submit,
       ),
       const SizedBox(height: 8),
-      TextButton(
+      AppButton.secondary(
+        key: const ValueKey('password.signOut'),
+        label: 'Sign out',
         onPressed: () => ref.read(sessionProvider.notifier).signOut(),
-        child: const Text('Sign out'),
       ),
     ],
   );

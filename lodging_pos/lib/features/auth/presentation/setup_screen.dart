@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/widgets/gate_card.dart';
+import '../../../app/widgets/buttons.dart';
+import '../../../app/widgets/labeled_field.dart';
+import '../../../app/widgets/notes.dart';
+import '../../../app/widgets/split_gate_layout.dart';
+import '../../../core/settings/settings_repository.dart';
 import '../data/user_repository.dart';
 import '../domain/setup.dart';
 import 'auth_providers.dart';
 
-/// First run only: creates the admin and names the lodging. Unreachable
-/// once any user exists (see the router).
+/// First run only: creates the owner's account and names the lodging.
+/// Unreachable once any user exists (see the router).
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
 
@@ -50,10 +54,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     setState(() => _busy = true);
     try {
       await ref.read(userRepositoryProvider).createFirstAdmin(_input);
-      // The router moves on to the login screen.
-      ref.read(setupStatusProvider.notifier).markDone();
+      _done();
     } on SetupAlreadyDone {
-      ref.read(setupStatusProvider.notifier).markDone();
+      _done();
     } catch (e) {
       if (mounted) setState(() => _formError = 'Could not save: $e');
     } finally {
@@ -61,42 +64,62 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     }
   }
 
+  /// The router moves on to sign-in.
+  void _done() {
+    ref.invalidate(lodgingNameProvider);
+    ref.read(setupStatusProvider.notifier).markDone();
+  }
+
   Widget _field(
     SetupField field,
     String label, {
     bool obscure = false,
     bool last = false,
+    String? helper,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: TextField(
-      key: ValueKey('setup.${field.name}'),
-      controller: _fields[field],
+    child: LabeledField(
+      label: label,
+      controller: _fields[field]!,
+      fieldKey: ValueKey('setup.${field.name}'),
       obscureText: obscure,
-      decoration: InputDecoration(labelText: label, errorText: _errors[field]),
+      errorText: _errors[field],
+      helperText: helper,
       textInputAction: last ? TextInputAction.done : TextInputAction.next,
       onSubmitted: last ? (_) => _submit() : null,
     ),
   );
 
   @override
-  Widget build(BuildContext context) => GateCard(
+  Widget build(BuildContext context) => SplitGateLayout(
     title: 'Set up this lodging',
-    subtitle: 'Create the admin account. You can add receptionists later.',
+    subtitle:
+        "Create the owner's account. You can add receptionists afterwards.",
     children: [
-      _field(SetupField.lodgingName, 'Lodging name (printed on receipts)'),
+      _field(
+        SetupField.lodgingName,
+        'Lodging name',
+        helper: 'Printed at the top of every receipt',
+      ),
       _field(SetupField.fullName, 'Your full name'),
       _field(SetupField.username, 'Username'),
-      _field(SetupField.password, 'Password', obscure: true),
+      _field(
+        SetupField.password,
+        'Password',
+        obscure: true,
+        helper: 'At least 8 characters',
+      ),
       _field(
         SetupField.confirmPassword,
         'Confirm password',
         obscure: true,
         last: true,
       ),
-      FormError(_formError),
-      BusyButton(
+      if (_formError != null) ...[Note.error(_formError!), formGap],
+      AppButton.primary(
         key: const ValueKey('setup.submit'),
-        label: 'Create admin account',
+        label: 'Create owner account',
+        large: true,
         busy: _busy,
         onPressed: _submit,
       ),
