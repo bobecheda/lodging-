@@ -467,11 +467,7 @@
             "getter_name": "roomNumber",
             "moor_type": "string",
             "nullable": false,
-            "customConstraints": null,
-            "defaultConstraints": "UNIQUE",
-            "dialectAwareDefaultConstraints": {
-              "sqlite": "UNIQUE"
-            },
+            "customConstraints": "NOT NULL UNIQUE CHECK (room_number = upper(trim(room_number)))",
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": [
@@ -3620,7 +3616,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"rooms\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"room_number\" TEXT NOT NULL UNIQUE, \"floor\" TEXT NULL, \"notes\" TEXT NULL, \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"rooms\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"room_number\" TEXT NOT NULL UNIQUE CHECK (room_number = upper(trim(room_number))), \"floor\" TEXT NULL, \"notes\" TEXT NULL, \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), PRIMARY KEY (\"id\"));"
         }
       ]
     },

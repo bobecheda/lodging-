@@ -54,7 +54,10 @@ class BedCategories extends Table with SyncedColumns {
 
 @DataClassName('RoomRow')
 class Rooms extends Table with SyncedColumns {
-  TextColumn get roomNumber => text().unique()();
+  /// Stored trimmed and uppercase, so "3a" and "3A" are the same room.
+  TextColumn get roomNumber => text().customConstraint(
+    'NOT NULL UNIQUE CHECK (room_number = upper(trim(room_number)))',
+  )();
   TextColumn get floor => text().nullable()();
   TextColumn get notes => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();

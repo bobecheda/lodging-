@@ -104,7 +104,7 @@ final class IdleLockProvider extends $NotifierProvider<IdleLock, int?> {
   }
 }
 
-String _$idleLockHash() => r'ac528b40ee27401db1890d01423feb54a63aa128';
+String _$idleLockHash() => r'99eccff61ff8cc748da91befd20a1799141e37d4';
 
 /// Signs the user out after `idle_lock_minutes` without activity. The shift
 /// stays open; only the session ends.
