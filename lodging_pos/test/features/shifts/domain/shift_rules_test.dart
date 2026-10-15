@@ -32,11 +32,22 @@ void main() {
       );
     });
 
-    test('a receptionist resumes their own open shift', () {
+    test('a receptionist is asked to resume their own open shift', () {
       final start = shiftStartFor(
         openShift: janesShift,
         userId: 'jane',
         role: Role.receptionist,
+      );
+      expect(start, isA<ResumeShift>());
+      expect((start as ResumeShift).shift, janesShift);
+    });
+
+    test('once they continue it, they are ready to work', () {
+      final start = shiftStartFor(
+        openShift: janesShift,
+        userId: 'jane',
+        role: Role.receptionist,
+        resumeConfirmed: true,
       );
       expect(start, isA<ShiftReady>());
       expect((start as ShiftReady).shift, janesShift);
@@ -73,6 +84,33 @@ void main() {
 
     test('an open shift is returned for the payment to use', () {
       expect(requireOpenShift(janesShift), janesShift);
+    });
+  });
+
+  group('takingsFrom (BR-11, required test case 12)', () {
+    test('totals cash and Paybill separately', () {
+      final t = takingsFrom([
+        (id: 'p1', amount: 700, method: 'cash'),
+        (id: 'p2', amount: 1000, method: 'paybill'),
+        (id: 'p3', amount: 500, method: 'cash'),
+      ], voidedIds: const {});
+      expect((t.cash, t.paybill, t.total), (1200, 1000, 2200));
+    });
+
+    test('a voided payment is excluded from the shift totals', () {
+      final t = takingsFrom(
+        [
+          (id: 'p1', amount: 700, method: 'cash'),
+          (id: 'p2', amount: 1000, method: 'paybill'),
+        ],
+        voidedIds: const {'p2'},
+      );
+      expect((t.cash, t.paybill, t.total), (700, 0, 700));
+    });
+
+    test('no payments is zero', () {
+      final t = takingsFrom(const [], voidedIds: const {});
+      expect(t.total, 0);
     });
   });
 }

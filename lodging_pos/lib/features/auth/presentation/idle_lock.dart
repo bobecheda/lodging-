@@ -17,11 +17,28 @@ part 'idle_lock.g.dart';
 @Riverpod(keepAlive: true)
 Duration? idleCheckInterval(Ref ref) => const Duration(seconds: 15);
 
-/// Signs the user out after `idle_lock_minutes` without activity. The shift
-/// stays open; only the session ends.
+/// Why the screen was last locked, so the login screen can say so.
+sealed class LockNotice {
+  const LockNotice();
+}
+
+/// Locked automatically after [minutes] idle (`user.auto_lock`).
+class IdleLockNotice extends LockNotice {
+  const IdleLockNotice(this.minutes);
+  final int minutes;
+}
+
+/// Locked with the sidebar's "Lock screen" button (`user.lock`).
+class ManualLockNotice extends LockNotice {
+  const ManualLockNotice();
+}
+
+/// Locks the screen: signs the user out after `idle_lock_minutes` without
+/// activity, or at once via [lockNow]. The shift stays open; only the
+/// session ends. Idle and manual locks are audited separately, so the trail
+/// shows which one happened.
 ///
-/// State: the idle minutes of the last automatic lock, so the login screen
-/// can say why; null otherwise.
+/// State: why the screen was last locked; null after a fresh sign-in.
 @Riverpod(keepAlive: true)
 class IdleLock extends _$IdleLock {
   DateTime? _lastActivity;
@@ -29,7 +46,7 @@ class IdleLock extends _$IdleLock {
   var _locking = false;
 
   @override
-  int? build() {
+  LockNotice? build() {
     ref.listen(sessionProvider, (previous, next) {
       if (next == null) {
         _stop();
@@ -87,30 +104,56 @@ class IdleLock extends _$IdleLock {
         return;
       }
 
-      try {
-        await ref
-            .read(auditWriterProvider)
-            .recordEvent(
-              action: 'user.auto_lock',
-              userId: user.id,
-              entity: 'users',
-              entityId: user.id,
-              details: {'idle_minutes': minutes},
-            );
-      } catch (error, stack) {
-        // Lock anyway: an unattended desk matters more than the audit row.
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stack,
-            library: 'idle lock',
-          ),
-        );
-      }
-      ref.read(sessionProvider.notifier).signOut();
-      state = minutes;
+      await _lock(
+        user.id,
+        action: 'user.auto_lock',
+        details: {'idle_minutes': minutes},
+        notice: IdleLockNotice(minutes),
+      );
     } finally {
       _locking = false;
     }
+  }
+
+  /// Locks the screen now ("Lock screen" button), audited as `user.lock`.
+  Future<void> lockNow() async {
+    final user = ref.read(sessionProvider);
+    if (user == null || _locking) return;
+    _locking = true;
+    try {
+      await _lock(
+        user.id,
+        action: 'user.lock',
+        notice: const ManualLockNotice(),
+      );
+    } finally {
+      _locking = false;
+    }
+  }
+
+  Future<void> _lock(
+    String userId, {
+    required String action,
+    Map<String, Object?> details = const {},
+    required LockNotice notice,
+  }) async {
+    try {
+      await ref
+          .read(auditWriterProvider)
+          .recordEvent(
+            action: action,
+            userId: userId,
+            entity: 'users',
+            entityId: userId,
+            details: details,
+          );
+    } catch (error, stack) {
+      // Lock anyway: an unattended desk matters more than the audit row.
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stack, library: 'lock'),
+      );
+    }
+    ref.read(sessionProvider.notifier).signOut();
+    state = notice;
   }
 }

@@ -47,7 +47,10 @@ void main() {
       idle(const Duration(minutes: 10));
       await lock().check();
       expect(signedIn(), isNull);
-      expect(app.read(idleLockProvider), 10);
+      expect(
+        app.read(idleLockProvider),
+        isA<IdleLockNotice>().having((n) => n.minutes, 'minutes', 10),
+      );
 
       final entry = (await env.auditFor('user.auto_lock')).single;
       expect(entry.userId, desk.id);
@@ -81,7 +84,10 @@ void main() {
     idle(const Duration(minutes: 5));
     await lock().check();
     expect(signedIn(), isNull);
-    expect(app.read(idleLockProvider), 5);
+    expect(
+      app.read(idleLockProvider),
+      isA<IdleLockNotice>().having((n) => n.minutes, 'minutes', 5),
+    );
   });
 
   test('keeps the shift open', () async {
@@ -115,6 +121,20 @@ void main() {
       app.read(sessionProvider.notifier).signIn(desk);
       expect(app.read(idleLockProvider), isNull);
       expect(lock().lastActivity, env.clock.now());
+    },
+  );
+
+  test(
+    'Lock screen locks now: user.lock, not user.auto_lock; shift kept',
+    () async {
+      final shifts = ShiftRepository(env.db, env.audit);
+      final opened = await shifts.openShift(user: desk, openingFloat: 1000);
+      await lock().lockNow();
+      expect(signedIn(), isNull);
+      expect(app.read(idleLockProvider), isA<ManualLockNotice>());
+      expect((await env.auditFor('user.lock')).single.userId, desk.id);
+      expect(await env.auditFor('user.auto_lock'), isEmpty);
+      expect((await shifts.openShiftOnThisDevice())?.id, opened.id);
     },
   );
 }

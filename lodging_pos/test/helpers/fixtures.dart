@@ -1,6 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lodging_pos/app/app.dart';
+import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/core/audit/audit_writer.dart';
 import 'package:lodging_pos/core/auth/password_hasher.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
@@ -174,4 +180,74 @@ class TestEnv {
 
   Future<List<AuditLogRow>> auditFor(String action) =>
       (db.select(db.auditLog)..where((a) => a.action.equals(action))).get();
+}
+
+/// The front-desk laptop: 1366×768 at 1:1.
+const deskSize = Size(1366, 768);
+
+/// Runs the real app on [env] at the desk's screen size.
+Future<ProviderContainer> pumpDeskApp(WidgetTester tester, TestEnv env) async {
+  tester.view
+    ..physicalSize = deskSize
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final container = ProviderContainer(overrides: env.overrides);
+  addTearDown(container.dispose);
+  await tester.pumpWidget(
+    UncontrolledProviderScope(container: container, child: const App()),
+  );
+  await tester.pumpAndSettle();
+  return container;
+}
+
+/// Scrolls the widget with [key] into view, then taps it.
+Future<void> tapKey(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> enterKey(WidgetTester tester, String key, String text) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.ensureVisible(finder);
+  await tester.enterText(finder, text);
+}
+
+Future<void> signInAs(
+  WidgetTester tester,
+  String username,
+  String password,
+) async {
+  await enterKey(tester, 'login.username', username);
+  await enterKey(tester, 'login.password', password);
+  await tapKey(tester, 'login.submit');
+}
+
+String locationOf(ProviderContainer app) =>
+    app.read(routerProvider).routerDelegate.currentConfiguration.uri.path;
+
+/// Loads the bundled fonts so layout tests measure real text widths
+/// (by default, widget tests use a wide placeholder font).
+Future<void> loadAppFonts() async {
+  const families = {
+    'Manrope': [
+      'assets/fonts/manrope/manrope-medium.ttf',
+      'assets/fonts/manrope/manrope-semibold.ttf',
+      'assets/fonts/manrope/manrope-bold.ttf',
+      'assets/fonts/manrope/manrope-extrabold.ttf',
+    ],
+    'IBMPlexMono': [
+      'assets/fonts/ibm_plex_mono/IBMPlexMono-Medium.ttf',
+      'assets/fonts/ibm_plex_mono/IBMPlexMono-SemiBold.ttf',
+    ],
+  };
+  for (final MapEntry(key: family, value: files) in families.entries) {
+    final loader = FontLoader(family);
+    for (final file in files) {
+      loader.addFont(rootBundle.load(file));
+    }
+    await loader.load();
+  }
 }
