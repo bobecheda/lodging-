@@ -31,7 +31,7 @@ String routeFor({
   return switch (shiftStart) {
     null => Routes.splash,
     ShiftReady() => Routes.home,
-    OpenNewShift() || ShiftBlocked() => Routes.shift,
+    ResumeShift() || OpenNewShift() || ShiftBlocked() => Routes.shift,
   };
 }
 

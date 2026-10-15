@@ -69,6 +69,22 @@ class ShiftRepository {
     );
   }
 
+  /// What [shiftId] has taken so far, voided payments excluded.
+  Future<ShiftTakings> takings(String shiftId) async {
+    final payments = await (_db.select(
+      _db.payments,
+    )..where((p) => p.shiftId.equals(shiftId))).get();
+    final voided =
+        await (_db.selectOnly(_db.voids)
+              ..addColumns([_db.voids.targetId])
+              ..where(_db.voids.targetType.equals('payment')))
+            .map((r) => r.read(_db.voids.targetId)!)
+            .get();
+    return takingsFrom([
+      for (final p in payments) (id: p.id, amount: p.amount, method: p.method),
+    ], voidedIds: voided.toSet());
+  }
+
   static OpenShift _toOpenShift(ShiftRow shift, UserRow user) => OpenShift(
     id: shift.id,
     userId: shift.userId,

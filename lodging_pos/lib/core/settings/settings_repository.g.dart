@@ -56,3 +56,44 @@ final class SettingsRepositoryProvider
 
 String _$settingsRepositoryHash() =>
     r'2de17899c89cd144d3e134172002d79d8b2f2dfd';
+
+/// The lodging name shown in the brand panel and sidebar; empty until
+/// first-run setup. Invalidate after setup or a settings change.
+
+@ProviderFor(lodgingName)
+final lodgingNameProvider = LodgingNameProvider._();
+
+/// The lodging name shown in the brand panel and sidebar; empty until
+/// first-run setup. Invalidate after setup or a settings change.
+
+final class LodgingNameProvider
+    extends $FunctionalProvider<AsyncValue<String>, String, FutureOr<String>>
+    with $FutureModifier<String>, $FutureProvider<String> {
+  /// The lodging name shown in the brand panel and sidebar; empty until
+  /// first-run setup. Invalidate after setup or a settings change.
+  LodgingNameProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'lodgingNameProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lodgingNameHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<String> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String> create(Ref ref) {
+    return lodgingName(ref);
+  }
+}
+
+String _$lodgingNameHash() => r'c1e2f13e61558b76dc1e217981adc42935699424';

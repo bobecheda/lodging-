@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/widgets/gate_card.dart';
+import '../../../app/theme/theme.dart';
+import '../../../app/widgets/buttons.dart';
+import '../../../app/widgets/labeled_field.dart';
+import '../../../app/widgets/notes.dart';
+import '../../../app/widgets/split_gate_layout.dart';
 import '../../../core/auth/session.dart';
+import '../../shifts/presentation/shift_providers.dart';
 import '../domain/login.dart';
 import 'auth_providers.dart';
 import 'idle_lock.dart';
 
+/// Sign in, and the lock screen after an idle or manual lock. The username
+/// always starts empty, so whoever sits down signs in as themselves.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -45,8 +52,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       setState(() {
         _error = switch (result.outcome) {
           LoginOutcome.disabled =>
-            'This account is disabled. Ask the admin to enable it.',
-          _ => 'Wrong username or password.',
+            'This account is disabled. Ask the owner to enable it.',
+          _ => 'Wrong username or password. Try again.',
         };
       });
     } catch (e) {
@@ -58,39 +65,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lockedAfter = ref.watch(idleLockProvider);
-    return GateCard(
-      title: 'Sign in',
-      // The username stays empty, so whoever sits down signs in as themselves.
-      subtitle: lockedAfter == null
-          ? null
-          : 'Signed out after $lockedAfter minutes of inactivity. '
-                'Your shift is still open.',
+    final notice = ref.watch(idleLockProvider);
+    final shiftOpen = ref.watch(currentShiftProvider).value != null;
+
+    return SplitGateLayout(
+      title: notice == null ? 'Sign in' : 'Screen locked',
+      subtitle: notice == null
+          ? 'Use the username and password the owner gave you.'
+          : shiftOpen
+          ? 'The open shift is kept. Sign in to carry on.'
+          : 'Sign in to carry on.',
+      above: notice == null ? null : _LockChip(notice),
+      footer: 'Forgot your password? Ask the owner to reset it.',
       children: [
-        TextField(
-          key: const ValueKey('login.username'),
+        LabeledField(
+          label: 'Username',
           controller: _username,
+          fieldKey: const ValueKey('login.username'),
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Username'),
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.username],
         ),
-        const SizedBox(height: 16),
-        TextField(
-          key: const ValueKey('login.password'),
+        formGap,
+        LabeledField(
+          label: 'Password',
           controller: _password,
+          fieldKey: const ValueKey('login.password'),
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Password'),
           onSubmitted: (_) => _submit(),
+          autofillHints: const [AutofillHints.password],
         ),
-        const SizedBox(height: 16),
-        FormError(_error),
-        BusyButton(
+        formGap,
+        if (_error != null) ...[Note.error(_error!), formGap],
+        AppButton.primary(
           key: const ValueKey('login.submit'),
           label: 'Sign in',
+          large: true,
           busy: _busy,
           onPressed: _submit,
         ),
       ],
+    );
+  }
+}
+
+/// Butter chip saying why the screen locked.
+class _LockChip extends StatelessWidget {
+  const _LockChip(this.notice);
+
+  final LockNotice notice;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    final text = switch (notice) {
+      IdleLockNotice(:final minutes) =>
+        'Screen locked after $minutes minutes idle',
+      ManualLockNotice() => 'Screen locked',
+    };
+    return Container(
+      key: const ValueKey('login.lockChip'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Space.x12,
+        vertical: Space.x6,
+      ),
+      decoration: BoxDecoration(
+        color: c.butter,
+        borderRadius: BorderRadius.circular(Radii.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 16, color: c.butterText),
+          const SizedBox(width: Space.x6),
+          Flexible(
+            child: Text(
+              text,
+              style: t.smallStrong.copyWith(color: c.butterText),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

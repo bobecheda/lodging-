@@ -2,3 +2,6 @@
 # (LF). Keep them LF on Windows checkouts too, or make-migrations reports a
 # spurious "schema differs".
 lodging_pos/drift_schemas/** text eol=lf
+
+# Fonts are binary; never touch their line endings.
+*.ttf binary

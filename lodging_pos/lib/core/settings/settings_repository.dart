@@ -31,3 +31,9 @@ class SettingsRepository {
 @Riverpod(keepAlive: true)
 SettingsRepository settingsRepository(Ref ref) =>
     SettingsRepository(ref.watch(appDatabaseProvider));
+
+/// The lodging name shown in the brand panel and sidebar; empty until
+/// first-run setup. Invalidate after setup or a settings change.
+@Riverpod(keepAlive: true)
+Future<String> lodgingName(Ref ref) =>
+    ref.watch(settingsRepositoryProvider).value(SettingKeys.lodgingName);

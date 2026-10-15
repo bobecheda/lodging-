@@ -57,26 +57,29 @@ final class IdleCheckIntervalProvider
 
 String _$idleCheckIntervalHash() => r'b2824bf341ea48c5e5a79b0069afb6c06ad7ab70';
 
-/// Signs the user out after `idle_lock_minutes` without activity. The shift
-/// stays open; only the session ends.
+/// Locks the screen: signs the user out after `idle_lock_minutes` without
+/// activity, or at once via [lockNow]. The shift stays open; only the
+/// session ends. Idle and manual locks are audited separately, so the trail
+/// shows which one happened.
 ///
-/// State: the idle minutes of the last automatic lock, so the login screen
-/// can say why; null otherwise.
+/// State: why the screen was last locked; null after a fresh sign-in.
 
 @ProviderFor(IdleLock)
 final idleLockProvider = IdleLockProvider._();
 
-/// Signs the user out after `idle_lock_minutes` without activity. The shift
-/// stays open; only the session ends.
+/// Locks the screen: signs the user out after `idle_lock_minutes` without
+/// activity, or at once via [lockNow]. The shift stays open; only the
+/// session ends. Idle and manual locks are audited separately, so the trail
+/// shows which one happened.
 ///
-/// State: the idle minutes of the last automatic lock, so the login screen
-/// can say why; null otherwise.
-final class IdleLockProvider extends $NotifierProvider<IdleLock, int?> {
-  /// Signs the user out after `idle_lock_minutes` without activity. The shift
-  /// stays open; only the session ends.
+/// State: why the screen was last locked; null after a fresh sign-in.
+final class IdleLockProvider extends $NotifierProvider<IdleLock, LockNotice?> {
+  /// Locks the screen: signs the user out after `idle_lock_minutes` without
+  /// activity, or at once via [lockNow]. The shift stays open; only the
+  /// session ends. Idle and manual locks are audited separately, so the trail
+  /// shows which one happened.
   ///
-  /// State: the idle minutes of the last automatic lock, so the login screen
-  /// can say why; null otherwise.
+  /// State: why the screen was last locked; null after a fresh sign-in.
   IdleLockProvider._()
     : super(
         from: null,
@@ -96,33 +99,34 @@ final class IdleLockProvider extends $NotifierProvider<IdleLock, int?> {
   IdleLock create() => IdleLock();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(int? value) {
+  Override overrideWithValue(LockNotice? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<int?>(value),
+      providerOverride: $SyncValueProvider<LockNotice?>(value),
     );
   }
 }
 
-String _$idleLockHash() => r'ac528b40ee27401db1890d01423feb54a63aa128';
+String _$idleLockHash() => r'5bba90684c87ba5d291c430dda34631034961bb1';
 
-/// Signs the user out after `idle_lock_minutes` without activity. The shift
-/// stays open; only the session ends.
+/// Locks the screen: signs the user out after `idle_lock_minutes` without
+/// activity, or at once via [lockNow]. The shift stays open; only the
+/// session ends. Idle and manual locks are audited separately, so the trail
+/// shows which one happened.
 ///
-/// State: the idle minutes of the last automatic lock, so the login screen
-/// can say why; null otherwise.
+/// State: why the screen was last locked; null after a fresh sign-in.
 
-abstract class _$IdleLock extends $Notifier<int?> {
-  int? build();
+abstract class _$IdleLock extends $Notifier<LockNotice?> {
+  LockNotice? build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<int?, int?>;
+    final ref = this.ref as $Ref<LockNotice?, LockNotice?>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<int?, int?>,
-              int?,
+              AnyNotifier<LockNotice?, LockNotice?>,
+              LockNotice?,
               Object?,
               Object?
             >;
