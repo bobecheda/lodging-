@@ -66,6 +66,13 @@ List<NavItem> deskNavItems(Ref ref) => const [
     permissions: {Permission.editPrices, Permission.editSettings},
     setup: true,
   ),
+  NavItem(
+    route: Routes.adminStaff,
+    label: 'Users & staff',
+    icon: Icons.people_outline_rounded,
+    permissions: {Permission.manageUsers, Permission.manageHousekeepers},
+    setup: true,
+  ),
 ];
 
 /// The desk layout (docs/design.md, "Desk shell"): a 232px marine sidebar

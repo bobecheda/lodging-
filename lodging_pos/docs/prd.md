@@ -121,6 +121,7 @@ Each story lists the conditions that must all hold before it counts as done.
 - Only Not cleaned beds can be assigned; the housekeeper is picked from the admin's list.
 - Marking the task done sets the bed to Clean and records the time.
 - A room shows Not cleaned while any of its beds is Not cleaned.
+- A housekeeper with an unfinished cleaning task cannot be deactivated: "Rose has a bed to clean. Finish or reassign it first."
 
 **FD-10 Record stock movements.** As a receptionist, I want to record stock in and out so that the owner knows what is on hand.
 

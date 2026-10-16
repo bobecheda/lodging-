@@ -8,6 +8,7 @@ import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/prices_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
+import 'package:lodging_pos/features/setup/data/staff_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
 import 'package:lodging_pos/features/setup/presentation/widgets/room_table.dart';
 
@@ -335,6 +336,70 @@ void main() {
       }
       await tapKey(tester, 'prices.save');
       await expectCleanLayout(tester, app, Routes.adminPrices, 'Confirm');
+    });
+  });
+
+  group('Users & staff (AD-4)', () {
+    Future<(ProviderContainer, String)> openStaff(WidgetTester tester) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final staff = StaffRepository(env.db, env.audit, env.hasher);
+      final mary = await env.addReceptionist('mary');
+      await ShiftRepository(
+        env.db,
+        env.audit,
+      ).openShift(user: mary, openingFloat: 500);
+      await env.addReceptionist('james', mustChangePassword: true);
+      final kevin = await env.addReceptionist('kevin');
+      await staff.disableUser(owner, kevin.id);
+      final rose = await staff.addHousekeeper(
+        owner,
+        name: 'Rose Akinyi Wanjiru',
+        phone: '0722123310',
+      );
+      await staff.addHousekeeper(owner, name: 'John Mutua', phone: '');
+      final old = await staff.addHousekeeper(
+        owner,
+        name: 'Esther Njeri',
+        phone: '0110234567',
+      );
+      await staff.deactivateHousekeeper(owner, old.id);
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'nav.${Routes.adminStaff}');
+      return (app, rose.id);
+    }
+
+    testWidgets('users and housekeepers', (tester) async {
+      final (app, _) = await openStaff(tester);
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.adminStaff,
+        'Add receptionist',
+      );
+    });
+
+    testWidgets('form errors and a housekeeper being edited', (tester) async {
+      final (app, roseId) = await openStaff(tester);
+      await enterKey(tester, 'addUser.username', 'x');
+      await enterKey(tester, 'addUser.password', 'short');
+      await tapKey(tester, 'addUser.save');
+      await tapKey(tester, 'hk.edit.$roseId');
+      await enterKey(tester, 'hk.editPhone', '123');
+      await tapKey(tester, 'hk.save');
+      await expectCleanLayout(tester, app, Routes.adminStaff, 'Deactivate');
+    });
+
+    testWidgets('the disable warning dialog', (tester) async {
+      final (app, _) = await openStaff(tester);
+      await tapKey(tester, 'users.disable.mary');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.adminStaff,
+        'Disable Desk MARY?',
+      );
     });
   });
 }

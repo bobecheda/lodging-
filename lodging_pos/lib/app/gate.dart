@@ -12,6 +12,7 @@ abstract final class Routes {
   static const home = '/home';
   static const adminRooms = '/admin/rooms';
   static const adminPrices = '/admin/prices';
+  static const adminStaff = '/admin/users';
 
   /// Setup screens (AD-1) live under this prefix.
   static const setupPrefix = '/admin';
@@ -22,6 +23,7 @@ abstract final class Routes {
   static const permissions = {
     adminRooms: {Permission.manageRooms},
     adminPrices: {Permission.editPrices, Permission.editSettings},
+    adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},
   };
 
   /// Whether [user] may open [location]. A setup route missing from

@@ -74,6 +74,7 @@ void main() {
       Routes.home,
       Routes.adminRooms,
       Routes.adminPrices,
+      Routes.adminStaff,
     ]);
     expect(find.text('SETUP · OWNER ONLY'), findsOneWidget);
   });
