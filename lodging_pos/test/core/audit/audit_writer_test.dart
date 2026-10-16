@@ -565,27 +565,59 @@ void main() {
       },
     );
 
-    test('guest personal data is redacted in audit JSON', () async {
-      await audit.writeWithAudit(
-        action: 'guest.create',
+    test(
+      'guest personal data is redacted, the phone masked, in audit JSON',
+      () async {
+        await audit.writeWithAudit(
+          action: 'guest.create',
+          userId: adminId,
+          body: (w) => w.insert(
+            db.guests,
+            GuestsCompanion.insert(
+              fullName: 'John Guest',
+              phone: '0712345678',
+              idType: const Value('national_id'),
+              idNumber: const Value('12345678'),
+            ),
+          ),
+        );
+        final after = jsonDecode((await auditRows()).single.afterJson) as Map;
+        expect(after['full_name'], '[redacted]');
+        expect(after['phone'], '0712•••678');
+        expect(after['id_number'], '[redacted]');
+        expect(after['id_type'], 'national_id');
+        final payload = jsonDecode((await outbox()).first.payloadJson) as Map;
+        expect(payload['id_number'], '12345678');
+        expect(payload['phone'], '0712345678');
+      },
+    );
+
+    test('a housekeeper phone change shows masked in audit JSON', () async {
+      final hk = await audit.writeWithAudit(
+        action: 'housekeeper.create',
         userId: adminId,
         body: (w) => w.insert(
-          db.guests,
-          GuestsCompanion.insert(
-            fullName: 'John Guest',
-            phone: '0712345678',
-            idType: const Value('national_id'),
-            idNumber: const Value('12345678'),
+          db.housekeepers,
+          HousekeepersCompanion.insert(
+            fullName: 'Rose Akinyi',
+            phone: const Value('0722123310'),
           ),
         ),
       );
-      final after = jsonDecode((await auditRows()).single.afterJson) as Map;
-      expect(after['full_name'], '[redacted]');
-      expect(after['phone'], '[redacted]');
-      expect(after['id_number'], '[redacted]');
-      expect(after['id_type'], 'national_id');
-      final payload = jsonDecode((await outbox()).first.payloadJson) as Map;
-      expect(payload['id_number'], '12345678');
+      await audit.writeWithAudit(
+        action: 'housekeeper.update',
+        userId: adminId,
+        body: (w) => w.update(
+          db.housekeepers,
+          hk.id,
+          const HousekeepersCompanion(phone: Value('0110234567')),
+        ),
+      );
+      final rows = await auditRows();
+      expect(jsonDecode(rows.first.afterJson)['phone'], '0722•••310');
+      expect(jsonDecode(rows.last.beforeJson!)['phone'], '0722•••310');
+      expect(jsonDecode(rows.last.afterJson)['phone'], '0110•••567');
+      expect(jsonDecode(rows.first.afterJson)['full_name'], 'Rose Akinyi');
     });
   });
 

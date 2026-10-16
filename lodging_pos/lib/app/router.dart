@@ -14,6 +14,7 @@ import '../features/shifts/presentation/shift_providers.dart';
 import 'gate.dart';
 import '../features/setup/presentation/prices_screen.dart';
 import '../features/setup/presentation/rooms_screen.dart';
+import '../features/setup/presentation/staff_screen.dart';
 import 'home_screen.dart';
 import 'old_database_screen.dart';
 import 'shell/desk_shell.dart';
@@ -87,6 +88,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: Routes.adminPrices,
             builder: (_, _) => const PricesScreen(),
+          ),
+          GoRoute(
+            path: Routes.adminStaff,
+            builder: (_, _) => const StaffScreen(),
           ),
         ],
       ),

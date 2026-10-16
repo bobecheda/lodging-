@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../clock/clock.dart';
+import '../contacts/phone.dart';
 import '../database/database.dart';
 import '../database/database_provider.dart';
 
@@ -29,9 +30,16 @@ const _localOnlyTables = {'receipt_counter'};
 /// purgeable under the Data Protection Act while audit_log is append-only.
 const _redactedColumns = {
   'users': {'password_hash'},
-  'guests': {'full_name', 'phone', 'id_number'},
+  'guests': {'full_name', 'id_number'},
 };
 const _redacted = '[redacted]';
+
+/// Phone columns kept in audit JSON only masked (`0722•••310`), so a change
+/// is still visible without storing the number.
+const _maskedPhoneColumns = {
+  'guests': {'phone'},
+  'housekeepers': {'phone'},
+};
 
 /// The single write path. Repositories never write to drift directly.
 class AuditWriter {
@@ -336,11 +344,20 @@ class AuditedWrites {
       row.toJson(serializer: auditJsonSerializer);
 
   static Map<String, Object?> _redact(String table, Map<String, Object?> json) {
-    final hidden = _redactedColumns[table];
-    if (hidden == null) return json;
+    final hidden = _redactedColumns[table] ?? const {};
+    final masked = _maskedPhoneColumns[table] ?? const {};
+    if (hidden.isEmpty && masked.isEmpty) return json;
     return {
       for (final MapEntry(:key, :value) in json.entries)
-        key: hidden.contains(key) && value != null ? _redacted : value,
+        key: switch (value) {
+          null => null,
+          _ when hidden.contains(key) => _redacted,
+          final String phone when masked.contains(key) => maskPhone(
+            phone,
+            compact: true,
+          ),
+          _ => value,
+        },
     };
   }
 

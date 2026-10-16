@@ -91,9 +91,9 @@ UNIQUE(room_id, label), so a room has at most 2 beds, active or not. A bed under
 ### housekeepers
 | Column | Type | Notes |
 |---|---|---|
-| full_name | TEXT | |
-| phone | TEXT | optional |
-| is_active | BOOL | |
+| full_name | TEXT | trimmed, 1–60 characters |
+| phone | TEXT | optional; Kenyan 07… or 01…, stored as 10 digits (`core/contacts/phone.dart`) |
+| is_active | BOOL | inactive housekeepers can't be picked for cleaning |
 
 ## Front desk tables (desk owns)
 
@@ -245,7 +245,7 @@ Written once, never updated or deleted. It holds no amount, so the approver cann
 | before_json | TEXT | null on create; on update, only the columns that changed |
 | after_json | TEXT | full row on create; on update, only the columns that changed |
 
-Audit JSON redacts `users.password_hash` and guests' `full_name`, `phone` and `id_number` as `"[redacted]"`, so personal data stays purgeable; the business row's outbox payload keeps them.
+Audit JSON redacts `users.password_hash` and guests' `full_name` and `id_number` as `"[redacted]"`, and stores guests' and housekeepers' `phone` masked (`0722•••310`), so a change is still visible while personal data stays purgeable. The business row's outbox payload keeps the real values.
 
 ### outbox (local only)
 | Column | Type | Notes |
