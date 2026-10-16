@@ -33,7 +33,7 @@ class BedSummary {
     required this.label,
     required this.categoryId,
     required this.categoryName,
-    required this.pricePerBlock,
+    required this.pricePerNight,
     required this.cleanliness,
     required this.isActive,
     required this.hasActiveStay,
@@ -45,7 +45,7 @@ class BedSummary {
   final String categoryName;
 
   /// Current category price, whole KES. A stay keeps the price it locked in.
-  final int pricePerBlock;
+  final int pricePerNight;
   final Cleanliness cleanliness;
   final bool isActive;
   final bool hasActiveStay;

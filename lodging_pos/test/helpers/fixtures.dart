@@ -11,11 +11,13 @@ import 'package:lodging_pos/core/audit/audit_writer.dart';
 import 'package:lodging_pos/core/auth/password_hasher.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/clock/clock.dart';
+import 'package:lodging_pos/core/clock/clock_time.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/database_provider.dart';
 import 'package:lodging_pos/features/auth/data/user_repository.dart';
 import 'package:lodging_pos/features/auth/domain/setup.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
+import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 
 /// 22:00 Nairobi, 14 Oct 2026.
 final testT0 = DateTime.utc(2026, 10, 14, 19);
@@ -88,17 +90,24 @@ class TestEnv {
   }
 
   /// Test-only stand-in for FD-4 check-in, until it exists: writes a
-  /// guest, an active stay on [bedId] for [blocks] blocks at [pricePerBlock],
+  /// guest, an active stay on [bedId] for [nights] at [pricePerNight] (paid
+  /// until 10:00 per the stay rules),
   /// a cash payment and its charge, through the writer. Opens a shift for
   /// [by] if this device has none. Returns the stay id.
   Future<String> checkIn(
     String bedId, {
     required UserAccount by,
-    int blocks = 1,
-    int pricePerBlock = 700,
+    int nights = 1,
+    int pricePerNight = 700,
   }) {
     final now = clock.now();
-    final paidUntil = now.add(Duration(hours: 12 * blocks));
+    final charge = planCheckIn(
+      checkInAt: now,
+      nights: nights,
+      checkout: const ClockTime(10, 0),
+      beds: [(bedId: bedId, pricePerNight: pricePerNight)],
+    ).stays.single.charge;
+    final paidUntil = charge.periodEnd;
     return audit.writeWithAudit(
       action: 'stay.check_in',
       userId: by.id,
@@ -140,7 +149,7 @@ class TestEnv {
             shiftId: shiftId,
             receivedBy: by.id,
             receivedAt: now,
-            amount: blocks * pricePerBlock,
+            amount: charge.amount,
             method: 'cash',
           ),
         );
@@ -149,10 +158,10 @@ class TestEnv {
           StayChargesCompanion.insert(
             stayId: stay.id,
             paymentId: payment.id,
-            kind: 'check_in',
-            blocks: blocks,
-            pricePerBlock: pricePerBlock,
-            amount: blocks * pricePerBlock,
+            kind: charge.kind.code,
+            nights: nights,
+            pricePerNight: pricePerNight,
+            amount: charge.amount,
             periodStart: now,
             periodEnd: paidUntil,
           ),

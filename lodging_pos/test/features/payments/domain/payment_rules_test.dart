@@ -34,8 +34,14 @@ void main() {
         mpesaCodeError(PaymentMethod.paybill, 'SJK4H7XQ2P', codeInUse: false),
         isNull,
       );
-      expect(mpesaCodeError(PaymentMethod.cash, null, codeInUse: false), isNull);
-      expect(mpesaCodeError(PaymentMethod.cash, '  ', codeInUse: false), isNull);
+      expect(
+        mpesaCodeError(PaymentMethod.cash, null, codeInUse: false),
+        isNull,
+      );
+      expect(
+        mpesaCodeError(PaymentMethod.cash, '  ', codeInUse: false),
+        isNull,
+      );
     });
 
     test('codes are stored trimmed and uppercase', () {
@@ -43,11 +49,16 @@ void main() {
     });
   });
 
-  test('both methods are stored as cash | paybill; Paybill shows as M-Pesa',
-      () {
-    expect([for (final m in PaymentMethod.values) m.code], ['cash', 'paybill']);
-    expect(PaymentMethod.parse('paybill'), PaymentMethod.paybill);
-    expect(PaymentMethod.cash.label, 'Cash');
-    expect(PaymentMethod.paybill.label, 'M-Pesa');
-  });
+  test(
+    'both methods are stored as cash | paybill; Paybill shows as M-Pesa',
+    () {
+      expect(
+        [for (final m in PaymentMethod.values) m.code],
+        ['cash', 'paybill'],
+      );
+      expect(PaymentMethod.parse('paybill'), PaymentMethod.paybill);
+      expect(PaymentMethod.cash.label, 'Cash');
+      expect(PaymentMethod.paybill.label, 'M-Pesa');
+    },
+  );
 }

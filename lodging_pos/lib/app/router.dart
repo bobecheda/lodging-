@@ -41,8 +41,7 @@ GoRouter router(Ref ref) {
           ? null
           : shiftStartFor(
               openShift: shift.value,
-              userId: user.id,
-              role: user.role,
+              user: user,
               resumeConfirmed: ref.read(shiftContinuedProvider),
             ),
     );

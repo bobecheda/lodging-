@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show CustomExpression, OrderingTerm, Value;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lodging_pos/core/auth/admin_guard.dart';
+import 'package:lodging_pos/core/auth/permissions.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
@@ -62,7 +62,7 @@ void main() {
         expect(
           [
             for (final b in room.beds)
-              (b.label, b.categoryName, b.pricePerBlock, b.cleanliness),
+              (b.label, b.categoryName, b.pricePerNight, b.cleanliness),
           ],
           [
             (BedLabel.a, 'VIP', 1000, Cleanliness.clean),
@@ -174,7 +174,7 @@ void main() {
           () => rooms.deactivateRoom(desk, room.id),
           () => rooms.deactivateBed(desk, bedOf(room, BedLabel.b).id),
         ]) {
-          await expectLater(attempt(), throwsA(isA<AdminOnly>()));
+          await expectLater(attempt(), throwsA(isA<NotPermitted>()));
         }
         // Only the owner's own room 6 (created inside the first attempt) was added.
         final auditAfter = await env.db.select(env.db.auditLog).get();
@@ -252,7 +252,7 @@ void main() {
     test('changing a category affects new check-ins only', () async {
       final room = await twoBedRoom();
       final bedA = bedOf(room, BedLabel.a); // Normal, 500
-      final stayId = await env.checkIn(bedA.id, by: owner, pricePerBlock: 500);
+      final stayId = await env.checkIn(bedA.id, by: owner, pricePerNight: 500);
 
       await rooms.updateRoom(
         owner,
@@ -267,8 +267,8 @@ void main() {
       final charge = await (env.db.select(
         env.db.stayCharges,
       )..where((c) => c.stayId.equals(stayId))).getSingle();
-      expect(charge.pricePerBlock, 500);
-      expect(bedOf(await rooms.room(room.id), BedLabel.a).pricePerBlock, 1000);
+      expect(charge.pricePerNight, 500);
+      expect(bedOf(await rooms.room(room.id), BedLabel.a).pricePerNight, 1000);
     });
   });
 

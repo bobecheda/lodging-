@@ -4,16 +4,18 @@
 import 'package:drift/drift.dart';
 
 import 'common.dart';
+import 'desk_tables.dart';
 import 'setup_tables.dart';
 
 // Admin-owned records.
 
-/// `target_id` points at `payments` or `stays` depending on `target_type`,
-/// so it has no foreign key. A row can be voided only once.
+/// `target_id` points at `payments`, `stays` or `refunds` (a refund's payout)
+/// depending on `target_type`, so it has no foreign key. A row can be voided
+/// only once.
 @DataClassName('VoidRow')
 class Voids extends Table with SyncedColumns {
   TextColumn get targetType =>
-      text().check(targetType.isIn(['payment', 'stay']))();
+      text().check(targetType.isIn(['payment', 'stay', 'refund']))();
   TextColumn get targetId => text()();
   TextColumn get reason =>
       text().check(reason.trim().length.isBiggerThanValue(0))();
@@ -23,6 +25,24 @@ class Voids extends Table with SyncedColumns {
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
     {targetType, targetId},
+  ];
+}
+
+/// An admin's decision on a refund request (BR-8a): one per refund, written
+/// once and never changed. Admin-owned like `voids`, so the `refunds` row
+/// keeps a single writer (the desk).
+@DataClassName('RefundDecisionRow')
+class RefundDecisions extends Table with SyncedColumns {
+  TextColumn get refundId => text().unique().references(Refunds, #id)();
+  TextColumn get decision =>
+      text().check(decision.isIn(['approved', 'rejected']))();
+  TextColumn get note => text().nullable()();
+  TextColumn get decidedBy => text().references(Users, #id)();
+  DateTimeColumn get decidedAt => dateTime()();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (decision = 'approved' OR coalesce(length(trim(note)), 0) > 0)",
   ];
 }
 

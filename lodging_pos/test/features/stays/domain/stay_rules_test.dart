@@ -157,7 +157,10 @@ void main() {
     expect(refundAmount(3, price), 2100);
 
     final refund = earlyCheckoutRefund(stay, oct(21, 15), grace)!;
-    expect((refund.nights, refund.pricePerNight, refund.amount), (3, 700, 2100));
+    expect(
+      (refund.nights, refund.pricePerNight, refund.amount),
+      (3, 700, 2100),
+    );
   });
 
   test('required test case 10: the night in progress is never refunded', () {
@@ -221,8 +224,10 @@ void main() {
         ),
         throwsArgumentError,
       );
-      expect(() => extensionCharge(stayFrom(oct(15, 19), 1), 0),
-          throwsArgumentError);
+      expect(
+        () => extensionCharge(stayFrom(oct(15, 19), 1), 0),
+        throwsArgumentError,
+      );
     });
 
     test('nights used never exceeds nights paid', () {

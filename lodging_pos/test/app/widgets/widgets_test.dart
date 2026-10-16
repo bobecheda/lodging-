@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/theme/theme.dart';
 import 'package:lodging_pos/app/widgets/bed_status_tile.dart';
-import 'package:lodging_pos/app/widgets/block_stepper.dart';
+import 'package:lodging_pos/app/widgets/night_stepper.dart';
 import 'package:lodging_pos/app/widgets/buttons.dart';
 import 'package:lodging_pos/app/widgets/money_input.dart';
 import 'package:lodging_pos/app/widgets/notes.dart';
@@ -55,12 +55,12 @@ void main() {
     expect(controller.text, '25,000');
   });
 
-  testWidgets('BlockStepper stays within min and max', (tester) async {
+  testWidgets('NightStepper stays within min and max', (tester) async {
     var value = 1;
     await pump(
       tester,
       StatefulBuilder(
-        builder: (context, setState) => BlockStepper(
+        builder: (context, setState) => NightStepper(
           value: value,
           min: 1,
           max: 3,

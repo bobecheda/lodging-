@@ -46,8 +46,8 @@ class Settings extends Table {
 @DataClassName('BedCategoryRow')
 class BedCategories extends Table with SyncedColumns {
   TextColumn get name => text().unique()();
-  IntColumn get pricePerBlock =>
-      integer().check(pricePerBlock.isBiggerThanValue(0))();
+  IntColumn get pricePerNight =>
+      integer().check(pricePerNight.isBiggerThanValue(0))();
   IntColumn get sortOrder => integer()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }

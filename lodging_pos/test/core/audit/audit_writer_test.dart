@@ -267,16 +267,16 @@ void main() {
         body: (w) => w.update(
           db.bedCategories,
           SeedIds.deluxe,
-          const BedCategoriesCompanion(pricePerBlock: Value(800)),
+          const BedCategoriesCompanion(pricePerNight: Value(800)),
         ),
       );
-      expect(updated.pricePerBlock, 800);
+      expect(updated.pricePerNight, 800);
       expect(updated.deviceId, deviceId); // was 'seed'
       expect(updated.createdAt, t0);
       expect(updated.updatedAt, clock.now());
       final entry = (await auditRows()).single;
       expect(jsonDecode(entry.beforeJson!)['device_id'], seedDeviceId);
-      expect(jsonDecode(entry.afterJson)['price_per_block'], 800);
+      expect(jsonDecode(entry.afterJson)['price_per_night'], 800);
     });
 
     test('works on settings, keyed by key', () async {
@@ -788,7 +788,7 @@ void main() {
       );
     });
 
-    test('stays, payments, charges and voids cannot be deleted', () async {
+    test('stays, payments, charges, refunds, decisions and voids cannot be deleted', () async {
       final triggers = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'trigger' "
@@ -803,6 +803,8 @@ void main() {
           'payments_no_delete',
           'stay_charges_no_delete',
           'voids_no_delete',
+          'refunds_no_delete',
+          'refund_decisions_no_delete',
           'audit_log_no_delete',
         ]),
       );

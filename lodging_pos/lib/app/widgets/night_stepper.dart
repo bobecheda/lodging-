@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import '../theme/theme.dart';
 
 /// − / value / + with 44×44 buttons and the value in mono 22 (spec,
-/// "Stepper"). The buttons disable at [min] and [max].
-class BlockStepper extends StatelessWidget {
-  const BlockStepper({
+/// "Stepper (nights)"). The buttons disable at [min] and [max].
+class NightStepper extends StatelessWidget {
+  const NightStepper({
     super.key,
     required this.value,
     required this.onChanged,
     this.min = 1,
     this.max = 99,
-    this.unit = 'blocks',
+    this.unit = 'nights',
   });
 
   final int value;
@@ -19,7 +19,7 @@ class BlockStepper extends StatelessWidget {
   final int min;
   final int max;
 
-  /// Read out with the value, e.g. "2 blocks".
+  /// Read out with the value, e.g. "2 nights".
   final String unit;
 
   @override

@@ -11,6 +11,7 @@ import '../../../core/auth/user_account.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
+import '../../payments/domain/payment_rules.dart';
 import '../data/shift_repository.dart';
 import '../domain/shift.dart';
 import '../domain/shift_rules.dart';
@@ -30,8 +31,7 @@ class OpenShiftScreen extends ConsumerWidget {
         ? null
         : shiftStartFor(
             openShift: open,
-            userId: user.id,
-            role: user.role,
+            user: user,
             resumeConfirmed: ref.watch(shiftContinuedProvider),
           );
 
@@ -224,20 +224,24 @@ class _Resume extends ConsumerWidget {
               : Column(
                   children: [
                     row(
-                      'Taken so far',
-                      takings.total,
+                      'Taken so far (net)',
+                      takings.net,
                       strong: true,
                       key: const ValueKey('shift.takenTotal'),
                     ),
                     Divider(color: c.lineSoft),
-                    row('Cash', takings.cash),
-                    row('Paybill', takings.paybill),
+                    _TakingsTable(takings),
+                    Divider(color: c.lineSoft),
                     row('Opening float', shift.openingFloat),
                   ],
                 ),
         ),
         const SizedBox(height: Space.x8),
-        Text('Voided payments are not counted.', style: t.small),
+        Text(
+          'Refunds count once paid out. Voided payments and refunds are not '
+          'counted.',
+          style: t.small,
+        ),
         const SizedBox(height: Space.x20),
         AppButton.primary(
           key: const ValueKey('shift.continue'),
@@ -245,6 +249,62 @@ class _Resume extends ConsumerWidget {
           large: true,
           onPressed: () => ref.read(shiftContinuedProvider.notifier).confirm(),
         ),
+      ],
+    );
+  }
+}
+
+/// Received, refunded and net for each method, so refunds stay visible
+/// rather than just making the total smaller.
+class _TakingsTable extends StatelessWidget {
+  const _TakingsTable(this.takings);
+
+  final ShiftTakings takings;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+
+    Widget cell(String text, {TextStyle? style, Key? key}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: Space.x6),
+      child: Text(text, key: key, textAlign: TextAlign.end, style: style),
+    );
+    Widget head(String text) =>
+        cell(text, style: t.small.copyWith(color: c.muted));
+    TableRow line(PaymentMethod method, MethodTakings m) => TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: Space.x6),
+          child: Text(method.label, style: t.body),
+        ),
+        cell(formatKes(m.received), style: t.mono),
+        cell(
+          m.refunded == 0 ? formatKes(0) : formatKes(-m.refunded),
+          style: t.mono.copyWith(color: m.refunded == 0 ? c.muted : null),
+        ),
+        cell(
+          formatKes(m.net),
+          style: t.monoStrong,
+          key: ValueKey('shift.net.${method.code}'),
+        ),
+      ],
+    );
+
+    return Table(
+      columnWidths: const {0: FlexColumnWidth(1.1)},
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          children: [
+            const SizedBox.shrink(),
+            head('Received'),
+            head('Refunded'),
+            head('Net'),
+          ],
+        ),
+        line(PaymentMethod.cash, takings.cash),
+        line(PaymentMethod.paybill, takings.paybill),
       ],
     );
   }

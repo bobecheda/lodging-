@@ -4,6 +4,7 @@ import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
 import 'package:lodging_pos/features/refunds/domain/refund.dart';
 import 'package:lodging_pos/features/shifts/domain/shift.dart';
 import 'package:lodging_pos/features/shifts/domain/shift_rules.dart';
+import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 
 UserAccount user(String id, Role role) => UserAccount(
   id: id,
@@ -40,10 +41,7 @@ void main() {
 
   group('shiftStartFor', () {
     test('a receptionist with no open shift must open one', () {
-      expect(
-        shiftStartFor(openShift: null, user: jane),
-        isA<OpenNewShift>(),
-      );
+      expect(shiftStartFor(openShift: null, user: jane), isA<OpenNewShift>());
     });
 
     test('a receptionist is asked to resume their own open shift', () {
@@ -98,7 +96,12 @@ void main() {
 
     /// A refund of [amount] in each lifecycle state; only `paid` ones carry
     /// a payout.
-    Refund refund(String id, int amount, {PaymentMethod? paidBy, String? shift}) {
+    Refund refund(
+      String id,
+      int amount, {
+      PaymentMethod? paidBy,
+      String? shift,
+    }) {
       var r = requestRefund(
         RefundTerms(nights: amount ~/ 700, pricePerNight: 700),
         id: id,
@@ -141,7 +144,10 @@ void main() {
           refund('r2', 700, paidBy: paybill),
         ]),
       );
-      expect((t.cash.received, t.cash.refunded, t.cash.net), (2800, 1400, 1400));
+      expect(
+        (t.cash.received, t.cash.refunded, t.cash.net),
+        (2800, 1400, 1400),
+      );
       expect(
         (t.paybill.received, t.paybill.refunded, t.paybill.net),
         (2800, 700, 2100),

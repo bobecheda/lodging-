@@ -112,18 +112,59 @@ class Payments extends Table with SyncedColumns {
 class StayCharges extends Table with SyncedColumns {
   TextColumn get stayId => text().references(Stays, #id)();
   TextColumn get paymentId => text().references(Payments, #id)();
-  TextColumn get kind => text().check(kind.isIn(['check_in', 'renewal']))();
-  IntColumn get blocks => integer().check(blocks.isBiggerOrEqualValue(1))();
-  IntColumn get pricePerBlock =>
-      integer().check(pricePerBlock.isBiggerThanValue(0))();
+  TextColumn get kind =>
+      text().check(kind.isIn(['check_in', 'extension', 'late_checkout']))();
+  IntColumn get nights => integer().check(nights.isBiggerOrEqualValue(1))();
+  IntColumn get pricePerNight =>
+      integer().check(pricePerNight.isBiggerThanValue(0))();
   IntColumn get amount => integer()();
   DateTimeColumn get periodStart => dateTime()();
   DateTimeColumn get periodEnd => dateTime()();
 
   @override
   List<String> get customConstraints => [
-    'CHECK (amount = blocks * price_per_block)',
+    'CHECK (amount = nights * price_per_night)',
     'CHECK (period_end > period_start)',
+  ];
+}
+
+/// A refund of unused prepaid nights (BR-8). Created at early checkout as a
+/// request; the payout columns stay null until an approved refund is paid
+/// (BR-8b). The approval itself is a `refund_decisions` row. Triggers keep
+/// the requested terms fixed, refuse a payout without approval and allow it
+/// only once.
+@DataClassName('RefundRow')
+@TableIndex(name: 'refunds_shift', columns: {#shiftId})
+class Refunds extends Table with SyncedColumns {
+  TextColumn get stayId => text().unique().references(Stays, #id)();
+  IntColumn get nights => integer().check(nights.isBiggerOrEqualValue(1))();
+  IntColumn get pricePerNight =>
+      integer().check(pricePerNight.isBiggerThanValue(0))();
+  IntColumn get amount => integer()();
+  @ReferenceName('refundsRequested')
+  TextColumn get requestedBy => text().references(Users, #id)();
+  DateTimeColumn get requestedAt => dateTime()();
+
+  // Payout, set together once paid.
+  TextColumn get method =>
+      text().nullable().check(method.isIn(['cash', 'paybill']))();
+  TextColumn get mpesaCode =>
+      text().nullable().customConstraint('UNIQUE COLLATE NOCASE')();
+  TextColumn get shiftId => text().nullable().references(Shifts, #id)();
+  @ReferenceName('refundsPaid')
+  TextColumn get paidBy => text().nullable().references(Users, #id)();
+  DateTimeColumn get paidAt => dateTime().nullable()();
+  TextColumn get receiptNumber => text().nullable().unique()();
+  IntColumn get printCount => integer().withDefault(const Constant(0))();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (amount = nights * price_per_night)',
+    'CHECK ((paid_at IS NULL) = (method IS NULL))',
+    'CHECK ((paid_at IS NULL) = (shift_id IS NULL))',
+    'CHECK ((paid_at IS NULL) = (paid_by IS NULL))',
+    'CHECK ((paid_at IS NULL) = (receipt_number IS NULL))',
+    "CHECK ((method IS 'paybill') = (mpesa_code IS NOT NULL))",
   ];
 }
 

@@ -93,12 +93,7 @@ void main() {
         ),
       );
       expect(
-        () => rejectRefund(
-          requested(),
-          by: desk,
-          note: 'No',
-          at: oct(21, 16),
-        ),
+        () => rejectRefund(requested(), by: desk, note: 'No', at: oct(21, 16)),
         throwsA(isA<NotPermitted>()),
       );
     });
@@ -114,12 +109,8 @@ void main() {
     test('the admin rejects only with a reason', () {
       for (final note in [null, '', '   ']) {
         expect(
-          () => rejectRefund(
-            requested(),
-            by: owner,
-            note: note,
-            at: oct(21, 16),
-          ),
+          () =>
+              rejectRefund(requested(), by: owner, note: note, at: oct(21, 16)),
           violates('Give a reason for rejecting the refund.'),
           reason: '"$note"',
         );
@@ -185,10 +176,7 @@ void main() {
       // Approving and paying take no amount: it stays what the rules
       // calculated at checkout.
       final paid = pay(approved(), shift: shift);
-      expect(
-        (paid.nights, paid.pricePerNight, paid.amount),
-        (3, 700, 2100),
-      );
+      expect((paid.nights, paid.pricePerNight, paid.amount), (3, 700, 2100));
       expect(RefundTerms(nights: 3, pricePerNight: 700).amount, 2100);
     });
 

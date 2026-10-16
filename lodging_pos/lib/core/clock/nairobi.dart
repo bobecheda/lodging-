@@ -7,8 +7,40 @@ const _months = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-/// Wall-clock Nairobi time for [utc]. Only for display; never store it.
+/// Wall-clock Nairobi time for [utc], for display and for applying
+/// wall-clock rules. Its fields are Nairobi's; never store it.
 DateTime toNairobi(DateTime utc) => utc.toUtc().add(nairobiOffset);
+
+/// The UTC instant of a Nairobi wall-clock time.
+DateTime nairobiInstant(
+  int year,
+  int month,
+  int day, [
+  int hour = 0,
+  int minute = 0,
+  int second = 0,
+]) => DateTime.utc(
+  year,
+  month,
+  day,
+  hour,
+  minute,
+  second,
+).subtract(nairobiOffset);
+
+/// [utc] moved by [days] Nairobi calendar days, keeping its wall-clock time.
+/// Calendar arithmetic, not "+24 h", so it stays right by construction.
+DateTime addNairobiDays(DateTime utc, int days) {
+  final t = toNairobi(utc);
+  return nairobiInstant(
+    t.year,
+    t.month,
+    t.day + days,
+    t.hour,
+    t.minute,
+    t.second,
+  ).add(Duration(milliseconds: t.millisecond, microseconds: t.microsecond));
+}
 
 /// e.g. `14 Oct 2026, 22:05`.
 String formatNairobi(DateTime utc) {

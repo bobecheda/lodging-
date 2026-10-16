@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/theme.dart';
 import '../../../../app/widgets/labeled_dropdown.dart';
-import '../../../../core/auth/admin_guard.dart';
+import '../../../../core/auth/permissions.dart';
 import '../../../../core/money/kes.dart';
 import '../../domain/bed_category.dart';
 import '../../domain/rooms.dart';
@@ -44,7 +44,7 @@ List<DropdownOption<String>> categoryOptions(
       DropdownOption(
         c.id,
         c.isActive
-            ? '${c.name} · ${formatKes(c.pricePerBlock)}'
+            ? '${c.name} · ${formatKes(c.pricePerNight)}'
             : '${c.name} (closed)',
         enabled: c.isActive,
       ),
@@ -55,7 +55,7 @@ List<DropdownOption<String>> categoryOptions(
 String? panelError(Object error) => switch (error) {
   InvalidRoom() => null,
   RoomRuleViolation(:final message) => message,
-  AdminOnly() => 'Only the owner can change rooms and beds.',
+  NotPermitted() => 'Only the owner can change rooms and beds.',
   _ => 'Could not save: $error',
 };
 

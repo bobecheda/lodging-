@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/auth/permissions.dart';
 import '../../core/auth/session.dart';
 import '../../core/auth/user_account.dart';
 import '../../core/clock/nairobi.dart';
@@ -22,15 +23,22 @@ class NavItem {
     required this.route,
     required this.label,
     required this.icon,
-    this.ownerOnly = false,
+    this.permission,
+    this.setup = false,
   });
 
   final String route;
   final String label;
   final IconData icon;
 
-  /// Listed under "SETUP · OWNER ONLY" and hidden from receptionists.
-  final bool ownerOnly;
+  /// Hidden from users without it (the router enforces it too).
+  final Permission? permission;
+
+  /// Listed under "SETUP · OWNER ONLY".
+  final bool setup;
+
+  bool visibleTo(UserAccount? user) =>
+      permission == null || (user != null && can(user, permission!));
 }
 
 /// Sidebar destinations. Only screens that exist are listed; each story
@@ -46,7 +54,8 @@ List<NavItem> deskNavItems(Ref ref) => const [
     route: Routes.adminRooms,
     label: 'Rooms & beds',
     icon: Icons.bed_outlined,
-    ownerOnly: true,
+    permission: Permission.manageRooms,
+    setup: true,
   ),
 ];
 
@@ -64,10 +73,11 @@ class DeskShell extends ConsumerWidget {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final user = ref.watch(sessionProvider);
-    final items = ref.watch(deskNavItemsProvider);
-    final isOwner = user?.role == Role.admin;
-    final everyone = items.where((i) => !i.ownerOnly).toList();
-    final ownerOnly = items.where((i) => i.ownerOnly).toList();
+    final items = ref
+        .watch(deskNavItemsProvider)
+        .where((i) => i.visibleTo(user));
+    final desk = items.where((i) => !i.setup).toList();
+    final setup = items.where((i) => i.setup).toList();
 
     final sidebar = Container(
       width: Sizes.sidebarWidth,
@@ -89,8 +99,8 @@ class DeskShell extends ConsumerWidget {
           Expanded(
             child: ListView(
               children: [
-                for (final item in everyone) _NavTile(item, location),
-                if (isOwner && ownerOnly.isNotEmpty) ...[
+                for (final item in desk) _NavTile(item, location),
+                if (setup.isNotEmpty) ...[
                   const SizedBox(height: Space.x20),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -103,7 +113,7 @@ class DeskShell extends ConsumerWidget {
                       style: t.capsLabel.copyWith(color: c.navMuted),
                     ),
                   ),
-                  for (final item in ownerOnly) _NavTile(item, location),
+                  for (final item in setup) _NavTile(item, location),
                 ],
               ],
             ),
