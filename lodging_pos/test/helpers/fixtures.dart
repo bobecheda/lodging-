@@ -194,13 +194,20 @@ class TestEnv {
 /// The front-desk laptop: 1366×768 at 1:1.
 const deskSize = Size(1366, 768);
 
-/// Runs the real app on [env] at the desk's screen size.
-Future<ProviderContainer> pumpDeskApp(WidgetTester tester, TestEnv env) async {
+/// Runs the real app on [env] at the desk's screen size, with any
+/// [extraOverrides] on top.
+Future<ProviderContainer> pumpDeskApp(
+  WidgetTester tester,
+  TestEnv env, {
+  List<Override> extraOverrides = const [],
+}) async {
   tester.view
     ..physicalSize = deskSize
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final container = ProviderContainer(overrides: env.overrides);
+  final container = ProviderContainer(
+    overrides: [...env.overrides, ...extraOverrides],
+  );
   addTearDown(container.dispose);
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const App()),

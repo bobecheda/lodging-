@@ -65,6 +65,13 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
+  Future<void>? _closing;
+
+  /// Safe to call more than once: a test-database reset closes it before
+  /// its provider does.
+  @override
+  Future<void> close() => _closing ??= super.close();
+
   /// This install's device id, stamped on every synced row it writes.
   Future<String> deviceId() async =>
       _deviceId ??= (await select(device).getSingle()).deviceId;
