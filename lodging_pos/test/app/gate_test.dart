@@ -78,4 +78,30 @@ void main() {
     expect(go(Routes.home), isNull);
     expect(go('/bed-board'), isNull);
   });
+
+  test(
+    'owner-only screens (AD-1): the owner stays, a receptionist goes home',
+    () {
+      const owner = UserAccount(
+        id: 'o1',
+        fullName: 'Owner',
+        username: 'owner',
+        role: Role.admin,
+        isActive: true,
+        mustChangePassword: false,
+      );
+      expect(
+        redirectFor(
+          Routes.adminRooms,
+          hasUsers: true,
+          user: owner,
+          shiftStart: const ShiftReady(null),
+        ),
+        isNull,
+      );
+      expect(go(Routes.adminRooms), Routes.home);
+      expect(go('/admin'), Routes.home);
+      expect(go('/administrator'), isNull); // not under the prefix
+    },
+  );
 }

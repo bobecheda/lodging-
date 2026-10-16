@@ -1603,7 +1603,8 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    $customConstraints:
+        'NOT NULL UNIQUE CHECK (room_number = upper(trim(room_number)))',
   );
   static const VerificationMeta _floorMeta = const VerificationMeta('floor');
   @override
@@ -1764,6 +1765,8 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String deviceId;
+
+  /// Stored trimmed and uppercase, so "3a" and "3A" are the same room.
   final String roomNumber;
   final String? floor;
   final String? notes;

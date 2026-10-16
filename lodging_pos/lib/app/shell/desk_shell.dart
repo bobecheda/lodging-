@@ -42,6 +42,12 @@ List<NavItem> deskNavItems(Ref ref) => const [
     label: 'Bed board',
     icon: Icons.grid_view_rounded,
   ),
+  NavItem(
+    route: Routes.adminRooms,
+    label: 'Rooms & beds',
+    icon: Icons.bed_outlined,
+    ownerOnly: true,
+  ),
 ];
 
 /// The desk layout (docs/design.md, "Desk shell"): a 232px marine sidebar

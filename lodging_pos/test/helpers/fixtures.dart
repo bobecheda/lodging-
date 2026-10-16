@@ -87,6 +87,97 @@ class TestEnv {
     );
   }
 
+  /// Test-only stand-in for FD-4 check-in, until it exists: writes a
+  /// guest, an active stay on [bedId] for [blocks] blocks at [pricePerBlock],
+  /// a cash payment and its charge, through the writer. Opens a shift for
+  /// [by] if this device has none. Returns the stay id.
+  Future<String> checkIn(
+    String bedId, {
+    required UserAccount by,
+    int blocks = 1,
+    int pricePerBlock = 700,
+  }) {
+    final now = clock.now();
+    final paidUntil = now.add(Duration(hours: 12 * blocks));
+    return audit.writeWithAudit(
+      action: 'stay.check_in',
+      userId: by.id,
+      body: (w) async {
+        final open = await (db.select(
+          db.shifts,
+        )..where((s) => s.status.equals('open'))).getSingleOrNull();
+        final shiftId =
+            open?.id ??
+            (await w.insert(
+              db.shifts,
+              ShiftsCompanion.insert(
+                userId: by.id,
+                openedAt: now,
+                openingFloat: 0,
+                status: 'open',
+              ),
+              action: 'shift.open',
+            )).id;
+        final guest = await w.insert(
+          db.guests,
+          GuestsCompanion.insert(fullName: 'Test Guest', phone: '0700000000'),
+        );
+        final stay = await w.insert(
+          db.stays,
+          StaysCompanion.insert(
+            guestId: guest.id,
+            bedId: bedId,
+            checkInAt: now,
+            paidUntil: paidUntil,
+            status: 'active',
+            checkedInBy: by.id,
+          ),
+        );
+        final payment = await w.insert(
+          db.payments,
+          PaymentsCompanion.insert(
+            receiptNumber: 'T-${stay.id.substring(0, 8)}',
+            shiftId: shiftId,
+            receivedBy: by.id,
+            receivedAt: now,
+            amount: blocks * pricePerBlock,
+            method: 'cash',
+          ),
+        );
+        await w.insert(
+          db.stayCharges,
+          StayChargesCompanion.insert(
+            stayId: stay.id,
+            paymentId: payment.id,
+            kind: 'check_in',
+            blocks: blocks,
+            pricePerBlock: pricePerBlock,
+            amount: blocks * pricePerBlock,
+            periodStart: now,
+            periodEnd: paidUntil,
+          ),
+        );
+        return stay.id;
+      },
+    );
+  }
+
+  /// Test-only stand-in for FD-8 checkout.
+  Future<void> checkOut(String stayId, {required UserAccount by}) =>
+      audit.writeWithAudit(
+        action: 'stay.check_out',
+        userId: by.id,
+        body: (w) => w.update(
+          db.stays,
+          stayId,
+          StaysCompanion(
+            status: const Value('closed'),
+            checkedOutAt: Value(clock.now()),
+            checkedOutBy: Value(by.id),
+          ),
+        ),
+      );
+
   Future<List<AuditLogRow>> auditFor(String action) =>
       (db.select(db.auditLog)..where((a) => a.action.equals(action))).get();
 }

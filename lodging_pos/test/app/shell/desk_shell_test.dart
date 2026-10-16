@@ -68,9 +68,11 @@ void main() {
     await env.users.createFirstAdmin(testSetup);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    expect(app.read(deskNavItemsProvider).map((i) => i.route), [Routes.home]);
-    // No owner-only screens exist yet, so the group is hidden.
-    expect(find.text('SETUP · OWNER ONLY'), findsNothing);
+    expect(app.read(deskNavItemsProvider).map((i) => i.route), [
+      Routes.home,
+      Routes.adminRooms,
+    ]);
+    expect(find.text('SETUP · OWNER ONLY'), findsOneWidget);
   });
 
   testWidgets('sync pill: not set up yet, counting changes waiting', (

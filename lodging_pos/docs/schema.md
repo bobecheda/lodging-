@@ -63,7 +63,7 @@ Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No use
 ### rooms
 | Column | Type | Notes |
 |---|---|---|
-| room_number | TEXT | UNIQUE |
+| room_number | TEXT | UNIQUE; stored trimmed and uppercase (CHECK `room_number = upper(trim(room_number))`) |
 | floor | TEXT | optional |
 | notes | TEXT | optional |
 | is_active | BOOL | inactive rooms leave the bed board, history kept |
@@ -77,7 +77,7 @@ Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No use
 | cleanliness | TEXT | `clean` \| `not_cleaned` |
 | is_active | BOOL | |
 
-UNIQUE(room_id, label), so a room has at most 2 beds, active or not. A bed under repair is deactivated and later reactivated, never replaced by a new row.
+UNIQUE(room_id, label), so a room has at most 2 beds, active or not. A bed under repair is deactivated and later reactivated, never replaced by a new row. New beds start `clean`; a bed or room reactivated after repairs comes back `not_cleaned`. A bed or room with an active stay can't be deactivated, and an active room keeps 1 or 2 active beds (its last active bed can't be deactivated; close the room instead).
 
 ### housekeepers
 | Column | Type | Notes |
