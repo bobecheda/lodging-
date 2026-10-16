@@ -204,8 +204,9 @@ void main() {
   Future<void> charge(
     String stayId,
     String paymentId, {
-    int blocks = 1,
-    int pricePerBlock = 700,
+    int nights = 1,
+    int pricePerNight = 700,
+    String kind = 'check_in',
     int? amount,
   }) => db
       .into(db.stayCharges)
@@ -217,12 +218,12 @@ void main() {
           deviceId: Value(deviceId),
           stayId: stayId,
           paymentId: paymentId,
-          kind: 'check_in',
-          blocks: blocks,
-          pricePerBlock: pricePerBlock,
-          amount: amount ?? blocks * pricePerBlock,
+          kind: kind,
+          nights: nights,
+          pricePerNight: pricePerNight,
+          amount: amount ?? nights * pricePerNight,
           periodStart: t0,
-          periodEnd: t0.add(Duration(hours: 12 * (blocks < 1 ? 1 : blocks))),
+          periodEnd: t0.add(Duration(days: nights < 1 ? 1 : nights)),
         ),
       );
 
@@ -248,7 +249,7 @@ void main() {
         {for (final r in rows) r.key: r.value},
         {
           'lodging_name': '',
-          'block_hours': '12',
+          'checkout_time': '10:00',
           'grace_minutes': '60',
           'receipt_prefix': 'R',
           'idle_lock_minutes': '10',
@@ -267,7 +268,7 @@ void main() {
         db.bedCategories,
       )..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).get();
       expect(
-        [for (final r in rows) (r.id, r.name, r.pricePerBlock, r.isActive)],
+        [for (final r in rows) (r.id, r.name, r.pricePerNight, r.isActive)],
         [
           (SeedIds.vip, 'VIP', 1000, true),
           (SeedIds.deluxe, 'Deluxe', 700, true),
@@ -563,16 +564,285 @@ void main() {
       p = await payment(await shift(u), u, receipt: 'R-000001');
     });
 
-    test('amount must equal blocks × price_per_block', () async {
-      await charge(st, p, blocks: 2);
+    test('amount must equal nights × price_per_night', () async {
+      await charge(st, p, nights: 2);
       await expectLater(
-        charge(st, p, blocks: 2, amount: 1000),
+        charge(st, p, nights: 2, amount: 1000),
         _violates('CHECK'),
       );
     });
 
-    test('blocks must be at least 1', () async {
-      await expectLater(charge(st, p, blocks: 0), _violates('CHECK'));
+    test('nights must be at least 1', () async {
+      await expectLater(charge(st, p, nights: 0), _violates('CHECK'));
+    });
+
+    test('kind is check_in, extension or late_checkout', () async {
+      for (final kind in ['check_in', 'extension', 'late_checkout']) {
+        await charge(st, p, kind: kind);
+      }
+      await expectLater(charge(st, p, kind: 'renewal'), _violates('CHECK'));
+    });
+  });
+
+  group('refunds (BR-8, BR-8a, BR-8b)', () {
+    late String u;
+    late String s;
+    late String st;
+    var tick = 0;
+
+    setUp(() async {
+      u = await user();
+      s = await shift(u);
+      st = await stay(
+        await guest(),
+        await bed(await room('3')),
+        u,
+        closed: true,
+      );
+    });
+
+    Future<String> refund({
+      String? stayId,
+      int nights = 3,
+      int pricePerNight = 700,
+      int? amount,
+      DateTime? paidAt,
+    }) async {
+      final id = newId();
+      await db
+          .into(db.refunds)
+          .insert(
+            RefundsCompanion.insert(
+              id: Value(id),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
+              stayId: stayId ?? st,
+              nights: nights,
+              pricePerNight: pricePerNight,
+              amount: amount ?? nights * pricePerNight,
+              requestedBy: u,
+              requestedAt: t0,
+              paidAt: Value(paidAt),
+            ),
+          );
+      return id;
+    }
+
+    Future<int> decide(String refundId, String decision, {String? note}) => db
+        .into(db.refundDecisions)
+        .insert(
+          RefundDecisionsCompanion.insert(
+            id: Value(newId()),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
+            refundId: refundId,
+            decision: decision,
+            note: Value(note),
+            decidedBy: u,
+            decidedAt: t0,
+          ),
+        );
+
+    /// A direct update that moves updated_at, as the writer would.
+    Future<int> change(String refundId, RefundsCompanion values) =>
+        (db.update(db.refunds)..where((r) => r.id.equals(refundId))).write(
+          values.copyWith(updatedAt: Value(t0.add(Duration(seconds: ++tick)))),
+        );
+
+    Future<int> payout(
+      String refundId, {
+      String method = 'cash',
+      String? code,
+      String receipt = 'R-000101',
+    }) => change(
+      refundId,
+      RefundsCompanion(
+        method: Value(method),
+        mpesaCode: Value(code),
+        shiftId: Value(s),
+        paidBy: Value(u),
+        paidAt: Value(t0),
+        receiptNumber: Value(receipt),
+      ),
+    );
+
+    Matcher aborts(String message) =>
+        throwsA(predicate((e) => '$e'.contains(message), message));
+
+    test('amount must equal nights × price_per_night, nights ≥ 1', () async {
+      await expectLater(refund(amount: 1000), _violates('CHECK'));
+      await expectLater(refund(nights: 0), _violates('CHECK'));
+    });
+
+    test('one refund per stay', () async {
+      await refund();
+      await expectLater(refund(), _violates('UNIQUE'));
+    });
+
+    test('a refund starts as an unpaid request', () async {
+      await expectLater(
+        refund(paidAt: t0),
+        aborts('a refund is requested before it is paid'),
+      );
+    });
+
+    test('payout is refused until approved, and after a rejection', () async {
+      final r = await refund();
+      await expectLater(payout(r), aborts('refund is not approved'));
+      await decide(r, 'rejected', note: 'Damage');
+      await expectLater(payout(r), aborts('refund is not approved'));
+    });
+
+    test(
+      'an approved refund is paid once; reprints are still counted',
+      () async {
+        final r = await refund();
+        await decide(r, 'approved');
+        await payout(r);
+        await expectLater(
+          payout(r, receipt: 'R-000102'),
+          aborts('refund is already paid'),
+        );
+        await change(r, const RefundsCompanion(printCount: Value(1)));
+        final row = await (db.select(
+          db.refunds,
+        )..where((x) => x.id.equals(r))).getSingle();
+        expect((row.receiptNumber, row.printCount), ('R-000101', 1));
+      },
+    );
+
+    test('nobody can change what was requested', () async {
+      final r = await refund();
+      await decide(r, 'approved');
+      await expectLater(
+        change(
+          r,
+          const RefundsCompanion(nights: Value(4), amount: Value(2800)),
+        ),
+        aborts('refund terms cannot change'),
+      );
+      await expectLater(
+        change(r, const RefundsCompanion(amount: Value(1))),
+        aborts('refund terms cannot change'),
+      );
+    });
+
+    test(
+      'payout fields are set together; paybill needs a code, cash none',
+      () async {
+        final r = await refund();
+        await decide(r, 'approved');
+        await expectLater(
+          change(r, RefundsCompanion(paidAt: Value(t0))),
+          _violates('CHECK'),
+        );
+        await expectLater(payout(r, method: 'paybill'), _violates('CHECK'));
+        await expectLater(payout(r, code: 'SJK4H7XQ2P'), _violates('CHECK'));
+        await expectLater(payout(r, method: 'mpesa'), _violates('CHECK'));
+        await payout(r, method: 'paybill', code: 'SJK4H7XQ2P');
+      },
+    );
+
+    test(
+      'a decision is one per refund, and a rejection needs a reason',
+      () async {
+        final r = await refund();
+        await expectLater(decide(r, 'rejected'), _violates('CHECK'));
+        await expectLater(
+          decide(r, 'rejected', note: '  '),
+          _violates('CHECK'),
+        );
+        await expectLater(decide(r, 'maybe'), _violates('CHECK'));
+        await decide(r, 'approved');
+        await expectLater(
+          decide(r, 'rejected', note: 'x'),
+          _violates('UNIQUE'),
+        );
+      },
+    );
+
+    test(
+      'refunds and decisions are never deleted; decisions never edited',
+      () async {
+        final r = await refund();
+        await decide(r, 'approved');
+        await expectLater(
+          db.delete(db.refunds).go(),
+          aborts('refunds rows are never deleted'),
+        );
+        await expectLater(
+          db.delete(db.refundDecisions).go(),
+          aborts('refund_decisions rows are never deleted'),
+        );
+        await expectLater(
+          db
+              .update(db.refundDecisions)
+              .write(
+                RefundDecisionsCompanion(
+                  decision: const Value('rejected'),
+                  note: const Value('changed my mind'),
+                  updatedAt: Value(t0.add(const Duration(hours: 1))),
+                ),
+              ),
+          aborts('refund_decisions rows are never edited'),
+        );
+      },
+    );
+
+    group('an M-Pesa code is used once across payments and refund payouts '
+        '(BR-10)', () {
+      test('a payment code cannot be reused for a refund payout', () async {
+        await payment(
+          s,
+          u,
+          receipt: 'R-000001',
+          method: 'paybill',
+          mpesaCode: 'SJK4H7XQ2P',
+        );
+        final r = await refund();
+        await decide(r, 'approved');
+        await expectLater(
+          payout(r, method: 'paybill', code: 'sjk4h7xq2p'),
+          aborts('M-Pesa code already used'),
+        );
+      });
+
+      test('a refund payout code cannot be reused for a payment', () async {
+        final r = await refund();
+        await decide(r, 'approved');
+        await payout(r, method: 'paybill', code: 'SJK4H7XQ2P');
+        await expectLater(
+          payment(
+            s,
+            u,
+            receipt: 'R-000001',
+            method: 'paybill',
+            mpesaCode: 'sjk4h7xq2p',
+          ),
+          aborts('M-Pesa code already used'),
+        );
+      });
+    });
+
+    test('a void can target a refund payout', () async {
+      final r = await refund();
+      await db
+          .into(db.voids)
+          .insert(
+            VoidsCompanion.insert(
+              id: Value(newId()),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
+              targetType: 'refund',
+              targetId: r,
+              reason: 'Paid twice by mistake',
+              voidedBy: u,
+              voidedAt: t0,
+            ),
+          );
     });
   });
 
