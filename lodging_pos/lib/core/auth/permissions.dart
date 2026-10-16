@@ -32,6 +32,10 @@ enum Permission {
   markClean,
   recordStock,
   viewOwnReport,
+
+  /// Find, register and correct guests (FD-3). Exporting guest data will be
+  /// a separate admin-only permission.
+  registerGuests,
 }
 
 const _adminOnly = {Role.admin};
@@ -62,6 +66,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.markClean: _everyone,
   Permission.recordStock: _everyone,
   Permission.viewOwnReport: _everyone,
+  Permission.registerGuests: _everyone,
 };
 
 /// Whether [user] may do [permission]. A disabled user may do nothing.

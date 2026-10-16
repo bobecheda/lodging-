@@ -69,4 +69,51 @@ void main() {
       expect(maskPhone('12345', compact: true), '•••');
     });
   });
+
+  group('guest phones (Kenyan first, then international)', () {
+    test('Kenyan forms still become 07… / 01…', () {
+      expect(normalizeGuestPhone('+254 722 123 310'), '0722123310');
+      expect(normalizeGuestPhone('254110234567'), '0110234567');
+      expect(normalizeGuestPhone('0722-123-310'), '0722123310');
+    });
+
+    test('international: + then 8–15 digits, stored as + and digits', () {
+      expect(normalizeGuestPhone('+256 712 345 678'), '+256712345678');
+      expect(normalizeGuestPhone('+44 20-7946-0958'), '+442079460958');
+      expect(normalizeGuestPhone('+12345678'), '+12345678');
+      expect(normalizeGuestPhone('+123456789012345'), '+123456789012345');
+    });
+
+    test('anything else is refused', () {
+      for (final bad in [
+        '+1234567', // 7 digits
+        '+1234567890123456', // 16 digits
+        '256712345678', // international needs the +
+        '0822123310',
+        '+256 7123a5678',
+        '',
+      ]) {
+        expect(normalizeGuestPhone(bad), isNull, reason: bad);
+      }
+    });
+
+    test('guests must give a phone', () {
+      expect(guestPhoneError(''), 'Enter a phone number.');
+      expect(
+        guestPhoneError('12345'),
+        'Enter a Kenyan number (07…, 01…) or an international one starting '
+        'with +.',
+      );
+      expect(guestPhoneError('+256 712 345 678'), isNull);
+    });
+
+    test('housekeepers stay Kenyan-only', () {
+      expect(normalizePhone('+256712345678'), isNull);
+    });
+
+    test('masks international numbers: first 4 and last 3 digits', () {
+      expect(maskPhone('+256712345678'), '+2567 ••• 678');
+      expect(maskPhone('+256712345678', compact: true), '+2567•••678');
+    });
+  });
 }

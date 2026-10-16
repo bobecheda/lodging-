@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../clock/clock.dart';
+import '../contacts/id_number.dart';
 import '../contacts/phone.dart';
 import '../database/database.dart';
 import '../database/database_provider.dart';
@@ -30,16 +31,18 @@ const _localOnlyTables = {'receipt_counter'};
 /// purgeable under the Data Protection Act while audit_log is append-only.
 const _redactedColumns = {
   'users': {'password_hash'},
-  'guests': {'full_name', 'id_number'},
+  'guests': {'full_name'},
 };
 const _redacted = '[redacted]';
 
-/// Phone columns kept in audit JSON only masked (`0722•••310`), so a change
-/// is still visible without storing the number.
-const _maskedPhoneColumns = {
-  'guests': {'phone'},
-  'housekeepers': {'phone'},
+/// Columns kept in audit JSON only masked, so a change is still visible
+/// without storing the value: phones `0722•••310`, ID numbers `••••3921`.
+const _maskedColumns = <String, Map<String, String Function(String)>>{
+  'guests': {'phone': _maskPhoneCompact, 'id_number': maskIdNumber},
+  'housekeepers': {'phone': _maskPhoneCompact},
 };
+
+String _maskPhoneCompact(String phone) => maskPhone(phone, compact: true);
 
 /// The single write path. Repositories never write to drift directly.
 class AuditWriter {
@@ -345,17 +348,14 @@ class AuditedWrites {
 
   static Map<String, Object?> _redact(String table, Map<String, Object?> json) {
     final hidden = _redactedColumns[table] ?? const {};
-    final masked = _maskedPhoneColumns[table] ?? const {};
+    final masked = _maskedColumns[table] ?? const {};
     if (hidden.isEmpty && masked.isEmpty) return json;
     return {
       for (final MapEntry(:key, :value) in json.entries)
         key: switch (value) {
           null => null,
           _ when hidden.contains(key) => _redacted,
-          final String phone when masked.contains(key) => maskPhone(
-            phone,
-            compact: true,
-          ),
+          final String text when masked.containsKey(key) => masked[key]!(text),
           _ => value,
         },
     };

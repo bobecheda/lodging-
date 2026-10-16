@@ -8,6 +8,7 @@ import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/setup_screen.dart';
+import '../features/guests/presentation/guests_screen.dart';
 import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
@@ -81,6 +82,7 @@ GoRouter router(Ref ref) {
             DeskShell(location: state.matchedLocation, child: child),
         routes: [
           GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+          GoRoute(path: Routes.guests, builder: (_, _) => const GuestsScreen()),
           GoRoute(
             path: Routes.adminRooms,
             builder: (_, _) => const RoomsScreen(),

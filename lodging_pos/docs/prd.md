@@ -83,7 +83,7 @@ Each story lists the conditions that must all hold before it counts as done.
 
 - Search by ID or passport number, or phone, returns matches as I type.
 - New guest requires full name and phone; ID type (National ID, Passport, Alien ID) and number are optional.
-- An ID number, when entered, cannot be registered twice.
+- An ID (type and number), when entered, cannot be registered twice; the same number under a different ID type is a different document.
 
 **FD-4 Check a guest in.** As a receptionist, I want to let a bed for a number of nights so that the guest gets a bed and the money is recorded.
 
