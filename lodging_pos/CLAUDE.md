@@ -70,7 +70,7 @@ Features: `auth`, `shifts`, `setup`, `guests`, `bed_board`, `stays`, `payments`,
   4. `flutter analyze` clean and `flutter test` passes
   5. runs in the Windows build
 - Schema changes go through a new drift migration (bump `schemaVersion`); never edit an applied migration.
-- **Until the first install at the lodging**, the v1 schema and seed may still change in place (regenerate `drift_schemas/` with `make-migrations`)). A debug build checks the local database file against the schema it would create (`core/database/schema_check.dart`); a file made by an older build opens the "older build" screen, which renames it to `lodging_pos.sqlite.bak-…` and starts fresh. Release builds skip the check. **After that first install, every schema or seed change is a numbered migration.**
+- **Until the first install at the lodging**, the v1 schema and seed may still change in place (regenerate `drift_schemas/` with `make-migrations`). A debug build checks the local database file against the schema it would create (`core/database/schema_check.dart`); a file made by an older build opens the "older build" screen, which renames it to `lodging_pos.sqlite.bak-…` and starts fresh. Release builds skip the check. **After that first install, every schema or seed change is a numbered migration.**
 - Commit messages: use the `commit-style` skill.
 
 ## Commands
