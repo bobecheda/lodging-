@@ -8,6 +8,7 @@ import 'package:lodging_pos/app/old_database_screen.dart';
 import 'package:lodging_pos/core/clock/clock.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/schema_check.dart';
+import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/core/database/test_database_file_native.dart';
 
 import '../../helpers/fixtures.dart';
@@ -131,5 +132,72 @@ void main() {
     expect(File(path).existsSync(), isFalse);
     expect(File(backup).readAsStringSync(), 'old');
     expect(File('$backup-wal').readAsStringSync(), 'wal');
+  });
+
+  testWidgets('a release build explains but never offers a reset', (
+    tester,
+  ) async {
+    final env = TestEnv();
+    addTearDown(env.close);
+    await env.db.customStatement(
+      'ALTER TABLE bed_categories RENAME COLUMN price_per_night '
+      'TO price_per_block',
+    );
+    final app = await pumpDeskApp(
+      tester,
+      env,
+      extraOverrides: [canResetDatabaseProvider.overrideWithValue(false)],
+    );
+    expect(locationOf(app), Routes.oldDatabase);
+    expect(
+      find.text('The database does not match this version'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Your data is untouched.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('oldDatabase.reset')), findsNothing);
+  });
+
+  group('versions', () {
+    test('a file from a newer version of the app is refused', () async {
+      final dir = Directory.systemTemp.createTempSync('lodging_version');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File('${dir.path}${Platform.pathSeparator}db.sqlite');
+
+      final first = AppDatabase(
+        NativeDatabase(file),
+        clock: FixedClock(testT0),
+      );
+      await first.customStatement('PRAGMA user_version = 99');
+      await first.close();
+
+      final second = AppDatabase(
+        NativeDatabase(file),
+        clock: FixedClock(testT0),
+      );
+      addTearDown(second.close);
+      await expectLater(
+        second.select(second.settings).get(),
+        throwsA(predicate((e) => '$e'.contains('made by a newer version'))),
+      );
+    });
+
+    test('missing settings are added at their default; others untouched', () async {
+      final db = fresh();
+      addTearDown(db.close);
+      await db.customStatement(
+        "DELETE FROM settings WHERE key IN ('receipt_prefix', 'checkout_time')",
+      );
+      await db.customStatement(
+        "UPDATE settings SET value = '45', updated_at = '2026-10-15T00:00:00.000Z' "
+        "WHERE key = 'grace_minutes'",
+      );
+      await insertMissingSettings(db, now: testT0);
+      final values = {
+        for (final r in await db.select(db.settings).get()) r.key: r.value,
+      };
+      expect(values['receipt_prefix'], 'R');
+      expect(values['checkout_time'], '10:00');
+      expect(values['grace_minutes'], '45');
+    });
   });
 }

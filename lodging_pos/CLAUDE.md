@@ -55,7 +55,7 @@ Features: `auth`, `shifts`, `setup`, `guests`, `bed_board`, `stays`, `payments`,
 - Every screen and service must work with **no internet**.
 - UI text in English, amounts shown as `KES 1,000`; dates `Thu 15 Oct`, times 24-hour `07:02` (`core/clock/nairobi.dart`).
 - **Design system** (spec: `docs/design.md`, artboards in `docs/design/`): raw colours, font sizes and font families live **only** in `lib/app/theme/` (`LodgingColors`, `LodgingType`, `Space`/`Radii`/`Sizes`); everything else reads them from the theme. `test/policy/no_raw_style_test.dart` fails the build otherwise. Fonts (Manrope, IBM Plex Mono) are bundled in `assets/fonts/` with their sources recorded in its README. Shared widgets live in `lib/app/widgets/` (buttons, `LabeledField`, `MoneyInput`, `SegmentedChoice`, `NightStepper`, `Note`, `StatusBadge`, `BedStatusTile`); working screens go inside `DeskShell` (`lib/app/shell/`), and each story adds its sidebar entry to `deskNavItems`. Every screen must render at **1366×768** without overflow (`test/app/screen_layout_test.dart`).
-- **Settings** are read through `SettingsRepository` (`core/settings`). Every default lives in one map, `settingDefaults` in `core/settings/setting_defaults.dart`; the v1 seed writes it and the reader falls back to it for any key missing from the database, so a new setting only needs an entry there.
+- **Settings** are read through `SettingsRepository` (`core/settings`). Every default lives in one map, `settingDefaults` in `core/settings/setting_defaults.dart`; the v1 seed writes it, any upgrade inserts keys still missing, and the reader falls back to it, so a new setting only needs an entry there.
 - **Inactivity lock:** after `idle_lock_minutes` (default 10, range 1–60, one validator in `auth/domain/idle_lock.dart`) without a click, scroll, key press or mouse movement, the session signs out to the login screen (`user.auto_lock`); the sidebar's Lock screen button does the same at once (`user.lock`). Either way the shift stays open.
 - **Secrets are never written in code, tests or committed config.** Keys (e.g. the Supabase URL and anon key in sprint 2) are passed at build time with `--dart-define-from-file=secrets.json` from an untracked file and read with `String.fromEnvironment`. The repo-root `.gitignore` blocks `.env`, `*.env` and `secrets*.json`. Test passwords are made-up values for in-memory databases; `.gitguardian.yaml` excludes `lodging_pos/test/**` from secret scanning.
 
@@ -69,8 +69,17 @@ Features: `auth`, `shifts`, `setup`, `guests`, `bed_board`, `stays`, `payments`,
   3. writes audit entries for its actions
   4. `flutter analyze` clean and `flutter test` passes
   5. runs in the Windows build
-- Schema changes go through a new drift migration (bump `schemaVersion`); never edit an applied migration.
-- **Until the first install at the lodging**, the v1 schema and seed may still change in place (regenerate `drift_schemas/` with `make-migrations`). A debug build checks the local database file against the schema it would create (`core/database/schema_check.dart`); a file made by an older build opens the "older build" screen, which renames it to `lodging_pos.sqlite.bak-…` and starts fresh. Release builds skip the check. **After that first install, every schema or seed change is a numbered migration.**
+- **Schema v1 is frozen as of 16 Oct 2026. Every schema change is a numbered drift migration with a migration test. Never edit an applied migration.** The steps:
+  1. Change the tables and bump `schemaVersion` in `database.dart`.
+  2. Run `dart run drift_dev make-migrations`. It snapshots the new version in `drift_schemas/`, writes `database.steps.dart` and the test helpers in `test/drift/app_database/generated/`, and creates `test/drift/app_database/migration_test.dart` once.
+  3. Add the generated step to `_upgrade` (`stepByStep(from1To2: …)`).
+  4. Fill the migration test with real v1 rows and check they survive the upgrade. Its `AppDatabase(...)` calls need `clock:`.
+  5. A new NOT NULL column gets a default or a backfill in its step. A new setting key needs only its entry in `settingDefaults`: after any upgrade, missing keys are inserted at their default (`insertMissingSettings`).
+- **Column names must not clash with drift Table members** (e.g. no `table_name`, `row_id`, `primary_key`, `unique_keys`, `without_row_id`, `is_strict`, `custom_constraints`). Drift's generated schema code names its getters after the SQL columns, and a clash stops `database.steps.dart` from compiling.
+- **Database check at startup** (`core/database/schema_check.dart`): after any migration, the app compares the database file with the schema this build creates.
+  - A debug build shows a "made by an older build" screen with a reset button. Reset renames the file to `lodging_pos.sqlite.bak-…` (never deleted) and starts fresh.
+  - A release build shows an error, leaves the data untouched, and never offers a reset.
+  - A file from a newer app version is refused.
 - Commit messages: use the `commit-style` skill.
 
 ## Commands
@@ -78,7 +87,7 @@ Features: `auth`, `shifts`, `setup`, `guests`, `bed_board`, `stays`, `payments`,
 ```
 flutter pub get
 dart run build_runner build                 # drift + riverpod codegen
-dart run drift_dev make-migrations          # after bumping schemaVersion
+dart run drift_dev make-migrations          # after bumping schemaVersion (v1 is frozen)
 flutter analyze
 flutter test
 flutter run -d windows

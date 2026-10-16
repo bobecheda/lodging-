@@ -15,6 +15,37 @@ abstract final class SeedIds {
   static const normal = 'ccf717df-8854-4ff5-b1f0-aec27d05147d';
 }
 
+/// Every setting a database should have: the defaults map plus the lodging
+/// name, which first-run setup fills in.
+const _allSettings = {SettingKeys.lodgingName: '', ...settingDefaults};
+
+/// Adds any setting key missing from the database at its default value,
+/// leaving existing values alone. Runs after every upgrade, so a setting
+/// added in a later version appears with its default.
+Future<void> insertMissingSettings(
+  AppDatabase db, {
+  required DateTime now,
+}) async {
+  final have = {for (final row in await db.select(db.settings).get()) row.key};
+  final missing = {
+    for (final MapEntry(:key, :value) in _allSettings.entries)
+      if (!have.contains(key)) key: value,
+  };
+  if (missing.isEmpty) return;
+  await db.batch((b) {
+    b.insertAll(db.settings, [
+      for (final MapEntry(:key, :value) in missing.entries)
+        SettingsCompanion.insert(
+          key: key,
+          value: value,
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          deviceId: const Value(seedDeviceId),
+        ),
+    ]);
+  });
+}
+
 /// Writes the v1 seed rows. Runs once, inside `onCreate`.
 ///
 /// Seed rows bypass writeWithAudit, so they pass the stamped columns
@@ -34,12 +65,9 @@ Future<void> seedV1(
         ReceiptCounterCompanion.insert(deviceId: deviceId, nextNumber: 1),
       );
 
-  // Every default from the one map, plus the lodging name, which the
-  // first-run setup screen fills in.
-  const settings = {SettingKeys.lodgingName: '', ...settingDefaults};
   await db.batch((b) {
     b.insertAll(db.settings, [
-      for (final MapEntry(:key, :value) in settings.entries)
+      for (final MapEntry(:key, :value) in _allSettings.entries)
         SettingsCompanion.insert(
           key: key,
           value: value,

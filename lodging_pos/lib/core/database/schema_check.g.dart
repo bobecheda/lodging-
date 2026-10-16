@@ -8,14 +8,14 @@ part of 'schema_check.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Debug builds only: null when the database file matches this build (and
-/// always null in release, on web, or where no in-memory database exists).
+/// Null when the database file matches this build (always null on web,
+/// which has no local database).
 
 @ProviderFor(schemaDrift)
 final schemaDriftProvider = SchemaDriftProvider._();
 
-/// Debug builds only: null when the database file matches this build (and
-/// always null in release, on web, or where no in-memory database exists).
+/// Null when the database file matches this build (always null on web,
+/// which has no local database).
 
 final class SchemaDriftProvider
     extends
@@ -25,8 +25,8 @@ final class SchemaDriftProvider
           FutureOr<SchemaDrift?>
         >
     with $FutureModifier<SchemaDrift?>, $FutureProvider<SchemaDrift?> {
-  /// Debug builds only: null when the database file matches this build (and
-  /// always null in release, on web, or where no in-memory database exists).
+  /// Null when the database file matches this build (always null on web,
+  /// which has no local database).
   SchemaDriftProvider._()
     : super(
         from: null,
@@ -53,7 +53,56 @@ final class SchemaDriftProvider
   }
 }
 
-String _$schemaDriftHash() => r'353dbf9414c1dc1b6a58d0ebc27eddfd92075db2';
+String _$schemaDriftHash() => r'7c88f55b9661eb66b633ea08b6b34eb31aff4453';
+
+/// Whether the mismatch screen may offer a reset: debug builds only. A
+/// release build never throws data away; it shows an error instead.
+
+@ProviderFor(canResetDatabase)
+final canResetDatabaseProvider = CanResetDatabaseProvider._();
+
+/// Whether the mismatch screen may offer a reset: debug builds only. A
+/// release build never throws data away; it shows an error instead.
+
+final class CanResetDatabaseProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether the mismatch screen may offer a reset: debug builds only. A
+  /// release build never throws data away; it shows an error instead.
+  CanResetDatabaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'canResetDatabaseProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$canResetDatabaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return canResetDatabase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$canResetDatabaseHash() => r'6ac8871e68ec400b9c679bdc1ec84c8060a18dbc';
 
 /// Closes the database, renames its file to a timestamped `.bak` next to it
 /// (kept, not deleted) and reopens a fresh one. Returns the backup's path.

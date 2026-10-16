@@ -9,10 +9,10 @@ import 'test_database_file.dart';
 
 part 'schema_check.g.dart';
 
-/// The local database file was made by an older build: its tables, indexes
-/// or triggers differ from what this build creates. Only possible while
-/// schema v1 still changes in place (see CLAUDE.md, Workflow); after the
-/// first install every change is a migration and this never fires.
+/// After opening (and any migration), the database file's tables, indexes or
+/// triggers still differ from what this build creates: a file made by a
+/// development build, or a migration that went wrong. Every schema change is
+/// a migration with a test, so on a real install this should never fire.
 final class SchemaDrift {
   const SchemaDrift(this.differences);
 
@@ -54,11 +54,10 @@ Future<Map<String, String>> _objects(GeneratedDatabase db) async {
   };
 }
 
-/// Debug builds only: null when the database file matches this build (and
-/// always null in release, on web, or where no in-memory database exists).
+/// Null when the database file matches this build (always null on web,
+/// which has no local database).
 @Riverpod(keepAlive: true)
 Future<SchemaDrift?> schemaDrift(Ref ref) async {
-  if (!kDebugMode) return null;
   final live = ref.watch(appDatabaseProvider);
   final executor = inMemoryExecutor();
   if (executor == null) return null;
@@ -70,6 +69,11 @@ Future<SchemaDrift?> schemaDrift(Ref ref) async {
     await expected.close();
   }
 }
+
+/// Whether the mismatch screen may offer a reset: debug builds only. A
+/// release build never throws data away; it shows an error instead.
+@Riverpod(keepAlive: true)
+bool canResetDatabase(Ref ref) => kDebugMode;
 
 /// Closes the database, renames its file to a timestamped `.bak` next to it
 /// (kept, not deleted) and reopens a fresh one. Returns the backup's path.

@@ -6,9 +6,9 @@ import 'theme/theme.dart';
 import 'widgets/buttons.dart';
 import 'widgets/notes.dart';
 
-/// Debug builds only: the database file was made by an older build (schema
-/// v1 changed in place). Offers to reset it, keeping the old file as a
-/// backup, instead of failing with SQL errors on random screens.
+/// The database file doesn't match this build. A debug build offers to reset
+/// it, keeping the old file as a backup; a release build only explains and
+/// never offers to throw data away.
 class OldDatabaseScreen extends ConsumerStatefulWidget {
   const OldDatabaseScreen({super.key});
 
@@ -41,6 +41,7 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
+    final canReset = ref.watch(canResetDatabaseProvider);
     final differences =
         ref.watch(schemaDriftProvider).value?.differences ?? const [];
     final more = differences.length - _shown;
@@ -61,17 +62,25 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
                     Semantics(
                       header: true,
                       child: Text(
-                        'This test database was made by an older build',
+                        canReset
+                            ? 'This test database was made by an older build'
+                            : 'The database does not match this version',
                         style: t.sectionTitle,
                       ),
                     ),
                     const SizedBox(height: Space.x12),
                     Text(
-                      'Its tables have changed since it was created. That is '
-                      'expected while the first version is still being '
-                      'built. Reset it to start fresh: you will set up the '
-                      'lodging again, and the old file is kept as a backup '
-                      'next to the new one.',
+                      canReset
+                          ? 'Its tables differ from what this build creates, '
+                                'so screens would fail. Reset it to start '
+                                'fresh: you will set up the lodging again, and '
+                                'the old file is kept as a backup next to the '
+                                'new one.'
+                          : 'The app has stopped so that nothing is saved '
+                                'wrongly. Your data is untouched. Do not use '
+                                'this PC for the desk until support has '
+                                'checked it, and tell them what is listed '
+                                'below.',
                       style: t.body,
                     ),
                     const SizedBox(height: Space.x16),
@@ -95,20 +104,21 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
                       const SizedBox(height: Space.x16),
                       Note.error(_error!, title: 'The reset failed.'),
                     ],
-                    const SizedBox(height: Space.x20),
-                    AppButton.destructive(
-                      key: const ValueKey('oldDatabase.reset'),
-                      label: 'Reset test database',
-                      busy: _busy,
-                      onPressed: _reset,
-                    ),
-                    const SizedBox(height: Space.x12),
-                    Text(
-                      'Only debug builds check this. After the first install '
-                      'at the lodging, every change upgrades the database '
-                      'instead.',
-                      style: t.small.copyWith(color: c.muted),
-                    ),
+                    if (canReset) ...[
+                      const SizedBox(height: Space.x20),
+                      AppButton.destructive(
+                        key: const ValueKey('oldDatabase.reset'),
+                        label: 'Reset test database',
+                        busy: _busy,
+                        onPressed: _reset,
+                      ),
+                      const SizedBox(height: Space.x12),
+                      Text(
+                        'Only debug builds offer a reset. A release build '
+                        'never throws data away.',
+                        style: t.small.copyWith(color: c.muted),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -47,10 +47,12 @@ class AppDatabase extends _$AppDatabase {
   final Clock _clock;
   String? _deviceId;
 
-  /// Bump for every schema change and add a step to `onUpgrade`; never edit
-  /// an applied migration. After bumping, run
-  /// `dart run drift_dev make-migrations` to snapshot the new version and
-  /// regenerate the migration tests.
+  /// v1 is frozen as of 16 Oct 2026 (`drift_schemas/…/drift_schema_v1.json`).
+  /// For every schema change: bump this, change the tables, run
+  /// `dart run drift_dev make-migrations`, add the generated step to
+  /// [_upgrade], and fill `test/drift/app_database/migration_test.dart` with
+  /// rows that must survive. New NOT NULL columns get a default or a
+  /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
   int get schemaVersion => 1;
 
@@ -60,10 +62,28 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
       await seedV1(this, deviceId: const Uuid().v4(), now: _clock.now());
     }),
+    onUpgrade: _upgrade,
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
+      // A new setting added since this file was made starts at its default.
+      if (details.hadUpgrade) {
+        await insertMissingSettings(this, now: _clock.now());
+      }
     },
   );
+
+  /// One generated step per version, in order (`database.steps.dart`, from
+  /// `make-migrations`), e.g. `stepByStep(from1To2: (m, schema) async {…})`.
+  /// There are none yet: v1 is the only version.
+  Future<void> _upgrade(Migrator m, int from, int to) async {
+    if (from > to) {
+      throw StateError(
+        'This database is v$from, made by a newer version of the app '
+        '(this one knows up to v$to).',
+      );
+    }
+    throw StateError('No migration step from v$from to v$to.');
+  }
 
   Future<void>? _closing;
 

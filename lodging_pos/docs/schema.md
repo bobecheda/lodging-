@@ -2,6 +2,10 @@
 
 Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supabase (sprint 2).
 
+## Versions
+
+**Schema v1 is frozen as of 16 Oct 2026** (snapshot: `drift_schemas/app_database/drift_schema_v1.json`). Every schema change is a numbered drift migration with a migration test; an applied migration is never edited. New NOT NULL columns get a default or a backfill in their migration step, and setting keys added later are inserted at their default after the upgrade. Column names must not clash with drift Table members (e.g. no `table_name`), or drift's generated migration code won't compile.
+
 ## Common rules
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
@@ -247,8 +251,8 @@ Audit JSON redacts `users.password_hash` and guests' `full_name`, `phone` and `i
 | Column | Type | Notes |
 |---|---|---|
 | seq | INT | autoincrement primary key — send in this order |
-| table_name | TEXT | |
-| row_id | TEXT | |
+| target_table | TEXT | the business table's name |
+| target_row_id | TEXT | its primary key |
 | payload_json | TEXT | full row after the change |
 | created_at | DATETIME | |
 | attempts | INT | |

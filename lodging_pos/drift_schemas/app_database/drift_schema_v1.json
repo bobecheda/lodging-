@@ -3731,7 +3731,7 @@
             ]
           },
           {
-            "name": "table_name",
+            "name": "target_table",
             "getter_name": "targetTable",
             "moor_type": "string",
             "nullable": false,
@@ -3741,7 +3741,7 @@
             "dsl_features": []
           },
           {
-            "name": "row_id",
+            "name": "target_row_id",
             "getter_name": "targetRowId",
             "moor_type": "string",
             "nullable": false,
@@ -4750,7 +4750,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"outbox\" (\"seq\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"table_name\" TEXT NOT NULL, \"row_id\" TEXT NOT NULL, \"payload_json\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"attempts\" INTEGER NOT NULL DEFAULT 0, \"last_error\" TEXT NULL, \"sent_at\" TEXT NULL);"
+          "sql": "CREATE TABLE IF NOT EXISTS \"outbox\" (\"seq\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"target_table\" TEXT NOT NULL, \"target_row_id\" TEXT NOT NULL, \"payload_json\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"attempts\" INTEGER NOT NULL DEFAULT 0, \"last_error\" TEXT NULL, \"sent_at\" TEXT NULL);"
         }
       ]
     },
