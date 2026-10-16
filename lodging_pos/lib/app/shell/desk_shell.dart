@@ -23,7 +23,7 @@ class NavItem {
     required this.route,
     required this.label,
     required this.icon,
-    this.permission,
+    this.permissions = const {},
     this.setup = false,
   });
 
@@ -31,14 +31,16 @@ class NavItem {
   final String label;
   final IconData icon;
 
-  /// Hidden from users without it (the router enforces it too).
-  final Permission? permission;
+  /// Shown to users with any of these (none: everyone). The router enforces
+  /// the same through `Routes.permissions`.
+  final Set<Permission> permissions;
 
   /// Listed under "SETUP · OWNER ONLY".
   final bool setup;
 
   bool visibleTo(UserAccount? user) =>
-      permission == null || (user != null && can(user, permission!));
+      permissions.isEmpty ||
+      (user != null && permissions.any((p) => can(user, p)));
 }
 
 /// Sidebar destinations. Only screens that exist are listed; each story
@@ -54,7 +56,14 @@ List<NavItem> deskNavItems(Ref ref) => const [
     route: Routes.adminRooms,
     label: 'Rooms & beds',
     icon: Icons.bed_outlined,
-    permission: Permission.manageRooms,
+    permissions: {Permission.manageRooms},
+    setup: true,
+  ),
+  NavItem(
+    route: Routes.adminPrices,
+    label: 'Prices & settings',
+    icon: Icons.sell_outlined,
+    permissions: {Permission.editPrices, Permission.editSettings},
     setup: true,
   ),
 ];

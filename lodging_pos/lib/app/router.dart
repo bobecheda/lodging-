@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/auth/session.dart';
+import '../core/database/schema_check.dart';
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -11,8 +12,10 @@ import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
 import 'gate.dart';
+import '../features/setup/presentation/prices_screen.dart';
 import '../features/setup/presentation/rooms_screen.dart';
 import 'home_screen.dart';
+import 'old_database_screen.dart';
 import 'shell/desk_shell.dart';
 import 'splash_screen.dart';
 
@@ -24,6 +27,7 @@ GoRouter router(Ref ref) {
   final refresh = ValueNotifier(0);
   void bump() => refresh.value++;
   ref
+    ..listen(schemaDriftProvider, (_, _) => bump())
     ..listen(setupStatusProvider, (_, _) => bump())
     ..listen(sessionProvider, (_, _) => bump())
     ..listen(currentShiftProvider, (_, _) => bump())
@@ -35,6 +39,12 @@ GoRouter router(Ref ref) {
     final shift = ref.read(currentShiftProvider);
     return redirectFor(
       state.matchedLocation,
+      // A failed check falls through, so its error shows on the splash.
+      schemaMatches: switch (ref.read(schemaDriftProvider)) {
+        AsyncData(:final value) => value == null,
+        AsyncError() => true,
+        _ => null,
+      },
       hasUsers: ref.read(setupStatusProvider).value,
       user: user,
       shiftStart: user == null || !shift.hasValue
@@ -53,6 +63,10 @@ GoRouter router(Ref ref) {
     redirect: redirect,
     routes: [
       GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
+      GoRoute(
+        path: Routes.oldDatabase,
+        builder: (_, _) => const OldDatabaseScreen(),
+      ),
       GoRoute(path: Routes.setup, builder: (_, _) => const SetupScreen()),
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(
@@ -69,6 +83,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: Routes.adminRooms,
             builder: (_, _) => const RoomsScreen(),
+          ),
+          GoRoute(
+            path: Routes.adminPrices,
+            builder: (_, _) => const PricesScreen(),
           ),
         ],
       ),

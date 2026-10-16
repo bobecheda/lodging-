@@ -43,11 +43,16 @@ class Settings extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// Names are stored trimmed, 1–30 characters, unique ignoring case. Prices
+/// are whole KES 1–100,000 per night (AD-3).
 @DataClassName('BedCategoryRow')
 class BedCategories extends Table with SyncedColumns {
-  TextColumn get name => text().unique()();
+  TextColumn get name => text().customConstraint(
+    'NOT NULL UNIQUE COLLATE NOCASE '
+    'CHECK (name = trim(name) AND length(name) BETWEEN 1 AND 30)',
+  )();
   IntColumn get pricePerNight =>
-      integer().check(pricePerNight.isBiggerThanValue(0))();
+      integer().check(pricePerNight.isBetweenValues(1, 100000))();
   IntColumn get sortOrder => integer()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }

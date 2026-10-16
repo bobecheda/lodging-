@@ -23,6 +23,7 @@ class LabeledDropdown<T> extends StatelessWidget {
     required this.onChanged,
     this.fieldKey,
     this.errorText,
+    this.helperText,
   });
 
   final String label;
@@ -31,6 +32,9 @@ class LabeledDropdown<T> extends StatelessWidget {
   final ValueChanged<T>? onChanged;
   final Key? fieldKey;
   final String? errorText;
+
+  /// Shown under the select when there is no error.
+  final String? helperText;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +55,11 @@ class LabeledDropdown<T> extends StatelessWidget {
           borderRadius: BorderRadius.circular(Radii.control),
           dropdownColor: c.white,
           icon: Icon(Icons.expand_more_rounded, color: c.inkSoft),
-          decoration: InputDecoration(errorText: errorText),
+          decoration: InputDecoration(
+            errorText: errorText,
+            helperText: helperText,
+            helperMaxLines: 4,
+          ),
           items: [
             for (final option in options)
               DropdownMenuItem<T>(

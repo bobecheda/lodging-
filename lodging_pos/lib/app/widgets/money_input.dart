@@ -34,16 +34,22 @@ class MoneyInput extends StatelessWidget {
     super.key,
     required this.label,
     required this.controller,
+    this.semanticLabel,
+    this.enabled = true,
     this.fieldKey,
     this.errorText,
     this.helperText,
     this.large = false,
     this.autofocus = false,
     this.onSubmitted,
+    this.onChanged,
   });
 
-  final String label;
+  /// Null in a table row; give [semanticLabel] then.
+  final String? label;
   final TextEditingController controller;
+  final String? semanticLabel;
+  final bool enabled;
   final Key? fieldKey;
   final String? errorText;
   final String? helperText;
@@ -52,6 +58,7 @@ class MoneyInput extends StatelessWidget {
   final bool large;
   final bool autofocus;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +67,8 @@ class MoneyInput extends StatelessWidget {
     final valueStyle = large ? t.moneyLarge : t.monoStrong;
     return LabeledField(
       label: label,
+      semanticLabel: semanticLabel,
+      enabled: enabled,
       controller: controller,
       fieldKey: fieldKey,
       errorText: errorText,
@@ -68,6 +77,7 @@ class MoneyInput extends StatelessWidget {
       keyboardType: TextInputType.number,
       inputFormatters: const [KesInputFormatter()],
       onSubmitted: onSubmitted,
+      onChanged: onChanged,
       textStyle: valueStyle,
       hintText: '0',
       prefix: Padding(

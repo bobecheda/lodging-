@@ -40,8 +40,11 @@ class AuditLog extends Table with SyncedColumns {
 )
 class Outbox extends Table {
   IntColumn get seq => integer().autoIncrement()();
-  TextColumn get targetTable => text().named('table_name')();
-  TextColumn get targetRowId => text().named('row_id')();
+  // Not `table_name` / `row_id`: drift's generated schema code names
+  // getters after columns, and those clash with `Table.tableName` and
+  // `rowId`.
+  TextColumn get targetTable => text().named('target_table')();
+  TextColumn get targetRowId => text().named('target_row_id')();
 
   /// The full row after the change.
   TextColumn get payloadJson => text()();

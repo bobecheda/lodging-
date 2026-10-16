@@ -303,6 +303,41 @@ void main() {
     });
   });
 
+  group('bed_categories (AD-3)', () {
+    Future<int> category(String name, {int price = 800}) => db
+        .into(db.bedCategories)
+        .insert(
+          BedCategoriesCompanion.insert(
+            id: Value(newId()),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
+            name: name,
+            pricePerNight: price,
+            sortOrder: 9,
+          ),
+        );
+
+    test('names are unique ignoring case', () async {
+      await expectLater(category('deluxe'), _violates('UNIQUE'));
+      await expectLater(category('VIP'), _violates('UNIQUE'));
+      await category('Family');
+    });
+
+    test('names are stored trimmed, 1–30 characters', () async {
+      await expectLater(category(' Family'), _violates('CHECK'));
+      await expectLater(category(''), _violates('CHECK'));
+      await expectLater(category('x' * 31), _violates('CHECK'));
+      await category('x' * 30);
+    });
+
+    test('price per night is 1–100,000', () async {
+      await expectLater(category('A', price: 0), _violates('CHECK'));
+      await expectLater(category('B', price: 100001), _violates('CHECK'));
+      await category('C', price: 100000);
+    });
+  });
+
   group('integrity', () {
     test('foreign keys are enforced', () async {
       final pragma = await db.customSelect('PRAGMA foreign_keys').getSingle();

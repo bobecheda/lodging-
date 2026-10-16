@@ -4,31 +4,45 @@ import '../features/shifts/domain/shift_rules.dart';
 
 abstract final class Routes {
   static const splash = '/';
+  static const oldDatabase = '/old-database';
   static const setup = '/setup';
   static const login = '/login';
   static const changePassword = '/change-password';
   static const shift = '/shift';
   static const home = '/home';
   static const adminRooms = '/admin/rooms';
+  static const adminPrices = '/admin/prices';
 
   /// Setup screens (AD-1) live under this prefix.
   static const setupPrefix = '/admin';
 
-  /// The permission each protected screen needs (BR-13).
-  static const permissions = {adminRooms: Permission.manageRooms};
+  /// The permissions each protected screen accepts, any one of them
+  /// (BR-13). A screen with two parts may show the part a user can't change
+  /// read-only.
+  static const permissions = {
+    adminRooms: {Permission.manageRooms},
+    adminPrices: {Permission.editPrices, Permission.editSettings},
+  };
 
   /// Whether [user] may open [location]. A setup route missing from
   /// [permissions] is closed to everyone, so a new screen fails safe.
   static bool allows(String location, UserAccount? user) {
     final needed = permissions[location];
-    if (needed != null) return user != null && can(user, needed);
+    if (needed != null) return user != null && needed.any((p) => can(user, p));
     final isSetup =
         location == setupPrefix || location.startsWith('$setupPrefix/');
     return !isSetup;
   }
 
   /// Screens that only exist to get the user ready to work.
-  static const gates = {splash, setup, login, changePassword, shift};
+  static const gates = {
+    splash,
+    oldDatabase,
+    setup,
+    login,
+    changePassword,
+    shift,
+  };
 }
 
 /// Where the app must be, given its state. Each state before "ready" allows
@@ -36,12 +50,17 @@ abstract final class Routes {
 /// nothing else.
 ///
 /// [hasUsers] is null while loading. [shiftStart] is null while the open
-/// shift is loading (only meaningful once signed in).
+/// shift is loading (only meaningful once signed in). [schemaMatches] is
+/// false when the database file was made by an older build (debug builds
+/// only; null while checking), which comes before everything else.
 String routeFor({
   required bool? hasUsers,
   required UserAccount? user,
   required ShiftStart? shiftStart,
+  bool? schemaMatches = true,
 }) {
+  if (schemaMatches == null) return Routes.splash;
+  if (!schemaMatches) return Routes.oldDatabase;
   if (hasUsers == null) return Routes.splash;
   if (!hasUsers) return Routes.setup;
   if (user == null) return Routes.login;
@@ -59,11 +78,13 @@ String? redirectFor(
   required bool? hasUsers,
   required UserAccount? user,
   required ShiftStart? shiftStart,
+  bool? schemaMatches = true,
 }) {
   final target = routeFor(
     hasUsers: hasUsers,
     user: user,
     shiftStart: shiftStart,
+    schemaMatches: schemaMatches,
   );
   if (target == Routes.home) {
     // AD-1: a screen needs its permission, not just a hidden menu item.

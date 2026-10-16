@@ -1091,7 +1091,7 @@ class $BedCategoriesTable extends BedCategories
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    $customConstraints: 'NOT NULL UNIQUE COLLATE NOCASE CHECK (name = trim(name) AND length(name) BETWEEN 1 AND 30)',
   );
   static const VerificationMeta _pricePerNightMeta = const VerificationMeta(
     'pricePerNight',
@@ -1101,7 +1101,7 @@ class $BedCategoriesTable extends BedCategories
     'price_per_night',
     aliasedName,
     false,
-    check: () => ComparableExpr(pricePerNight).isBiggerThanValue(0),
+    check: () => ComparableExpr(pricePerNight).isBetweenValues(1, 100000),
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
@@ -11579,7 +11579,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   );
   @override
   late final GeneratedColumn<String> targetTable = GeneratedColumn<String>(
-    'table_name',
+    'target_table',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -11590,7 +11590,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   );
   @override
   late final GeneratedColumn<String> targetRowId = GeneratedColumn<String>(
-    'row_id',
+    'target_row_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -11679,21 +11679,24 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
       );
     }
-    if (data.containsKey('table_name')) {
+    if (data.containsKey('target_table')) {
       context.handle(
         _targetTableMeta,
         targetTable.isAcceptableOrUnknown(
-          data['table_name']!,
+          data['target_table']!,
           _targetTableMeta,
         ),
       );
     } else if (isInserting) {
       context.missing(_targetTableMeta);
     }
-    if (data.containsKey('row_id')) {
+    if (data.containsKey('target_row_id')) {
       context.handle(
         _targetRowIdMeta,
-        targetRowId.isAcceptableOrUnknown(data['row_id']!, _targetRowIdMeta),
+        targetRowId.isAcceptableOrUnknown(
+          data['target_row_id']!,
+          _targetRowIdMeta,
+        ),
       );
     } else if (isInserting) {
       context.missing(_targetRowIdMeta);
@@ -11750,11 +11753,11 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
       )!,
       targetTable: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}table_name'],
+        data['${effectivePrefix}target_table'],
       )!,
       targetRowId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}row_id'],
+        data['${effectivePrefix}target_row_id'],
       )!,
       payloadJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -11810,8 +11813,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['seq'] = Variable<int>(seq);
-    map['table_name'] = Variable<String>(targetTable);
-    map['row_id'] = Variable<String>(targetRowId);
+    map['target_table'] = Variable<String>(targetTable);
+    map['target_row_id'] = Variable<String>(targetRowId);
     map['payload_json'] = Variable<String>(payloadJson);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['attempts'] = Variable<int>(attempts);
@@ -11848,8 +11851,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return OutboxRow(
       seq: serializer.fromJson<int>(json['seq']),
-      targetTable: serializer.fromJson<String>(json['table_name']),
-      targetRowId: serializer.fromJson<String>(json['row_id']),
+      targetTable: serializer.fromJson<String>(json['target_table']),
+      targetRowId: serializer.fromJson<String>(json['target_row_id']),
       payloadJson: serializer.fromJson<String>(json['payload_json']),
       createdAt: serializer.fromJson<DateTime>(json['created_at']),
       attempts: serializer.fromJson<int>(json['attempts']),
@@ -11862,8 +11865,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'seq': serializer.toJson<int>(seq),
-      'table_name': serializer.toJson<String>(targetTable),
-      'row_id': serializer.toJson<String>(targetRowId),
+      'target_table': serializer.toJson<String>(targetTable),
+      'target_row_id': serializer.toJson<String>(targetRowId),
       'payload_json': serializer.toJson<String>(payloadJson),
       'created_at': serializer.toJson<DateTime>(createdAt),
       'attempts': serializer.toJson<int>(attempts),
@@ -11994,8 +11997,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
   }) {
     return RawValuesInsertable({
       if (seq != null) 'seq': seq,
-      if (targetTable != null) 'table_name': targetTable,
-      if (targetRowId != null) 'row_id': targetRowId,
+      if (targetTable != null) 'target_table': targetTable,
+      if (targetRowId != null) 'target_row_id': targetRowId,
       if (payloadJson != null) 'payload_json': payloadJson,
       if (createdAt != null) 'created_at': createdAt,
       if (attempts != null) 'attempts': attempts,
@@ -12033,10 +12036,10 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       map['seq'] = Variable<int>(seq.value);
     }
     if (targetTable.present) {
-      map['table_name'] = Variable<String>(targetTable.value);
+      map['target_table'] = Variable<String>(targetTable.value);
     }
     if (targetRowId.present) {
-      map['row_id'] = Variable<String>(targetRowId.value);
+      map['target_row_id'] = Variable<String>(targetRowId.value);
     }
     if (payloadJson.present) {
       map['payload_json'] = Variable<String>(payloadJson.value);

@@ -8,6 +8,9 @@ import 'database.dart';
 
 part 'database_provider.g.dart';
 
+/// The file is `<app support dir>/lodging_pos.sqlite`.
+const databaseName = 'lodging_pos';
+
 /// The local database runs on native builds (Windows desk, Android). The web
 /// admin build has no DriftWebOptions/wasm assets yet; sprint 2 decides
 /// whether it needs a local database at all.
@@ -18,7 +21,7 @@ AppDatabase appDatabase(Ref ref) {
   }
   final db = AppDatabase(
     driftDatabase(
-      name: 'lodging_pos',
+      name: databaseName,
       // App support dir, not Documents: the database is not a user document.
       native: const DriftNativeOptions(
         databaseDirectory: getApplicationSupportDirectory,
