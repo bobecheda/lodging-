@@ -6,10 +6,11 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
 - `id` defaults to a new UUID. `created_at`, `updated_at` and `device_id` are stamped by `writeWithAudit` (on update: `updated_at` and `device_id`, never `created_at`). Their drift client defaults throw, so a row inserted any other way fails (the seed passes them explicitly).
-- Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges` and `voids` rows cannot be deleted, and `audit_log` cannot be updated or deleted.
+- Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges`, `refunds`, `refund_decisions` and `voids` rows cannot be deleted, and `audit_log` and `refund_decisions` cannot be updated. Triggers also enforce the refund lifecycle and M-Pesa codes across tables (see `refunds`).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
-- Ownership for sync: the **desk** owns operational tables, the **admin** owns setup tables, `voids`, `expenses` and `inventory_items`. A row is only ever written by its owner.
+- Ownership for sync: the **desk** owns operational tables (including `refunds`), the **admin** owns setup tables, `voids`, `refund_decisions`, `expenses` and `inventory_items`. Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
+- Payment and refund methods are `cash` | `paybill` everywhere; screens and reports label `paybill` as "M-Pesa".
 
 ## Relationships
 
@@ -17,7 +18,9 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 bed_categories 1──* beds *──1 rooms
                     beds 1──* stays *──1 guests
                    stays 1──* stay_charges *──1 payments *──1 shifts *──1 users
-                   voids ──► payments | stays
+                   stays 1──0..1 refunds 1──0..1 refund_decisions
+                 refunds *──0..1 shifts   (the shift that paid it out)
+                   voids ──► payments | stays | refunds
                     beds 1──* housekeeping_tasks *──1 housekeepers
          inventory_items 1──* inventory_movements
 ```
@@ -46,13 +49,13 @@ bed_categories 1──* beds *──1 rooms
 
 The one exception to the `id` rule: `key` is the primary key and sync upserts by `key`.
 
-Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `block_hours` = `12`, `grace_minutes` = `60`, `receipt_prefix` = `R`, `idle_lock_minutes` = `10`. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
+Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `checkout_time` = `10:00` (`HH:MM`, Nairobi; range 06:00–14:00), `grace_minutes` = `60` (0–180), `receipt_prefix` = `R`, `idle_lock_minutes` = `10`. There is no early-arrival cut-off: every arrival checks out at `checkout_time` on the next calendar day. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
 
 ### bed_categories
 | Column | Type | Notes |
 |---|---|---|
 | name | TEXT | UNIQUE |
-| price_per_block | INT | KES |
+| price_per_night | INT | KES, > 0 |
 | sort_order | INT | |
 | is_active | BOOL | |
 
@@ -136,7 +139,7 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | received_at | DATETIME | |
 | amount | INT | = sum of its `stay_charges.amount` |
 | method | TEXT | `cash` \| `paybill` |
-| mpesa_code | TEXT | UNIQUE; required for `paybill`, null for `cash` |
+| mpesa_code | TEXT | UNIQUE (ignoring case), also across refund payouts (trigger); required for `paybill`, null for `cash` |
 | print_count | INT | reprints after the first are marked "Copy" |
 
 ### stay_charges
@@ -144,12 +147,35 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 |---|---|---|
 | stay_id | TEXT → stays | |
 | payment_id | TEXT → payments | one payment can cover both beds of a room |
-| kind | TEXT | `check_in` \| `renewal` |
-| blocks | INT | ≥ 1 |
-| price_per_block | INT | locked from the stay's first charge |
-| amount | INT | blocks × price_per_block |
-| period_start | DATETIME | check-in time, or previous `period_end` for renewals |
-| period_end | DATETIME | period_start + blocks × block_hours |
+| kind | TEXT | `check_in` \| `extension` \| `late_checkout` |
+| nights | INT | ≥ 1 |
+| price_per_night | INT | copied from the category at check-in; every later charge of the stay reuses it |
+| amount | INT | nights × price_per_night |
+| period_start | DATETIME | check-in time, or the stay's `paid_until` for extensions and late-checkout charges |
+| period_end | DATETIME | check-in: 10:00 on the day after arrival + (nights − 1) days; otherwise `period_start` + nights (Nairobi calendar days) |
+
+A late-checkout charge moves `stays.paid_until` like an extension, so `paid_until` is always the latest `period_end`.
+
+### refunds
+A refund of prepaid nights not yet started (BR-8), created as a **request** in the early-checkout transaction that also closes the stay. Its status is derived, never stored: no decision → `requested`; decision `rejected` → `rejected`; decision `approved` and no payout → `approved`; payout set → `paid`.
+
+| Column | Type | Notes |
+|---|---|---|
+| stay_id | TEXT → stays | UNIQUE: one refund per stay |
+| nights | INT | ≥ 1, nights not yet started |
+| price_per_night | INT | the stay's locked price |
+| amount | INT | nights × price_per_night; calculated, never typed |
+| requested_by | TEXT → users | |
+| requested_at | DATETIME | |
+| method | TEXT | payout: `cash` \| `paybill`, null until paid |
+| mpesa_code | TEXT | payout: UNIQUE (ignoring case), also across payments (trigger); required for `paybill`, null for `cash` |
+| shift_id | TEXT → shifts | payout: the open shift that paid it; that shift's totals count the refund |
+| paid_by | TEXT → users | payout |
+| paid_at | DATETIME | payout |
+| receipt_number | TEXT | payout: UNIQUE, from `receipt_counter` |
+| print_count | INT | reprints after the first are marked "Copy" |
+
+The payout columns are null together until paid, then set together. Triggers: a refund is inserted unpaid; `stay_id`, `nights`, `price_per_night`, `amount`, `requested_by` and `requested_at` never change; the payout can be set only once an `approved` decision exists, and only once (reprints still update `print_count`).
 
 ### housekeeping_tasks
 | Column | Type | Notes |
@@ -168,11 +194,24 @@ Partial UNIQUE(bed_id) WHERE completed_at IS NULL: at most one open task per bed
 ### voids
 | Column | Type | Notes |
 |---|---|---|
-| target_type | TEXT | `payment` \| `stay` |
+| target_type | TEXT | `payment` \| `stay` \| `refund` (voids a refund's payout) |
 | target_id | TEXT | |
 | reason | TEXT | required |
-| voided_by | TEXT → users | admin only |
+| voided_by | TEXT → users | needs `voidRecords` (admin) |
 | voided_at | DATETIME | |
+
+Voided payments and refund payouts are excluded from shift totals and revenue.
+
+### refund_decisions
+| Column | Type | Notes |
+|---|---|---|
+| refund_id | TEXT → refunds | UNIQUE: one decision per refund |
+| decision | TEXT | `approved` \| `rejected` |
+| note | TEXT | required (non-blank) when rejected |
+| decided_by | TEXT → users | needs `approveRefund` (admin) |
+| decided_at | DATETIME | |
+
+Written once, never updated or deleted. It holds no amount, so the approver cannot change it.
 
 ### expenses (sprint 3)
 `category` (laundry \| utilities \| wages \| supplies \| repairs \| other), `amount` INT, `spent_on` TEXT `YYYY-MM-DD` (Nairobi date, CHECKed by GLOB), `note`, `recorded_by` → users.
@@ -213,7 +252,7 @@ Audit JSON redacts `users.password_hash` and guests' `full_name`, `phone` and `i
 | sent_at | DATETIME | null until synced |
 
 ### receipt_counter (local only)
-`device_id` primary key, `next_number` INT. Incremented inside the same transaction as the payment.
+`device_id` primary key, `next_number` INT. Incremented inside the same transaction as the payment or refund payout; both draw from this one counter.
 
 > **TODO (sprint 2, sync):** if the database is deleted or the PC replaced, the new `device_id` starts `receipt_counter` at 1 and `R-000001` would collide with receipts already in the cloud. On a fresh install, sync must seed `next_number` from the cloud's highest receipt number before the first payment.
 
@@ -225,14 +264,29 @@ Audit JSON redacts `users.password_hash` and guests' `full_name`, `phone` and `i
 
 Exactly one row. Its `device_id` is stamped on every synced row written by this install.
 
-## Worked example
+## Worked examples
 
-Guest checks in 22:00 on bed 3A (Deluxe, 700) for 1 block, renews at 10:40, then leaves.
+Times are Nairobi. Checkout 10:00, grace 60 minutes, bed 3A (Deluxe, 700).
+
+**One night, extended, then a late checkout.** Check-in Thu 15 Oct 19:00 for 1 night, extend at Fri 11:40, leave Sat 11:30.
 
 | Step | Rows written |
 |---|---|
-| Check-in, Paybill | `stays` paid_until 10:00 · `payments` R-000041, 700, paybill, code · `stay_charges` check_in, 1 × 700, 22:00→10:00 |
-| Renew at 10:40 | `payments` R-000042, 700 · `stay_charges` renewal, 1 × 700, 10:00→22:00 · `stays` paid_until 22:00 |
-| Checkout | `stays` closed, checked_out_at · `beds` not_cleaned |
+| Check-in, Paybill | `stays` paid_until **Fri 16 Oct 10:00** · `payments` R-000041, 700, paybill, code · `stay_charges` check_in, 1 × 700, Thu 19:00 → Fri 10:00 |
+| Extend 1 night at Fri 11:40 (overstay since 11:00) | `payments` R-000042, 700 · `stay_charges` extension, 1 × 700, Fri 10:00 → Sat 10:00 · `stays` paid_until Sat 10:00 |
+| Check out Sat 11:30, after grace | `payments` R-000043, 700 · `stay_charges` late_checkout, 1 × 700, Sat 10:00 → Sun 10:00 · `stays` paid_until Sun 10:00, closed, checked_out_at Sat 11:30 · `beds` not_cleaned |
+
+Leaving between Sat 10:00 and 11:00 would have been free.
+
+**Ten nights, early checkout with a refund.** Check-in Thu 15 Oct 19:00 for 10 nights, leave Wed 21 Oct 15:00.
+
+| Step | Rows written |
+|---|---|
+| Check-in, cash | `stays` paid_until **Sun 25 Oct 10:00** · `payments` R-000044, 7,000, cash · `stay_charges` check_in, 10 × 700 |
+| Check out Wed 15:00 | 7 nights used (night 7 began Wed 10:00 and its grace has passed), 3 not started · `stays` closed · `beds` not_cleaned · `refunds` request 3 × 700 = 2,100 |
+| Owner approves | `refund_decisions` approved |
+| Pay out in cash | `refunds` method cash, shift_id (the open shift), paid_by, paid_at, receipt R-000045 · that shift's cash refunded +2,100, so its expected cash falls by 2,100 |
+
+A rejection instead writes `refund_decisions` rejected with a reason, and the refund is never paid.
 
 Each step also writes, in the same transaction, one `audit_log` row per changed row (all sharing the step's `operation_id`) and `outbox` rows for the business and audit rows.

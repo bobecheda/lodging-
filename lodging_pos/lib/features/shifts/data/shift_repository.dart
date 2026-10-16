@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../payments/domain/payment_rules.dart';
 import '../domain/shift.dart';
 import '../domain/shift_rules.dart';
 
@@ -69,20 +70,40 @@ class ShiftRepository {
     );
   }
 
-  /// What [shiftId] has taken so far, voided payments excluded.
+  /// What [shiftId] has taken so far: payments received and refunds paid
+  /// out in it, voided ones excluded.
   Future<ShiftTakings> takings(String shiftId) async {
     final payments = await (_db.select(
       _db.payments,
     )..where((p) => p.shiftId.equals(shiftId))).get();
-    final voided =
-        await (_db.selectOnly(_db.voids)
-              ..addColumns([_db.voids.targetId])
-              ..where(_db.voids.targetType.equals('payment')))
-            .map((r) => r.read(_db.voids.targetId)!)
+    // Only paid refunds carry the shift that paid them.
+    final payouts = await (_db.select(
+      _db.refunds,
+    )..where((r) => r.shiftId.equals(shiftId))).get();
+    final voids =
+        await (_db.select(_db.voids)..where(
+              (v) => v.targetId.isIn([
+                for (final p in payments) p.id,
+                for (final r in payouts) r.id,
+              ]),
+            ))
             .get();
-    return takingsFrom([
-      for (final p in payments) (id: p.id, amount: p.amount, method: p.method),
-    ], voidedIds: voided.toSet());
+    Set<String> voided(String type) => {
+      for (final v in voids)
+        if (v.targetType == type) v.targetId,
+    };
+    return takingsFrom(
+      payments: [
+        for (final p in payments)
+          (id: p.id, amount: p.amount, method: PaymentMethod.parse(p.method)),
+      ],
+      refundPayouts: [
+        for (final r in payouts)
+          (id: r.id, amount: r.amount, method: PaymentMethod.parse(r.method!)),
+      ],
+      voidedPaymentIds: voided('payment'),
+      voidedRefundIds: voided('refund'),
+    );
   }
 
   static OpenShift _toOpenShift(ShiftRow shift, UserRow user) => OpenShift(

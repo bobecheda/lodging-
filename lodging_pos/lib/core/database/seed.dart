@@ -61,7 +61,7 @@ Future<void> seedV1(
           updatedAt: Value(now),
           deviceId: const Value(seedDeviceId),
           name: name,
-          pricePerBlock: price,
+          pricePerNight: price,
           sortOrder: i + 1,
         ),
     ]);

@@ -2,7 +2,7 @@
 /// settings reader falls back to them for any key missing from the database,
 /// so a new setting only needs an entry here.
 const settingDefaults = {
-  'block_hours': '12',
+  'checkout_time': '10:00',
   'grace_minutes': '60',
   'receipt_prefix': 'R',
   'idle_lock_minutes': '10',
@@ -10,7 +10,7 @@ const settingDefaults = {
 
 abstract final class SettingKeys {
   static const lodgingName = 'lodging_name';
-  static const blockHours = 'block_hours';
+  static const checkoutTime = 'checkout_time';
   static const graceMinutes = 'grace_minutes';
   static const receiptPrefix = 'receipt_prefix';
   static const idleLockMinutes = 'idle_lock_minutes';

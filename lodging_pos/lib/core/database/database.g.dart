@@ -1093,15 +1093,15 @@ class $BedCategoriesTable extends BedCategories
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
-  static const VerificationMeta _pricePerBlockMeta = const VerificationMeta(
-    'pricePerBlock',
+  static const VerificationMeta _pricePerNightMeta = const VerificationMeta(
+    'pricePerNight',
   );
   @override
-  late final GeneratedColumn<int> pricePerBlock = GeneratedColumn<int>(
-    'price_per_block',
+  late final GeneratedColumn<int> pricePerNight = GeneratedColumn<int>(
+    'price_per_night',
     aliasedName,
     false,
-    check: () => ComparableExpr(pricePerBlock).isBiggerThanValue(0),
+    check: () => ComparableExpr(pricePerNight).isBiggerThanValue(0),
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
@@ -1138,7 +1138,7 @@ class $BedCategoriesTable extends BedCategories
     updatedAt,
     deviceId,
     name,
-    pricePerBlock,
+    pricePerNight,
     sortOrder,
     isActive,
   ];
@@ -1183,16 +1183,16 @@ class $BedCategoriesTable extends BedCategories
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
-    if (data.containsKey('price_per_block')) {
+    if (data.containsKey('price_per_night')) {
       context.handle(
-        _pricePerBlockMeta,
-        pricePerBlock.isAcceptableOrUnknown(
-          data['price_per_block']!,
-          _pricePerBlockMeta,
+        _pricePerNightMeta,
+        pricePerNight.isAcceptableOrUnknown(
+          data['price_per_night']!,
+          _pricePerNightMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_pricePerBlockMeta);
+      context.missing(_pricePerNightMeta);
     }
     if (data.containsKey('sort_order')) {
       context.handle(
@@ -1237,9 +1237,9 @@ class $BedCategoriesTable extends BedCategories
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
-      pricePerBlock: attachedDatabase.typeMapping.read(
+      pricePerNight: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}price_per_block'],
+        data['${effectivePrefix}price_per_night'],
       )!,
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1265,7 +1265,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
   final DateTime updatedAt;
   final String deviceId;
   final String name;
-  final int pricePerBlock;
+  final int pricePerNight;
   final int sortOrder;
   final bool isActive;
   const BedCategoryRow({
@@ -1274,7 +1274,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     required this.updatedAt,
     required this.deviceId,
     required this.name,
-    required this.pricePerBlock,
+    required this.pricePerNight,
     required this.sortOrder,
     required this.isActive,
   });
@@ -1286,7 +1286,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['device_id'] = Variable<String>(deviceId);
     map['name'] = Variable<String>(name);
-    map['price_per_block'] = Variable<int>(pricePerBlock);
+    map['price_per_night'] = Variable<int>(pricePerNight);
     map['sort_order'] = Variable<int>(sortOrder);
     map['is_active'] = Variable<bool>(isActive);
     return map;
@@ -1299,7 +1299,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       updatedAt: Value(updatedAt),
       deviceId: Value(deviceId),
       name: Value(name),
-      pricePerBlock: Value(pricePerBlock),
+      pricePerNight: Value(pricePerNight),
       sortOrder: Value(sortOrder),
       isActive: Value(isActive),
     );
@@ -1316,7 +1316,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
       deviceId: serializer.fromJson<String>(json['device_id']),
       name: serializer.fromJson<String>(json['name']),
-      pricePerBlock: serializer.fromJson<int>(json['price_per_block']),
+      pricePerNight: serializer.fromJson<int>(json['price_per_night']),
       sortOrder: serializer.fromJson<int>(json['sort_order']),
       isActive: serializer.fromJson<bool>(json['is_active']),
     );
@@ -1330,7 +1330,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       'updated_at': serializer.toJson<DateTime>(updatedAt),
       'device_id': serializer.toJson<String>(deviceId),
       'name': serializer.toJson<String>(name),
-      'price_per_block': serializer.toJson<int>(pricePerBlock),
+      'price_per_night': serializer.toJson<int>(pricePerNight),
       'sort_order': serializer.toJson<int>(sortOrder),
       'is_active': serializer.toJson<bool>(isActive),
     };
@@ -1342,7 +1342,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     DateTime? updatedAt,
     String? deviceId,
     String? name,
-    int? pricePerBlock,
+    int? pricePerNight,
     int? sortOrder,
     bool? isActive,
   }) => BedCategoryRow(
@@ -1351,7 +1351,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     updatedAt: updatedAt ?? this.updatedAt,
     deviceId: deviceId ?? this.deviceId,
     name: name ?? this.name,
-    pricePerBlock: pricePerBlock ?? this.pricePerBlock,
+    pricePerNight: pricePerNight ?? this.pricePerNight,
     sortOrder: sortOrder ?? this.sortOrder,
     isActive: isActive ?? this.isActive,
   );
@@ -1362,9 +1362,9 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
       name: data.name.present ? data.name.value : this.name,
-      pricePerBlock: data.pricePerBlock.present
-          ? data.pricePerBlock.value
-          : this.pricePerBlock,
+      pricePerNight: data.pricePerNight.present
+          ? data.pricePerNight.value
+          : this.pricePerNight,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
@@ -1378,7 +1378,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deviceId: $deviceId, ')
           ..write('name: $name, ')
-          ..write('pricePerBlock: $pricePerBlock, ')
+          ..write('pricePerNight: $pricePerNight, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isActive: $isActive')
           ..write(')'))
@@ -1392,7 +1392,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     updatedAt,
     deviceId,
     name,
-    pricePerBlock,
+    pricePerNight,
     sortOrder,
     isActive,
   );
@@ -1405,7 +1405,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
           other.updatedAt == this.updatedAt &&
           other.deviceId == this.deviceId &&
           other.name == this.name &&
-          other.pricePerBlock == this.pricePerBlock &&
+          other.pricePerNight == this.pricePerNight &&
           other.sortOrder == this.sortOrder &&
           other.isActive == this.isActive);
 }
@@ -1416,7 +1416,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
   final Value<DateTime> updatedAt;
   final Value<String> deviceId;
   final Value<String> name;
-  final Value<int> pricePerBlock;
+  final Value<int> pricePerNight;
   final Value<int> sortOrder;
   final Value<bool> isActive;
   final Value<int> rowid;
@@ -1426,7 +1426,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     this.updatedAt = const Value.absent(),
     this.deviceId = const Value.absent(),
     this.name = const Value.absent(),
-    this.pricePerBlock = const Value.absent(),
+    this.pricePerNight = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1437,12 +1437,12 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     this.updatedAt = const Value.absent(),
     this.deviceId = const Value.absent(),
     required String name,
-    required int pricePerBlock,
+    required int pricePerNight,
     required int sortOrder,
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : name = Value(name),
-       pricePerBlock = Value(pricePerBlock),
+       pricePerNight = Value(pricePerNight),
        sortOrder = Value(sortOrder);
   static Insertable<BedCategoryRow> custom({
     Expression<String>? id,
@@ -1450,7 +1450,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     Expression<DateTime>? updatedAt,
     Expression<String>? deviceId,
     Expression<String>? name,
-    Expression<int>? pricePerBlock,
+    Expression<int>? pricePerNight,
     Expression<int>? sortOrder,
     Expression<bool>? isActive,
     Expression<int>? rowid,
@@ -1461,7 +1461,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deviceId != null) 'device_id': deviceId,
       if (name != null) 'name': name,
-      if (pricePerBlock != null) 'price_per_block': pricePerBlock,
+      if (pricePerNight != null) 'price_per_night': pricePerNight,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (isActive != null) 'is_active': isActive,
       if (rowid != null) 'rowid': rowid,
@@ -1474,7 +1474,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     Value<DateTime>? updatedAt,
     Value<String>? deviceId,
     Value<String>? name,
-    Value<int>? pricePerBlock,
+    Value<int>? pricePerNight,
     Value<int>? sortOrder,
     Value<bool>? isActive,
     Value<int>? rowid,
@@ -1485,7 +1485,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
       updatedAt: updatedAt ?? this.updatedAt,
       deviceId: deviceId ?? this.deviceId,
       name: name ?? this.name,
-      pricePerBlock: pricePerBlock ?? this.pricePerBlock,
+      pricePerNight: pricePerNight ?? this.pricePerNight,
       sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
       rowid: rowid ?? this.rowid,
@@ -1510,8 +1510,8 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
-    if (pricePerBlock.present) {
-      map['price_per_block'] = Variable<int>(pricePerBlock.value);
+    if (pricePerNight.present) {
+      map['price_per_night'] = Variable<int>(pricePerNight.value);
     }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
@@ -1533,7 +1533,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deviceId: $deviceId, ')
           ..write('name: $name, ')
-          ..write('pricePerBlock: $pricePerBlock, ')
+          ..write('pricePerNight: $pricePerNight, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isActive: $isActive, ')
           ..write('rowid: $rowid')
@@ -5872,29 +5872,29 @@ class $StayChargesTable extends StayCharges
     'kind',
     aliasedName,
     false,
-    check: () => kind.isIn(['check_in', 'renewal']),
+    check: () => kind.isIn(['check_in', 'extension', 'late_checkout']),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _blocksMeta = const VerificationMeta('blocks');
+  static const VerificationMeta _nightsMeta = const VerificationMeta('nights');
   @override
-  late final GeneratedColumn<int> blocks = GeneratedColumn<int>(
-    'blocks',
+  late final GeneratedColumn<int> nights = GeneratedColumn<int>(
+    'nights',
     aliasedName,
     false,
-    check: () => ComparableExpr(blocks).isBiggerOrEqualValue(1),
+    check: () => ComparableExpr(nights).isBiggerOrEqualValue(1),
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _pricePerBlockMeta = const VerificationMeta(
-    'pricePerBlock',
+  static const VerificationMeta _pricePerNightMeta = const VerificationMeta(
+    'pricePerNight',
   );
   @override
-  late final GeneratedColumn<int> pricePerBlock = GeneratedColumn<int>(
-    'price_per_block',
+  late final GeneratedColumn<int> pricePerNight = GeneratedColumn<int>(
+    'price_per_night',
     aliasedName,
     false,
-    check: () => ComparableExpr(pricePerBlock).isBiggerThanValue(0),
+    check: () => ComparableExpr(pricePerNight).isBiggerThanValue(0),
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
@@ -5938,8 +5938,8 @@ class $StayChargesTable extends StayCharges
     stayId,
     paymentId,
     kind,
-    blocks,
-    pricePerBlock,
+    nights,
+    pricePerNight,
     amount,
     periodStart,
     periodEnd,
@@ -6001,24 +6001,24 @@ class $StayChargesTable extends StayCharges
     } else if (isInserting) {
       context.missing(_kindMeta);
     }
-    if (data.containsKey('blocks')) {
+    if (data.containsKey('nights')) {
       context.handle(
-        _blocksMeta,
-        blocks.isAcceptableOrUnknown(data['blocks']!, _blocksMeta),
+        _nightsMeta,
+        nights.isAcceptableOrUnknown(data['nights']!, _nightsMeta),
       );
     } else if (isInserting) {
-      context.missing(_blocksMeta);
+      context.missing(_nightsMeta);
     }
-    if (data.containsKey('price_per_block')) {
+    if (data.containsKey('price_per_night')) {
       context.handle(
-        _pricePerBlockMeta,
-        pricePerBlock.isAcceptableOrUnknown(
-          data['price_per_block']!,
-          _pricePerBlockMeta,
+        _pricePerNightMeta,
+        pricePerNight.isAcceptableOrUnknown(
+          data['price_per_night']!,
+          _pricePerNightMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_pricePerBlockMeta);
+      context.missing(_pricePerNightMeta);
     }
     if (data.containsKey('amount')) {
       context.handle(
@@ -6084,13 +6084,13 @@ class $StayChargesTable extends StayCharges
         DriftSqlType.string,
         data['${effectivePrefix}kind'],
       )!,
-      blocks: attachedDatabase.typeMapping.read(
+      nights: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}blocks'],
+        data['${effectivePrefix}nights'],
       )!,
-      pricePerBlock: attachedDatabase.typeMapping.read(
+      pricePerNight: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}price_per_block'],
+        data['${effectivePrefix}price_per_night'],
       )!,
       amount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -6122,8 +6122,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
   final String stayId;
   final String paymentId;
   final String kind;
-  final int blocks;
-  final int pricePerBlock;
+  final int nights;
+  final int pricePerNight;
   final int amount;
   final DateTime periodStart;
   final DateTime periodEnd;
@@ -6135,8 +6135,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     required this.stayId,
     required this.paymentId,
     required this.kind,
-    required this.blocks,
-    required this.pricePerBlock,
+    required this.nights,
+    required this.pricePerNight,
     required this.amount,
     required this.periodStart,
     required this.periodEnd,
@@ -6151,8 +6151,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     map['stay_id'] = Variable<String>(stayId);
     map['payment_id'] = Variable<String>(paymentId);
     map['kind'] = Variable<String>(kind);
-    map['blocks'] = Variable<int>(blocks);
-    map['price_per_block'] = Variable<int>(pricePerBlock);
+    map['nights'] = Variable<int>(nights);
+    map['price_per_night'] = Variable<int>(pricePerNight);
     map['amount'] = Variable<int>(amount);
     map['period_start'] = Variable<DateTime>(periodStart);
     map['period_end'] = Variable<DateTime>(periodEnd);
@@ -6168,8 +6168,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       stayId: Value(stayId),
       paymentId: Value(paymentId),
       kind: Value(kind),
-      blocks: Value(blocks),
-      pricePerBlock: Value(pricePerBlock),
+      nights: Value(nights),
+      pricePerNight: Value(pricePerNight),
       amount: Value(amount),
       periodStart: Value(periodStart),
       periodEnd: Value(periodEnd),
@@ -6189,8 +6189,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       stayId: serializer.fromJson<String>(json['stay_id']),
       paymentId: serializer.fromJson<String>(json['payment_id']),
       kind: serializer.fromJson<String>(json['kind']),
-      blocks: serializer.fromJson<int>(json['blocks']),
-      pricePerBlock: serializer.fromJson<int>(json['price_per_block']),
+      nights: serializer.fromJson<int>(json['nights']),
+      pricePerNight: serializer.fromJson<int>(json['price_per_night']),
       amount: serializer.fromJson<int>(json['amount']),
       periodStart: serializer.fromJson<DateTime>(json['period_start']),
       periodEnd: serializer.fromJson<DateTime>(json['period_end']),
@@ -6207,8 +6207,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       'stay_id': serializer.toJson<String>(stayId),
       'payment_id': serializer.toJson<String>(paymentId),
       'kind': serializer.toJson<String>(kind),
-      'blocks': serializer.toJson<int>(blocks),
-      'price_per_block': serializer.toJson<int>(pricePerBlock),
+      'nights': serializer.toJson<int>(nights),
+      'price_per_night': serializer.toJson<int>(pricePerNight),
       'amount': serializer.toJson<int>(amount),
       'period_start': serializer.toJson<DateTime>(periodStart),
       'period_end': serializer.toJson<DateTime>(periodEnd),
@@ -6223,8 +6223,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     String? stayId,
     String? paymentId,
     String? kind,
-    int? blocks,
-    int? pricePerBlock,
+    int? nights,
+    int? pricePerNight,
     int? amount,
     DateTime? periodStart,
     DateTime? periodEnd,
@@ -6236,8 +6236,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     stayId: stayId ?? this.stayId,
     paymentId: paymentId ?? this.paymentId,
     kind: kind ?? this.kind,
-    blocks: blocks ?? this.blocks,
-    pricePerBlock: pricePerBlock ?? this.pricePerBlock,
+    nights: nights ?? this.nights,
+    pricePerNight: pricePerNight ?? this.pricePerNight,
     amount: amount ?? this.amount,
     periodStart: periodStart ?? this.periodStart,
     periodEnd: periodEnd ?? this.periodEnd,
@@ -6251,10 +6251,10 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       stayId: data.stayId.present ? data.stayId.value : this.stayId,
       paymentId: data.paymentId.present ? data.paymentId.value : this.paymentId,
       kind: data.kind.present ? data.kind.value : this.kind,
-      blocks: data.blocks.present ? data.blocks.value : this.blocks,
-      pricePerBlock: data.pricePerBlock.present
-          ? data.pricePerBlock.value
-          : this.pricePerBlock,
+      nights: data.nights.present ? data.nights.value : this.nights,
+      pricePerNight: data.pricePerNight.present
+          ? data.pricePerNight.value
+          : this.pricePerNight,
       amount: data.amount.present ? data.amount.value : this.amount,
       periodStart: data.periodStart.present
           ? data.periodStart.value
@@ -6273,8 +6273,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
           ..write('stayId: $stayId, ')
           ..write('paymentId: $paymentId, ')
           ..write('kind: $kind, ')
-          ..write('blocks: $blocks, ')
-          ..write('pricePerBlock: $pricePerBlock, ')
+          ..write('nights: $nights, ')
+          ..write('pricePerNight: $pricePerNight, ')
           ..write('amount: $amount, ')
           ..write('periodStart: $periodStart, ')
           ..write('periodEnd: $periodEnd')
@@ -6291,8 +6291,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     stayId,
     paymentId,
     kind,
-    blocks,
-    pricePerBlock,
+    nights,
+    pricePerNight,
     amount,
     periodStart,
     periodEnd,
@@ -6308,8 +6308,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
           other.stayId == this.stayId &&
           other.paymentId == this.paymentId &&
           other.kind == this.kind &&
-          other.blocks == this.blocks &&
-          other.pricePerBlock == this.pricePerBlock &&
+          other.nights == this.nights &&
+          other.pricePerNight == this.pricePerNight &&
           other.amount == this.amount &&
           other.periodStart == this.periodStart &&
           other.periodEnd == this.periodEnd);
@@ -6323,8 +6323,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
   final Value<String> stayId;
   final Value<String> paymentId;
   final Value<String> kind;
-  final Value<int> blocks;
-  final Value<int> pricePerBlock;
+  final Value<int> nights;
+  final Value<int> pricePerNight;
   final Value<int> amount;
   final Value<DateTime> periodStart;
   final Value<DateTime> periodEnd;
@@ -6337,8 +6337,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     this.stayId = const Value.absent(),
     this.paymentId = const Value.absent(),
     this.kind = const Value.absent(),
-    this.blocks = const Value.absent(),
-    this.pricePerBlock = const Value.absent(),
+    this.nights = const Value.absent(),
+    this.pricePerNight = const Value.absent(),
     this.amount = const Value.absent(),
     this.periodStart = const Value.absent(),
     this.periodEnd = const Value.absent(),
@@ -6352,8 +6352,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     required String stayId,
     required String paymentId,
     required String kind,
-    required int blocks,
-    required int pricePerBlock,
+    required int nights,
+    required int pricePerNight,
     required int amount,
     required DateTime periodStart,
     required DateTime periodEnd,
@@ -6361,8 +6361,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
   }) : stayId = Value(stayId),
        paymentId = Value(paymentId),
        kind = Value(kind),
-       blocks = Value(blocks),
-       pricePerBlock = Value(pricePerBlock),
+       nights = Value(nights),
+       pricePerNight = Value(pricePerNight),
        amount = Value(amount),
        periodStart = Value(periodStart),
        periodEnd = Value(periodEnd);
@@ -6374,8 +6374,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     Expression<String>? stayId,
     Expression<String>? paymentId,
     Expression<String>? kind,
-    Expression<int>? blocks,
-    Expression<int>? pricePerBlock,
+    Expression<int>? nights,
+    Expression<int>? pricePerNight,
     Expression<int>? amount,
     Expression<DateTime>? periodStart,
     Expression<DateTime>? periodEnd,
@@ -6389,8 +6389,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
       if (stayId != null) 'stay_id': stayId,
       if (paymentId != null) 'payment_id': paymentId,
       if (kind != null) 'kind': kind,
-      if (blocks != null) 'blocks': blocks,
-      if (pricePerBlock != null) 'price_per_block': pricePerBlock,
+      if (nights != null) 'nights': nights,
+      if (pricePerNight != null) 'price_per_night': pricePerNight,
       if (amount != null) 'amount': amount,
       if (periodStart != null) 'period_start': periodStart,
       if (periodEnd != null) 'period_end': periodEnd,
@@ -6406,8 +6406,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     Value<String>? stayId,
     Value<String>? paymentId,
     Value<String>? kind,
-    Value<int>? blocks,
-    Value<int>? pricePerBlock,
+    Value<int>? nights,
+    Value<int>? pricePerNight,
     Value<int>? amount,
     Value<DateTime>? periodStart,
     Value<DateTime>? periodEnd,
@@ -6421,8 +6421,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
       stayId: stayId ?? this.stayId,
       paymentId: paymentId ?? this.paymentId,
       kind: kind ?? this.kind,
-      blocks: blocks ?? this.blocks,
-      pricePerBlock: pricePerBlock ?? this.pricePerBlock,
+      nights: nights ?? this.nights,
+      pricePerNight: pricePerNight ?? this.pricePerNight,
       amount: amount ?? this.amount,
       periodStart: periodStart ?? this.periodStart,
       periodEnd: periodEnd ?? this.periodEnd,
@@ -6454,11 +6454,11 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     if (kind.present) {
       map['kind'] = Variable<String>(kind.value);
     }
-    if (blocks.present) {
-      map['blocks'] = Variable<int>(blocks.value);
+    if (nights.present) {
+      map['nights'] = Variable<int>(nights.value);
     }
-    if (pricePerBlock.present) {
-      map['price_per_block'] = Variable<int>(pricePerBlock.value);
+    if (pricePerNight.present) {
+      map['price_per_night'] = Variable<int>(pricePerNight.value);
     }
     if (amount.present) {
       map['amount'] = Variable<int>(amount.value);
@@ -6485,11 +6485,980 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
           ..write('stayId: $stayId, ')
           ..write('paymentId: $paymentId, ')
           ..write('kind: $kind, ')
-          ..write('blocks: $blocks, ')
-          ..write('pricePerBlock: $pricePerBlock, ')
+          ..write('nights: $nights, ')
+          ..write('pricePerNight: $pricePerNight, ')
           ..write('amount: $amount, ')
           ..write('periodStart: $periodStart, ')
           ..write('periodEnd: $periodEnd, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RefundsTable extends Refunds with TableInfo<$RefundsTable, RefundRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RefundsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _stayIdMeta = const VerificationMeta('stayId');
+  @override
+  late final GeneratedColumn<String> stayId = GeneratedColumn<String>(
+    'stay_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES stays (id)',
+    ),
+  );
+  static const VerificationMeta _nightsMeta = const VerificationMeta('nights');
+  @override
+  late final GeneratedColumn<int> nights = GeneratedColumn<int>(
+    'nights',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(nights).isBiggerOrEqualValue(1),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pricePerNightMeta = const VerificationMeta(
+    'pricePerNight',
+  );
+  @override
+  late final GeneratedColumn<int> pricePerNight = GeneratedColumn<int>(
+    'price_per_night',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(pricePerNight).isBiggerThanValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requestedByMeta = const VerificationMeta(
+    'requestedBy',
+  );
+  @override
+  late final GeneratedColumn<String> requestedBy = GeneratedColumn<String>(
+    'requested_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _requestedAtMeta = const VerificationMeta(
+    'requestedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> requestedAt = GeneratedColumn<DateTime>(
+    'requested_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    true,
+    check: () => method.isIn(['cash', 'paybill']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _mpesaCodeMeta = const VerificationMeta(
+    'mpesaCode',
+  );
+  @override
+  late final GeneratedColumn<String> mpesaCode = GeneratedColumn<String>(
+    'mpesa_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'UNIQUE COLLATE NOCASE',
+  );
+  static const VerificationMeta _shiftIdMeta = const VerificationMeta(
+    'shiftId',
+  );
+  @override
+  late final GeneratedColumn<String> shiftId = GeneratedColumn<String>(
+    'shift_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shifts (id)',
+    ),
+  );
+  static const VerificationMeta _paidByMeta = const VerificationMeta('paidBy');
+  @override
+  late final GeneratedColumn<String> paidBy = GeneratedColumn<String>(
+    'paid_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _paidAtMeta = const VerificationMeta('paidAt');
+  @override
+  late final GeneratedColumn<DateTime> paidAt = GeneratedColumn<DateTime>(
+    'paid_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _receiptNumberMeta = const VerificationMeta(
+    'receiptNumber',
+  );
+  @override
+  late final GeneratedColumn<String> receiptNumber = GeneratedColumn<String>(
+    'receipt_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _printCountMeta = const VerificationMeta(
+    'printCount',
+  );
+  @override
+  late final GeneratedColumn<int> printCount = GeneratedColumn<int>(
+    'print_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    stayId,
+    nights,
+    pricePerNight,
+    amount,
+    requestedBy,
+    requestedAt,
+    method,
+    mpesaCode,
+    shiftId,
+    paidBy,
+    paidAt,
+    receiptNumber,
+    printCount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'refunds';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RefundRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('stay_id')) {
+      context.handle(
+        _stayIdMeta,
+        stayId.isAcceptableOrUnknown(data['stay_id']!, _stayIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stayIdMeta);
+    }
+    if (data.containsKey('nights')) {
+      context.handle(
+        _nightsMeta,
+        nights.isAcceptableOrUnknown(data['nights']!, _nightsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nightsMeta);
+    }
+    if (data.containsKey('price_per_night')) {
+      context.handle(
+        _pricePerNightMeta,
+        pricePerNight.isAcceptableOrUnknown(
+          data['price_per_night']!,
+          _pricePerNightMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_pricePerNightMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('requested_by')) {
+      context.handle(
+        _requestedByMeta,
+        requestedBy.isAcceptableOrUnknown(
+          data['requested_by']!,
+          _requestedByMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedByMeta);
+    }
+    if (data.containsKey('requested_at')) {
+      context.handle(
+        _requestedAtMeta,
+        requestedAt.isAcceptableOrUnknown(
+          data['requested_at']!,
+          _requestedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedAtMeta);
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    }
+    if (data.containsKey('mpesa_code')) {
+      context.handle(
+        _mpesaCodeMeta,
+        mpesaCode.isAcceptableOrUnknown(data['mpesa_code']!, _mpesaCodeMeta),
+      );
+    }
+    if (data.containsKey('shift_id')) {
+      context.handle(
+        _shiftIdMeta,
+        shiftId.isAcceptableOrUnknown(data['shift_id']!, _shiftIdMeta),
+      );
+    }
+    if (data.containsKey('paid_by')) {
+      context.handle(
+        _paidByMeta,
+        paidBy.isAcceptableOrUnknown(data['paid_by']!, _paidByMeta),
+      );
+    }
+    if (data.containsKey('paid_at')) {
+      context.handle(
+        _paidAtMeta,
+        paidAt.isAcceptableOrUnknown(data['paid_at']!, _paidAtMeta),
+      );
+    }
+    if (data.containsKey('receipt_number')) {
+      context.handle(
+        _receiptNumberMeta,
+        receiptNumber.isAcceptableOrUnknown(
+          data['receipt_number']!,
+          _receiptNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('print_count')) {
+      context.handle(
+        _printCountMeta,
+        printCount.isAcceptableOrUnknown(data['print_count']!, _printCountMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RefundRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RefundRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      stayId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stay_id'],
+      )!,
+      nights: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}nights'],
+      )!,
+      pricePerNight: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}price_per_night'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      requestedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by'],
+      )!,
+      requestedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}requested_at'],
+      )!,
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      ),
+      mpesaCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mpesa_code'],
+      ),
+      shiftId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shift_id'],
+      ),
+      paidBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}paid_by'],
+      ),
+      paidAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}paid_at'],
+      ),
+      receiptNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_number'],
+      ),
+      printCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}print_count'],
+      )!,
+    );
+  }
+
+  @override
+  $RefundsTable createAlias(String alias) {
+    return $RefundsTable(attachedDatabase, alias);
+  }
+}
+
+class RefundRow extends DataClass implements Insertable<RefundRow> {
+  /// UUID v4.
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String deviceId;
+  final String stayId;
+  final int nights;
+  final int pricePerNight;
+  final int amount;
+  final String requestedBy;
+  final DateTime requestedAt;
+  final String? method;
+  final String? mpesaCode;
+  final String? shiftId;
+  final String? paidBy;
+  final DateTime? paidAt;
+  final String? receiptNumber;
+  final int printCount;
+  const RefundRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.stayId,
+    required this.nights,
+    required this.pricePerNight,
+    required this.amount,
+    required this.requestedBy,
+    required this.requestedAt,
+    this.method,
+    this.mpesaCode,
+    this.shiftId,
+    this.paidBy,
+    this.paidAt,
+    this.receiptNumber,
+    required this.printCount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['stay_id'] = Variable<String>(stayId);
+    map['nights'] = Variable<int>(nights);
+    map['price_per_night'] = Variable<int>(pricePerNight);
+    map['amount'] = Variable<int>(amount);
+    map['requested_by'] = Variable<String>(requestedBy);
+    map['requested_at'] = Variable<DateTime>(requestedAt);
+    if (!nullToAbsent || method != null) {
+      map['method'] = Variable<String>(method);
+    }
+    if (!nullToAbsent || mpesaCode != null) {
+      map['mpesa_code'] = Variable<String>(mpesaCode);
+    }
+    if (!nullToAbsent || shiftId != null) {
+      map['shift_id'] = Variable<String>(shiftId);
+    }
+    if (!nullToAbsent || paidBy != null) {
+      map['paid_by'] = Variable<String>(paidBy);
+    }
+    if (!nullToAbsent || paidAt != null) {
+      map['paid_at'] = Variable<DateTime>(paidAt);
+    }
+    if (!nullToAbsent || receiptNumber != null) {
+      map['receipt_number'] = Variable<String>(receiptNumber);
+    }
+    map['print_count'] = Variable<int>(printCount);
+    return map;
+  }
+
+  RefundsCompanion toCompanion(bool nullToAbsent) {
+    return RefundsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      stayId: Value(stayId),
+      nights: Value(nights),
+      pricePerNight: Value(pricePerNight),
+      amount: Value(amount),
+      requestedBy: Value(requestedBy),
+      requestedAt: Value(requestedAt),
+      method: method == null && nullToAbsent
+          ? const Value.absent()
+          : Value(method),
+      mpesaCode: mpesaCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mpesaCode),
+      shiftId: shiftId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shiftId),
+      paidBy: paidBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidBy),
+      paidAt: paidAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidAt),
+      receiptNumber: receiptNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(receiptNumber),
+      printCount: Value(printCount),
+    );
+  }
+
+  factory RefundRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RefundRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      stayId: serializer.fromJson<String>(json['stay_id']),
+      nights: serializer.fromJson<int>(json['nights']),
+      pricePerNight: serializer.fromJson<int>(json['price_per_night']),
+      amount: serializer.fromJson<int>(json['amount']),
+      requestedBy: serializer.fromJson<String>(json['requested_by']),
+      requestedAt: serializer.fromJson<DateTime>(json['requested_at']),
+      method: serializer.fromJson<String?>(json['method']),
+      mpesaCode: serializer.fromJson<String?>(json['mpesa_code']),
+      shiftId: serializer.fromJson<String?>(json['shift_id']),
+      paidBy: serializer.fromJson<String?>(json['paid_by']),
+      paidAt: serializer.fromJson<DateTime?>(json['paid_at']),
+      receiptNumber: serializer.fromJson<String?>(json['receipt_number']),
+      printCount: serializer.fromJson<int>(json['print_count']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'stay_id': serializer.toJson<String>(stayId),
+      'nights': serializer.toJson<int>(nights),
+      'price_per_night': serializer.toJson<int>(pricePerNight),
+      'amount': serializer.toJson<int>(amount),
+      'requested_by': serializer.toJson<String>(requestedBy),
+      'requested_at': serializer.toJson<DateTime>(requestedAt),
+      'method': serializer.toJson<String?>(method),
+      'mpesa_code': serializer.toJson<String?>(mpesaCode),
+      'shift_id': serializer.toJson<String?>(shiftId),
+      'paid_by': serializer.toJson<String?>(paidBy),
+      'paid_at': serializer.toJson<DateTime?>(paidAt),
+      'receipt_number': serializer.toJson<String?>(receiptNumber),
+      'print_count': serializer.toJson<int>(printCount),
+    };
+  }
+
+  RefundRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? deviceId,
+    String? stayId,
+    int? nights,
+    int? pricePerNight,
+    int? amount,
+    String? requestedBy,
+    DateTime? requestedAt,
+    Value<String?> method = const Value.absent(),
+    Value<String?> mpesaCode = const Value.absent(),
+    Value<String?> shiftId = const Value.absent(),
+    Value<String?> paidBy = const Value.absent(),
+    Value<DateTime?> paidAt = const Value.absent(),
+    Value<String?> receiptNumber = const Value.absent(),
+    int? printCount,
+  }) => RefundRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    stayId: stayId ?? this.stayId,
+    nights: nights ?? this.nights,
+    pricePerNight: pricePerNight ?? this.pricePerNight,
+    amount: amount ?? this.amount,
+    requestedBy: requestedBy ?? this.requestedBy,
+    requestedAt: requestedAt ?? this.requestedAt,
+    method: method.present ? method.value : this.method,
+    mpesaCode: mpesaCode.present ? mpesaCode.value : this.mpesaCode,
+    shiftId: shiftId.present ? shiftId.value : this.shiftId,
+    paidBy: paidBy.present ? paidBy.value : this.paidBy,
+    paidAt: paidAt.present ? paidAt.value : this.paidAt,
+    receiptNumber: receiptNumber.present
+        ? receiptNumber.value
+        : this.receiptNumber,
+    printCount: printCount ?? this.printCount,
+  );
+  RefundRow copyWithCompanion(RefundsCompanion data) {
+    return RefundRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      stayId: data.stayId.present ? data.stayId.value : this.stayId,
+      nights: data.nights.present ? data.nights.value : this.nights,
+      pricePerNight: data.pricePerNight.present
+          ? data.pricePerNight.value
+          : this.pricePerNight,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      requestedBy: data.requestedBy.present
+          ? data.requestedBy.value
+          : this.requestedBy,
+      requestedAt: data.requestedAt.present
+          ? data.requestedAt.value
+          : this.requestedAt,
+      method: data.method.present ? data.method.value : this.method,
+      mpesaCode: data.mpesaCode.present ? data.mpesaCode.value : this.mpesaCode,
+      shiftId: data.shiftId.present ? data.shiftId.value : this.shiftId,
+      paidBy: data.paidBy.present ? data.paidBy.value : this.paidBy,
+      paidAt: data.paidAt.present ? data.paidAt.value : this.paidAt,
+      receiptNumber: data.receiptNumber.present
+          ? data.receiptNumber.value
+          : this.receiptNumber,
+      printCount: data.printCount.present
+          ? data.printCount.value
+          : this.printCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RefundRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('stayId: $stayId, ')
+          ..write('nights: $nights, ')
+          ..write('pricePerNight: $pricePerNight, ')
+          ..write('amount: $amount, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('requestedAt: $requestedAt, ')
+          ..write('method: $method, ')
+          ..write('mpesaCode: $mpesaCode, ')
+          ..write('shiftId: $shiftId, ')
+          ..write('paidBy: $paidBy, ')
+          ..write('paidAt: $paidAt, ')
+          ..write('receiptNumber: $receiptNumber, ')
+          ..write('printCount: $printCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    stayId,
+    nights,
+    pricePerNight,
+    amount,
+    requestedBy,
+    requestedAt,
+    method,
+    mpesaCode,
+    shiftId,
+    paidBy,
+    paidAt,
+    receiptNumber,
+    printCount,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RefundRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.stayId == this.stayId &&
+          other.nights == this.nights &&
+          other.pricePerNight == this.pricePerNight &&
+          other.amount == this.amount &&
+          other.requestedBy == this.requestedBy &&
+          other.requestedAt == this.requestedAt &&
+          other.method == this.method &&
+          other.mpesaCode == this.mpesaCode &&
+          other.shiftId == this.shiftId &&
+          other.paidBy == this.paidBy &&
+          other.paidAt == this.paidAt &&
+          other.receiptNumber == this.receiptNumber &&
+          other.printCount == this.printCount);
+}
+
+class RefundsCompanion extends UpdateCompanion<RefundRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> deviceId;
+  final Value<String> stayId;
+  final Value<int> nights;
+  final Value<int> pricePerNight;
+  final Value<int> amount;
+  final Value<String> requestedBy;
+  final Value<DateTime> requestedAt;
+  final Value<String?> method;
+  final Value<String?> mpesaCode;
+  final Value<String?> shiftId;
+  final Value<String?> paidBy;
+  final Value<DateTime?> paidAt;
+  final Value<String?> receiptNumber;
+  final Value<int> printCount;
+  final Value<int> rowid;
+  const RefundsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.stayId = const Value.absent(),
+    this.nights = const Value.absent(),
+    this.pricePerNight = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.requestedBy = const Value.absent(),
+    this.requestedAt = const Value.absent(),
+    this.method = const Value.absent(),
+    this.mpesaCode = const Value.absent(),
+    this.shiftId = const Value.absent(),
+    this.paidBy = const Value.absent(),
+    this.paidAt = const Value.absent(),
+    this.receiptNumber = const Value.absent(),
+    this.printCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RefundsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required String stayId,
+    required int nights,
+    required int pricePerNight,
+    required int amount,
+    required String requestedBy,
+    required DateTime requestedAt,
+    this.method = const Value.absent(),
+    this.mpesaCode = const Value.absent(),
+    this.shiftId = const Value.absent(),
+    this.paidBy = const Value.absent(),
+    this.paidAt = const Value.absent(),
+    this.receiptNumber = const Value.absent(),
+    this.printCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : stayId = Value(stayId),
+       nights = Value(nights),
+       pricePerNight = Value(pricePerNight),
+       amount = Value(amount),
+       requestedBy = Value(requestedBy),
+       requestedAt = Value(requestedAt);
+  static Insertable<RefundRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<String>? stayId,
+    Expression<int>? nights,
+    Expression<int>? pricePerNight,
+    Expression<int>? amount,
+    Expression<String>? requestedBy,
+    Expression<DateTime>? requestedAt,
+    Expression<String>? method,
+    Expression<String>? mpesaCode,
+    Expression<String>? shiftId,
+    Expression<String>? paidBy,
+    Expression<DateTime>? paidAt,
+    Expression<String>? receiptNumber,
+    Expression<int>? printCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (stayId != null) 'stay_id': stayId,
+      if (nights != null) 'nights': nights,
+      if (pricePerNight != null) 'price_per_night': pricePerNight,
+      if (amount != null) 'amount': amount,
+      if (requestedBy != null) 'requested_by': requestedBy,
+      if (requestedAt != null) 'requested_at': requestedAt,
+      if (method != null) 'method': method,
+      if (mpesaCode != null) 'mpesa_code': mpesaCode,
+      if (shiftId != null) 'shift_id': shiftId,
+      if (paidBy != null) 'paid_by': paidBy,
+      if (paidAt != null) 'paid_at': paidAt,
+      if (receiptNumber != null) 'receipt_number': receiptNumber,
+      if (printCount != null) 'print_count': printCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RefundsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? deviceId,
+    Value<String>? stayId,
+    Value<int>? nights,
+    Value<int>? pricePerNight,
+    Value<int>? amount,
+    Value<String>? requestedBy,
+    Value<DateTime>? requestedAt,
+    Value<String?>? method,
+    Value<String?>? mpesaCode,
+    Value<String?>? shiftId,
+    Value<String?>? paidBy,
+    Value<DateTime?>? paidAt,
+    Value<String?>? receiptNumber,
+    Value<int>? printCount,
+    Value<int>? rowid,
+  }) {
+    return RefundsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      stayId: stayId ?? this.stayId,
+      nights: nights ?? this.nights,
+      pricePerNight: pricePerNight ?? this.pricePerNight,
+      amount: amount ?? this.amount,
+      requestedBy: requestedBy ?? this.requestedBy,
+      requestedAt: requestedAt ?? this.requestedAt,
+      method: method ?? this.method,
+      mpesaCode: mpesaCode ?? this.mpesaCode,
+      shiftId: shiftId ?? this.shiftId,
+      paidBy: paidBy ?? this.paidBy,
+      paidAt: paidAt ?? this.paidAt,
+      receiptNumber: receiptNumber ?? this.receiptNumber,
+      printCount: printCount ?? this.printCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (stayId.present) {
+      map['stay_id'] = Variable<String>(stayId.value);
+    }
+    if (nights.present) {
+      map['nights'] = Variable<int>(nights.value);
+    }
+    if (pricePerNight.present) {
+      map['price_per_night'] = Variable<int>(pricePerNight.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (requestedBy.present) {
+      map['requested_by'] = Variable<String>(requestedBy.value);
+    }
+    if (requestedAt.present) {
+      map['requested_at'] = Variable<DateTime>(requestedAt.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (mpesaCode.present) {
+      map['mpesa_code'] = Variable<String>(mpesaCode.value);
+    }
+    if (shiftId.present) {
+      map['shift_id'] = Variable<String>(shiftId.value);
+    }
+    if (paidBy.present) {
+      map['paid_by'] = Variable<String>(paidBy.value);
+    }
+    if (paidAt.present) {
+      map['paid_at'] = Variable<DateTime>(paidAt.value);
+    }
+    if (receiptNumber.present) {
+      map['receipt_number'] = Variable<String>(receiptNumber.value);
+    }
+    if (printCount.present) {
+      map['print_count'] = Variable<int>(printCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RefundsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('stayId: $stayId, ')
+          ..write('nights: $nights, ')
+          ..write('pricePerNight: $pricePerNight, ')
+          ..write('amount: $amount, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('requestedAt: $requestedAt, ')
+          ..write('method: $method, ')
+          ..write('mpesaCode: $mpesaCode, ')
+          ..write('shiftId: $shiftId, ')
+          ..write('paidBy: $paidBy, ')
+          ..write('paidAt: $paidAt, ')
+          ..write('receiptNumber: $receiptNumber, ')
+          ..write('printCount: $printCount, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8259,7 +9228,7 @@ class $VoidsTable extends Voids with TableInfo<$VoidsTable, VoidRow> {
     'target_type',
     aliasedName,
     false,
-    check: () => targetType.isIn(['payment', 'stay']),
+    check: () => targetType.isIn(['payment', 'stay', 'refund']),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -9319,6 +10288,564 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
           ..write('spentOn: $spentOn, ')
           ..write('note: $note, ')
           ..write('recordedBy: $recordedBy, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RefundDecisionsTable extends RefundDecisions
+    with TableInfo<$RefundDecisionsTable, RefundDecisionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RefundDecisionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _refundIdMeta = const VerificationMeta(
+    'refundId',
+  );
+  @override
+  late final GeneratedColumn<String> refundId = GeneratedColumn<String>(
+    'refund_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES refunds (id)',
+    ),
+  );
+  static const VerificationMeta _decisionMeta = const VerificationMeta(
+    'decision',
+  );
+  @override
+  late final GeneratedColumn<String> decision = GeneratedColumn<String>(
+    'decision',
+    aliasedName,
+    false,
+    check: () => decision.isIn(['approved', 'rejected']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decidedByMeta = const VerificationMeta(
+    'decidedBy',
+  );
+  @override
+  late final GeneratedColumn<String> decidedBy = GeneratedColumn<String>(
+    'decided_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> decidedAt = GeneratedColumn<DateTime>(
+    'decided_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    refundId,
+    decision,
+    note,
+    decidedBy,
+    decidedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'refund_decisions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RefundDecisionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('refund_id')) {
+      context.handle(
+        _refundIdMeta,
+        refundId.isAcceptableOrUnknown(data['refund_id']!, _refundIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_refundIdMeta);
+    }
+    if (data.containsKey('decision')) {
+      context.handle(
+        _decisionMeta,
+        decision.isAcceptableOrUnknown(data['decision']!, _decisionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decisionMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('decided_by')) {
+      context.handle(
+        _decidedByMeta,
+        decidedBy.isAcceptableOrUnknown(data['decided_by']!, _decidedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedByMeta);
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RefundDecisionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RefundDecisionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      refundId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}refund_id'],
+      )!,
+      decision: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decision'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      decidedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decided_by'],
+      )!,
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}decided_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RefundDecisionsTable createAlias(String alias) {
+    return $RefundDecisionsTable(attachedDatabase, alias);
+  }
+}
+
+class RefundDecisionRow extends DataClass
+    implements Insertable<RefundDecisionRow> {
+  /// UUID v4.
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String deviceId;
+  final String refundId;
+  final String decision;
+  final String? note;
+  final String decidedBy;
+  final DateTime decidedAt;
+  const RefundDecisionRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.refundId,
+    required this.decision,
+    this.note,
+    required this.decidedBy,
+    required this.decidedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['refund_id'] = Variable<String>(refundId);
+    map['decision'] = Variable<String>(decision);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['decided_by'] = Variable<String>(decidedBy);
+    map['decided_at'] = Variable<DateTime>(decidedAt);
+    return map;
+  }
+
+  RefundDecisionsCompanion toCompanion(bool nullToAbsent) {
+    return RefundDecisionsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      refundId: Value(refundId),
+      decision: Value(decision),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      decidedBy: Value(decidedBy),
+      decidedAt: Value(decidedAt),
+    );
+  }
+
+  factory RefundDecisionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RefundDecisionRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      refundId: serializer.fromJson<String>(json['refund_id']),
+      decision: serializer.fromJson<String>(json['decision']),
+      note: serializer.fromJson<String?>(json['note']),
+      decidedBy: serializer.fromJson<String>(json['decided_by']),
+      decidedAt: serializer.fromJson<DateTime>(json['decided_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'refund_id': serializer.toJson<String>(refundId),
+      'decision': serializer.toJson<String>(decision),
+      'note': serializer.toJson<String?>(note),
+      'decided_by': serializer.toJson<String>(decidedBy),
+      'decided_at': serializer.toJson<DateTime>(decidedAt),
+    };
+  }
+
+  RefundDecisionRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? deviceId,
+    String? refundId,
+    String? decision,
+    Value<String?> note = const Value.absent(),
+    String? decidedBy,
+    DateTime? decidedAt,
+  }) => RefundDecisionRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    refundId: refundId ?? this.refundId,
+    decision: decision ?? this.decision,
+    note: note.present ? note.value : this.note,
+    decidedBy: decidedBy ?? this.decidedBy,
+    decidedAt: decidedAt ?? this.decidedAt,
+  );
+  RefundDecisionRow copyWithCompanion(RefundDecisionsCompanion data) {
+    return RefundDecisionRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      refundId: data.refundId.present ? data.refundId.value : this.refundId,
+      decision: data.decision.present ? data.decision.value : this.decision,
+      note: data.note.present ? data.note.value : this.note,
+      decidedBy: data.decidedBy.present ? data.decidedBy.value : this.decidedBy,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RefundDecisionRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('refundId: $refundId, ')
+          ..write('decision: $decision, ')
+          ..write('note: $note, ')
+          ..write('decidedBy: $decidedBy, ')
+          ..write('decidedAt: $decidedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    refundId,
+    decision,
+    note,
+    decidedBy,
+    decidedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RefundDecisionRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.refundId == this.refundId &&
+          other.decision == this.decision &&
+          other.note == this.note &&
+          other.decidedBy == this.decidedBy &&
+          other.decidedAt == this.decidedAt);
+}
+
+class RefundDecisionsCompanion extends UpdateCompanion<RefundDecisionRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> deviceId;
+  final Value<String> refundId;
+  final Value<String> decision;
+  final Value<String?> note;
+  final Value<String> decidedBy;
+  final Value<DateTime> decidedAt;
+  final Value<int> rowid;
+  const RefundDecisionsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.refundId = const Value.absent(),
+    this.decision = const Value.absent(),
+    this.note = const Value.absent(),
+    this.decidedBy = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RefundDecisionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required String refundId,
+    required String decision,
+    this.note = const Value.absent(),
+    required String decidedBy,
+    required DateTime decidedAt,
+    this.rowid = const Value.absent(),
+  }) : refundId = Value(refundId),
+       decision = Value(decision),
+       decidedBy = Value(decidedBy),
+       decidedAt = Value(decidedAt);
+  static Insertable<RefundDecisionRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<String>? refundId,
+    Expression<String>? decision,
+    Expression<String>? note,
+    Expression<String>? decidedBy,
+    Expression<DateTime>? decidedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (refundId != null) 'refund_id': refundId,
+      if (decision != null) 'decision': decision,
+      if (note != null) 'note': note,
+      if (decidedBy != null) 'decided_by': decidedBy,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RefundDecisionsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? deviceId,
+    Value<String>? refundId,
+    Value<String>? decision,
+    Value<String?>? note,
+    Value<String>? decidedBy,
+    Value<DateTime>? decidedAt,
+    Value<int>? rowid,
+  }) {
+    return RefundDecisionsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      refundId: refundId ?? this.refundId,
+      decision: decision ?? this.decision,
+      note: note ?? this.note,
+      decidedBy: decidedBy ?? this.decidedBy,
+      decidedAt: decidedAt ?? this.decidedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (refundId.present) {
+      map['refund_id'] = Variable<String>(refundId.value);
+    }
+    if (decision.present) {
+      map['decision'] = Variable<String>(decision.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (decidedBy.present) {
+      map['decided_by'] = Variable<String>(decidedBy.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<DateTime>(decidedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RefundDecisionsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('refundId: $refundId, ')
+          ..write('decision: $decision, ')
+          ..write('note: $note, ')
+          ..write('decidedBy: $decidedBy, ')
+          ..write('decidedAt: $decidedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11044,6 +12571,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
     'stay_charges_stamped_update',
   );
+  late final $RefundsTable refunds = $RefundsTable(this);
+  late final Trigger refundsStampedUpdate = Trigger(
+    'CREATE TRIGGER refunds_stamped_update BEFORE UPDATE ON refunds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'refunds_stamped_update',
+  );
   late final $HousekeepingTasksTable housekeepingTasks =
       $HousekeepingTasksTable(this);
   late final Trigger housekeepingTasksStampedUpdate = Trigger(
@@ -11071,6 +12603,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
     'inventory_items_stamped_update',
   );
+  late final $RefundDecisionsTable refundDecisions = $RefundDecisionsTable(
+    this,
+  );
+  late final Trigger refundDecisionsStampedUpdate = Trigger(
+    'CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'refund_decisions_stamped_update',
+  );
   late final $AuditLogTable auditLog = $AuditLogTable(this);
   late final Trigger auditLogNoUpdate = Trigger(
     'CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
@@ -11095,6 +12634,50 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Trigger auditLogNoDelete = Trigger(
     'CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
     'audit_log_no_delete',
+  );
+  late final Trigger refundsNoDelete = Trigger(
+    'CREATE TRIGGER refunds_no_delete BEFORE DELETE ON refunds BEGIN SELECT RAISE (ABORT, \'refunds rows are never deleted\');END',
+    'refunds_no_delete',
+  );
+  late final Trigger refundDecisionsNoDelete = Trigger(
+    'CREATE TRIGGER refund_decisions_no_delete BEFORE DELETE ON refund_decisions BEGIN SELECT RAISE (ABORT, \'refund_decisions rows are never deleted\');END',
+    'refund_decisions_no_delete',
+  );
+  late final Trigger refundDecisionsNoUpdate = Trigger(
+    'CREATE TRIGGER refund_decisions_no_update BEFORE UPDATE ON refund_decisions BEGIN SELECT RAISE (ABORT, \'refund_decisions rows are never edited\');END',
+    'refund_decisions_no_update',
+  );
+  late final Trigger refundsRequestedUnpaid = Trigger(
+    'CREATE TRIGGER refunds_requested_unpaid BEFORE INSERT ON refunds WHEN NEW.paid_at IS NOT NULL BEGIN SELECT RAISE (ABORT, \'a refund is requested before it is paid\');END',
+    'refunds_requested_unpaid',
+  );
+  late final Trigger refundsFixedTerms = Trigger(
+    'CREATE TRIGGER refunds_fixed_terms BEFORE UPDATE ON refunds WHEN NEW.stay_id IS NOT OLD.stay_id OR NEW.nights IS NOT OLD.nights OR NEW.price_per_night IS NOT OLD.price_per_night OR NEW.amount IS NOT OLD.amount OR NEW.requested_by IS NOT OLD.requested_by OR NEW.requested_at IS NOT OLD.requested_at BEGIN SELECT RAISE (ABORT, \'refund terms cannot change\');END',
+    'refunds_fixed_terms',
+  );
+  late final Trigger refundsPaidOnce = Trigger(
+    'CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NOT NULL AND(NEW.paid_at IS NOT OLD.paid_at OR NEW.method IS NOT OLD.method OR NEW.mpesa_code IS NOT OLD.mpesa_code OR NEW.shift_id IS NOT OLD.shift_id OR NEW.paid_by IS NOT OLD.paid_by OR NEW.receipt_number IS NOT OLD.receipt_number)BEGIN SELECT RAISE (ABORT, \'refund is already paid\');END',
+    'refunds_paid_once',
+  );
+  late final Trigger refundsPaidIfApproved = Trigger(
+    'CREATE TRIGGER refunds_paid_if_approved BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NULL AND NEW.paid_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM refund_decisions WHERE refund_id = NEW.id AND decision = \'approved\') BEGIN SELECT RAISE (ABORT, \'refund is not approved\');END',
+    'refunds_paid_if_approved',
+  );
+  late final Trigger paymentsMpesaCodeUnusedInsert = Trigger(
+    'CREATE TRIGGER payments_mpesa_code_unused_insert BEFORE INSERT ON payments WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'payments_mpesa_code_unused_insert',
+  );
+  late final Trigger paymentsMpesaCodeUnusedUpdate = Trigger(
+    'CREATE TRIGGER payments_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON payments WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'payments_mpesa_code_unused_update',
+  );
+  late final Trigger refundsMpesaCodeUnusedInsert = Trigger(
+    'CREATE TRIGGER refunds_mpesa_code_unused_insert BEFORE INSERT ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'refunds_mpesa_code_unused_insert',
+  );
+  late final Trigger refundsMpesaCodeUnusedUpdate = Trigger(
+    'CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'refunds_mpesa_code_unused_update',
   );
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $DeviceTable device = $DeviceTable(this);
@@ -11159,6 +12742,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'stay_charges_payment',
     'CREATE INDEX stay_charges_payment ON stay_charges (payment_id)',
   );
+  late final Index refundsShift = Index(
+    'refunds_shift',
+    'CREATE INDEX refunds_shift ON refunds (shift_id)',
+  );
   late final Index housekeepingTasksBed = Index(
     'housekeeping_tasks_bed',
     'CREATE INDEX housekeeping_tasks_bed ON housekeeping_tasks (bed_id)',
@@ -11198,6 +12785,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     paymentsStampedUpdate,
     stayCharges,
     stayChargesStampedUpdate,
+    refunds,
+    refundsStampedUpdate,
     housekeepingTasks,
     housekeepingTasksStampedUpdate,
     inventoryItems,
@@ -11208,6 +12797,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     expenses,
     expensesStampedUpdate,
     inventoryItemsStampedUpdate,
+    refundDecisions,
+    refundDecisionsStampedUpdate,
     auditLog,
     auditLogNoUpdate,
     staysNoDelete,
@@ -11215,6 +12806,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stayChargesNoDelete,
     voidsNoDelete,
     auditLogNoDelete,
+    refundsNoDelete,
+    refundDecisionsNoDelete,
+    refundDecisionsNoUpdate,
+    refundsRequestedUnpaid,
+    refundsFixedTerms,
+    refundsPaidOnce,
+    refundsPaidIfApproved,
+    paymentsMpesaCodeUnusedInsert,
+    paymentsMpesaCodeUnusedUpdate,
+    refundsMpesaCodeUnusedInsert,
+    refundsMpesaCodeUnusedUpdate,
     outbox,
     device,
     receiptCounter,
@@ -11233,6 +12835,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     paymentsShift,
     stayChargesStay,
     stayChargesPayment,
+    refundsShift,
     housekeepingTasksBed,
     housekeepingTasksOneOpenPerBed,
     inventoryMovementsItem,
@@ -11318,6 +12921,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'housekeeping_tasks',
         limitUpdateKind: UpdateKind.update,
       ),
@@ -11347,6 +12957,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'inventory_items',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refund_decisions',
         limitUpdateKind: UpdateKind.update,
       ),
       result: [],
@@ -11390,6 +13007,83 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       on: TableUpdateQuery.onTableName(
         'audit_log',
         limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refund_decisions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refund_decisions',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'refunds',
+        limitUpdateKind: UpdateKind.update,
       ),
       result: [],
     ),
@@ -11523,6 +13217,43 @@ final class $$UsersTableReferences
     );
   }
 
+  static MultiTypedResultKey<$RefundsTable, List<RefundRow>>
+  _refundsRequestedTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.refunds,
+    aliasName: 'users__id__refunds__requested_by',
+  );
+
+  $$RefundsTableProcessedTableManager get refundsRequested {
+    final manager = $$RefundsTableTableManager(
+      $_db,
+      $_db.refunds,
+    ).filter((f) => f.requestedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_refundsRequestedTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RefundsTable, List<RefundRow>> _refundsPaidTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.refunds,
+    aliasName: 'users__id__refunds__paid_by',
+  );
+
+  $$RefundsTableProcessedTableManager get refundsPaid {
+    final manager = $$RefundsTableTableManager(
+      $_db,
+      $_db.refunds,
+    ).filter((f) => f.paidBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_refundsPaidTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$HousekeepingTasksTable, List<HousekeepingTaskRow>>
   _housekeepingTasksAssignedTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -11621,6 +13352,26 @@ final class $$UsersTableReferences
     ).filter((f) => f.recordedBy.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_expensesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RefundDecisionsTable, List<RefundDecisionRow>>
+  _refundDecisionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.refundDecisions,
+    aliasName: 'users__id__refund_decisions__decided_by',
+  );
+
+  $$RefundDecisionsTableProcessedTableManager get refundDecisionsRefs {
+    final manager = $$RefundDecisionsTableTableManager(
+      $_db,
+      $_db.refundDecisions,
+    ).filter((f) => f.decidedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _refundDecisionsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -11828,6 +13579,56 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
     return f(composer);
   }
 
+  Expression<bool> refundsRequested(
+    Expression<bool> Function($$RefundsTableFilterComposer f) f,
+  ) {
+    final $$RefundsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.requestedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableFilterComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> refundsPaid(
+    Expression<bool> Function($$RefundsTableFilterComposer f) f,
+  ) {
+    final $$RefundsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.paidBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableFilterComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> housekeepingTasksAssigned(
     Expression<bool> Function($$HousekeepingTasksTableFilterComposer f) f,
   ) {
@@ -11944,6 +13745,31 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$ExpensesTableFilterComposer(
             $db: $db,
             $table: $db.expenses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> refundDecisionsRefs(
+    Expression<bool> Function($$RefundDecisionsTableFilterComposer f) f,
+  ) {
+    final $$RefundDecisionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refundDecisions,
+      getReferencedColumn: (t) => t.decidedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundDecisionsTableFilterComposer(
+            $db: $db,
+            $table: $db.refundDecisions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -12207,6 +14033,56 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> refundsRequested<T extends Object>(
+    Expression<T> Function($$RefundsTableAnnotationComposer a) f,
+  ) {
+    final $$RefundsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.requestedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> refundsPaid<T extends Object>(
+    Expression<T> Function($$RefundsTableAnnotationComposer a) f,
+  ) {
+    final $$RefundsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.paidBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> housekeepingTasksAssigned<T extends Object>(
     Expression<T> Function($$HousekeepingTasksTableAnnotationComposer a) f,
   ) {
@@ -12335,6 +14211,31 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> refundDecisionsRefs<T extends Object>(
+    Expression<T> Function($$RefundDecisionsTableAnnotationComposer a) f,
+  ) {
+    final $$RefundDecisionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refundDecisions,
+      getReferencedColumn: (t) => t.decidedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundDecisionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refundDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> auditLogRefs<T extends Object>(
     Expression<T> Function($$AuditLogTableAnnotationComposer a) f,
   ) {
@@ -12380,11 +14281,14 @@ class $$UsersTableTableManager
             bool staysCheckedIn,
             bool staysCheckedOut,
             bool paymentsRefs,
+            bool refundsRequested,
+            bool refundsPaid,
             bool housekeepingTasksAssigned,
             bool housekeepingTasksCompleted,
             bool inventoryMovementsRefs,
             bool voidsRefs,
             bool expensesRefs,
+            bool refundDecisionsRefs,
             bool auditLogRefs,
           })
         > {
@@ -12466,11 +14370,14 @@ class $$UsersTableTableManager
                 staysCheckedIn = false,
                 staysCheckedOut = false,
                 paymentsRefs = false,
+                refundsRequested = false,
+                refundsPaid = false,
                 housekeepingTasksAssigned = false,
                 housekeepingTasksCompleted = false,
                 inventoryMovementsRefs = false,
                 voidsRefs = false,
                 expensesRefs = false,
+                refundDecisionsRefs = false,
                 auditLogRefs = false,
               }) {
                 return PrefetchHooks(
@@ -12481,11 +14388,14 @@ class $$UsersTableTableManager
                     if (staysCheckedIn) db.stays,
                     if (staysCheckedOut) db.stays,
                     if (paymentsRefs) db.payments,
+                    if (refundsRequested) db.refunds,
+                    if (refundsPaid) db.refunds,
                     if (housekeepingTasksAssigned) db.housekeepingTasks,
                     if (housekeepingTasksCompleted) db.housekeepingTasks,
                     if (inventoryMovementsRefs) db.inventoryMovements,
                     if (voidsRefs) db.voids,
                     if (expensesRefs) db.expenses,
+                    if (refundDecisionsRefs) db.refundDecisions,
                     if (auditLogRefs) db.auditLog,
                   ],
                   addJoins: null,
@@ -12592,6 +14502,44 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (refundsRequested)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          RefundRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._refundsRequestedTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).refundsRequested,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.requestedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (refundsPaid)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          RefundRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._refundsPaidTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(db, table, p0).refundsPaid,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.paidBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (housekeepingTasksAssigned)
                         await $_getPrefetchedData<
                           UserRow,
@@ -12693,6 +14641,27 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (refundDecisionsRefs)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          RefundDecisionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._refundDecisionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).refundDecisionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.decidedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (auditLogRefs)
                         await $_getPrefetchedData<
                           UserRow,
@@ -12740,11 +14709,14 @@ typedef $$UsersTableProcessedTableManager =
         bool staysCheckedIn,
         bool staysCheckedOut,
         bool paymentsRefs,
+        bool refundsRequested,
+        bool refundsPaid,
         bool housekeepingTasksAssigned,
         bool housekeepingTasksCompleted,
         bool inventoryMovementsRefs,
         bool voidsRefs,
         bool expensesRefs,
+        bool refundDecisionsRefs,
         bool auditLogRefs,
       })
     >;
@@ -13087,7 +15059,7 @@ typedef $$BedCategoriesTableCreateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<String> deviceId,
       required String name,
-      required int pricePerBlock,
+      required int pricePerNight,
       required int sortOrder,
       Value<bool> isActive,
       Value<int> rowid,
@@ -13099,7 +15071,7 @@ typedef $$BedCategoriesTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<String> deviceId,
       Value<String> name,
-      Value<int> pricePerBlock,
+      Value<int> pricePerNight,
       Value<int> sortOrder,
       Value<bool> isActive,
       Value<int> rowid,
@@ -13167,8 +15139,8 @@ class $$BedCategoriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get pricePerBlock => $composableBuilder(
-    column: $table.pricePerBlock,
+  ColumnFilters<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13242,8 +15214,8 @@ class $$BedCategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get pricePerBlock => $composableBuilder(
-    column: $table.pricePerBlock,
+  ColumnOrderings<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13282,8 +15254,8 @@ class $$BedCategoriesTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumn<int> get pricePerBlock => $composableBuilder(
-    column: $table.pricePerBlock,
+  GeneratedColumn<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
     builder: (column) => column,
   );
 
@@ -13352,7 +15324,7 @@ class $$BedCategoriesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> deviceId = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<int> pricePerBlock = const Value.absent(),
+                Value<int> pricePerNight = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -13362,7 +15334,7 @@ class $$BedCategoriesTableTableManager
                 updatedAt: updatedAt,
                 deviceId: deviceId,
                 name: name,
-                pricePerBlock: pricePerBlock,
+                pricePerNight: pricePerNight,
                 sortOrder: sortOrder,
                 isActive: isActive,
                 rowid: rowid,
@@ -13374,7 +15346,7 @@ class $$BedCategoriesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> deviceId = const Value.absent(),
                 required String name,
-                required int pricePerBlock,
+                required int pricePerNight,
                 required int sortOrder,
                 Value<bool> isActive = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -13384,7 +15356,7 @@ class $$BedCategoriesTableTableManager
                 updatedAt: updatedAt,
                 deviceId: deviceId,
                 name: name,
-                pricePerBlock: pricePerBlock,
+                pricePerNight: pricePerNight,
                 sortOrder: sortOrder,
                 isActive: isActive,
                 rowid: rowid,
@@ -15232,6 +17204,25 @@ final class $$ShiftsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$RefundsTable, List<RefundRow>> _refundsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.refunds,
+    aliasName: 'shifts__id__refunds__shift_id',
+  );
+
+  $$RefundsTableProcessedTableManager get refundsRefs {
+    final manager = $$RefundsTableTableManager(
+      $_db,
+      $_db.refunds,
+    ).filter((f) => f.shiftId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_refundsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ShiftsTableFilterComposer
@@ -15342,6 +17333,31 @@ class $$ShiftsTableFilterComposer
           }) => $$PaymentsTableFilterComposer(
             $db: $db,
             $table: $db.payments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> refundsRefs(
+    Expression<bool> Function($$RefundsTableFilterComposer f) f,
+  ) {
+    final $$RefundsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.shiftId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableFilterComposer(
+            $db: $db,
+            $table: $db.refunds,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -15545,6 +17561,31 @@ class $$ShiftsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> refundsRefs<T extends Object>(
+    Expression<T> Function($$RefundsTableAnnotationComposer a) f,
+  ) {
+    final $$RefundsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.shiftId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ShiftsTableTableManager
@@ -15560,7 +17601,11 @@ class $$ShiftsTableTableManager
           $$ShiftsTableUpdateCompanionBuilder,
           (ShiftRow, $$ShiftsTableReferences),
           ShiftRow,
-          PrefetchHooks Function({bool userId, bool paymentsRefs})
+          PrefetchHooks Function({
+            bool userId,
+            bool paymentsRefs,
+            bool refundsRefs,
+          })
         > {
   $$ShiftsTableTableManager(_$AppDatabase db, $ShiftsTable table)
     : super(
@@ -15645,62 +17690,92 @@ class $$ShiftsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({userId = false, paymentsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (paymentsRefs) db.payments],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (userId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.userId,
-                        referencedTable: $$ShiftsTableReferences._userIdTable(
-                          db,
-                        ),
-                        referencedColumn: $$ShiftsTableReferences
-                            ._userIdTable(db)
-                            .id,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({userId = false, paymentsRefs = false, refundsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (paymentsRefs) db.payments,
+                    if (refundsRefs) db.refunds,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (userId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.userId,
+                            referencedTable: $$ShiftsTableReferences
+                                ._userIdTable(db),
+                            referencedColumn: $$ShiftsTableReferences
+                                ._userIdTable(db)
+                                .id,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (paymentsRefs)
+                        await $_getPrefetchedData<
+                          ShiftRow,
+                          $ShiftsTable,
+                          PaymentRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShiftsTableReferences
+                              ._paymentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShiftsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).paymentsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.shiftId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (refundsRefs)
+                        await $_getPrefetchedData<
+                          ShiftRow,
+                          $ShiftsTable,
+                          RefundRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShiftsTableReferences
+                              ._refundsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShiftsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).refundsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.shiftId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (paymentsRefs)
-                    await $_getPrefetchedData<
-                      ShiftRow,
-                      $ShiftsTable,
-                      PaymentRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ShiftsTableReferences
-                          ._paymentsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ShiftsTableReferences(db, table, p0).paymentsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.shiftId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -15717,7 +17792,7 @@ typedef $$ShiftsTableProcessedTableManager =
       $$ShiftsTableUpdateCompanionBuilder,
       (ShiftRow, $$ShiftsTableReferences),
       ShiftRow,
-      PrefetchHooks Function({bool userId, bool paymentsRefs})
+      PrefetchHooks Function({bool userId, bool paymentsRefs, bool refundsRefs})
     >;
 typedef $$StaysTableCreateCompanionBuilder = StaysCompanion Function({
   Value<String> id,
@@ -15835,6 +17910,25 @@ final class $$StaysTableReferences
     ).filter((f) => f.stayId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_stayChargesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RefundsTable, List<RefundRow>> _refundsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.refunds,
+    aliasName: 'stays__id__refunds__stay_id',
+  );
+
+  $$RefundsTableProcessedTableManager get refundsRefs {
+    final manager = $$RefundsTableTableManager(
+      $_db,
+      $_db.refunds,
+    ).filter((f) => f.stayId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_refundsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -15997,6 +18091,31 @@ class $$StaysTableFilterComposer extends Composer<_$AppDatabase, $StaysTable> {
           }) => $$StayChargesTableFilterComposer(
             $db: $db,
             $table: $db.stayCharges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> refundsRefs(
+    Expression<bool> Function($$RefundsTableFilterComposer f) f,
+  ) {
+    final $$RefundsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.stayId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableFilterComposer(
+            $db: $db,
+            $table: $db.refunds,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16300,6 +18419,31 @@ class $$StaysTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> refundsRefs<T extends Object>(
+    Expression<T> Function($$RefundsTableAnnotationComposer a) f,
+  ) {
+    final $$RefundsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.stayId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$StaysTableTableManager
@@ -16321,6 +18465,7 @@ class $$StaysTableTableManager
             bool checkedInBy,
             bool checkedOutBy,
             bool stayChargesRefs,
+            bool refundsRefs,
           })
         > {
   $$StaysTableTableManager(_$AppDatabase db, $StaysTable table)
@@ -16409,11 +18554,13 @@ class $$StaysTableTableManager
                 checkedInBy = false,
                 checkedOutBy = false,
                 stayChargesRefs = false,
+                refundsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (stayChargesRefs) db.stayCharges,
+                    if (refundsRefs) db.refunds,
                   ],
                   addJoins:
                       <
@@ -16502,6 +18649,23 @@ class $$StaysTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (refundsRefs)
+                        await $_getPrefetchedData<
+                          StayRow,
+                          $StaysTable,
+                          RefundRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StaysTableReferences
+                              ._refundsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StaysTableReferences(db, table, p0).refundsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.stayId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -16528,6 +18692,7 @@ typedef $$StaysTableProcessedTableManager =
         bool checkedInBy,
         bool checkedOutBy,
         bool stayChargesRefs,
+        bool refundsRefs,
       })
     >;
 typedef $$PaymentsTableCreateCompanionBuilder = PaymentsCompanion Function({
@@ -17176,8 +19341,8 @@ typedef $$StayChargesTableCreateCompanionBuilder =
       required String stayId,
       required String paymentId,
       required String kind,
-      required int blocks,
-      required int pricePerBlock,
+      required int nights,
+      required int pricePerNight,
       required int amount,
       required DateTime periodStart,
       required DateTime periodEnd,
@@ -17192,8 +19357,8 @@ typedef $$StayChargesTableUpdateCompanionBuilder =
       Value<String> stayId,
       Value<String> paymentId,
       Value<String> kind,
-      Value<int> blocks,
-      Value<int> pricePerBlock,
+      Value<int> nights,
+      Value<int> pricePerNight,
       Value<int> amount,
       Value<DateTime> periodStart,
       Value<DateTime> periodEnd,
@@ -17273,13 +19438,13 @@ class $$StayChargesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get blocks => $composableBuilder(
-    column: $table.blocks,
+  ColumnFilters<int> get nights => $composableBuilder(
+    column: $table.nights,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get pricePerBlock => $composableBuilder(
-    column: $table.pricePerBlock,
+  ColumnFilters<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17379,13 +19544,13 @@ class $$StayChargesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get blocks => $composableBuilder(
-    column: $table.blocks,
+  ColumnOrderings<int> get nights => $composableBuilder(
+    column: $table.nights,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get pricePerBlock => $composableBuilder(
-    column: $table.pricePerBlock,
+  ColumnOrderings<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -17475,11 +19640,11 @@ class $$StayChargesTableAnnotationComposer
   GeneratedColumn<String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
 
-  GeneratedColumn<int> get blocks =>
-      $composableBuilder(column: $table.blocks, builder: (column) => column);
+  GeneratedColumn<int> get nights =>
+      $composableBuilder(column: $table.nights, builder: (column) => column);
 
-  GeneratedColumn<int> get pricePerBlock => $composableBuilder(
-    column: $table.pricePerBlock,
+  GeneratedColumn<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
     builder: (column) => column,
   );
 
@@ -17576,8 +19741,8 @@ class $$StayChargesTableTableManager
                 Value<String> stayId = const Value.absent(),
                 Value<String> paymentId = const Value.absent(),
                 Value<String> kind = const Value.absent(),
-                Value<int> blocks = const Value.absent(),
-                Value<int> pricePerBlock = const Value.absent(),
+                Value<int> nights = const Value.absent(),
+                Value<int> pricePerNight = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<DateTime> periodStart = const Value.absent(),
                 Value<DateTime> periodEnd = const Value.absent(),
@@ -17590,8 +19755,8 @@ class $$StayChargesTableTableManager
                 stayId: stayId,
                 paymentId: paymentId,
                 kind: kind,
-                blocks: blocks,
-                pricePerBlock: pricePerBlock,
+                nights: nights,
+                pricePerNight: pricePerNight,
                 amount: amount,
                 periodStart: periodStart,
                 periodEnd: periodEnd,
@@ -17606,8 +19771,8 @@ class $$StayChargesTableTableManager
                 required String stayId,
                 required String paymentId,
                 required String kind,
-                required int blocks,
-                required int pricePerBlock,
+                required int nights,
+                required int pricePerNight,
                 required int amount,
                 required DateTime periodStart,
                 required DateTime periodEnd,
@@ -17620,8 +19785,8 @@ class $$StayChargesTableTableManager
                 stayId: stayId,
                 paymentId: paymentId,
                 kind: kind,
-                blocks: blocks,
-                pricePerBlock: pricePerBlock,
+                nights: nights,
+                pricePerNight: pricePerNight,
                 amount: amount,
                 periodStart: periodStart,
                 periodEnd: periodEnd,
@@ -17702,6 +19867,920 @@ typedef $$StayChargesTableProcessedTableManager =
       (StayChargeRow, $$StayChargesTableReferences),
       StayChargeRow,
       PrefetchHooks Function({bool stayId, bool paymentId})
+    >;
+typedef $$RefundsTableCreateCompanionBuilder = RefundsCompanion Function({
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
+  required String stayId,
+  required int nights,
+  required int pricePerNight,
+  required int amount,
+  required String requestedBy,
+  required DateTime requestedAt,
+  Value<String?> method,
+  Value<String?> mpesaCode,
+  Value<String?> shiftId,
+  Value<String?> paidBy,
+  Value<DateTime?> paidAt,
+  Value<String?> receiptNumber,
+  Value<int> printCount,
+  Value<int> rowid,
+});
+typedef $$RefundsTableUpdateCompanionBuilder = RefundsCompanion Function({
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> deviceId,
+  Value<String> stayId,
+  Value<int> nights,
+  Value<int> pricePerNight,
+  Value<int> amount,
+  Value<String> requestedBy,
+  Value<DateTime> requestedAt,
+  Value<String?> method,
+  Value<String?> mpesaCode,
+  Value<String?> shiftId,
+  Value<String?> paidBy,
+  Value<DateTime?> paidAt,
+  Value<String?> receiptNumber,
+  Value<int> printCount,
+  Value<int> rowid,
+});
+
+final class $$RefundsTableReferences
+    extends BaseReferences<_$AppDatabase, $RefundsTable, RefundRow> {
+  $$RefundsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $StaysTable _stayIdTable(_$AppDatabase db) =>
+      db.stays.createAlias('refunds__stay_id__stays__id');
+
+  $$StaysTableProcessedTableManager get stayId {
+    final $_column = $_itemColumn<String>('stay_id')!;
+
+    final manager = $$StaysTableTableManager(
+      $_db,
+      $_db.stays,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_stayIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _requestedByTable(_$AppDatabase db) =>
+      db.users.createAlias('refunds__requested_by__users__id');
+
+  $$UsersTableProcessedTableManager get requestedBy {
+    final $_column = $_itemColumn<String>('requested_by')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_requestedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ShiftsTable _shiftIdTable(_$AppDatabase db) =>
+      db.shifts.createAlias('refunds__shift_id__shifts__id');
+
+  $$ShiftsTableProcessedTableManager? get shiftId {
+    final $_column = $_itemColumn<String>('shift_id');
+    if ($_column == null) return null;
+    final manager = $$ShiftsTableTableManager(
+      $_db,
+      $_db.shifts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_shiftIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _paidByTable(_$AppDatabase db) =>
+      db.users.createAlias('refunds__paid_by__users__id');
+
+  $$UsersTableProcessedTableManager? get paidBy {
+    final $_column = $_itemColumn<String>('paid_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_paidByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$RefundDecisionsTable, List<RefundDecisionRow>>
+  _refundDecisionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.refundDecisions,
+    aliasName: 'refunds__id__refund_decisions__refund_id',
+  );
+
+  $$RefundDecisionsTableProcessedTableManager get refundDecisionsRefs {
+    final manager = $$RefundDecisionsTableTableManager(
+      $_db,
+      $_db.refundDecisions,
+    ).filter((f) => f.refundId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _refundDecisionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$RefundsTableFilterComposer
+    extends Composer<_$AppDatabase, $RefundsTable> {
+  $$RefundsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nights => $composableBuilder(
+    column: $table.nights,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mpesaCode => $composableBuilder(
+    column: $table.mpesaCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get paidAt => $composableBuilder(
+    column: $table.paidAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptNumber => $composableBuilder(
+    column: $table.receiptNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get printCount => $composableBuilder(
+    column: $table.printCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StaysTableFilterComposer get stayId {
+    final $$StaysTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.stayId,
+      referencedTable: $db.stays,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StaysTableFilterComposer(
+            $db: $db,
+            $table: $db.stays,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get requestedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShiftsTableFilterComposer get shiftId {
+    final $$ShiftsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.shiftId,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableFilterComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get paidBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.paidBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> refundDecisionsRefs(
+    Expression<bool> Function($$RefundDecisionsTableFilterComposer f) f,
+  ) {
+    final $$RefundDecisionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refundDecisions,
+      getReferencedColumn: (t) => t.refundId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundDecisionsTableFilterComposer(
+            $db: $db,
+            $table: $db.refundDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$RefundsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RefundsTable> {
+  $$RefundsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nights => $composableBuilder(
+    column: $table.nights,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mpesaCode => $composableBuilder(
+    column: $table.mpesaCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get paidAt => $composableBuilder(
+    column: $table.paidAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptNumber => $composableBuilder(
+    column: $table.receiptNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get printCount => $composableBuilder(
+    column: $table.printCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StaysTableOrderingComposer get stayId {
+    final $$StaysTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.stayId,
+      referencedTable: $db.stays,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StaysTableOrderingComposer(
+            $db: $db,
+            $table: $db.stays,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get requestedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShiftsTableOrderingComposer get shiftId {
+    final $$ShiftsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.shiftId,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableOrderingComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get paidBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.paidBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RefundsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RefundsTable> {
+  $$RefundsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<int> get nights =>
+      $composableBuilder(column: $table.nights, builder: (column) => column);
+
+  GeneratedColumn<int> get pricePerNight => $composableBuilder(
+    column: $table.pricePerNight,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get method =>
+      $composableBuilder(column: $table.method, builder: (column) => column);
+
+  GeneratedColumn<String> get mpesaCode =>
+      $composableBuilder(column: $table.mpesaCode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get paidAt =>
+      $composableBuilder(column: $table.paidAt, builder: (column) => column);
+
+  GeneratedColumn<String> get receiptNumber => $composableBuilder(
+    column: $table.receiptNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get printCount => $composableBuilder(
+    column: $table.printCount,
+    builder: (column) => column,
+  );
+
+  $$StaysTableAnnotationComposer get stayId {
+    final $$StaysTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.stayId,
+      referencedTable: $db.stays,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StaysTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stays,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get requestedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShiftsTableAnnotationComposer get shiftId {
+    final $$ShiftsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.shiftId,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get paidBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.paidBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> refundDecisionsRefs<T extends Object>(
+    Expression<T> Function($$RefundDecisionsTableAnnotationComposer a) f,
+  ) {
+    final $$RefundDecisionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.refundDecisions,
+      getReferencedColumn: (t) => t.refundId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundDecisionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refundDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$RefundsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RefundsTable,
+          RefundRow,
+          $$RefundsTableFilterComposer,
+          $$RefundsTableOrderingComposer,
+          $$RefundsTableAnnotationComposer,
+          $$RefundsTableCreateCompanionBuilder,
+          $$RefundsTableUpdateCompanionBuilder,
+          (RefundRow, $$RefundsTableReferences),
+          RefundRow,
+          PrefetchHooks Function({
+            bool stayId,
+            bool requestedBy,
+            bool shiftId,
+            bool paidBy,
+            bool refundDecisionsRefs,
+          })
+        > {
+  $$RefundsTableTableManager(_$AppDatabase db, $RefundsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RefundsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RefundsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RefundsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> stayId = const Value.absent(),
+                Value<int> nights = const Value.absent(),
+                Value<int> pricePerNight = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<String> requestedBy = const Value.absent(),
+                Value<DateTime> requestedAt = const Value.absent(),
+                Value<String?> method = const Value.absent(),
+                Value<String?> mpesaCode = const Value.absent(),
+                Value<String?> shiftId = const Value.absent(),
+                Value<String?> paidBy = const Value.absent(),
+                Value<DateTime?> paidAt = const Value.absent(),
+                Value<String?> receiptNumber = const Value.absent(),
+                Value<int> printCount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RefundsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                stayId: stayId,
+                nights: nights,
+                pricePerNight: pricePerNight,
+                amount: amount,
+                requestedBy: requestedBy,
+                requestedAt: requestedAt,
+                method: method,
+                mpesaCode: mpesaCode,
+                shiftId: shiftId,
+                paidBy: paidBy,
+                paidAt: paidAt,
+                receiptNumber: receiptNumber,
+                printCount: printCount,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                required String stayId,
+                required int nights,
+                required int pricePerNight,
+                required int amount,
+                required String requestedBy,
+                required DateTime requestedAt,
+                Value<String?> method = const Value.absent(),
+                Value<String?> mpesaCode = const Value.absent(),
+                Value<String?> shiftId = const Value.absent(),
+                Value<String?> paidBy = const Value.absent(),
+                Value<DateTime?> paidAt = const Value.absent(),
+                Value<String?> receiptNumber = const Value.absent(),
+                Value<int> printCount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RefundsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                stayId: stayId,
+                nights: nights,
+                pricePerNight: pricePerNight,
+                amount: amount,
+                requestedBy: requestedBy,
+                requestedAt: requestedAt,
+                method: method,
+                mpesaCode: mpesaCode,
+                shiftId: shiftId,
+                paidBy: paidBy,
+                paidAt: paidAt,
+                receiptNumber: receiptNumber,
+                printCount: printCount,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RefundsTable, RefundRow>(table),
+                  $$RefundsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                stayId = false,
+                requestedBy = false,
+                shiftId = false,
+                paidBy = false,
+                refundDecisionsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (refundDecisionsRefs) db.refundDecisions,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (stayId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.stayId,
+                            referencedTable: $$RefundsTableReferences
+                                ._stayIdTable(db),
+                            referencedColumn: $$RefundsTableReferences
+                                ._stayIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (requestedBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.requestedBy,
+                            referencedTable: $$RefundsTableReferences
+                                ._requestedByTable(db),
+                            referencedColumn: $$RefundsTableReferences
+                                ._requestedByTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (shiftId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.shiftId,
+                            referencedTable: $$RefundsTableReferences
+                                ._shiftIdTable(db),
+                            referencedColumn: $$RefundsTableReferences
+                                ._shiftIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (paidBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.paidBy,
+                            referencedTable: $$RefundsTableReferences
+                                ._paidByTable(db),
+                            referencedColumn: $$RefundsTableReferences
+                                ._paidByTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (refundDecisionsRefs)
+                        await $_getPrefetchedData<
+                          RefundRow,
+                          $RefundsTable,
+                          RefundDecisionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RefundsTableReferences
+                              ._refundDecisionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RefundsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).refundDecisionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.refundId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$RefundsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RefundsTable,
+      RefundRow,
+      $$RefundsTableFilterComposer,
+      $$RefundsTableOrderingComposer,
+      $$RefundsTableAnnotationComposer,
+      $$RefundsTableCreateCompanionBuilder,
+      $$RefundsTableUpdateCompanionBuilder,
+      (RefundRow, $$RefundsTableReferences),
+      RefundRow,
+      PrefetchHooks Function({
+        bool stayId,
+        bool requestedBy,
+        bool shiftId,
+        bool paidBy,
+        bool refundDecisionsRefs,
+      })
     >;
 typedef $$HousekeepingTasksTableCreateCompanionBuilder =
     HousekeepingTasksCompanion Function({
@@ -20050,6 +23129,492 @@ typedef $$ExpensesTableProcessedTableManager =
       ExpenseRow,
       PrefetchHooks Function({bool recordedBy})
     >;
+typedef $$RefundDecisionsTableCreateCompanionBuilder =
+    RefundDecisionsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      required String refundId,
+      required String decision,
+      Value<String?> note,
+      required String decidedBy,
+      required DateTime decidedAt,
+      Value<int> rowid,
+    });
+typedef $$RefundDecisionsTableUpdateCompanionBuilder =
+    RefundDecisionsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      Value<String> refundId,
+      Value<String> decision,
+      Value<String?> note,
+      Value<String> decidedBy,
+      Value<DateTime> decidedAt,
+      Value<int> rowid,
+    });
+
+final class $$RefundDecisionsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $RefundDecisionsTable,
+          RefundDecisionRow
+        > {
+  $$RefundDecisionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $RefundsTable _refundIdTable(_$AppDatabase db) =>
+      db.refunds.createAlias('refund_decisions__refund_id__refunds__id');
+
+  $$RefundsTableProcessedTableManager get refundId {
+    final $_column = $_itemColumn<String>('refund_id')!;
+
+    final manager = $$RefundsTableTableManager(
+      $_db,
+      $_db.refunds,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_refundIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _decidedByTable(_$AppDatabase db) =>
+      db.users.createAlias('refund_decisions__decided_by__users__id');
+
+  $$UsersTableProcessedTableManager get decidedBy {
+    final $_column = $_itemColumn<String>('decided_by')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_decidedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$RefundDecisionsTableFilterComposer
+    extends Composer<_$AppDatabase, $RefundDecisionsTable> {
+  $$RefundDecisionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RefundsTableFilterComposer get refundId {
+    final $$RefundsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.refundId,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableFilterComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get decidedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RefundDecisionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RefundDecisionsTable> {
+  $$RefundDecisionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RefundsTableOrderingComposer get refundId {
+    final $$RefundsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.refundId,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableOrderingComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get decidedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RefundDecisionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RefundDecisionsTable> {
+  $$RefundDecisionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get decision =>
+      $composableBuilder(column: $table.decision, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  $$RefundsTableAnnotationComposer get refundId {
+    final $$RefundsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.refundId,
+      referencedTable: $db.refunds,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RefundsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.refunds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get decidedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RefundDecisionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RefundDecisionsTable,
+          RefundDecisionRow,
+          $$RefundDecisionsTableFilterComposer,
+          $$RefundDecisionsTableOrderingComposer,
+          $$RefundDecisionsTableAnnotationComposer,
+          $$RefundDecisionsTableCreateCompanionBuilder,
+          $$RefundDecisionsTableUpdateCompanionBuilder,
+          (RefundDecisionRow, $$RefundDecisionsTableReferences),
+          RefundDecisionRow,
+          PrefetchHooks Function({bool refundId, bool decidedBy})
+        > {
+  $$RefundDecisionsTableTableManager(
+    _$AppDatabase db,
+    $RefundDecisionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RefundDecisionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RefundDecisionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RefundDecisionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> refundId = const Value.absent(),
+                Value<String> decision = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> decidedBy = const Value.absent(),
+                Value<DateTime> decidedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RefundDecisionsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                refundId: refundId,
+                decision: decision,
+                note: note,
+                decidedBy: decidedBy,
+                decidedAt: decidedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                required String refundId,
+                required String decision,
+                Value<String?> note = const Value.absent(),
+                required String decidedBy,
+                required DateTime decidedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => RefundDecisionsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                refundId: refundId,
+                decision: decision,
+                note: note,
+                decidedBy: decidedBy,
+                decidedAt: decidedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RefundDecisionsTable, RefundDecisionRow>(table),
+                  $$RefundDecisionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({refundId = false, decidedBy = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (refundId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.refundId,
+                        referencedTable: $$RefundDecisionsTableReferences
+                            ._refundIdTable(db),
+                        referencedColumn: $$RefundDecisionsTableReferences
+                            ._refundIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (decidedBy) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.decidedBy,
+                        referencedTable: $$RefundDecisionsTableReferences
+                            ._decidedByTable(db),
+                        referencedColumn: $$RefundDecisionsTableReferences
+                            ._decidedByTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$RefundDecisionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RefundDecisionsTable,
+      RefundDecisionRow,
+      $$RefundDecisionsTableFilterComposer,
+      $$RefundDecisionsTableOrderingComposer,
+      $$RefundDecisionsTableAnnotationComposer,
+      $$RefundDecisionsTableCreateCompanionBuilder,
+      $$RefundDecisionsTableUpdateCompanionBuilder,
+      (RefundDecisionRow, $$RefundDecisionsTableReferences),
+      RefundDecisionRow,
+      PrefetchHooks Function({bool refundId, bool decidedBy})
+    >;
 typedef $$AuditLogTableCreateCompanionBuilder = AuditLogCompanion Function({
   Value<String> id,
   Value<DateTime> createdAt,
@@ -21297,6 +24862,8 @@ class $AppDatabaseManager {
       $$PaymentsTableTableManager(_db, _db.payments);
   $$StayChargesTableTableManager get stayCharges =>
       $$StayChargesTableTableManager(_db, _db.stayCharges);
+  $$RefundsTableTableManager get refunds =>
+      $$RefundsTableTableManager(_db, _db.refunds);
   $$HousekeepingTasksTableTableManager get housekeepingTasks =>
       $$HousekeepingTasksTableTableManager(_db, _db.housekeepingTasks);
   $$InventoryItemsTableTableManager get inventoryItems =>
@@ -21307,6 +24874,8 @@ class $AppDatabaseManager {
       $$VoidsTableTableManager(_db, _db.voids);
   $$ExpensesTableTableManager get expenses =>
       $$ExpensesTableTableManager(_db, _db.expenses);
+  $$RefundDecisionsTableTableManager get refundDecisions =>
+      $$RefundDecisionsTableTableManager(_db, _db.refundDecisions);
   $$AuditLogTableTableManager get auditLog =>
       $$AuditLogTableTableManager(_db, _db.auditLog);
   $$OutboxTableTableManager get outbox =>

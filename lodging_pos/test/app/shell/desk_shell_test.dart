@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/app.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/shell/desk_shell.dart';
+import 'package:lodging_pos/core/auth/permissions.dart';
 
 import '../../helpers/fixtures.dart';
 
@@ -13,7 +14,7 @@ void main() {
   setUp(() => env = TestEnv());
   tearDown(() => env.close());
 
-  /// The app with an extra owner-only item, as AD-2 will add.
+  /// The app with a setup item that needs a permission.
   Future<void> pumpWithSetupItem(WidgetTester tester) async {
     tester.view
       ..physicalSize = deskSize
@@ -32,7 +33,8 @@ void main() {
             route: '/admin/rooms',
             label: 'Rooms & beds',
             icon: Icons.bed_outlined,
-            ownerOnly: true,
+            permission: Permission.manageRooms,
+            setup: true,
           ),
         ]),
       ],

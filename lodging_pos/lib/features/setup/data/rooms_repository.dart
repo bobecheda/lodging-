@@ -1,15 +1,16 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/audit/audit_writer.dart';
-import '../../../core/auth/admin_guard.dart';
+import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
 import '../domain/bed_category.dart';
 import '../domain/rooms.dart';
 
-/// Rooms and beds (AD-2). Owner only: every write takes the acting user and
-/// throws [AdminOnly] for anyone else. Rooms and beds are deactivated, never
-/// deleted; every rule check runs inside the write's transaction.
+/// Rooms and beds (AD-2). Every write takes the acting user and throws
+/// [NotPermitted] without [Permission.manageRooms] (the owner today). Rooms
+/// and beds are deactivated, never deleted; every rule check runs inside the
+/// write's transaction.
 class RoomsRepository {
   RoomsRepository(this._db, this._audit);
 
@@ -32,7 +33,7 @@ class RoomsRepository {
         BedCategory(
           id: c.id,
           name: c.name,
-          pricePerBlock: c.pricePerBlock,
+          pricePerNight: c.pricePerNight,
           sortOrder: c.sortOrder,
           isActive: c.isActive,
         ),
@@ -42,7 +43,7 @@ class RoomsRepository {
   /// Creates a room with bed A and optionally bed B, both clean:
   /// `room.create` + `bed.create` per bed, one operation.
   Future<RoomSummary> createRoom(UserAccount admin, NewRoom input) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     final roomId = await _audit.writeWithAudit(
       action: 'room.create',
       userId: admin.id,
@@ -87,7 +88,7 @@ class RoomsRepository {
     String roomId,
     RoomEdit edit,
   ) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     final numberProblem = roomNumberError(edit.number);
     if (numberProblem != null) {
       throw InvalidRoom({RoomField.number: numberProblem});
@@ -152,7 +153,7 @@ class RoomsRepository {
     String roomId,
     String categoryId,
   ) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     await _audit.writeWithAudit(
       action: 'bed.create',
       userId: admin.id,
@@ -172,7 +173,7 @@ class RoomsRepository {
   /// Closes a bed for repairs (`bed.deactivate`). Blocked while it has a
   /// guest, or when it is an open room's last active bed.
   Future<RoomSummary> deactivateBed(UserAccount admin, String bedId) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     final roomId = await _roomIdOf(bedId);
     await _audit.writeWithAudit(
       action: 'bed.deactivate',
@@ -194,7 +195,7 @@ class RoomsRepository {
   /// Reopens a bed after repairs (`bed.reactivate`). It comes back
   /// `not_cleaned`, so cleaning is assigned before the first guest.
   Future<RoomSummary> reactivateBed(UserAccount admin, String bedId) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     final roomId = await _roomIdOf(bedId);
     await _audit.writeWithAudit(
       action: 'bed.reactivate',
@@ -220,7 +221,7 @@ class RoomsRepository {
   /// Closes a room for repairs (`room.deactivate`); it leaves the bed board.
   /// Blocked while any of its beds has a guest.
   Future<RoomSummary> deactivateRoom(UserAccount admin, String roomId) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     await _audit.writeWithAudit(
       action: 'room.deactivate',
       userId: admin.id,
@@ -239,7 +240,7 @@ class RoomsRepository {
   /// Reopens a room after repairs (`room.reactivate`). Its active beds come
   /// back `not_cleaned`, recorded in the same operation.
   Future<RoomSummary> reactivateRoom(UserAccount admin, String roomId) async {
-    requireAdmin(admin);
+    requirePermission(admin, Permission.manageRooms);
     await _audit.writeWithAudit(
       action: 'room.reactivate',
       userId: admin.id,
@@ -306,7 +307,7 @@ class RoomsRepository {
               label: BedLabel.parse(bed.label),
               categoryId: category.id,
               categoryName: category.name,
-              pricePerBlock: category.pricePerBlock,
+              pricePerNight: category.pricePerNight,
               cleanliness: Cleanliness.parse(bed.cleanliness),
               isActive: bed.isActive,
               hasActiveStay: occupiedBeds.contains(bed.id),

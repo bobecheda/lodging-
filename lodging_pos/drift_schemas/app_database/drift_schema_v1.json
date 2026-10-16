@@ -160,7 +160,7 @@
           0
         ],
         "name": "users_stamped_update",
-        "sql": "CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -270,7 +270,7 @@
           2
         ],
         "name": "settings_stamped_update",
-        "sql": "CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -338,8 +338,8 @@
             ]
           },
           {
-            "name": "price_per_block",
-            "getter_name": "pricePerBlock",
+            "name": "price_per_night",
+            "getter_name": "pricePerNight",
             "moor_type": "int",
             "nullable": false,
             "customConstraints": null,
@@ -356,8 +356,8 @@
                       },
                       "(",
                       {
-                        "lexeme": "pricePerBlock",
-                        "tag": "pricePerBlock"
+                        "lexeme": "pricePerNight",
+                        "tag": "pricePerNight"
                       },
                       ").isBiggerThanValue(0)"
                     ]
@@ -411,7 +411,7 @@
           4
         ],
         "name": "bed_categories_stamped_update",
-        "sql": "CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -529,7 +529,7 @@
           6
         ],
         "name": "rooms_stamped_update",
-        "sql": "CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -724,7 +724,7 @@
           8
         ],
         "name": "beds_stamped_update",
-        "sql": "CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -830,7 +830,7 @@
           10
         ],
         "name": "housekeepers_stamped_update",
-        "sql": "CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -958,7 +958,7 @@
           12
         ],
         "name": "guests_stamped_update",
-        "sql": "CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1174,7 +1174,7 @@
           14
         ],
         "name": "shifts_stamped_update",
-        "sql": "CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1411,7 +1411,7 @@
           16
         ],
         "name": "stays_stamped_update",
-        "sql": "CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1641,7 +1641,7 @@
           18
         ],
         "name": "payments_stamped_update",
-        "sql": "CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
@@ -1764,7 +1764,7 @@
                         "lexeme": "kind",
                         "tag": "kind"
                       },
-                      ".isIn(['check_in','renewal'])"
+                      ".isIn(['check_in','extension','late_checkout'])"
                     ]
                   }
                 }
@@ -1772,8 +1772,8 @@
             ]
           },
           {
-            "name": "blocks",
-            "getter_name": "blocks",
+            "name": "nights",
+            "getter_name": "nights",
             "moor_type": "int",
             "nullable": false,
             "customConstraints": null,
@@ -1790,8 +1790,8 @@
                       },
                       "(",
                       {
-                        "lexeme": "blocks",
-                        "tag": "blocks"
+                        "lexeme": "nights",
+                        "tag": "nights"
                       },
                       ").isBiggerOrEqualValue(1)"
                     ]
@@ -1801,8 +1801,8 @@
             ]
           },
           {
-            "name": "price_per_block",
-            "getter_name": "pricePerBlock",
+            "name": "price_per_night",
+            "getter_name": "pricePerNight",
             "moor_type": "int",
             "nullable": false,
             "customConstraints": null,
@@ -1819,8 +1819,8 @@
                       },
                       "(",
                       {
-                        "lexeme": "pricePerBlock",
-                        "tag": "pricePerBlock"
+                        "lexeme": "pricePerNight",
+                        "tag": "pricePerNight"
                       },
                       ").isBiggerThanValue(0)"
                     ]
@@ -1863,7 +1863,7 @@
         "is_virtual": false,
         "without_rowid": false,
         "constraints": [
-          "CHECK (amount = blocks * price_per_block)",
+          "CHECK (amount = nights * price_per_night)",
           "CHECK (period_end > period_start)"
         ],
         "explicit_pk": [
@@ -1883,11 +1883,349 @@
           20
         ],
         "name": "stay_charges_stamped_update",
-        "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
       "id": 22,
+      "references": [
+        16,
+        0,
+        14
+      ],
+      "type": "table",
+      "data": {
+        "name": "refunds",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
+            "dsl_features": []
+          },
+          {
+            "name": "device_id",
+            "getter_name": "deviceId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
+            "dsl_features": []
+          },
+          {
+            "name": "stay_id",
+            "getter_name": "stayId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "UNIQUE REFERENCES stays (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "UNIQUE REFERENCES stays (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique",
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "stays",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "nights",
+            "getter_name": "nights",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "check": {
+                  "dart_expression": {
+                    "elements": [
+                      {
+                        "lexeme": "ComparableExpr",
+                        "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+                      },
+                      "(",
+                      {
+                        "lexeme": "nights",
+                        "tag": "nights"
+                      },
+                      ").isBiggerOrEqualValue(1)"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "price_per_night",
+            "getter_name": "pricePerNight",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "check": {
+                  "dart_expression": {
+                    "elements": [
+                      {
+                        "lexeme": "ComparableExpr",
+                        "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+                      },
+                      "(",
+                      {
+                        "lexeme": "pricePerNight",
+                        "tag": "pricePerNight"
+                      },
+                      ").isBiggerThanValue(0)"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "amount",
+            "getter_name": "amount",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "requested_by",
+            "getter_name": "requestedBy",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES users (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES users (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "users",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "requested_at",
+            "getter_name": "requestedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "method",
+            "getter_name": "method",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "check": {
+                  "dart_expression": {
+                    "elements": [
+                      {
+                        "lexeme": "method",
+                        "tag": "method"
+                      },
+                      ".isIn(['cash','paybill'])"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "mpesa_code",
+            "getter_name": "mpesaCode",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "UNIQUE COLLATE NOCASE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique"
+            ]
+          },
+          {
+            "name": "shift_id",
+            "getter_name": "shiftId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES shifts (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES shifts (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "shifts",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "paid_by",
+            "getter_name": "paidBy",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES users (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES users (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "users",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "paid_at",
+            "getter_name": "paidAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "receipt_number",
+            "getter_name": "receiptNumber",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "defaultConstraints": "UNIQUE",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "UNIQUE"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique"
+            ]
+          },
+          {
+            "name": "print_count",
+            "getter_name": "printCount",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK (amount = nights * price_per_night)",
+          "CHECK ((paid_at IS NULL) = (method IS NULL))",
+          "CHECK ((paid_at IS NULL) = (shift_id IS NULL))",
+          "CHECK ((paid_at IS NULL) = (paid_by IS NULL))",
+          "CHECK ((paid_at IS NULL) = (receipt_number IS NULL))",
+          "CHECK ((method IS 'paybill') = (mpesa_code IS NOT NULL))"
+        ],
+        "explicit_pk": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "references": [
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22
+        ],
+        "name": "refunds_stamped_update",
+        "sql": "CREATE TRIGGER refunds_stamped_update BEFORE UPDATE ON refunds\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 24,
       "references": [
         8,
         10,
@@ -2074,22 +2412,22 @@
       }
     },
     {
-      "id": 23,
+      "id": 25,
       "references": [
-        22
+        24
       ],
       "type": "trigger",
       "data": {
-        "on": 22,
+        "on": 24,
         "references_in_body": [
-          22
+          24
         ],
         "name": "housekeeping_tasks_stamped_update",
-        "sql": "CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
-      "id": 24,
+      "id": 26,
       "references": [],
       "type": "table",
       "data": {
@@ -2215,9 +2553,9 @@
       }
     },
     {
-      "id": 25,
+      "id": 27,
       "references": [
-        24,
+        26,
         0
       ],
       "type": "table",
@@ -2390,22 +2728,22 @@
       }
     },
     {
-      "id": 26,
+      "id": 28,
       "references": [
-        25
+        27
       ],
       "type": "trigger",
       "data": {
-        "on": 25,
+        "on": 27,
         "references_in_body": [
-          25
+          27
         ],
         "name": "inventory_movements_stamped_update",
-        "sql": "CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
-      "id": 27,
+      "id": 29,
       "references": [
         0
       ],
@@ -2471,7 +2809,7 @@
                         "lexeme": "targetType",
                         "tag": "targetType"
                       },
-                      ".isIn(['payment','stay'])"
+                      ".isIn(['payment','stay','refund'])"
                     ]
                   }
                 }
@@ -2574,22 +2912,22 @@
       }
     },
     {
-      "id": 28,
+      "id": 30,
       "references": [
-        27
+        29
       ],
       "type": "trigger",
       "data": {
-        "on": 27,
+        "on": 29,
         "references_in_body": [
-          27
+          29
         ],
         "name": "voids_stamped_update",
-        "sql": "CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
-      "id": 29,
+      "id": 31,
       "references": [
         0
       ],
@@ -2749,37 +3087,211 @@
       }
     },
     {
-      "id": 30,
+      "id": 32,
       "references": [
-        29
+        31
       ],
       "type": "trigger",
       "data": {
-        "on": 29,
+        "on": 31,
         "references_in_body": [
-          29
+          31
         ],
         "name": "expenses_stamped_update",
-        "sql": "CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
-      "id": 31,
+      "id": 33,
       "references": [
-        24
+        26
       ],
       "type": "trigger",
       "data": {
-        "on": 24,
+        "on": 26,
         "references_in_body": [
-          24
+          26
         ],
         "name": "inventory_items_stamped_update",
-        "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items\r\n  WHEN NEW.updated_at IS OLD.updated_at\r\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+        "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
       }
     },
     {
-      "id": 32,
+      "id": 34,
+      "references": [
+        22,
+        0
+      ],
+      "type": "table",
+      "data": {
+        "name": "refund_decisions",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => const Uuid().v4()",
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
+            "dsl_features": []
+          },
+          {
+            "name": "device_id",
+            "getter_name": "deviceId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": "() => throw StateError('must be stamped by writeWithAudit')",
+            "dsl_features": []
+          },
+          {
+            "name": "refund_id",
+            "getter_name": "refundId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "UNIQUE REFERENCES refunds (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "UNIQUE REFERENCES refunds (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique",
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "refunds",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "decision",
+            "getter_name": "decision",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "check": {
+                  "dart_expression": {
+                    "elements": [
+                      {
+                        "lexeme": "decision",
+                        "tag": "decision"
+                      },
+                      ".isIn(['approved','rejected'])"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "note",
+            "getter_name": "note",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "decided_by",
+            "getter_name": "decidedBy",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES users (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES users (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "users",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "decided_at",
+            "getter_name": "decidedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK (decision = 'approved' OR coalesce(length(trim(note)), 0) > 0)"
+        ],
+        "explicit_pk": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "references": [
+        34
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 34,
+        "references_in_body": [
+          34
+        ],
+        "name": "refund_decisions_stamped_update",
+        "sql": "CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions\n  WHEN NEW.updated_at IS OLD.updated_at\n  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;"
+      }
+    },
+    {
+      "id": 36,
       "references": [
         0
       ],
@@ -2934,22 +3446,22 @@
       }
     },
     {
-      "id": 33,
+      "id": 37,
       "references": [
-        32
+        36
       ],
       "type": "trigger",
       "data": {
-        "on": 32,
+        "on": 36,
         "references_in_body": [
-          32
+          36
         ],
         "name": "audit_log_no_update",
-        "sql": "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log\r\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
+        "sql": "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
       }
     },
     {
-      "id": 34,
+      "id": 38,
       "references": [
         16
       ],
@@ -2960,11 +3472,11 @@
           16
         ],
         "name": "stays_no_delete",
-        "sql": "CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays\r\n  BEGIN SELECT RAISE(ABORT, 'stays rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays\n  BEGIN SELECT RAISE(ABORT, 'stays rows are never deleted'); END;"
       }
     },
     {
-      "id": 35,
+      "id": 39,
       "references": [
         18
       ],
@@ -2975,11 +3487,11 @@
           18
         ],
         "name": "payments_no_delete",
-        "sql": "CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments\r\n  BEGIN SELECT RAISE(ABORT, 'payments rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments\n  BEGIN SELECT RAISE(ABORT, 'payments rows are never deleted'); END;"
       }
     },
     {
-      "id": 36,
+      "id": 40,
       "references": [
         20
       ],
@@ -2990,41 +3502,216 @@
           20
         ],
         "name": "stay_charges_no_delete",
-        "sql": "CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges\r\n  BEGIN SELECT RAISE(ABORT, 'stay_charges rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges\n  BEGIN SELECT RAISE(ABORT, 'stay_charges rows are never deleted'); END;"
       }
     },
     {
-      "id": 37,
+      "id": 41,
       "references": [
-        27
+        29
       ],
       "type": "trigger",
       "data": {
-        "on": 27,
+        "on": 29,
         "references_in_body": [
-          27
+          29
         ],
         "name": "voids_no_delete",
-        "sql": "CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids\r\n  BEGIN SELECT RAISE(ABORT, 'voids rows are never deleted'); END;"
+        "sql": "CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids\n  BEGIN SELECT RAISE(ABORT, 'voids rows are never deleted'); END;"
       }
     },
     {
-      "id": 38,
+      "id": 42,
       "references": [
-        32
+        36
       ],
       "type": "trigger",
       "data": {
-        "on": 32,
+        "on": 36,
         "references_in_body": [
-          32
+          36
         ],
         "name": "audit_log_no_delete",
-        "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log\r\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
+        "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log\n  BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;"
       }
     },
     {
-      "id": 39,
+      "id": 43,
+      "references": [
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22
+        ],
+        "name": "refunds_no_delete",
+        "sql": "CREATE TRIGGER refunds_no_delete BEFORE DELETE ON refunds\n  BEGIN SELECT RAISE(ABORT, 'refunds rows are never deleted'); END;"
+      }
+    },
+    {
+      "id": 44,
+      "references": [
+        34
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 34,
+        "references_in_body": [
+          34
+        ],
+        "name": "refund_decisions_no_delete",
+        "sql": "CREATE TRIGGER refund_decisions_no_delete BEFORE DELETE ON refund_decisions\n  BEGIN SELECT RAISE(ABORT, 'refund_decisions rows are never deleted'); END;"
+      }
+    },
+    {
+      "id": 45,
+      "references": [
+        34
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 34,
+        "references_in_body": [
+          34
+        ],
+        "name": "refund_decisions_no_update",
+        "sql": "CREATE TRIGGER refund_decisions_no_update BEFORE UPDATE ON refund_decisions\n  BEGIN SELECT RAISE(ABORT, 'refund_decisions rows are never edited'); END;"
+      }
+    },
+    {
+      "id": 46,
+      "references": [
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22
+        ],
+        "name": "refunds_requested_unpaid",
+        "sql": "CREATE TRIGGER refunds_requested_unpaid BEFORE INSERT ON refunds\n  WHEN NEW.paid_at IS NOT NULL\n  BEGIN SELECT RAISE(ABORT, 'a refund is requested before it is paid'); END;"
+      }
+    },
+    {
+      "id": 47,
+      "references": [
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22
+        ],
+        "name": "refunds_fixed_terms",
+        "sql": "CREATE TRIGGER refunds_fixed_terms BEFORE UPDATE ON refunds\n  WHEN NEW.stay_id IS NOT OLD.stay_id\n    OR NEW.nights IS NOT OLD.nights\n    OR NEW.price_per_night IS NOT OLD.price_per_night\n    OR NEW.amount IS NOT OLD.amount\n    OR NEW.requested_by IS NOT OLD.requested_by\n    OR NEW.requested_at IS NOT OLD.requested_at\n  BEGIN SELECT RAISE(ABORT, 'refund terms cannot change'); END;"
+      }
+    },
+    {
+      "id": 48,
+      "references": [
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22
+        ],
+        "name": "refunds_paid_once",
+        "sql": "CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds\n  WHEN OLD.paid_at IS NOT NULL AND (\n    NEW.paid_at IS NOT OLD.paid_at\n    OR NEW.method IS NOT OLD.method\n    OR NEW.mpesa_code IS NOT OLD.mpesa_code\n    OR NEW.shift_id IS NOT OLD.shift_id\n    OR NEW.paid_by IS NOT OLD.paid_by\n    OR NEW.receipt_number IS NOT OLD.receipt_number\n  )\n  BEGIN SELECT RAISE(ABORT, 'refund is already paid'); END;"
+      }
+    },
+    {
+      "id": 49,
+      "references": [
+        22,
+        34
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22,
+          34
+        ],
+        "name": "refunds_paid_if_approved",
+        "sql": "CREATE TRIGGER refunds_paid_if_approved BEFORE UPDATE ON refunds\n  WHEN OLD.paid_at IS NULL AND NEW.paid_at IS NOT NULL\n    AND NOT EXISTS (\n      SELECT 1 FROM refund_decisions\n      WHERE refund_id = NEW.id AND decision = 'approved'\n    )\n  BEGIN SELECT RAISE(ABORT, 'refund is not approved'); END;"
+      }
+    },
+    {
+      "id": 50,
+      "references": [
+        18,
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 18,
+        "references_in_body": [
+          18,
+          22
+        ],
+        "name": "payments_mpesa_code_unused_insert",
+        "sql": "CREATE TRIGGER payments_mpesa_code_unused_insert BEFORE INSERT ON payments\n  WHEN NEW.mpesa_code IS NOT NULL\n    AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code)\n  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;"
+      }
+    },
+    {
+      "id": 51,
+      "references": [
+        18,
+        22
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 18,
+        "references_in_body": [
+          18,
+          22
+        ],
+        "name": "payments_mpesa_code_unused_update",
+        "sql": "CREATE TRIGGER payments_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON payments\n  WHEN NEW.mpesa_code IS NOT NULL\n    AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code)\n  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;"
+      }
+    },
+    {
+      "id": 52,
+      "references": [
+        22,
+        18
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22,
+          18
+        ],
+        "name": "refunds_mpesa_code_unused_insert",
+        "sql": "CREATE TRIGGER refunds_mpesa_code_unused_insert BEFORE INSERT ON refunds\n  WHEN NEW.mpesa_code IS NOT NULL\n    AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code)\n  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;"
+      }
+    },
+    {
+      "id": 53,
+      "references": [
+        22,
+        18
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 22,
+        "references_in_body": [
+          22,
+          18
+        ],
+        "name": "refunds_mpesa_code_unused_update",
+        "sql": "CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON refunds\n  WHEN NEW.mpesa_code IS NOT NULL\n    AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code)\n  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;"
+      }
+    },
+    {
+      "id": 54,
       "references": [],
       "type": "table",
       "data": {
@@ -3124,7 +3811,7 @@
       }
     },
     {
-      "id": 40,
+      "id": 55,
       "references": [],
       "type": "table",
       "data": {
@@ -3161,9 +3848,9 @@
       }
     },
     {
-      "id": 41,
+      "id": 56,
       "references": [
-        40
+        55
       ],
       "type": "table",
       "data": {
@@ -3235,13 +3922,13 @@
       }
     },
     {
-      "id": 42,
+      "id": 57,
       "references": [
-        32
+        36
       ],
       "type": "index",
       "data": {
-        "on": 32,
+        "on": 36,
         "name": "audit_log_at",
         "sql": null,
         "unique": false,
@@ -3254,13 +3941,13 @@
       }
     },
     {
-      "id": 43,
+      "id": 58,
       "references": [
-        32
+        36
       ],
       "type": "index",
       "data": {
-        "on": 32,
+        "on": 36,
         "name": "audit_log_user",
         "sql": null,
         "unique": false,
@@ -3273,13 +3960,13 @@
       }
     },
     {
-      "id": 44,
+      "id": 59,
       "references": [
-        32
+        36
       ],
       "type": "index",
       "data": {
-        "on": 32,
+        "on": 36,
         "name": "audit_log_action",
         "sql": null,
         "unique": false,
@@ -3292,13 +3979,13 @@
       }
     },
     {
-      "id": 45,
+      "id": 60,
       "references": [
-        32
+        36
       ],
       "type": "index",
       "data": {
-        "on": 32,
+        "on": 36,
         "name": "audit_log_entity",
         "sql": null,
         "unique": false,
@@ -3315,13 +4002,13 @@
       }
     },
     {
-      "id": 46,
+      "id": 61,
       "references": [
-        32
+        36
       ],
       "type": "index",
       "data": {
-        "on": 32,
+        "on": 36,
         "name": "audit_log_operation",
         "sql": null,
         "unique": false,
@@ -3334,13 +4021,13 @@
       }
     },
     {
-      "id": 47,
+      "id": 62,
       "references": [
-        39
+        54
       ],
       "type": "index",
       "data": {
-        "on": 39,
+        "on": 54,
         "name": "outbox_unsent",
         "sql": "CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL",
         "unique": false,
@@ -3348,7 +4035,7 @@
       }
     },
     {
-      "id": 48,
+      "id": 63,
       "references": [
         12
       ],
@@ -3367,7 +4054,7 @@
       }
     },
     {
-      "id": 49,
+      "id": 64,
       "references": [
         12
       ],
@@ -3386,7 +4073,7 @@
       }
     },
     {
-      "id": 50,
+      "id": 65,
       "references": [
         12
       ],
@@ -3400,7 +4087,7 @@
       }
     },
     {
-      "id": 51,
+      "id": 66,
       "references": [
         14
       ],
@@ -3414,7 +4101,7 @@
       }
     },
     {
-      "id": 52,
+      "id": 67,
       "references": [
         16
       ],
@@ -3433,7 +4120,7 @@
       }
     },
     {
-      "id": 53,
+      "id": 68,
       "references": [
         16
       ],
@@ -3447,7 +4134,7 @@
       }
     },
     {
-      "id": 54,
+      "id": 69,
       "references": [
         18
       ],
@@ -3466,7 +4153,7 @@
       }
     },
     {
-      "id": 55,
+      "id": 70,
       "references": [
         20
       ],
@@ -3485,7 +4172,7 @@
       }
     },
     {
-      "id": 56,
+      "id": 71,
       "references": [
         20
       ],
@@ -3504,13 +4191,32 @@
       }
     },
     {
-      "id": 57,
+      "id": 72,
       "references": [
         22
       ],
       "type": "index",
       "data": {
         "on": 22,
+        "name": "refunds_shift",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "shift_id",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 73,
+      "references": [
+        24
+      ],
+      "type": "index",
+      "data": {
+        "on": 24,
         "name": "housekeeping_tasks_bed",
         "sql": null,
         "unique": false,
@@ -3523,13 +4229,13 @@
       }
     },
     {
-      "id": 58,
+      "id": 74,
       "references": [
-        22
+        24
       ],
       "type": "index",
       "data": {
-        "on": 22,
+        "on": 24,
         "name": "housekeeping_tasks_one_open_per_bed",
         "sql": "CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL",
         "unique": true,
@@ -3537,13 +4243,13 @@
       }
     },
     {
-      "id": 59,
+      "id": 75,
       "references": [
-        25
+        27
       ],
       "type": "index",
       "data": {
-        "on": 25,
+        "on": 27,
         "name": "inventory_movements_item",
         "sql": null,
         "unique": false,
@@ -3598,7 +4304,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"bed_categories\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL UNIQUE, \"price_per_block\" INTEGER NOT NULL CHECK(\"price_per_block\" > 0), \"sort_order\" INTEGER NOT NULL, \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"bed_categories\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL UNIQUE, \"price_per_night\" INTEGER NOT NULL CHECK(\"price_per_night\" > 0), \"sort_order\" INTEGER NOT NULL, \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), PRIMARY KEY (\"id\"));"
         }
       ]
     },
@@ -3742,7 +4448,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"stay_charges\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"stay_id\" TEXT NOT NULL REFERENCES stays (id), \"payment_id\" TEXT NOT NULL REFERENCES payments (id), \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('check_in', 'renewal')), \"blocks\" INTEGER NOT NULL CHECK(\"blocks\" >= 1), \"price_per_block\" INTEGER NOT NULL CHECK(\"price_per_block\" > 0), \"amount\" INTEGER NOT NULL, \"period_start\" TEXT NOT NULL, \"period_end\" TEXT NOT NULL, PRIMARY KEY (\"id\"), CHECK (amount = blocks * price_per_block), CHECK (period_end > period_start));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"stay_charges\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"stay_id\" TEXT NOT NULL REFERENCES stays (id), \"payment_id\" TEXT NOT NULL REFERENCES payments (id), \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('check_in', 'extension', 'late_checkout')), \"nights\" INTEGER NOT NULL CHECK(\"nights\" >= 1), \"price_per_night\" INTEGER NOT NULL CHECK(\"price_per_night\" > 0), \"amount\" INTEGER NOT NULL, \"period_start\" TEXT NOT NULL, \"period_end\" TEXT NOT NULL, PRIMARY KEY (\"id\"), CHECK (amount = nights * price_per_night), CHECK (period_end > period_start));"
         }
       ]
     },
@@ -3752,6 +4458,24 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"refunds\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"stay_id\" TEXT NOT NULL UNIQUE REFERENCES stays (id), \"nights\" INTEGER NOT NULL CHECK(\"nights\" >= 1), \"price_per_night\" INTEGER NOT NULL CHECK(\"price_per_night\" > 0), \"amount\" INTEGER NOT NULL, \"requested_by\" TEXT NOT NULL REFERENCES users (id), \"requested_at\" TEXT NOT NULL, \"method\" TEXT NULL CHECK(\"method\" IN ('cash', 'paybill')), \"mpesa_code\" TEXT UNIQUE COLLATE NOCASE, \"shift_id\" TEXT NULL REFERENCES shifts (id), \"paid_by\" TEXT NULL REFERENCES users (id), \"paid_at\" TEXT NULL, \"receipt_number\" TEXT NULL UNIQUE, \"print_count\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"id\"), CHECK (amount = nights * price_per_night), CHECK ((paid_at IS NULL) = (method IS NULL)), CHECK ((paid_at IS NULL) = (shift_id IS NULL)), CHECK ((paid_at IS NULL) = (paid_by IS NULL)), CHECK ((paid_at IS NULL) = (receipt_number IS NULL)), CHECK ((method IS 'paybill') = (mpesa_code IS NOT NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "refunds_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_stamped_update BEFORE UPDATE ON refunds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3805,7 +4529,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"voids\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"target_type\" TEXT NOT NULL CHECK(\"target_type\" IN ('payment', 'stay')), \"target_id\" TEXT NOT NULL, \"reason\" TEXT NOT NULL CHECK(LENGTH(TRIM(\"reason\")) > 0), \"voided_by\" TEXT NOT NULL REFERENCES users (id), \"voided_at\" TEXT NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"target_type\", \"target_id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"voids\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"target_type\" TEXT NOT NULL CHECK(\"target_type\" IN ('payment', 'stay', 'refund')), \"target_id\" TEXT NOT NULL, \"reason\" TEXT NOT NULL CHECK(LENGTH(TRIM(\"reason\")) > 0), \"voided_by\" TEXT NOT NULL REFERENCES users (id), \"voided_at\" TEXT NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"target_type\", \"target_id\"));"
         }
       ]
     },
@@ -3842,6 +4566,24 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
+        }
+      ]
+    },
+    {
+      "name": "refund_decisions",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"refund_decisions\" (\"id\" TEXT NOT NULL, \"created_at\" TEXT NOT NULL, \"updated_at\" TEXT NOT NULL, \"device_id\" TEXT NOT NULL, \"refund_id\" TEXT NOT NULL UNIQUE REFERENCES refunds (id), \"decision\" TEXT NOT NULL CHECK(\"decision\" IN ('approved', 'rejected')), \"note\" TEXT NULL, \"decided_by\" TEXT NOT NULL REFERENCES users (id), \"decided_at\" TEXT NOT NULL, PRIMARY KEY (\"id\"), CHECK (decision = 'approved' OR coalesce(length(trim(note)), 0) > 0));"
+        }
+      ]
+    },
+    {
+      "name": "refund_decisions_stamped_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, 'must be stamped by writeWithAudit');END"
         }
       ]
     },
@@ -3905,6 +4647,105 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE (ABORT, 'audit_log is append-only');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_no_delete BEFORE DELETE ON refunds BEGIN SELECT RAISE (ABORT, 'refunds rows are never deleted');END"
+        }
+      ]
+    },
+    {
+      "name": "refund_decisions_no_delete",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refund_decisions_no_delete BEFORE DELETE ON refund_decisions BEGIN SELECT RAISE (ABORT, 'refund_decisions rows are never deleted');END"
+        }
+      ]
+    },
+    {
+      "name": "refund_decisions_no_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refund_decisions_no_update BEFORE UPDATE ON refund_decisions BEGIN SELECT RAISE (ABORT, 'refund_decisions rows are never edited');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_requested_unpaid",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_requested_unpaid BEFORE INSERT ON refunds WHEN NEW.paid_at IS NOT NULL BEGIN SELECT RAISE (ABORT, 'a refund is requested before it is paid');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_fixed_terms",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_fixed_terms BEFORE UPDATE ON refunds WHEN NEW.stay_id IS NOT OLD.stay_id OR NEW.nights IS NOT OLD.nights OR NEW.price_per_night IS NOT OLD.price_per_night OR NEW.amount IS NOT OLD.amount OR NEW.requested_by IS NOT OLD.requested_by OR NEW.requested_at IS NOT OLD.requested_at BEGIN SELECT RAISE (ABORT, 'refund terms cannot change');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_paid_once",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NOT NULL AND(NEW.paid_at IS NOT OLD.paid_at OR NEW.method IS NOT OLD.method OR NEW.mpesa_code IS NOT OLD.mpesa_code OR NEW.shift_id IS NOT OLD.shift_id OR NEW.paid_by IS NOT OLD.paid_by OR NEW.receipt_number IS NOT OLD.receipt_number)BEGIN SELECT RAISE (ABORT, 'refund is already paid');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_paid_if_approved",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_paid_if_approved BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NULL AND NEW.paid_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM refund_decisions WHERE refund_id = NEW.id AND decision = 'approved') BEGIN SELECT RAISE (ABORT, 'refund is not approved');END"
+        }
+      ]
+    },
+    {
+      "name": "payments_mpesa_code_unused_insert",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER payments_mpesa_code_unused_insert BEFORE INSERT ON payments WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, 'M-Pesa code already used');END"
+        }
+      ]
+    },
+    {
+      "name": "payments_mpesa_code_unused_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER payments_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON payments WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, 'M-Pesa code already used');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_mpesa_code_unused_insert",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_mpesa_code_unused_insert BEFORE INSERT ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, 'M-Pesa code already used');END"
+        }
+      ]
+    },
+    {
+      "name": "refunds_mpesa_code_unused_update",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, 'M-Pesa code already used');END"
         }
       ]
     },
@@ -4067,6 +4908,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE INDEX stay_charges_payment ON stay_charges (payment_id)"
+        }
+      ]
+    },
+    {
+      "name": "refunds_shift",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX refunds_shift ON refunds (shift_id)"
         }
       ]
     },

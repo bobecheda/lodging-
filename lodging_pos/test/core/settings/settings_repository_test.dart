@@ -16,7 +16,7 @@ void main() {
 
   test('the defaults map holds every default in one place', () {
     expect(settingDefaults, {
-      'block_hours': '12',
+      'checkout_time': '10:00',
       'grace_minutes': '60',
       'receipt_prefix': 'R',
       'idle_lock_minutes': '10',

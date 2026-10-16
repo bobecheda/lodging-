@@ -11,7 +11,7 @@ BedSummary bed(
   label: label,
   categoryId: category,
   categoryName: 'Deluxe',
-  pricePerBlock: 700,
+  pricePerNight: 700,
   cleanliness: Cleanliness.clean,
   isActive: active,
   hasActiveStay: guest,

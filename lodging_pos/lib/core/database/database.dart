@@ -25,10 +25,12 @@ part 'database.g.dart';
     Stays,
     Payments,
     StayCharges,
+    Refunds,
     HousekeepingTasks,
     InventoryMovements,
     // Admin-owned records
     Voids,
+    RefundDecisions,
     Expenses,
     InventoryItems,
     // System

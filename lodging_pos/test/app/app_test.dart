@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/core/database/database.dart';
+import 'package:lodging_pos/core/database/seed.dart';
+import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
+import 'package:lodging_pos/features/setup/domain/rooms.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../helpers/fixtures.dart';
@@ -179,6 +182,94 @@ void main() {
       expect(locationOf(app), Routes.home);
       expect(find.textContaining('float KES 800'), findsOneWidget);
     },
+  );
+
+  testWidgets('the resume card shows a paid refund as received, refunded and '
+      'net', (tester) async {
+    final owner = await env.users.createFirstAdmin(testSetup);
+    final desk = await env.addReceptionist('desk');
+    await ShiftRepository(
+      env.db,
+      env.audit,
+    ).openShift(user: desk, openingFloat: 800);
+    final room = await RoomsRepository(env.db, env.audit).createRoom(
+      owner,
+      const NewRoom(
+        number: '3',
+        floor: null,
+        notes: null,
+        bedACategoryId: SeedIds.deluxe,
+        bedBCategoryId: null,
+      ),
+    );
+    // 3 nights paid in cash (2,100), then 2 nights refunded in cash (1,400).
+    final stayId = await env.checkIn(room.beds.single.id, by: desk, nights: 3);
+    await _paidCashRefund(env, stayId, deskId: desk.id, ownerId: owner.id);
+
+    await pumpDeskApp(tester, env);
+    await signInAs(tester, 'desk', 'desk-pass');
+    String textOf(String key) =>
+        tester.widget<Text>(find.byKey(ValueKey(key))).data!;
+    expect(textOf('shift.takenTotal'), 'KES 700');
+    expect(textOf('shift.net.cash'), 'KES 700');
+    expect(textOf('shift.net.paybill'), 'KES 0');
+    expect(find.text('KES 2,100'), findsOneWidget); // cash received
+    expect(find.text('KES -1,400'), findsOneWidget); // cash refunded
+    expect(find.text('M-Pesa'), findsOneWidget);
+  });
+}
+
+/// A refund of 2 nights at 700 for [stayId]: requested by the desk, approved
+/// by the owner and paid out in cash in the desk's open shift.
+Future<void> _paidCashRefund(
+  TestEnv env,
+  String stayId, {
+  required String deskId,
+  required String ownerId,
+}) async {
+  final shift = await env.db.select(env.db.shifts).getSingle();
+  final refund = await env.audit.writeWithAudit(
+    action: 'refund.request',
+    userId: deskId,
+    body: (w) => w.insert(
+      env.db.refunds,
+      RefundsCompanion.insert(
+        stayId: stayId,
+        nights: 2,
+        pricePerNight: 700,
+        amount: 1400,
+        requestedBy: deskId,
+        requestedAt: w.now,
+      ),
+    ),
+  );
+  await env.audit.writeWithAudit(
+    action: 'refund.approve',
+    userId: ownerId,
+    body: (w) => w.insert(
+      env.db.refundDecisions,
+      RefundDecisionsCompanion.insert(
+        refundId: refund.id,
+        decision: 'approved',
+        decidedBy: ownerId,
+        decidedAt: w.now,
+      ),
+    ),
+  );
+  await env.audit.writeWithAudit(
+    action: 'refund.pay',
+    userId: deskId,
+    body: (w) => w.update(
+      env.db.refunds,
+      refund.id,
+      RefundsCompanion(
+        method: const Value('cash'),
+        shiftId: Value(shift.id),
+        paidBy: Value(deskId),
+        paidAt: Value(w.now),
+        receiptNumber: const Value('R-000002'),
+      ),
+    ),
   );
 }
 

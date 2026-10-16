@@ -4,7 +4,7 @@ Version 1.0 · Oct 13, 2026 · @Bobe cheda
 
 ## Product summary
 
-A front desk and admin system for a lodging that charges guests per bed, per 12-hour block. The front desk app works offline on the reception PC; the owner manages and monitors the business from his phone or PC, from anywhere.
+A front desk and admin system for a lodging that charges guests per bed, per night, with checkout at 10:00. The front desk app works offline on the reception PC; the owner manages and monitors the business from his phone or PC, from anywhere.
 
 **Problem**
 
@@ -15,7 +15,7 @@ A front desk and admin system for a lodging that charges guests per bed, per 12-
 
 **Solution**
 
-Every let bed is tied to a guest, a payment, a receptionist and a shift. The system enforces pricing, block timing, overstay and cleaning rules, keeps an append-only audit trail, and gives the owner a live dashboard of revenue, expenses, profit and occupancy.
+Every let bed is tied to a guest, a payment, a receptionist and a shift. The system enforces pricing, checkout times, overstay and cleaning rules, keeps an append-only audit trail, and gives the owner a live dashboard of revenue, expenses, profit and occupancy.
 
 The detailed data model and architecture are in the companion doc, *Lodging Management System — Requirements & Plan*.
 
@@ -85,11 +85,11 @@ Each story lists the conditions that must all hold before it counts as done.
 - New guest requires full name and phone; ID type (National ID, Passport, Alien ID) and number are optional.
 - An ID number, when entered, cannot be registered twice.
 
-**FD-4 Check a guest in.** As a receptionist, I want to let a bed for a number of blocks so that the guest gets a bed and the money is recorded.
+**FD-4 Check a guest in.** As a receptionist, I want to let a bed for a number of nights so that the guest gets a bed and the money is recorded.
 
 - Only beds that are Available and Clean can be chosen.
 - Choosing both beds of a 2-bed room creates two stays on one receipt.
-- Entering the number of blocks shows the total and expected checkout (check-in + 12 h × blocks).
+- Entering the number of nights shows the total and the checkout date and time (always 10:00).
 - The bed becomes Occupied only after payment is saved; cancelling leaves it Available.
 - The price used is the category price at that moment and does not change later.
 
@@ -102,19 +102,19 @@ Each story lists the conditions that must all hold before it counts as done.
 **FD-6 Issue a receipt.** As a receptionist, I want a receipt for each payment so that the guest has proof.
 
 - Generated automatically after payment, with the next sequential number.
-- Header shows the lodging name only; body shows receipt number, guest, room and bed, category, blocks, check-in, checkout, amount, method, M-Pesa code, receptionist.
+- Header shows the lodging name only; body shows receipt number, guest, room and bed, category, nights, check-in, check out by, amount, method, M-Pesa code, receptionist.
 - Can be viewed on screen and saved as PDF; reprints are marked "Copy".
 
-**FD-7 Renew or flag an overstay.** As a receptionist, I want overstays flagged so that no extra time goes unpaid.
+**FD-7 Extend a stay or flag an overstay.** As a receptionist, I want overstays flagged so that no extra time goes unpaid.
 
 - One hour after expected checkout, the bed shows Overstay without anyone acting.
-- Renewal adds blocks starting from the original expected checkout, with a new payment and receipt.
+- Extending adds nights from the paid-until 10:00, with a new payment and receipt. Checking out after the grace hour first charges one night.
 - Overstay clears only by renewal or checkout.
 
 **FD-8 Check a guest out.** As a receptionist, I want to close a stay so that the bed can be cleaned and let again.
 
 - Checkout records the actual time; the bed becomes Available and Not cleaned.
-- Early checkout gives no refund; unused blocks are forfeited.
+- Early checkout closes the stay at once and creates a refund request for nights not yet started, at the check-in price. Once the admin approves, the receptionist pays it from the cash drawer or the Paybill account (with the M-Pesa code) and a refund receipt is printed; the payout reduces that shift's cash or Paybill total.
 
 **FD-9 Assign housekeeping.** As a receptionist, I want to assign a dirty bed to a housekeeper so that it gets cleaned.
 
@@ -156,8 +156,8 @@ The admin works online from phone or PC; every change reaches the front desk on 
 
 **AD-3 Set prices and rules.** As the owner, I want to set prices so that the desk always charges correctly.
 
-- Set the price per 12-hour block for each category.
-- Set the block length (12 hours) and grace period (1 hour).
+- Set the price per night for each category; prices can be changed at any time.
+- Set the checkout time (10:00) and the grace period (1 hour).
 - New prices apply to check-ins after the desk syncs; existing stays keep their price.
 - Every change is in the audit trail with old and new values.
 
@@ -179,7 +179,7 @@ The admin works online from phone or PC; every change reaches the front desk on 
 
 **AD-7 Void a wrong entry.** As the owner, I want to correct mistakes without hiding them.
 
-- Only the admin can void a stay or payment, and a reason is required.
+- Only the admin can void a stay or payment, and a reason is required. Only the admin can approve or reject a refund request (a rejection needs a reason); the amount cannot be changed.
 - The original stays visible, marked void; totals exclude it.
 
 **AD-8 Review the audit trail.** As the owner, I want to see who did what so that I can investigate problems.
@@ -202,14 +202,14 @@ These rules are enforced by the system and override anything a user enters.
 
 | ID | Rule |
 | --- | --- |
-| BR-1 | Price is per bed, per 12-hour block from check-in. 24 hours = 2 blocks. Day and night blocks cost the same. |
-| BR-2 | Starting prices per block: VIP KES 1,000, Deluxe 700, Comfort 600, Normal 500. Only the admin changes them. |
-| BR-3 | The price is locked at check-in and also applies to renewals of that stay; a price change affects new check-ins only. |
+| BR-1 | Price is per bed, per night. Checkout is always 10:00. Every arrival, at any time, checks out at 10:00 the following day. Arrival time does not change the price. |
+| BR-2 | Starting prices per night: VIP KES 1,000, Deluxe 700, Comfort 600, Normal 500. Only the admin changes them. |
+| BR-3 | The price is locked at check-in and also applies to extensions and refunds of that stay; a price change affects new check-ins only. |
 | BR-4 | One guest per bed. Strangers may share a 2-bed room; one guest may pay for both beds. |
 | BR-5 | A bed can be let only when Available and Clean, and becomes Occupied only once payment is saved. |
-| BR-6 | Grace period is 1 hour after expected checkout; then the bed shows Overstay. |
-| BR-7 | A renewal starts at the original expected checkout time. |
-| BR-8 | No refunds; unused blocks on early checkout are forfeited. |
+| BR-6 | Grace period is 1 hour after the 10:00 checkout; from 11:00 the bed shows Overstay. |
+| BR-7 | An extension adds nights from the paid-until 10:00. Leaving after the grace hour costs one more night. |
+| BR-8 | Early checkout refunds nights not yet started. The night in progress is never refunded. The system calculates the amount; the admin must approve it before it is paid from the cash drawer or the Paybill account, with a refund receipt. |
 | BR-9 | Checkout makes the bed Available and Not cleaned; only completed housekeeping makes it Clean. |
 | BR-10 | Each M-Pesa transaction code can be used once. |
 | BR-11 | Stays, payments and audit entries are never edited or deleted; the admin voids with a reason. |
@@ -223,7 +223,7 @@ These apply across the whole product.
 | --- | --- |
 | Offline | Every front desk story works with no internet. Changes queue locally and sync in order when online, with no duplicates and no loss. |
 | Sync | While online, desk changes reach the cloud within 5 minutes; admin settings reach the desk within 5 minutes. |
-| Time | Block, grace and overstay calculations use the desk PC clock, checked against the server time on each sync; a gap over 5 minutes shows a warning. |
+| Time | Checkout, grace, overstay and refund calculations use the desk PC clock, checked against the server time on each sync; a gap over 5 minutes shows a warning. |
 | Performance | Bed board loads in under 2 seconds; guest search returns in under 1 second; receipt PDF in under 3 seconds. |
 | Security | Passwords stored hashed; admin actions checked by the cloud, not just hidden in the app; data encrypted in transit; sessions time out after inactivity. |
 | Privacy | Guest ID data is personal data under the Data Protection Act 2019: only collected fields, visible to logged-in staff only, exportable only by the admin, kept for a period the owner sets. |
@@ -306,7 +306,7 @@ The main risks are people bypassing the system and the desk PC failing; both hav
 
 - One front desk PC; a second desk device is out of scope.
 - One admin account (the owner).
-- No bookings, no overstay fines and no refunds in the MVP.
+- No bookings or overstay fines in the MVP. Refunds only for prepaid nights not yet started, and only after admin approval. Supervisor role to be designed with the owner after the MVP; permissions are checked per action so it can be added.
 
 ## Approval
 

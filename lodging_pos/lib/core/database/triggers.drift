@@ -2,8 +2,9 @@
 --
 -- Every UPDATE of a synced table must move updated_at, which only
 -- writeWithAudit does; a direct update would skip audit_log and outbox.
--- Stays, payments, charges and voids are never deleted (BR-11), and
--- audit_log is append-only.
+-- Stays, payments, charges, refunds, refund decisions and voids are never
+-- deleted (BR-11), and audit_log is append-only. Refund rules (BR-8a, BR-8b)
+-- and M-Pesa codes across tables (BR-10) are backed up here too.
 import 'tables/admin_tables.dart';
 import 'tables/desk_tables.dart';
 import 'tables/setup_tables.dart';
@@ -53,6 +54,10 @@ CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges
   WHEN NEW.updated_at IS OLD.updated_at
   BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
 
+CREATE TRIGGER refunds_stamped_update BEFORE UPDATE ON refunds
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
 CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks
   WHEN NEW.updated_at IS OLD.updated_at
   BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
@@ -73,6 +78,10 @@ CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items
   WHEN NEW.updated_at IS OLD.updated_at
   BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
 
+CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
 CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log
   BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
 
@@ -90,3 +99,70 @@ CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids
 
 CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log
   BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
+
+CREATE TRIGGER refunds_no_delete BEFORE DELETE ON refunds
+  BEGIN SELECT RAISE(ABORT, 'refunds rows are never deleted'); END;
+
+CREATE TRIGGER refund_decisions_no_delete BEFORE DELETE ON refund_decisions
+  BEGIN SELECT RAISE(ABORT, 'refund_decisions rows are never deleted'); END;
+
+-- A decision is final (BR-8a).
+CREATE TRIGGER refund_decisions_no_update BEFORE UPDATE ON refund_decisions
+  BEGIN SELECT RAISE(ABORT, 'refund_decisions rows are never edited'); END;
+
+-- Refunds (BR-8a, BR-8b): created unpaid, for terms nobody can change, and
+-- paid once, only after approval.
+CREATE TRIGGER refunds_requested_unpaid BEFORE INSERT ON refunds
+  WHEN NEW.paid_at IS NOT NULL
+  BEGIN SELECT RAISE(ABORT, 'a refund is requested before it is paid'); END;
+
+CREATE TRIGGER refunds_fixed_terms BEFORE UPDATE ON refunds
+  WHEN NEW.stay_id IS NOT OLD.stay_id
+    OR NEW.nights IS NOT OLD.nights
+    OR NEW.price_per_night IS NOT OLD.price_per_night
+    OR NEW.amount IS NOT OLD.amount
+    OR NEW.requested_by IS NOT OLD.requested_by
+    OR NEW.requested_at IS NOT OLD.requested_at
+  BEGIN SELECT RAISE(ABORT, 'refund terms cannot change'); END;
+
+CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds
+  WHEN OLD.paid_at IS NOT NULL AND (
+    NEW.paid_at IS NOT OLD.paid_at
+    OR NEW.method IS NOT OLD.method
+    OR NEW.mpesa_code IS NOT OLD.mpesa_code
+    OR NEW.shift_id IS NOT OLD.shift_id
+    OR NEW.paid_by IS NOT OLD.paid_by
+    OR NEW.receipt_number IS NOT OLD.receipt_number
+  )
+  BEGIN SELECT RAISE(ABORT, 'refund is already paid'); END;
+
+CREATE TRIGGER refunds_paid_if_approved BEFORE UPDATE ON refunds
+  WHEN OLD.paid_at IS NULL AND NEW.paid_at IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM refund_decisions
+      WHERE refund_id = NEW.id AND decision = 'approved'
+    )
+  BEGIN SELECT RAISE(ABORT, 'refund is not approved'); END;
+
+-- An M-Pesa code is used once across payments and refund payouts (BR-10).
+-- Each table's own UNIQUE covers itself; these cover the other one. Both
+-- code columns are COLLATE NOCASE, so the comparison ignores case.
+CREATE TRIGGER payments_mpesa_code_unused_insert BEFORE INSERT ON payments
+  WHEN NEW.mpesa_code IS NOT NULL
+    AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code)
+  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;
+
+CREATE TRIGGER payments_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON payments
+  WHEN NEW.mpesa_code IS NOT NULL
+    AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code)
+  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;
+
+CREATE TRIGGER refunds_mpesa_code_unused_insert BEFORE INSERT ON refunds
+  WHEN NEW.mpesa_code IS NOT NULL
+    AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code)
+  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;
+
+CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON refunds
+  WHEN NEW.mpesa_code IS NOT NULL
+    AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code)
+  BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;
