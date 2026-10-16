@@ -49,15 +49,17 @@ bed_categories 1──* beds *──1 rooms
 
 The one exception to the `id` rule: `key` is the primary key and sync upserts by `key`.
 
-Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `checkout_time` = `10:00` (`HH:MM`, Nairobi; range 06:00–14:00), `grace_minutes` = `60` (0–180), `receipt_prefix` = `R`, `idle_lock_minutes` = `10`. There is no early-arrival cut-off: every arrival checks out at `checkout_time` on the next calendar day. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
+Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `checkout_time` = `10:00` (`HH:MM`, Nairobi; range 06:00–14:00), `grace_minutes` = `60` (0–180; a change applies at once to every guest, since overstay is derived), `receipt_prefix` = `R` (1–4 letters, stored uppercase), `idle_lock_minutes` = `10` (1–60; a stored value outside that falls back to 10). `lodging_name` is required, at most 60 characters. AD-3 edits them; each changed key is one `settings.update` audit row with its old and new value. There is no early-arrival cut-off: every arrival checks out at `checkout_time` on the next calendar day. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
 
 ### bed_categories
 | Column | Type | Notes |
 |---|---|---|
-| name | TEXT | UNIQUE |
-| price_per_night | INT | KES, > 0 |
-| sort_order | INT | |
-| is_active | BOOL | |
+| name | TEXT | UNIQUE ignoring case (`COLLATE NOCASE`); stored trimmed, 1–30 characters (CHECK) |
+| price_per_night | INT | whole KES 1–100,000 (CHECK) |
+| sort_order | INT | new categories go last |
+| is_active | BOOL | a closed category can't be chosen for a bed |
+
+A category can't be closed while active beds use it, counting beds in rooms closed for repairs (reopening the room would let them). Categories are never renamed or deleted. Price changes (`price.update`) apply to new check-ins only.
 
 Seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500, with fixed UUIDs so the cloud can seed the same rows.
 
@@ -155,6 +157,8 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | period_end | DATETIME | check-in: 10:00 on the day after arrival + (nights − 1) days; otherwise `period_start` + nights (Nairobi calendar days) |
 
 A late-checkout charge moves `stays.paid_until` like an extension, so `paid_until` is always the latest `period_end`.
+
+> **TODO (FD-4/FD-6):** also store the category name on each charge at check-in (e.g. `category_name`), next to `price_per_night`, so a receipt never changes after a later rename or price change.
 
 ### refunds
 A refund of prepaid nights not yet started (BR-8), created as a **request** in the early-checkout transaction that also closes the stay. Its status is derived, never stored: no decision → `requested`; decision `rejected` → `rejected`; decision `approved` and no payout → `approved`; payout set → `paid`.

@@ -6,6 +6,7 @@ import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import 'package:lodging_pos/core/database/seed.dart';
+import 'package:lodging_pos/features/setup/data/prices_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
 import 'package:lodging_pos/features/setup/presentation/widgets/room_table.dart';
@@ -267,6 +268,73 @@ void main() {
       await tapKey(tester, 'rooms.add');
       await tapKey(tester, 'choice.2');
       await expectCleanLayout(tester, app, Routes.adminRooms, 'Bed B category');
+    });
+  });
+
+  group('Prices & settings (AD-3)', () {
+    Future<ProviderContainer> openPrices(WidgetTester tester) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final prices = PricesRepository(env.db, env.audit);
+      // Eight categories, one closed, some in use: a fuller table than seed.
+      for (final (name, price) in [
+        ('Family room', 1500),
+        ('Dormitory', 300),
+        ('Executive suite', 2500),
+        ('Budget', 400),
+      ]) {
+        await prices.addCategory(owner, name: name, pricePerNight: price);
+      }
+      await prices.closeCategory(
+        owner,
+        (await prices.categories()).last.category.id,
+      );
+      await RoomsRepository(env.db, env.audit).createRoom(
+        owner,
+        const NewRoom(
+          number: '3',
+          floor: null,
+          notes: null,
+          bedACategoryId: SeedIds.deluxe,
+          bedBCategoryId: SeedIds.vip,
+        ),
+      );
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'nav.${Routes.adminPrices}');
+      return app;
+    }
+
+    testWidgets('prices and settings', (tester) async {
+      final app = await openPrices(tester);
+      await expectCleanLayout(tester, app, Routes.adminPrices, 'Save prices');
+    });
+
+    testWidgets('edits, errors and the add row', (tester) async {
+      final app = await openPrices(tester);
+      await enterKey(tester, 'price.${SeedIds.deluxe}', '750');
+      await enterKey(tester, 'price.${SeedIds.vip}', '250000');
+      await tapKey(tester, 'prices.save');
+      await tapKey(tester, 'categories.add');
+      await enterKey(tester, 'settings.grace', '999');
+      await enterKey(tester, 'settings.idleLock', '0');
+      await enterKey(tester, 'settings.lodgingName', '');
+      await tapKey(tester, 'settings.save');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.adminPrices,
+        'The price can be at most KES 100,000.',
+      );
+    });
+
+    testWidgets('the confirmation dialog', (tester) async {
+      final app = await openPrices(tester);
+      for (final id in [SeedIds.vip, SeedIds.deluxe, SeedIds.comfort]) {
+        await enterKey(tester, 'price.$id', '12500');
+      }
+      await tapKey(tester, 'prices.save');
+      await expectCleanLayout(tester, app, Routes.adminPrices, 'Confirm');
     });
   });
 }

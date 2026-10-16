@@ -7,14 +7,26 @@ void main() {
       expect(idleLockMinutesFrom('10'), 10);
       expect(idleLockMinutesFrom(' 15 '), 15);
       expect(idleLockMinutesFrom('1'), 1);
-      expect(idleLockMinutesFrom('240'), 240);
+      expect(idleLockMinutesFrom('60'), 60);
     });
 
     test('falls back to the default (10) when missing or invalid', () {
-      for (final bad in [null, '', 'ten', '0', '-5', '241', '7.5']) {
+      for (final bad in [null, '', 'ten', '0', '-5', '61', '240', '7.5']) {
         expect(idleLockMinutesFrom(bad), 10, reason: '$bad');
       }
     });
+  });
+
+  test('idleLockMinutesError is the one 1–60 validator (AD-3 shares it)', () {
+    expect(idleLockMinutesError('1'), isNull);
+    expect(idleLockMinutesError(' 60 '), isNull);
+    for (final bad in ['0', '61', '', 'x']) {
+      expect(
+        idleLockMinutesError(bad),
+        'Enter whole minutes from 1 to 60.',
+        reason: bad,
+      );
+    }
   });
 
   group('shouldLock', () {

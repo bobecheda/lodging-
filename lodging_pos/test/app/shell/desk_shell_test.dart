@@ -33,7 +33,7 @@ void main() {
             route: '/admin/rooms',
             label: 'Rooms & beds',
             icon: Icons.bed_outlined,
-            permission: Permission.manageRooms,
+            permissions: {Permission.manageRooms},
             setup: true,
           ),
         ]),
@@ -73,6 +73,7 @@ void main() {
     expect(app.read(deskNavItemsProvider).map((i) => i.route), [
       Routes.home,
       Routes.adminRooms,
+      Routes.adminPrices,
     ]);
     expect(find.text('SETUP · OWNER ONLY'), findsOneWidget);
   });

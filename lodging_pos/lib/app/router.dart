@@ -11,6 +11,7 @@ import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
 import 'gate.dart';
+import '../features/setup/presentation/prices_screen.dart';
 import '../features/setup/presentation/rooms_screen.dart';
 import 'home_screen.dart';
 import 'shell/desk_shell.dart';
@@ -69,6 +70,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: Routes.adminRooms,
             builder: (_, _) => const RoomsScreen(),
+          ),
+          GoRoute(
+            path: Routes.adminPrices,
+            builder: (_, _) => const PricesScreen(),
           ),
         ],
       ),

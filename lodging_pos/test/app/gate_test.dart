@@ -100,6 +100,17 @@ void main() {
         isNull,
       );
       expect(go(Routes.adminRooms), Routes.home);
+      expect(
+        redirectFor(
+          Routes.adminPrices,
+          hasUsers: true,
+          user: owner,
+          shiftStart: const ShiftReady(null),
+        ),
+        isNull,
+      );
+      expect(go(Routes.adminPrices), Routes.home);
+      expect(go('/admin/not-yet-built'), Routes.home); // fails closed
       expect(go('/admin'), Routes.home);
       expect(go('/administrator'), isNull); // not under the prefix
     },

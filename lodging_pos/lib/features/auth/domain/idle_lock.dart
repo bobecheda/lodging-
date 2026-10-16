@@ -1,23 +1,33 @@
 import '../../../core/settings/setting_defaults.dart';
 
-const _minIdleLockMinutes = 1;
-const _maxIdleLockMinutes = 240;
+/// `idle_lock_minutes` must be whole minutes in this range (AD-3). One rule
+/// for the settings form and the lock itself.
+const idleLockMinutesRange = (min: 1, max: 60);
 
 final _defaultIdleLockMinutes = int.parse(
   settingDefaults[SettingKeys.idleLockMinutes]!,
 );
 
-/// Minutes of inactivity before the session locks, from the
-/// `idle_lock_minutes` setting. Anything missing, non-numeric or outside
-/// 1–240 uses the default.
-int idleLockMinutesFrom(String? setting) {
-  final minutes = int.tryParse(setting?.trim() ?? '');
+/// Null if [text] is whole minutes within [idleLockMinutesRange].
+String? idleLockMinutesError(String text) {
+  final minutes = int.tryParse(text.trim());
   if (minutes == null ||
-      minutes < _minIdleLockMinutes ||
-      minutes > _maxIdleLockMinutes) {
+      minutes < idleLockMinutesRange.min ||
+      minutes > idleLockMinutesRange.max) {
+    return 'Enter whole minutes from ${idleLockMinutesRange.min} to '
+        '${idleLockMinutesRange.max}.';
+  }
+  return null;
+}
+
+/// Minutes of inactivity before the session locks, from the
+/// `idle_lock_minutes` setting. Anything missing or failing
+/// [idleLockMinutesError] uses the default (10).
+int idleLockMinutesFrom(String? setting) {
+  if (setting == null || idleLockMinutesError(setting) != null) {
     return _defaultIdleLockMinutes;
   }
-  return minutes;
+  return int.parse(setting.trim());
 }
 
 /// True once [idleMinutes] have passed since [lastActivity]. A clock set back

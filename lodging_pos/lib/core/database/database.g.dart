@@ -1091,7 +1091,7 @@ class $BedCategoriesTable extends BedCategories
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    $customConstraints: 'NOT NULL UNIQUE COLLATE NOCASE CHECK (name = trim(name) AND length(name) BETWEEN 1 AND 30)',
   );
   static const VerificationMeta _pricePerNightMeta = const VerificationMeta(
     'pricePerNight',
@@ -1101,7 +1101,7 @@ class $BedCategoriesTable extends BedCategories
     'price_per_night',
     aliasedName,
     false,
-    check: () => ComparableExpr(pricePerNight).isBiggerThanValue(0),
+    check: () => ComparableExpr(pricePerNight).isBetweenValues(1, 100000),
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
