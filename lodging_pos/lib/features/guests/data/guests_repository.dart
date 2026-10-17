@@ -102,7 +102,7 @@ class GuestsRepository {
       action: 'guest.create',
       userId: actor.id,
       body: (w) async {
-        await _requireFreeId(form);
+        await requireFreeId(form);
         return w.insert(
           _db.guests,
           GuestsCompanion.insert(
@@ -134,7 +134,7 @@ class GuestsRepository {
       action: 'guest.update',
       userId: actor.id,
       body: (w) async {
-        await _requireFreeId(form, exceptId: id);
+        await requireFreeId(form, exceptId: id);
         await w.update(
           _db.guests,
           id,
@@ -156,8 +156,10 @@ class GuestsRepository {
     return input.normalized();
   }
 
-  /// The ID (type + number) may belong to one guest only.
-  Future<void> _requireFreeId(GuestForm form, {String? exceptId}) async {
+  /// Throws [InvalidGuest] if the normalized [form]'s ID (type + number)
+  /// already belongs to a guest other than [exceptId]. Inside a write, it
+  /// reads the transaction, so check-in (FD-4) runs it there too.
+  Future<void> requireFreeId(GuestForm form, {String? exceptId}) async {
     final type = form.idType;
     if (type == null || form.idNumber.isEmpty) return;
     final taken =

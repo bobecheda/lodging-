@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/gate.dart';
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/gate_top_bar.dart';
@@ -21,7 +23,11 @@ import 'shift_providers.dart';
 /// continues their own open shift, or is told whose shift is blocking the
 /// device (artboard "Open or resume shift").
 class OpenShiftScreen extends ConsumerWidget {
-  const OpenShiftScreen({super.key});
+  const OpenShiftScreen({super.key, this.returnTo});
+
+  /// Where a user who works without a shift (an admin) came from, e.g.
+  /// check-in. They come back there once the shift is open, or on "Back".
+  final String? returnTo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,6 +40,8 @@ class OpenShiftScreen extends ConsumerWidget {
             user: user,
             resumeConfirmed: ref.watch(shiftContinuedProvider),
           );
+
+    void back() => context.go(returnTo ?? Routes.home);
 
     return Scaffold(
       appBar: const GateTopBar(),
@@ -48,6 +56,11 @@ class OpenShiftScreen extends ConsumerWidget {
                 child: switch (start) {
                   ShiftBlocked(:final openShift) => _Blocked(openShift),
                   ResumeShift(:final shift) => _Resume(user!, shift),
+                  // An admin came here by choice: they can go back, and
+                  // someone else's open shift blocks them too.
+                  ShiftReady() when open != null && open.userId != user!.id =>
+                    _Blocked(open, onBack: back),
+                  ShiftReady() => _OpenNew(user!, onBack: back),
                   _ when user != null => _OpenNew(user),
                   _ => const SizedBox.shrink(),
                 },
@@ -92,9 +105,12 @@ class _Heading extends ConsumerWidget {
 }
 
 class _OpenNew extends ConsumerStatefulWidget {
-  const _OpenNew(this.user);
+  const _OpenNew(this.user, {this.onBack});
 
   final UserAccount user;
+
+  /// "Back", for a user who may work without a shift.
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<_OpenNew> createState() => _OpenNewState();
@@ -162,6 +178,14 @@ class _OpenNewState extends ConsumerState<_OpenNew> {
           busy: _busy,
           onPressed: _submit,
         ),
+        if (widget.onBack != null) ...[
+          const SizedBox(height: Space.x12),
+          AppButton.secondary(
+            key: const ValueKey('shift.back'),
+            label: 'Back',
+            onPressed: widget.onBack,
+          ),
+        ],
       ],
     );
   }
@@ -311,9 +335,10 @@ class _TakingsTable extends StatelessWidget {
 }
 
 class _Blocked extends ConsumerWidget {
-  const _Blocked(this.openShift);
+  const _Blocked(this.openShift, {this.onBack});
 
   final OpenShift openShift;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -329,6 +354,14 @@ class _Blocked extends ConsumerWidget {
           'once it is closed.',
         ),
         const SizedBox(height: Space.x20),
+        if (onBack != null) ...[
+          AppButton.secondary(
+            key: const ValueKey('shift.back'),
+            label: 'Back',
+            onPressed: onBack,
+          ),
+          const SizedBox(height: Space.x12),
+        ],
         AppButton.secondary(
           key: const ValueKey('shift.signOut'),
           label: 'Sign out',

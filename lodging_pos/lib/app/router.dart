@@ -10,6 +10,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/setup_screen.dart';
 import '../features/bed_board/presentation/bed_board_screen.dart';
 import '../features/guests/presentation/guests_screen.dart';
+import '../features/stays/presentation/check_in_screen.dart';
 import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
@@ -41,6 +42,7 @@ GoRouter router(Ref ref) {
     final shift = ref.read(currentShiftProvider);
     return redirectFor(
       state.matchedLocation,
+      returnTo: state.uri.queryParameters['then'],
       // A failed check falls through, so its error shows on the splash.
       schemaMatches: switch (ref.read(schemaDriftProvider)) {
         AsyncData(:final value) => value == null,
@@ -75,7 +77,11 @@ GoRouter router(Ref ref) {
         path: Routes.changePassword,
         builder: (_, _) => const ChangePasswordScreen(),
       ),
-      GoRoute(path: Routes.shift, builder: (_, _) => const OpenShiftScreen()),
+      GoRoute(
+        path: Routes.shift,
+        builder: (_, state) =>
+            OpenShiftScreen(returnTo: state.uri.queryParameters['then']),
+      ),
       // Working screens live inside the desk shell (sidebar + content).
       ShellRoute(
         builder: (context, state, child) =>
@@ -83,6 +89,14 @@ GoRouter router(Ref ref) {
         routes: [
           GoRoute(path: Routes.home, builder: (_, _) => const BedBoardScreen()),
           GoRoute(path: Routes.guests, builder: (_, _) => const GuestsScreen()),
+          GoRoute(
+            path: Routes.checkIn,
+            // A new state per address, so each bed starts fresh.
+            builder: (_, state) => CheckInScreen(
+              key: ValueKey(state.uri.toString()),
+              bedId: state.uri.queryParameters['bed'],
+            ),
+          ),
           GoRoute(
             path: Routes.adminRooms,
             builder: (_, _) => const RoomsScreen(),

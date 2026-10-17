@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +44,80 @@ void main() {
       expect(differences, contains('Changed: table bed_categories'));
       expect(differences, contains('Missing: trigger refunds_no_delete'));
       expect(differences, contains('Not expected: table old_stuff'));
+    });
+  });
+
+  group('normalizeSchemaSql', () {
+    test('spacing and identifier quotes are one spelling', () {
+      expect(
+        normalizeSchemaSql(
+          'CREATE TABLE "x" ("a" TEXT NOT NULL REFERENCES stays(id), '
+          'CHECK (a IN (\'p\', \'q\')))',
+        ),
+        normalizeSchemaSql(
+          'CREATE TABLE x (a  TEXT\n NOT NULL REFERENCES stays (id),'
+          'CHECK("a" IN (\'p\',\'q\')))',
+        ),
+      );
+    });
+
+    test('words stay apart: NOT NULL is not NOTNULL', () {
+      expect(normalizeSchemaSql('a TEXT NOT NULL'), 'a TEXT NOT NULL');
+    });
+  });
+
+  group('a real difference still fails the check', () {
+    // (An upgraded v1 file passing it is in test/drift/…/migration_test.dart.)
+
+    /// A fresh database with [table]'s CREATE statement edited from [from]
+    /// to [to], compared with an untouched one.
+    Future<List<String>> edited(String table, String from, String to) async {
+      final live = fresh();
+      final expected = fresh();
+      addTearDown(live.close);
+      addTearDown(expected.close);
+      final sql =
+          (await live
+                  .customSelect(
+                    'SELECT sql FROM sqlite_master WHERE name = ?',
+                    variables: [Variable<String>(table)],
+                  )
+                  .getSingle())
+              .read<String>('sql');
+      expect(sql, contains(from));
+      await live.customStatement('PRAGMA writable_schema = ON');
+      await live.customStatement(
+        'UPDATE sqlite_master SET sql = ? WHERE name = ?',
+        [sql.replaceFirst(from, to), table],
+      );
+      await live.customStatement('PRAGMA writable_schema = OFF');
+      return schemaDifferences(live, expected);
+    }
+
+    test('a missing column', () async {
+      final live = fresh();
+      final expected = fresh();
+      addTearDown(live.close);
+      addTearDown(expected.close);
+      await live.customStatement(
+        'ALTER TABLE stay_charges DROP COLUMN category_name',
+      );
+      expect(await schemaDifferences(live, expected), [
+        'Changed: table stay_charges',
+      ]);
+    });
+
+    test('a changed type (TEXT → INTEGER)', () async {
+      expect(await edited('housekeepers', '"phone" TEXT', '"phone" INTEGER'), [
+        'Changed: table housekeepers',
+      ]);
+    });
+
+    test('a removed NOT NULL', () async {
+      expect(
+        await edited('guests', '"full_name" TEXT NOT NULL', '"full_name" TEXT'),
+        ['Changed: table guests'],
+      );
     });
   });
 

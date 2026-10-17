@@ -237,7 +237,14 @@ void main() {
       checkInAt: oct(15, 19),
       nights: 10,
       checkout: const ClockTime(10, 0),
-      beds: [(bedId: 'b', pricePerNight: 700)],
+      beds: [
+        const LetBed(
+          bedId: 'b',
+          categoryId: 'deluxe',
+          categoryName: 'Deluxe',
+          pricePerNight: 700,
+        ),
+      ],
     );
     final stay = Stay.fromCheckIn(
       id: 'stay-1',

@@ -28,6 +28,7 @@ void main() {
     expect(formatDayDate(t), 'Thu 15 Oct');
     expect(formatTime(t), '07:02');
     expect(formatDayDateTime(t), 'Thu 15 Oct · 07:02');
+    expect(formatDayDateComma(t), 'Thu 15 Oct, 07:02');
   });
 
   test('greeting follows Nairobi time of day', () {

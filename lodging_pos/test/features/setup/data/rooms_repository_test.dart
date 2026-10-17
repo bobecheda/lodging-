@@ -252,7 +252,7 @@ void main() {
     test('changing a category affects new check-ins only', () async {
       final room = await twoBedRoom();
       final bedA = bedOf(room, BedLabel.a); // Normal, 500
-      final stayId = await env.checkIn(bedA.id, by: owner, pricePerNight: 500);
+      final stayId = await env.checkIn(bedA.id, by: owner);
 
       await rooms.updateRoom(
         owner,

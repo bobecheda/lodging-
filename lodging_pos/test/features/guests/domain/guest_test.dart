@@ -121,4 +121,21 @@ void main() {
       expect(GuestQuery.parse('Grace A').isEmpty, isTrue);
     });
   });
+
+  test('earlier stays, on the returning guest’s card (FD-4)', () {
+    // Fri 2 Oct 2026, 19:00 Nairobi.
+    final last = DateTime.utc(2026, 10, 2, 16);
+    expect(
+      const GuestHistory(stays: 0, lastCheckIn: null).summary,
+      'No earlier stays',
+    );
+    expect(
+      GuestHistory(stays: 1, lastCheckIn: last).summary,
+      '1 earlier stay · last on Fri 2 Oct',
+    );
+    expect(
+      GuestHistory(stays: 3, lastCheckIn: last).summary,
+      '3 earlier stays · last on Fri 2 Oct',
+    );
+  });
 }

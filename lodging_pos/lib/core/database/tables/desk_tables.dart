@@ -121,6 +121,12 @@ class StayCharges extends Table with SyncedColumns {
   DateTimeColumn get periodStart => dateTime()();
   DateTimeColumn get periodEnd => dateTime()();
 
+  // v2: the bed's category at check-in, copied like the price (BR-3), so a
+  // receipt never changes and reports group by what was sold. Later charges
+  // of the stay reuse the check-in charge's values.
+  TextColumn get categoryId => text().references(BedCategories, #id)();
+  TextColumn get categoryName => text()();
+
   @override
   List<String> get customConstraints => [
     'CHECK (amount = nights * price_per_night)',

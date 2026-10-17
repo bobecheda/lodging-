@@ -76,6 +76,10 @@ String formatWeekdayTime(DateTime utc) {
 String formatDayDateTime(DateTime utc) =>
     '${formatDayDate(utc)} · ${formatTime(utc)}';
 
+/// `Thu 15 Oct, 07:02`: a check-in time or a check-out-by time.
+String formatDayDateComma(DateTime utc) =>
+    '${formatDayDate(utc)}, ${formatTime(utc)}';
+
 /// "Good morning" before noon, "Good afternoon" until 17:00, then
 /// "Good evening" (Nairobi time).
 String greetingFor(DateTime utc) {

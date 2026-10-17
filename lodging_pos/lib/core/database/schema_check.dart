@@ -39,7 +39,23 @@ Future<List<String>> schemaDifferences(
   ];
 }
 
-/// `type name` → its SQL, whitespace collapsed.
+/// [sql] in one spelling: whitespace runs collapsed to one space, `"`
+/// identifier quotes stripped, and no space next to `(`, `)` or `,`.
+///
+/// A table a migration rebuilt from its frozen version (`alterTable`) is
+/// written as `CHECK (kind IN …)` and `REFERENCES stays(id)` where a fresh
+/// file has `CHECK("kind" IN …)` and `REFERENCES stays (id)`: the same
+/// schema in other words. Words stay apart, so any real difference (a
+/// column, a type, a constraint) still counts. If text comparison causes
+/// trouble again, compare `PRAGMA table_info` / `index_list` /
+/// `foreign_key_list` instead (owner's decision, 17 Oct 2026).
+String normalizeSchemaSql(String sql) => sql
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .replaceAll('"', '')
+    .replaceAll(RegExp(r' ?([(),]) ?'), r'$1')
+    .trim();
+
+/// `type name` → its SQL, normalized ([normalizeSchemaSql]).
 Future<Map<String, String>> _objects(GeneratedDatabase db) async {
   final rows = await db
       .customSelect(
@@ -49,8 +65,9 @@ Future<Map<String, String>> _objects(GeneratedDatabase db) async {
       .get();
   return {
     for (final r in rows)
-      '${r.read<String>('type')} ${r.read<String>('name')}':
-          (r.readNullable<String>('sql') ?? '').replaceAll(RegExp(r'\s+'), ' '),
+      '${r.read<String>('type')} ${r.read<String>('name')}': normalizeSchemaSql(
+        r.readNullable<String>('sql') ?? '',
+      ),
   };
 }
 

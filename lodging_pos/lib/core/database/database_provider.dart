@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../clock/clock.dart';
 import 'database.dart';
+import 'test_database_file.dart';
 
 part 'database_provider.g.dart';
 
@@ -28,6 +29,9 @@ AppDatabase appDatabase(Ref ref) {
       ),
     ),
     clock: ref.watch(clockProvider),
+    // Release builds too: an upgrade never starts without a copy of the
+    // file as it was (`lodging_pos.sqlite.v1.bak`, newest two kept).
+    beforeMigration: backUpBeforeMigration,
   );
   ref.onDispose(db.close);
   return db;
