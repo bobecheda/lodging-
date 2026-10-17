@@ -76,7 +76,8 @@ void main() {
     expect(locationOf(app), Routes.home);
     expect(find.text('Grace Owner'), findsOneWidget);
     expect(find.text('Owner · admin'), findsOneWidget);
-    expect(find.textContaining('No shift open'), findsOneWidget);
+    expect(find.text('Bed board'), findsWidgets);
+    expect(await env.db.select(env.db.shifts).get(), isEmpty);
   });
 
   testWidgets('a wrong password stays on sign in with a message', (
@@ -121,7 +122,7 @@ void main() {
     expect(find.text('1,500'), findsOneWidget);
     await tapKey(tester, 'shift.submit');
     expect(locationOf(app), Routes.home);
-    expect(find.textContaining('float KES 1,500'), findsOneWidget);
+    expect((await env.db.select(env.db.shifts).getSingle()).openingFloat, 1500);
     expect(find.text('Receptionist · shift since 22:00'), findsOneWidget);
     expect(await env.auditFor('shift.open'), hasLength(1));
   });
@@ -180,7 +181,8 @@ void main() {
 
       await tapKey(tester, 'shift.continue');
       expect(locationOf(app), Routes.home);
-      expect(find.textContaining('float KES 800'), findsOneWidget);
+      expect(find.text('Bed board'), findsWidgets);
+      expect(find.text('Receptionist · shift since 22:00'), findsOneWidget);
     },
   );
 

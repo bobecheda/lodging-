@@ -101,7 +101,11 @@ void main() {
       expect(locationOf(app), Routes.shift);
       await tapKey(tester, 'shift.continue');
       expect(locationOf(app), Routes.home);
-      expect(find.textContaining('float KES 1,000'), findsOneWidget);
+      expect(find.text('Bed board'), findsWidgets);
+      expect(
+        (await env.db.select(env.db.shifts).getSingle()).openingFloat,
+        1000,
+      );
       expect(await env.auditFor('shift.open'), hasLength(1));
     },
   );

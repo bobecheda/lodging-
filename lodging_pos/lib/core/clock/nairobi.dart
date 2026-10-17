@@ -66,6 +66,12 @@ String formatTime(DateTime utc) {
   return '${_two(t.hour)}:${_two(t.minute)}';
 }
 
+/// `Fri 10:00`: weekday and time, e.g. a stay's checkout on the bed board.
+String formatWeekdayTime(DateTime utc) {
+  final t = toNairobi(utc);
+  return '${_weekdays[t.weekday - 1]} ${formatTime(utc)}';
+}
+
 /// `Thu 15 Oct · 07:02`.
 String formatDayDateTime(DateTime utc) =>
     '${formatDayDate(utc)} · ${formatTime(utc)}';

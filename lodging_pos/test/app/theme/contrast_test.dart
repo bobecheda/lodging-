@@ -34,7 +34,7 @@ void main() {
     'redText on redTint (alerts)': (c.redText, c.redTint),
     'redText on white (destructive outline)': (c.redText, c.white),
     'redDark on white (overstay pill text)': (c.redDark, c.white),
-    'white on red (overstay tile, Renew)': (c.white, c.red),
+    'white on red (overstay tile, Extend)': (c.white, c.red),
   };
 
   for (final MapEntry(key: name, value: (fg, bg)) in pairs.entries) {
