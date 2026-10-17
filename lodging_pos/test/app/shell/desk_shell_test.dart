@@ -72,6 +72,7 @@ void main() {
     await signInAs(tester, 'owner', 'owner-pass');
     expect(app.read(deskNavItemsProvider).map((i) => i.route), [
       Routes.home,
+      Routes.guests,
       Routes.adminRooms,
       Routes.adminPrices,
       Routes.adminStaff,

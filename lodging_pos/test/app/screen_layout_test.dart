@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
+import 'package:lodging_pos/features/guests/data/guests_repository.dart';
+import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import 'package:lodging_pos/core/database/seed.dart';
@@ -400,6 +402,65 @@ void main() {
         Routes.adminStaff,
         'Disable Desk MARY?',
       );
+    });
+  });
+
+  group('Guests (FD-3)', () {
+    Future<ProviderContainer> openGuests(WidgetTester tester) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final guests = GuestsRepository(env.db, env.audit);
+      for (var i = 0; i < 9; i++) {
+        await guests.register(
+          owner,
+          GuestForm(
+            fullName: 'Guest With A Rather Long Full Name $i',
+            phone: '07224189${i.toString().padLeft(2, '0')}',
+            idType: i.isEven ? IdType.passport : IdType.nationalId,
+            idNumber: i.isEven ? 'AK12345$i' : '1234567$i',
+          ),
+        );
+      }
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'nav.${Routes.guests}');
+      return app;
+    }
+
+    testWidgets('empty search', (tester) async {
+      final app = await openGuests(tester);
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.guests,
+        'Find by phone or ID number',
+      );
+    });
+
+    testWidgets('8 matches, one opened, correcting with errors', (
+      tester,
+    ) async {
+      final app = await openGuests(tester);
+      await enterKey(tester, 'guests.search', '0722');
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Long Full Name 1').first);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'correct.open');
+      await enterKey(tester, 'correct.phone', '12');
+      await enterKey(tester, 'correct.idNumber', 'x');
+      await tapKey(tester, 'correct.save');
+      await expectCleanLayout(tester, app, Routes.guests, 'Save changes');
+    });
+
+    testWidgets('registering with errors and a shared-phone notice', (
+      tester,
+    ) async {
+      final app = await openGuests(tester);
+      await tapKey(tester, 'guests.register');
+      await enterKey(tester, 'newGuest.phone', '0722418900');
+      await enterKey(tester, 'newGuest.idNumber', '123');
+      await tapKey(tester, 'newGuest.save');
+      await expectCleanLayout(tester, app, Routes.guests, 'Register guest');
     });
   });
 }

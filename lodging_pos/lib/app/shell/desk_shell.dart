@@ -53,6 +53,12 @@ List<NavItem> deskNavItems(Ref ref) => const [
     icon: Icons.grid_view_rounded,
   ),
   NavItem(
+    route: Routes.guests,
+    label: 'Guests',
+    icon: Icons.person_search_outlined,
+    permissions: {Permission.registerGuests},
+  ),
+  NavItem(
     route: Routes.adminRooms,
     label: 'Rooms & beds',
     icon: Icons.bed_outlined,

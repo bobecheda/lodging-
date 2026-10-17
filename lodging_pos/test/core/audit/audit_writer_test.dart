@@ -566,7 +566,7 @@ void main() {
     );
 
     test(
-      'guest personal data is redacted, the phone masked, in audit JSON',
+      'guest names are redacted, phone and ID masked, in audit JSON',
       () async {
         await audit.writeWithAudit(
           action: 'guest.create',
@@ -584,7 +584,7 @@ void main() {
         final after = jsonDecode((await auditRows()).single.afterJson) as Map;
         expect(after['full_name'], '[redacted]');
         expect(after['phone'], '0712•••678');
-        expect(after['id_number'], '[redacted]');
+        expect(after['id_number'], '••••5678');
         expect(after['id_type'], 'national_id');
         final payload = jsonDecode((await outbox()).first.payloadJson) as Map;
         expect(payload['id_number'], '12345678');

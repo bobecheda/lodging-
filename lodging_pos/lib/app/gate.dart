@@ -10,6 +10,7 @@ abstract final class Routes {
   static const changePassword = '/change-password';
   static const shift = '/shift';
   static const home = '/home';
+  static const guests = '/guests';
   static const adminRooms = '/admin/rooms';
   static const adminPrices = '/admin/prices';
   static const adminStaff = '/admin/users';
@@ -21,6 +22,7 @@ abstract final class Routes {
   /// (BR-13). A screen with two parts may show the part a user can't change
   /// read-only.
   static const permissions = {
+    guests: {Permission.registerGuests},
     adminRooms: {Permission.manageRooms},
     adminPrices: {Permission.editPrices, Permission.editSettings},
     adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},

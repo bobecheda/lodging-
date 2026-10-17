@@ -100,12 +100,12 @@ UNIQUE(room_id, label), so a room has at most 2 beds, active or not. A bed under
 ### guests
 | Column | Type | Notes |
 |---|---|---|
-| full_name | TEXT | required |
-| phone | TEXT | required, INDEX, COLLATE NOCASE (prefix search uses the index) |
+| full_name | TEXT | required, trimmed, 1–80 characters |
+| phone | TEXT | required, INDEX, COLLATE NOCASE (prefix search uses the index). Kenyan `07…`/`01…` as 10 digits, or international `+` and 8–15 digits |
 | id_type | TEXT | optional: `national_id` \| `passport` \| `alien_id` |
-| id_number | TEXT | optional, INDEX, COLLATE NOCASE |
+| id_number | TEXT | optional, INDEX, COLLATE NOCASE. Stored without spaces, in capitals: National ID 6–9 digits; Passport and Alien ID 6–12 letters and digits |
 
-Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL, ignoring case. If `id_number` is set, `id_type` is required.
+Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL, ignoring case: the same ID (type + number) can't belong to two guests, but the same digits under another type can. If `id_number` is set, `id_type` is required. Phones may be shared (families). Guests are found by phone or ID prefix, never by name; the Guests screen lists the 30 most recently registered or corrected (`updated_at`).
 
 ### shifts
 | Column | Type | Notes |
@@ -245,7 +245,7 @@ Written once, never updated or deleted. It holds no amount, so the approver cann
 | before_json | TEXT | null on create; on update, only the columns that changed |
 | after_json | TEXT | full row on create; on update, only the columns that changed |
 
-Audit JSON redacts `users.password_hash` and guests' `full_name` and `id_number` as `"[redacted]"`, and stores guests' and housekeepers' `phone` masked (`0722•••310`), so a change is still visible while personal data stays purgeable. The business row's outbox payload keeps the real values.
+Audit JSON redacts `users.password_hash` and guests' `full_name` as `"[redacted]"`, and stores guests' and housekeepers' `phone` masked (`0722•••310`) and guests' `id_number` masked (`••••3921`), before and after, so a change is still visible while personal data stays purgeable. The business row's outbox payload keeps the real values.
 
 ### outbox (local only)
 | Column | Type | Notes |

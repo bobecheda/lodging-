@@ -61,7 +61,17 @@ Future<SchemaDrift?> schemaDrift(Ref ref) async {
   final live = ref.watch(appDatabaseProvider);
   final executor = inMemoryExecutor();
   if (executor == null) return null;
-  final expected = AppDatabase(executor, clock: ref.watch(clockProvider));
+  // A second AppDatabase on purpose, on its own in-memory executor: drift's
+  // "created multiple times" warning doesn't apply, so it's off while this
+  // one is made.
+  final warn = driftRuntimeOptions.dontWarnAboutMultipleDatabases;
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  final AppDatabase expected;
+  try {
+    expected = AppDatabase(executor, clock: ref.watch(clockProvider));
+  } finally {
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = warn;
+  }
   try {
     final differences = await schemaDifferences(live, expected);
     return differences.isEmpty ? null : SchemaDrift(differences);
