@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,7 @@ import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
+import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/prices_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
@@ -530,6 +532,136 @@ void main() {
       final app = await openBoard(tester, overstay: true);
       await expectCleanLayout(tester, app, Routes.home, 'Bed board');
       expect(find.byKey(const ValueKey('board.overstayBar')), findsOneWidget);
+    });
+  });
+
+  group('Check-in (FD-4)', () {
+    /// The owner with a shift of their own, room 7 (A Deluxe, B Comfort)
+    /// and a returning guest with a long name.
+    Future<ProviderContainer> openCheckIn(
+      WidgetTester tester, {
+      bool shift = true,
+      bool dirtyB = false,
+      int extraRooms = 0,
+    }) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final repo = RoomsRepository(env.db, env.audit);
+      if (shift) {
+        await ShiftRepository(
+          env.db,
+          env.audit,
+        ).openShift(user: owner, openingFloat: 0);
+      }
+      final r7 = await repo.createRoom(
+        owner,
+        const NewRoom(
+          number: '7',
+          floor: null,
+          notes: null,
+          bedACategoryId: SeedIds.deluxe,
+          bedBCategoryId: SeedIds.comfort,
+        ),
+      );
+      for (var n = 10; n < 10 + extraRooms; n++) {
+        await repo.createRoom(
+          owner,
+          NewRoom(
+            number: '$n',
+            floor: null,
+            notes: null,
+            bedACategoryId: SeedIds.deluxe,
+            bedBCategoryId: SeedIds.normal,
+          ),
+        );
+      }
+      if (dirtyB) {
+        // Straight to not_cleaned, so no shift is opened on the way.
+        await env.audit.writeWithAudit(
+          action: 'bed.update',
+          userId: owner.id,
+          body: (w) => w.update(
+            env.db.beds,
+            r7.beds.last.id,
+            const BedsCompanion(cleanliness: Value('not_cleaned')),
+          ),
+        );
+      }
+      await GuestsRepository(env.db, env.audit).register(
+        owner,
+        const GuestForm(
+          fullName: 'Grace Wanjiru Achieng-Odhiambo',
+          phone: '0722418905',
+          idType: IdType.nationalId,
+          idNumber: '12343921',
+        ),
+      );
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      return app;
+    }
+
+    Future<void> chooseGuest(WidgetTester tester) async {
+      await enterKey(tester, 'guests.search', '0722');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Grace Wanjiru Achieng-Odhiambo').first);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('one bed, returning guest, M-Pesa with a code error', (
+      tester,
+    ) async {
+      final app = await openCheckIn(tester);
+      await tapKey(tester, 'board.bed.7A');
+      await chooseGuest(tester);
+      await tapKey(tester, 'choice.PaymentMethod.paybill');
+      await tapKey(tester, 'checkIn.save'); // no code yet
+      await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
+      expect(find.text('Enter the M-Pesa code.'), findsOneWidget);
+    });
+
+    testWidgets('both beds, registering a new guest with errors and a '
+        'shared-phone notice', (tester) async {
+      final app = await openCheckIn(tester);
+      await tapKey(tester, 'board.bed.7A');
+      await tapKey(tester, 'checkIn.wholeRoom');
+      await tapKey(tester, 'guests.register');
+      await enterKey(tester, 'newGuest.phone', '0722 418 905');
+      await enterKey(tester, 'newGuest.idNumber', '12');
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'newGuest.save');
+      await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
+      expect(
+        find.byKey(const ValueKey('newGuest.sharedPhone')),
+        findsOneWidget,
+      );
+      expect(find.text('Bed A · 1 × KES 700'), findsOneWidget);
+    });
+
+    testWidgets('no shift of their own, Bed B needs cleaning', (tester) async {
+      final app = await openCheckIn(tester, shift: false, dirtyB: true);
+      await tapKey(tester, 'board.bed.7A');
+      await chooseGuest(tester);
+      await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
+      expect(find.byKey(const ValueKey('checkIn.noShift')), findsOneWidget);
+      expect(find.text('Bed B needs cleaning first'), findsOneWidget);
+    });
+
+    testWidgets('choosing from 25 Ready beds', (tester) async {
+      final app = await openCheckIn(tester, extraRooms: 12);
+      await tapKey(tester, 'board.newCheckIn');
+      await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
+      expect(find.byKey(const ValueKey('checkIn.pick.7A')), findsOneWidget);
+    });
+
+    testWidgets('step 4: checked in', (tester) async {
+      final app = await openCheckIn(tester);
+      await tapKey(tester, 'board.bed.7A');
+      await tapKey(tester, 'checkIn.wholeRoom');
+      await chooseGuest(tester);
+      await tapKey(tester, 'choice.PaymentMethod.cash');
+      await tapKey(tester, 'checkIn.save');
+      await expectCleanLayout(tester, app, Routes.checkIn, 'Checked in');
     });
   });
 }

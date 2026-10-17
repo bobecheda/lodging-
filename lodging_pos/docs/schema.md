@@ -6,6 +6,18 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 
 **Schema v1 is frozen as of 16 Oct 2026** (snapshot: `drift_schemas/app_database/drift_schema_v1.json`). Every schema change is a numbered drift migration with a migration test; an applied migration is never edited. New NOT NULL columns get a default or a backfill in their migration step, and setting keys added later are inserted at their default after the upgrade. Column names must not clash with drift Table members (e.g. no `table_name`), or drift's generated migration code won't compile.
 
+| Version | Date | Change |
+|---|---|---|
+| v1 | 16 Oct 2026 | First frozen schema |
+| v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
+
+**How an upgrade runs** (`AppDatabase._upgrade`):
+
+1. The file is copied to `lodging_pos.sqlite.v<old>.bak` with `VACUUM INTO` (release builds too). The newest two copies are kept; older ones are deleted.
+2. Foreign keys are switched off (a step may rebuild a table others point to), then in **one transaction**: the generated steps, `PRAGMA foreign_key_check` over the whole file, and the new `user_version`. If the check reports anything, the migration fails and is undone; the file stays at its old version.
+3. On every open: WAL journal with `synchronous = FULL` (each commit is on disk before it returns, so a power cut can't lose a committed payment), and foreign keys on.
+4. The startup check then compares the file with what this build creates. It compares each table, index and trigger's SQL with whitespace collapsed, `"` quotes stripped and no space next to `(`, `)` or `,` (a rebuilt table is spelt slightly differently from a fresh one). If that ever causes trouble again, compare `PRAGMA table_info` / `index_list` / `foreign_key_list` instead.
+
 ## Common rules
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
@@ -159,10 +171,12 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | amount | INT | nights × price_per_night |
 | period_start | DATETIME | check-in time, or the stay's `paid_until` for extensions and late-checkout charges |
 | period_end | DATETIME | check-in: 10:00 on the day after arrival + (nights − 1) days; otherwise `period_start` + nights (Nairobi calendar days) |
+| category_id | TEXT → bed_categories | v2: the bed's category at check-in; every later charge of the stay reuses it. Reports group by it |
+| category_name | TEXT | v2: that category's name at check-in, so a receipt never changes |
 
 A late-checkout charge moves `stays.paid_until` like an extension, so `paid_until` is always the latest `period_end`.
 
-> **TODO (FD-4/FD-6):** also store the category name on each charge at check-in (e.g. `category_name`), next to `price_per_night`, so a receipt never changes after a later rename or price change.
+A check-in (FD-4) writes, in one transaction: the new guest if any (`guest.create`), one stay and one check-in charge per bed (`stay.check_in`), one payment for all of them (`payment.create`) into the user's own open shift, and the next `receipt_counter` number.
 
 ### refunds
 A refund of prepaid nights not yet started (BR-8), created as a **request** in the early-checkout transaction that also closes the stay. Its status is derived, never stored: no decision → `requested`; decision `rejected` → `rejected`; decision `approved` and no payout → `approved`; payout set → `paid`.

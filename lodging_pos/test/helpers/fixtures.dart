@@ -108,6 +108,11 @@ class TestEnv {
   /// in cash, through the real check-in (FD-4) at the bed's category price.
   /// Opens a shift for [by] first if this device has none. Returns the stay
   /// id.
+  ///
+  /// Inside `tester.runAsync` with the app running, open the shift before
+  /// pumping the app: opening it here is a write that wakes the app's
+  /// watched queries in fake time, and the reads after it then wait forever
+  /// for the database lock.
   Future<String> checkIn(
     String bedId, {
     required UserAccount by,

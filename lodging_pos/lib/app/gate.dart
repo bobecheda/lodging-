@@ -11,6 +11,17 @@ abstract final class Routes {
   static const shift = '/shift';
   static const home = '/home';
   static const guests = '/guests';
+
+  /// FD-4; `?bed=<id>` starts with that bed chosen.
+  static const checkIn = '/check-in';
+
+  /// The shift screen, coming back to [location] once a shift is open.
+  static String shiftThen(String location) =>
+      Uri(path: shift, queryParameters: {'then': location}).toString();
+
+  static String checkInFor(String? bedId) => bedId == null
+      ? checkIn
+      : Uri(path: checkIn, queryParameters: {'bed': bedId}).toString();
   static const adminRooms = '/admin/rooms';
   static const adminPrices = '/admin/prices';
   static const adminStaff = '/admin/users';
@@ -23,6 +34,7 @@ abstract final class Routes {
   /// read-only.
   static const permissions = {
     guests: {Permission.registerGuests},
+    checkIn: {Permission.checkIn},
     adminRooms: {Permission.manageRooms},
     adminPrices: {Permission.editPrices, Permission.editSettings},
     adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},
@@ -77,12 +89,17 @@ String routeFor({
 }
 
 /// GoRouter redirect: null to stay on [location].
+///
+/// [returnTo] (the shift screen's `then`) is where to go once a gate is
+/// done, instead of the bed board: e.g. back to check-in after an admin
+/// opens a shift. Only a working screen [user] may open is used.
 String? redirectFor(
   String location, {
   required bool? hasUsers,
   required UserAccount? user,
   required ShiftStart? shiftStart,
   bool? schemaMatches = true,
+  String? returnTo,
 }) {
   final target = routeFor(
     hasUsers: hasUsers,
@@ -93,8 +110,30 @@ String? redirectFor(
   if (target == Routes.home) {
     // AD-1: a screen needs its permission, not just a hidden menu item.
     if (!Routes.allows(location, user)) return Routes.home;
-    // Once ready, any working screen is fine; only the gates send you home.
+    // An admin works without a shift, so signing in never sends them to
+    // the shift screen; but one with no shift of their own may go there to
+    // open one (check-in takes a payment, BR-12).
+    if (location == Routes.shift &&
+        shiftStart is ShiftReady &&
+        shiftStart.shift == null &&
+        can(user!, Permission.openShift)) {
+      return null;
+    }
+    // Once ready, any working screen is fine; only the gates send you on.
     if (!Routes.gates.contains(location)) return null;
+    return _workingScreen(returnTo, user) ?? Routes.home;
   }
   return target == location ? null : target;
+}
+
+/// [location] if it's a working screen (not a gate) that [user] may open.
+String? _workingScreen(String? location, UserAccount? user) {
+  final uri = location == null ? null : Uri.tryParse(location);
+  if (uri == null || !location!.startsWith('/') || uri.hasAuthority) {
+    return null;
+  }
+  if (Routes.gates.contains(uri.path) || !Routes.allows(uri.path, user)) {
+    return null;
+  }
+  return location;
 }

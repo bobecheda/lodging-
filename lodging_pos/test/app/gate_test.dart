@@ -26,11 +26,13 @@ void main() {
     bool? hasUsers = true,
     UserAccount? user = desk,
     ShiftStart? shiftStart,
+    String? returnTo,
   }) => redirectFor(
     location,
     hasUsers: hasUsers,
     user: user,
     shiftStart: shiftStart ?? ShiftReady(shift),
+    returnTo: returnTo,
   );
 
   test('waits on the splash screen while loading', () {
@@ -115,4 +117,66 @@ void main() {
       expect(go('/administrator'), isNull); // not under the prefix
     },
   );
+
+  group('an admin opening a shift (check-in takes a payment)', () {
+    const owner = UserAccount(
+      id: 'o1',
+      fullName: 'Owner',
+      username: 'owner',
+      role: Role.admin,
+      isActive: true,
+      mustChangePassword: false,
+    );
+    String? admin(
+      String location, {
+      ShiftStart shiftStart = const ShiftReady(null),
+      String? returnTo,
+    }) => redirectFor(
+      location,
+      hasUsers: true,
+      user: owner,
+      shiftStart: shiftStart,
+      returnTo: returnTo,
+    );
+
+    test('signing in never sends an admin to the shift screen', () {
+      expect(admin(Routes.login), Routes.home);
+      expect(admin(Routes.home), isNull);
+    });
+
+    test('with no shift of their own, they may go there by choice', () {
+      expect(admin(Routes.shift, returnTo: '/check-in?bed=b1'), isNull);
+    });
+
+    test('once their shift is open, they go back where they came from', () {
+      final own = OpenShift(
+        id: 's2',
+        userId: 'o1',
+        userName: 'Owner',
+        openedAt: DateTime.utc(2026, 10, 17),
+        openingFloat: 0,
+      );
+      expect(
+        admin(
+          Routes.shift,
+          shiftStart: ShiftReady(own),
+          returnTo: '/check-in?bed=b1',
+        ),
+        '/check-in?bed=b1',
+      );
+      expect(admin(Routes.shift, shiftStart: ShiftReady(own)), Routes.home);
+    });
+
+    test('only a working screen the user may open is a return address', () {
+      expect(go(Routes.shift, returnTo: Routes.checkIn), Routes.checkIn);
+      expect(go(Routes.shift, returnTo: Routes.login), Routes.home);
+      expect(go(Routes.shift, returnTo: Routes.adminRooms), Routes.home);
+      expect(go(Routes.shift, returnTo: 'https://example.com/x'), Routes.home);
+      expect(go(Routes.shift, returnTo: '//example.com/x'), Routes.home);
+    });
+
+    test('the check-in route needs checkIn', () {
+      expect(Routes.permissions[Routes.checkIn], isNotEmpty);
+    });
+  });
 }

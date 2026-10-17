@@ -229,6 +229,29 @@ void main() {
         ),
       );
 
+  group('durability: WAL with synchronous FULL', () {
+    Future<Object?> pragma(AppDatabase d, String name) async =>
+        (await d.customSelect('PRAGMA $name').getSingle()).data.values.single;
+
+    test('a database file opens in WAL mode with synchronous FULL (2), '
+        'on creation and on every later open', () async {
+      final dir = await Directory.systemTemp.createTemp('lodging_wal');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}${Platform.pathSeparator}db.sqlite');
+      for (var open = 0; open < 2; open++) {
+        final d = AppDatabase(NativeDatabase(file), clock: FixedClock(t0));
+        expect(await pragma(d, 'journal_mode'), 'wal');
+        expect(await pragma(d, 'synchronous'), 2);
+        expect(await pragma(d, 'foreign_keys'), 1);
+        await d.close();
+      }
+    });
+
+    test('in memory, synchronous is FULL too', () async {
+      expect(await pragma(db, 'synchronous'), 2);
+    });
+  });
+
   group('seed', () {
     test(
       'creates exactly one device and a receipt counter starting at 1',

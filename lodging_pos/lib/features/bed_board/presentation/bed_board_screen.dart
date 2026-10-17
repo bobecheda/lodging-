@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/gate.dart';
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/bed_status_tile.dart';
+import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/notes.dart';
+import '../../../core/auth/permissions.dart';
+import '../../../core/auth/session.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../domain/bed_board.dart';
 import 'bed_board_providers.dart';
 
 /// FD-2 "Bed board": every active bed's status at a glance (artboard "Bed
-/// board — front desk"). Read-only for now: FD-4 adds "New check-in" and
-/// starting a check-in from a Ready bed; FD-7/8 add the overstay buttons and
-/// the bed panel.
+/// board — front desk"). "New check-in" and a Ready tile start a check-in
+/// (FD-4); FD-7/8 add the overstay buttons and the bed panel.
 class BedBoardScreen extends ConsumerStatefulWidget {
   const BedBoardScreen({super.key});
 
@@ -38,6 +42,8 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
     final rooms = ref.watch(boardRoomsProvider);
     final grace = ref.watch(boardGraceMinutesProvider).value;
     final now = ref.watch(boardNowProvider).value;
+    final user = ref.watch(sessionProvider);
+    final canCheckIn = user != null && can(user, Permission.checkIn);
 
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,6 +78,15 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
             ),
           ),
         ),
+        if (canCheckIn) ...[
+          const SizedBox(width: Space.x12),
+          AppButton.primary(
+            key: const ValueKey('board.newCheckIn'),
+            label: 'New check-in',
+            icon: Icons.add_rounded,
+            onPressed: () => context.go(Routes.checkIn),
+          ),
+        ],
       ],
     );
 
@@ -172,7 +187,14 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
                     style: t.body,
                   ),
                 )
-              : _RoomGrid(rooms: view.rooms, now: now, graceMinutes: grace),
+              : _RoomGrid(
+                  rooms: view.rooms,
+                  now: now,
+                  graceMinutes: grace,
+                  onLet: canCheckIn
+                      ? (bedId) => context.go(Routes.checkInFor(bedId))
+                      : null,
+                ),
         ),
       ],
     );
@@ -357,11 +379,15 @@ class _RoomGrid extends StatelessWidget {
     required this.rooms,
     required this.now,
     required this.graceMinutes,
+    required this.onLet,
   });
 
   final List<BoardRoom> rooms;
   final DateTime now;
   final int graceMinutes;
+
+  /// Starts a check-in on a Ready bed; null without [Permission.checkIn].
+  final ValueChanged<String>? onLet;
 
   static const _minCard = 250.0;
   static const _gap = Space.x12;
@@ -391,6 +417,7 @@ class _RoomGrid extends StatelessWidget {
                             room: rooms[start + i],
                             now: now,
                             graceMinutes: graceMinutes,
+                            onLet: onLet,
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -409,7 +436,10 @@ class _RoomCard extends StatelessWidget {
     required this.room,
     required this.now,
     required this.graceMinutes,
+    required this.onLet,
   });
+
+  final ValueChanged<String>? onLet;
 
   final BoardRoom room;
   final DateTime now;
@@ -459,6 +489,9 @@ class _RoomCard extends StatelessWidget {
         title: bed.categoryName,
         subtitle: '${formatKes(bed.pricePerNight)} / night',
         status: BedTileStatus.ready,
+        // Only Ready beds can be let (BR-5); the others get their actions
+        // with FD-7/FD-8 and FD-9.
+        onTap: onLet == null ? null : () => onLet!(bed.id),
       ),
       BoardStatus.occupied => BedStatusTile(
         key: key,

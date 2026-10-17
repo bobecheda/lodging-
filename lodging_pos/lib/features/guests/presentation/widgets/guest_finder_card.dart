@@ -8,6 +8,7 @@ import '../../../../app/widgets/notes.dart';
 import '../../../../core/auth/permissions.dart';
 import '../../../../core/auth/session.dart';
 import '../../../../core/clock/nairobi.dart';
+import '../../../../core/contacts/id_number.dart';
 import '../../../../core/contacts/phone.dart';
 import '../../data/guests_repository.dart';
 import '../../domain/guest.dart';
@@ -28,12 +29,27 @@ class GuestFinderCard extends ConsumerStatefulWidget {
     required this.onSelected,
     this.showRecent = false,
     this.showSelected = true,
+    this.onNewGuest,
+    this.newGuest,
+    this.selectedDetail,
   });
 
   final Guest? selected;
   final ValueChanged<Guest> onSelected;
   final bool showRecent;
   final bool showSelected;
+
+  /// Check-in (FD-4): the register form doesn't save. "Use this guest"
+  /// checks the form and that its ID is free, then hands it over with the
+  /// guests already sharing its phone (shown in the form's notice), and the
+  /// check-in registers the guest in its own transaction.
+  final void Function(GuestForm form, Set<String> phoneSharedWith)? onNewGuest;
+
+  /// The new guest handed over by [onNewGuest], shown as NEW.
+  final GuestForm? newGuest;
+
+  /// Under the selected guest, e.g. "3 earlier stays · last on Fri 2 Oct".
+  final String? selectedDetail;
 
   @override
   ConsumerState<GuestFinderCard> createState() => _GuestFinderCardState();
@@ -66,6 +82,23 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
     });
     if (_errors.isNotEmpty) return;
     setState(() => _busy = true);
+    final handOver = widget.onNewGuest;
+    if (handOver != null) {
+      try {
+        final repo = ref.read(guestsRepositoryProvider);
+        final form = input.normalized();
+        await repo.requireFreeId(form);
+        final sharing = await repo.withPhone(form.phone);
+        if (!mounted) return;
+        setState(() => _registering = false);
+        handOver(input, {for (final g in sharing) g.id});
+      } on InvalidGuest catch (e) {
+        if (mounted) setState(() => _errors = e.errors);
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
     try {
       final guest = await ref
           .read(guestsRepositoryProvider)
@@ -127,7 +160,9 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
         children: [
           AppButton.primary(
             key: const ValueKey('newGuest.save'),
-            label: 'Register guest',
+            label: widget.onNewGuest == null
+                ? 'Register guest'
+                : 'Use this guest',
             busy: _busy,
             onPressed: _register,
           ),
@@ -152,7 +187,7 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
             onPressed: () => setState(() => _registering = true),
             icon: const Icon(Icons.add_rounded, size: 18),
             label: Text(
-              selected == null
+              selected == null && widget.newGuest == null
                   ? 'Register a new guest'
                   : 'Register a new guest instead',
             ),
@@ -212,11 +247,15 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
               selected: g.id == selected?.id,
               onTap: () => widget.onSelected(g),
             ),
-          if (selected != null && widget.showSelected) ...[
+          if (widget.newGuest case final pending? when widget.showSelected) ...[
+            const SizedBox(height: Space.x12),
+            SelectedGuestCard.newGuest(pending),
+          ] else if (selected != null && widget.showSelected) ...[
             const SizedBox(height: Space.x12),
             SelectedGuestCard(
               guest: selected,
               isNew: selected.id == _registeredId,
+              detail: widget.selectedDetail,
             ),
           ],
           const SizedBox(height: Space.x12),
@@ -411,14 +450,33 @@ class GuestTile extends StatelessWidget {
 
 /// The chosen guest: full phone (to confirm with them), ID still masked.
 class SelectedGuestCard extends StatelessWidget {
-  const SelectedGuestCard({
+  SelectedGuestCard({
     super.key,
-    required this.guest,
+    required Guest guest,
     this.isNew = false,
     this.showBadge = true,
-  });
+    this.detail,
+  }) : fullName = guest.fullName,
+       phone = guest.phone,
+       maskedId = guest.maskedId;
 
-  final Guest guest;
+  /// A guest check-in will register when it's saved (FD-4): always NEW.
+  SelectedGuestCard.newGuest(GuestForm form, {super.key})
+    : fullName = form.normalized().fullName,
+      phone = form.normalized().phone,
+      maskedId = switch (form.normalized()) {
+        GuestForm(idType: final IdType type, :final idNumber)
+            when idNumber.isNotEmpty =>
+          '${type.label} ${maskIdNumber(idNumber)}',
+        _ => null,
+      },
+      isNew = true,
+      showBadge = true,
+      detail = 'Registered when the check-in is saved';
+
+  final String fullName;
+  final String phone;
+  final String? maskedId;
 
   /// Just registered: NEW instead of RETURNING.
   final bool isNew;
@@ -426,11 +484,14 @@ class SelectedGuestCard extends StatelessWidget {
   /// RETURNING / NEW matter at check-in, not on the Guests screen.
   final bool showBadge;
 
+  /// A muted last line, e.g. "3 earlier stays · last on Fri 2 Oct".
+  final String? detail;
+
   @override
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final id = guest.maskedId;
+    final id = maskedId;
     return Container(
       key: const ValueKey('guests.selected'),
       padding: const EdgeInsets.all(Space.x16),
@@ -443,7 +504,7 @@ class SelectedGuestCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(guest.fullName, style: t.sectionTitle)),
+              Expanded(child: Text(fullName, style: t.sectionTitle)),
               if (showBadge)
                 StatusBadge(
                   isNew ? 'NEW' : 'RETURNING',
@@ -454,9 +515,17 @@ class SelectedGuestCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.x6),
           Text(
-            [_spaced(guest.phone), ?id].join(' · '),
+            [_spaced(phone), ?id].join(' · '),
             style: t.body.copyWith(color: c.inkSoft),
           ),
+          if (detail != null) ...[
+            const SizedBox(height: Space.x4),
+            Text(
+              detail!,
+              key: const ValueKey('guests.selected.detail'),
+              style: t.small.copyWith(color: c.muted),
+            ),
+          ],
         ],
       ),
     );

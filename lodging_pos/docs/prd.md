@@ -92,8 +92,12 @@ Each story lists the conditions that must all hold before it counts as done.
 - Entering the number of nights shows the total and the checkout date and time (always 10:00).
 - The bed becomes Occupied only after payment is saved; cancelling leaves it Available.
 - The price used is the category price at that moment and does not change later.
+- A check-in is for 1 to 30 nights (typed or stepped).
+- Saving re-checks what the screen showed: if the price, the bed's category or the checkout date changed meanwhile (e.g. the screen opened before midnight and was saved after), nothing is saved and the screen says what changed.
+- A new guest is registered in the same transaction as the check-in, so a cancelled or failed check-in leaves no stray guest.
+- The payment goes into the user's own open shift. An admin with no shift of their own can open one from the check-in screen ("Open shift") and comes back to the check-in; signing in as admin never forces the shift screen.
 
-**FD-5 Take payment.** As a receptionist, I want to record cash or Paybill so that every let is paid.
+**FD-5 Take payment.** As a receptionist, I want to record cash or Paybill so that every let is paid. *Done with FD-4: the payment is part of the check-in transaction.*
 
 - Method is Cash or Paybill; Paybill requires the M-Pesa transaction code.
 - An M-Pesa code already used is rejected with a message showing where it was used.

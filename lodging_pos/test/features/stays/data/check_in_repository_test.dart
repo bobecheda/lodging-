@@ -126,7 +126,7 @@ void main() {
         expect(result.receiptNumber, 'R-000001');
         expect(await nextReceipt(), 2);
         expect(result.roomNumber, '7');
-      expect(result.labels, [BedLabel.a]);
+        expect(result.labels, [BedLabel.a]);
         // Wed 22:00 + 2 nights → Fri 10:00.
         expect(result.paidUntil, nairobiInstant(2026, 10, 16, 10));
         expect(result.total, 1400);

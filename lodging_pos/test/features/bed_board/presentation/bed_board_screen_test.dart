@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
+import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
+import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
@@ -80,13 +82,13 @@ void main() {
       .properties
       .label!;
 
-  testWidgets('no rooms yet says where to add them; no New check-in yet', (
-    tester,
-  ) async {
-    await openBoard(tester);
+  testWidgets('no rooms yet says where to add them; New check-in opens '
+      'check-in', (tester) async {
+    final app = await openBoard(tester);
     expect(find.text('Bed board'), findsWidgets);
     expect(find.textContaining('No rooms yet'), findsOneWidget);
-    expect(find.text('New check-in'), findsNothing);
+    await tapKey(tester, 'board.newCheckIn');
+    expect(locationOf(app), Routes.checkIn);
   });
 
   testWidgets('each status has its tile, line and count; an overstay is '
@@ -138,18 +140,35 @@ void main() {
     expect(chip(tester, 'toClean'), 'Needs cleaning, 1');
   });
 
-  testWidgets('tiles are not interactive and do not look it', (tester) async {
-    await room('1');
-    await openBoard(tester);
-    final tile = find.byKey(const ValueKey('board.bed.1A'));
+  testWidgets('a Ready tile starts a check-in on that bed; other tiles are '
+      'not interactive and do not look it', (tester) async {
+    final r1 = await room('1');
+    final r2 = await room('2');
+    await env.checkIn(r2.beds.single.id, by: owner);
+    final app = await openBoard(tester);
+
+    final inUse = find.byKey(const ValueKey('board.bed.2A'));
     expect(
-      find.descendant(of: tile, matching: find.byType(InkWell)),
+      find.descendant(of: inUse, matching: find.byType(InkWell)),
       findsNothing,
     );
     expect(
-      find.descendant(of: tile, matching: find.byType(MouseRegion)),
+      find.descendant(of: inUse, matching: find.byType(MouseRegion)),
       findsNothing,
     );
+
+    await tapKey(tester, 'board.bed.1A');
+    expect(locationOf(app), Routes.checkIn);
+    expect(
+      app
+          .read(routerProvider)
+          .routerDelegate
+          .currentConfiguration
+          .uri
+          .queryParameters['bed'],
+      r1.beds.single.id,
+    );
+    expect(find.text('Room 1 · Bed A'), findsOneWidget);
   });
 
   testWidgets('chips, category and search filter the board', (tester) async {
@@ -197,6 +216,14 @@ void main() {
 
   testWidgets('a check-in shows at once (watched, no refresh)', (tester) async {
     final r4 = await room('4');
+    // Opened now, so the check-in below writes once: a write inside
+    // runAsync wakes the board's watched queries, which take the database
+    // lock in fake time, and a later read inside runAsync would wait for
+    // it forever.
+    await ShiftRepository(
+      env.db,
+      env.audit,
+    ).openShift(user: owner, openingFloat: 0);
     await openBoard(tester);
     expect(tileText('4A', 'READY'), findsOneWidget);
 

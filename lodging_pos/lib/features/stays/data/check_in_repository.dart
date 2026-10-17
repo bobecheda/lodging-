@@ -59,6 +59,7 @@ final class CheckInResult {
     required this.labels,
     required this.total,
     required this.method,
+    required this.mpesaCode,
     required this.paidUntil,
   });
 
@@ -71,6 +72,9 @@ final class CheckInResult {
   /// Whole KES.
   final int total;
   final PaymentMethod method;
+
+  /// As stored (capitals); null for cash.
+  final String? mpesaCode;
 
   /// UTC.
   final DateTime paidUntil;
@@ -341,6 +345,7 @@ class CheckInRepository {
           labels: [for (final b in beds) b.label],
           total: now.total,
           method: r.method,
+          mpesaCode: payment.mpesaCode,
           paidUntil: now.paidUntil,
         );
       },

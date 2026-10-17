@@ -72,6 +72,7 @@ class AppDatabase extends _$AppDatabase {
     }),
     onUpgrade: _upgrade,
     beforeOpen: (details) async {
+      await _configureConnection();
       await customStatement('PRAGMA foreign_keys = ON');
       // A new setting added since this file was made starts at its default.
       if (details.hadUpgrade) {
@@ -95,6 +96,7 @@ class AppDatabase extends _$AppDatabase {
         '(this one knows up to v$to).',
       );
     }
+    await _configureConnection();
     await _beforeMigration?.call(this, from);
     await customStatement('PRAGMA foreign_keys = OFF');
     await transaction(() async {
@@ -115,6 +117,17 @@ class AppDatabase extends _$AppDatabase {
       // Inside the transaction, so the version moves with the data.
       await customStatement('PRAGMA user_version = $to');
     });
+  }
+
+  /// WAL journal with `synchronous = FULL`: every commit is synced to disk
+  /// before it returns, so a power cut can't lose a committed payment (WAL
+  /// alone, at its usual NORMAL, may drop the last commits). Runs before a
+  /// migration and on every open, outside any transaction (journal_mode
+  /// can't change inside one). An in-memory database stays in `memory`
+  /// journal mode; `synchronous` still applies.
+  Future<void> _configureConnection() async {
+    await customStatement('PRAGMA journal_mode = WAL');
+    await customStatement('PRAGMA synchronous = FULL');
   }
 
   /// One step per version (`database.steps.dart`). Never edit a step once
