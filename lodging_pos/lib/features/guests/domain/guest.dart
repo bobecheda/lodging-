@@ -1,6 +1,7 @@
 /// Guests (FD-3): models and rules. Pure Dart.
 library;
 
+import '../../../core/clock/nairobi.dart';
 import '../../../core/contacts/id_number.dart';
 import '../../../core/contacts/phone.dart';
 
@@ -43,6 +44,25 @@ final class Guest {
     (final IdType type, final String number) =>
       '${type.label} ${maskIdNumber(number)}',
     _ => null,
+  };
+}
+
+/// A guest's earlier check-ins (both beds of one check-in count once).
+final class GuestHistory {
+  const GuestHistory({required this.stays, required this.lastCheckIn});
+
+  final int stays;
+
+  /// UTC; null with no stays.
+  final DateTime? lastCheckIn;
+
+  /// `3 earlier stays · last on Fri 2 Oct`, for the returning guest's card.
+  String get summary => switch ((stays, lastCheckIn)) {
+    (0, _) || (_, null) => 'No earlier stays',
+    (1, final DateTime last) =>
+      '1 earlier stay · last on ${formatDayDate(last)}',
+    (final n, final DateTime last) =>
+      '$n earlier stays · last on ${formatDayDate(last)}',
   };
 }
 

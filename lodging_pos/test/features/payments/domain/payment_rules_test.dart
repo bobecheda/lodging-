@@ -22,6 +22,34 @@ void main() {
       );
     });
 
+    test('a reused code says where it was used (FD-5)', () {
+      final at = DateTime.utc(2026, 10, 15, 8, 2); // Thu 11:02 Nairobi
+      expect(
+        mpesaCodeError(
+          PaymentMethod.paybill,
+          ' qjk7h2lm4p ',
+          codeInUse: true,
+          usedOn: MpesaCodeUse(receiptNumber: 'R-000038', at: at),
+        ),
+        'QJK7H2LM4P was already used on receipt R-000038 (Thu 15 Oct, '
+        '11:02).',
+      );
+      expect(
+        mpesaCodeError(
+          PaymentMethod.paybill,
+          'QJK7H2LM4P',
+          codeInUse: true,
+          usedOn: MpesaCodeUse(
+            receiptNumber: 'R-000040',
+            at: at,
+            isRefund: true,
+          ),
+        ),
+        'QJK7H2LM4P was already used on refund receipt R-000040 (Thu 15 '
+        'Oct, 11:02).',
+      );
+    });
+
     test('cash with a code is rejected', () {
       expect(
         mpesaCodeError(PaymentMethod.cash, 'SJK4H7XQ2P', codeInUse: false),

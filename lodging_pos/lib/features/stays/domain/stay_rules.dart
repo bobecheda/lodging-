@@ -29,6 +29,8 @@ final class ChargeLine {
     required this.kind,
     required this.nights,
     required this.pricePerNight,
+    required this.categoryId,
+    required this.categoryName,
     required this.periodStart,
     required this.periodEnd,
   });
@@ -38,6 +40,11 @@ final class ChargeLine {
 
   /// Whole KES, locked at check-in (BR-3).
   final int pricePerNight;
+
+  /// The bed's category at check-in, kept with the price so a receipt never
+  /// changes and reports group by what was sold.
+  final String categoryId;
+  final String categoryName;
   final DateTime periodStart;
   final DateTime periodEnd;
 
@@ -79,6 +86,10 @@ final class Stay {
   /// The price every later charge and refund of this stay uses (BR-3).
   int get pricePerNight => charges.first.pricePerNight;
 
+  /// The category it was let as; later charges copy it with the price.
+  String get categoryId => charges.first.categoryId;
+  String get categoryName => charges.first.categoryName;
+
   /// This stay after [charge] (an extension or late-checkout charge).
   Stay withCharge(ChargeLine charge) =>
       Stay._(id, bedId, List.unmodifiable([...charges, charge]));
@@ -112,6 +123,24 @@ DateTime paidUntil(DateTime firstCheckout, int nights) {
 /// Whole KES.
 int totalDue(int nights, int pricePerNight) => nights * pricePerNight;
 
+/// A bed being let: its category and that category's current price, which
+/// the stay then keeps (BR-3).
+final class LetBed {
+  const LetBed({
+    required this.bedId,
+    required this.categoryId,
+    required this.categoryName,
+    required this.pricePerNight,
+  });
+
+  final String bedId;
+  final String categoryId;
+  final String categoryName;
+
+  /// Whole KES.
+  final int pricePerNight;
+}
+
 /// One bed of a check-in and its charge.
 typedef PlannedStay = ({String bedId, ChargeLine charge});
 
@@ -125,12 +154,12 @@ final class CheckInPlan {
 }
 
 /// Plans letting [beds] (each at its category's current price) for [nights]
-/// from [checkInAt].
+/// from [checkInAt]. Every bed of one check-in shares its dates.
 CheckInPlan planCheckIn({
   required DateTime checkInAt,
   required int nights,
   required ClockTime checkout,
-  required List<({String bedId, int pricePerNight})> beds,
+  required List<LetBed> beds,
 }) {
   _requireNights(nights);
   final end = paidUntil(firstCheckout(checkInAt, checkout), nights);
@@ -142,6 +171,8 @@ CheckInPlan planCheckIn({
           kind: ChargeKind.checkIn,
           nights: nights,
           pricePerNight: bed.pricePerNight,
+          categoryId: bed.categoryId,
+          categoryName: bed.categoryName,
           periodStart: checkInAt,
           periodEnd: end,
         ),
@@ -156,6 +187,8 @@ ChargeLine extensionCharge(Stay stay, int nights) {
     kind: ChargeKind.extension,
     nights: nights,
     pricePerNight: stay.pricePerNight,
+    categoryId: stay.categoryId,
+    categoryName: stay.categoryName,
     periodStart: stay.paidUntil,
     periodEnd: addNairobiDays(stay.paidUntil, nights),
   );
@@ -206,6 +239,8 @@ ChargeLine? lateCheckoutCharge(Stay stay, DateTime now, int graceMinutes) {
     kind: ChargeKind.lateCheckout,
     nights: nights,
     pricePerNight: stay.pricePerNight,
+    categoryId: stay.categoryId,
+    categoryName: stay.categoryName,
     periodStart: stay.paidUntil,
     periodEnd: addNairobiDays(stay.paidUntil, nights),
   );

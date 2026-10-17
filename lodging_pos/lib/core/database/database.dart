@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
+import 'package:drift/internal/versioned_schema.dart';
 import 'package:uuid/uuid.dart';
 
 import '../clock/clock.dart';
+import 'database.steps.dart';
 import 'seed.dart';
 import 'tables/admin_tables.dart';
 import 'tables/desk_tables.dart';
@@ -42,19 +44,25 @@ part 'database.g.dart';
   include: {'triggers.drift'},
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase(super.executor, {required this._clock});
+  AppDatabase(super.executor, {required this._clock, this._beforeMigration});
 
   final Clock _clock;
+
+  /// Runs once before any migration, with the version the file is at: the
+  /// app copies the file aside (`<file>.v1.bak`). Null for in-memory
+  /// databases.
+  final BeforeMigration? _beforeMigration;
   String? _deviceId;
 
-  /// v1 is frozen as of 16 Oct 2026 (`drift_schemas/…/drift_schema_v1.json`).
+  /// v1 is frozen as of 16 Oct 2026; v2 (FD-4) adds the category to each
+  /// stay charge. Snapshots: `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
   /// `dart run drift_dev make-migrations`, add the generated step to
-  /// [_upgrade], and fill `test/drift/app_database/migration_test.dart` with
+  /// [_steps], and fill `test/drift/app_database/migration_test.dart` with
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -72,9 +80,14 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  /// One generated step per version, in order (`database.steps.dart`, from
-  /// `make-migrations`), e.g. `stepByStep(from1To2: (m, schema) async {…})`.
-  /// There are none yet: v1 is the only version.
+  /// Every upgrade, in one transaction: the generated steps in order
+  /// ([_steps], from `make-migrations`), then a foreign key check over the
+  /// whole file, then the new version number. If any of it fails, nothing
+  /// changes and the file stays at its old version.
+  ///
+  /// Foreign keys are off while the steps run, so a step may rebuild a table
+  /// (`alterTable`) that other rows point to; the pragma only works outside a
+  /// transaction. `beforeOpen` turns them back on.
   Future<void> _upgrade(Migrator m, int from, int to) async {
     if (from > to) {
       throw StateError(
@@ -82,8 +95,54 @@ class AppDatabase extends _$AppDatabase {
         '(this one knows up to v$to).',
       );
     }
-    throw StateError('No migration step from v$from to v$to.');
+    await _beforeMigration?.call(this, from);
+    await customStatement('PRAGMA foreign_keys = OFF');
+    await transaction(() async {
+      await VersionedSchema.runMigrationSteps(
+        migrator: m,
+        from: from,
+        to: to,
+        steps: _steps,
+      );
+      final broken = await customSelect('PRAGMA foreign_key_check').get();
+      if (broken.isNotEmpty) {
+        throw MigrationFailed(from, to, [
+          for (final row in broken)
+            '${row.data['table']} row ${row.data['rowid']} → '
+                '${row.data['parent']}',
+        ]);
+      }
+      // Inside the transaction, so the version moves with the data.
+      await customStatement('PRAGMA user_version = $to');
+    });
   }
+
+  /// One step per version (`database.steps.dart`). Never edit a step once
+  /// it has shipped; add the next one.
+  static final _steps = migrationSteps(
+    // v2 (FD-4): each charge keeps its bed's category, id and name, as at
+    // check-in. Rebuilding the table fills both for existing rows from the
+    // stay's bed (an UPDATE would trip the charges' triggers).
+    from1To2: (m, schema) async {
+      final charges = schema.stayCharges;
+      CustomExpression<String> fromBed(String column) => CustomExpression(
+        '(SELECT bed_categories.$column FROM stays '
+        'JOIN beds ON beds.id = stays.bed_id '
+        'JOIN bed_categories ON bed_categories.id = beds.category_id '
+        'WHERE stays.id = stay_charges.stay_id)',
+      );
+      await m.alterTable(
+        TableMigration(
+          charges,
+          newColumns: [charges.categoryId, charges.categoryName],
+          columnTransformer: {
+            charges.categoryId: fromBed('id'),
+            charges.categoryName: fromBed('name'),
+          },
+        ),
+      );
+    },
+  );
 
   Future<void>? _closing;
 
@@ -95,4 +154,24 @@ class AppDatabase extends _$AppDatabase {
   /// This install's device id, stamped on every synced row it writes.
   Future<String> deviceId() async =>
       _deviceId ??= (await select(device).getSingle()).deviceId;
+}
+
+/// Called with the open database and the version its file is at, before a
+/// migration starts.
+typedef BeforeMigration = Future<void> Function(AppDatabase db, int from);
+
+/// A migration left foreign keys pointing nowhere, so it was rolled back
+/// and the file kept its old version.
+class MigrationFailed implements Exception {
+  const MigrationFailed(this.from, this.to, this.problems);
+  final int from;
+  final int to;
+
+  /// One line per broken foreign key: table, row and the table it points to.
+  final List<String> problems;
+
+  @override
+  String toString() =>
+      'The upgrade from v$from to v$to was undone: ${problems.length} broken '
+      'foreign keys (${problems.join('; ')}).';
 }

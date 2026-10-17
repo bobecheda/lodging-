@@ -39,7 +39,13 @@ Future<List<String>> schemaDifferences(
   ];
 }
 
-/// `type name` → its SQL, whitespace collapsed.
+/// `type name` → its SQL without whitespace or identifier quotes.
+///
+/// A table a migration rebuilt from its frozen version (`alterTable`) is
+/// written as `CHECK (kind IN …)` and `REFERENCES stays(id)` where a fresh
+/// file has `CHECK("kind" IN …)` and `REFERENCES stays (id)`: the same
+/// schema in other words. Neither spaces nor `"` change what SQL means, so
+/// they're ignored; any other difference still counts.
 Future<Map<String, String>> _objects(GeneratedDatabase db) async {
   final rows = await db
       .customSelect(
@@ -50,7 +56,10 @@ Future<Map<String, String>> _objects(GeneratedDatabase db) async {
   return {
     for (final r in rows)
       '${r.read<String>('type')} ${r.read<String>('name')}':
-          (r.readNullable<String>('sql') ?? '').replaceAll(RegExp(r'\s+'), ' '),
+          (r.readNullable<String>('sql') ?? '').replaceAll(
+            RegExp(r'[\s"]'),
+            '',
+          ),
   };
 }
 

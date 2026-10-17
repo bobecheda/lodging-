@@ -5929,6 +5929,31 @@ class $StayChargesTable extends StayCharges
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES bed_categories (id)',
+    ),
+  );
+  static const VerificationMeta _categoryNameMeta = const VerificationMeta(
+    'categoryName',
+  );
+  @override
+  late final GeneratedColumn<String> categoryName = GeneratedColumn<String>(
+    'category_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5943,6 +5968,8 @@ class $StayChargesTable extends StayCharges
     amount,
     periodStart,
     periodEnd,
+    categoryId,
+    categoryName,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6047,6 +6074,25 @@ class $StayChargesTable extends StayCharges
     } else if (isInserting) {
       context.missing(_periodEndMeta);
     }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryIdMeta);
+    }
+    if (data.containsKey('category_name')) {
+      context.handle(
+        _categoryNameMeta,
+        categoryName.isAcceptableOrUnknown(
+          data['category_name']!,
+          _categoryNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryNameMeta);
+    }
     return context;
   }
 
@@ -6104,6 +6150,14 @@ class $StayChargesTable extends StayCharges
         DriftSqlType.dateTime,
         data['${effectivePrefix}period_end'],
       )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      )!,
+      categoryName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_name'],
+      )!,
     );
   }
 
@@ -6127,6 +6181,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
   final int amount;
   final DateTime periodStart;
   final DateTime periodEnd;
+  final String categoryId;
+  final String categoryName;
   const StayChargeRow({
     required this.id,
     required this.createdAt,
@@ -6140,6 +6196,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     required this.amount,
     required this.periodStart,
     required this.periodEnd,
+    required this.categoryId,
+    required this.categoryName,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6156,6 +6214,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     map['amount'] = Variable<int>(amount);
     map['period_start'] = Variable<DateTime>(periodStart);
     map['period_end'] = Variable<DateTime>(periodEnd);
+    map['category_id'] = Variable<String>(categoryId);
+    map['category_name'] = Variable<String>(categoryName);
     return map;
   }
 
@@ -6173,6 +6233,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       amount: Value(amount),
       periodStart: Value(periodStart),
       periodEnd: Value(periodEnd),
+      categoryId: Value(categoryId),
+      categoryName: Value(categoryName),
     );
   }
 
@@ -6194,6 +6256,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       amount: serializer.fromJson<int>(json['amount']),
       periodStart: serializer.fromJson<DateTime>(json['period_start']),
       periodEnd: serializer.fromJson<DateTime>(json['period_end']),
+      categoryId: serializer.fromJson<String>(json['category_id']),
+      categoryName: serializer.fromJson<String>(json['category_name']),
     );
   }
   @override
@@ -6212,6 +6276,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
       'amount': serializer.toJson<int>(amount),
       'period_start': serializer.toJson<DateTime>(periodStart),
       'period_end': serializer.toJson<DateTime>(periodEnd),
+      'category_id': serializer.toJson<String>(categoryId),
+      'category_name': serializer.toJson<String>(categoryName),
     };
   }
 
@@ -6228,6 +6294,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     int? amount,
     DateTime? periodStart,
     DateTime? periodEnd,
+    String? categoryId,
+    String? categoryName,
   }) => StayChargeRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -6241,6 +6309,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     amount: amount ?? this.amount,
     periodStart: periodStart ?? this.periodStart,
     periodEnd: periodEnd ?? this.periodEnd,
+    categoryId: categoryId ?? this.categoryId,
+    categoryName: categoryName ?? this.categoryName,
   );
   StayChargeRow copyWithCompanion(StayChargesCompanion data) {
     return StayChargeRow(
@@ -6260,6 +6330,12 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
           ? data.periodStart.value
           : this.periodStart,
       periodEnd: data.periodEnd.present ? data.periodEnd.value : this.periodEnd,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      categoryName: data.categoryName.present
+          ? data.categoryName.value
+          : this.categoryName,
     );
   }
 
@@ -6277,7 +6353,9 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
           ..write('pricePerNight: $pricePerNight, ')
           ..write('amount: $amount, ')
           ..write('periodStart: $periodStart, ')
-          ..write('periodEnd: $periodEnd')
+          ..write('periodEnd: $periodEnd, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('categoryName: $categoryName')
           ..write(')'))
         .toString();
   }
@@ -6296,6 +6374,8 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
     amount,
     periodStart,
     periodEnd,
+    categoryId,
+    categoryName,
   );
   @override
   bool operator ==(Object other) =>
@@ -6312,7 +6392,9 @@ class StayChargeRow extends DataClass implements Insertable<StayChargeRow> {
           other.pricePerNight == this.pricePerNight &&
           other.amount == this.amount &&
           other.periodStart == this.periodStart &&
-          other.periodEnd == this.periodEnd);
+          other.periodEnd == this.periodEnd &&
+          other.categoryId == this.categoryId &&
+          other.categoryName == this.categoryName);
 }
 
 class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
@@ -6328,6 +6410,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
   final Value<int> amount;
   final Value<DateTime> periodStart;
   final Value<DateTime> periodEnd;
+  final Value<String> categoryId;
+  final Value<String> categoryName;
   final Value<int> rowid;
   const StayChargesCompanion({
     this.id = const Value.absent(),
@@ -6342,6 +6426,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     this.amount = const Value.absent(),
     this.periodStart = const Value.absent(),
     this.periodEnd = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.categoryName = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   StayChargesCompanion.insert({
@@ -6357,6 +6443,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     required int amount,
     required DateTime periodStart,
     required DateTime periodEnd,
+    required String categoryId,
+    required String categoryName,
     this.rowid = const Value.absent(),
   }) : stayId = Value(stayId),
        paymentId = Value(paymentId),
@@ -6365,7 +6453,9 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
        pricePerNight = Value(pricePerNight),
        amount = Value(amount),
        periodStart = Value(periodStart),
-       periodEnd = Value(periodEnd);
+       periodEnd = Value(periodEnd),
+       categoryId = Value(categoryId),
+       categoryName = Value(categoryName);
   static Insertable<StayChargeRow> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -6379,6 +6469,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     Expression<int>? amount,
     Expression<DateTime>? periodStart,
     Expression<DateTime>? periodEnd,
+    Expression<String>? categoryId,
+    Expression<String>? categoryName,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6394,6 +6486,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
       if (amount != null) 'amount': amount,
       if (periodStart != null) 'period_start': periodStart,
       if (periodEnd != null) 'period_end': periodEnd,
+      if (categoryId != null) 'category_id': categoryId,
+      if (categoryName != null) 'category_name': categoryName,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6411,6 +6505,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     Value<int>? amount,
     Value<DateTime>? periodStart,
     Value<DateTime>? periodEnd,
+    Value<String>? categoryId,
+    Value<String>? categoryName,
     Value<int>? rowid,
   }) {
     return StayChargesCompanion(
@@ -6426,6 +6522,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
       amount: amount ?? this.amount,
       periodStart: periodStart ?? this.periodStart,
       periodEnd: periodEnd ?? this.periodEnd,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6469,6 +6567,12 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
     if (periodEnd.present) {
       map['period_end'] = Variable<DateTime>(periodEnd.value);
     }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (categoryName.present) {
+      map['category_name'] = Variable<String>(categoryName.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6490,6 +6594,8 @@ class StayChargesCompanion extends UpdateCompanion<StayChargeRow> {
           ..write('amount: $amount, ')
           ..write('periodStart: $periodStart, ')
           ..write('periodEnd: $periodEnd, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('categoryName: $categoryName, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -15106,6 +15212,24 @@ final class $$BedCategoriesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$StayChargesTable, List<StayChargeRow>>
+  _stayChargesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.stayCharges,
+    aliasName: 'bed_categories__id__stay_charges__category_id',
+  );
+
+  $$StayChargesTableProcessedTableManager get stayChargesRefs {
+    final manager = $$StayChargesTableTableManager(
+      $_db,
+      $_db.stayCharges,
+    ).filter((f) => f.categoryId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_stayChargesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$BedCategoriesTableFilterComposer
@@ -15173,6 +15297,31 @@ class $$BedCategoriesTableFilterComposer
           }) => $$BedsTableFilterComposer(
             $db: $db,
             $table: $db.beds,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> stayChargesRefs(
+    Expression<bool> Function($$StayChargesTableFilterComposer f) f,
+  ) {
+    final $$StayChargesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.stayCharges,
+      getReferencedColumn: (t) => t.categoryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StayChargesTableFilterComposer(
+            $db: $db,
+            $table: $db.stayCharges,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -15292,6 +15441,31 @@ class $$BedCategoriesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> stayChargesRefs<T extends Object>(
+    Expression<T> Function($$StayChargesTableAnnotationComposer a) f,
+  ) {
+    final $$StayChargesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.stayCharges,
+      getReferencedColumn: (t) => t.categoryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StayChargesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stayCharges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BedCategoriesTableTableManager
@@ -15307,7 +15481,7 @@ class $$BedCategoriesTableTableManager
           $$BedCategoriesTableUpdateCompanionBuilder,
           (BedCategoryRow, $$BedCategoriesTableReferences),
           BedCategoryRow,
-          PrefetchHooks Function({bool bedsRefs})
+          PrefetchHooks Function({bool bedsRefs, bool stayChargesRefs})
         > {
   $$BedCategoriesTableTableManager(_$AppDatabase db, $BedCategoriesTable table)
     : super(
@@ -15372,10 +15546,13 @@ class $$BedCategoriesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({bedsRefs = false}) {
+          prefetchHooksCallback: ({bedsRefs = false, stayChargesRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (bedsRefs) db.beds],
+              explicitlyWatchedTables: [
+                if (bedsRefs) db.beds,
+                if (stayChargesRefs) db.stayCharges,
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -15394,6 +15571,25 @@ class $$BedCategoriesTableTableManager
                             table,
                             p0,
                           ).bedsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.categoryId == item.id),
+                      typedResults: items,
+                    ),
+                  if (stayChargesRefs)
+                    await $_getPrefetchedData<
+                      BedCategoryRow,
+                      $BedCategoriesTable,
+                      StayChargeRow
+                    >(
+                      currentTable: table,
+                      referencedTable: $$BedCategoriesTableReferences
+                          ._stayChargesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$BedCategoriesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).stayChargesRefs,
                       referencedItemsForCurrentItem: (item, referencedItems) =>
                           referencedItems.where((e) => e.categoryId == item.id),
                       typedResults: items,
@@ -15418,7 +15614,7 @@ typedef $$BedCategoriesTableProcessedTableManager =
       $$BedCategoriesTableUpdateCompanionBuilder,
       (BedCategoryRow, $$BedCategoriesTableReferences),
       BedCategoryRow,
-      PrefetchHooks Function({bool bedsRefs})
+      PrefetchHooks Function({bool bedsRefs, bool stayChargesRefs})
     >;
 typedef $$RoomsTableCreateCompanionBuilder = RoomsCompanion Function({
   Value<String> id,
@@ -19349,6 +19545,8 @@ typedef $$StayChargesTableCreateCompanionBuilder =
       required int amount,
       required DateTime periodStart,
       required DateTime periodEnd,
+      required String categoryId,
+      required String categoryName,
       Value<int> rowid,
     });
 typedef $$StayChargesTableUpdateCompanionBuilder =
@@ -19365,6 +19563,8 @@ typedef $$StayChargesTableUpdateCompanionBuilder =
       Value<int> amount,
       Value<DateTime> periodStart,
       Value<DateTime> periodEnd,
+      Value<String> categoryId,
+      Value<String> categoryName,
       Value<int> rowid,
     });
 
@@ -19400,6 +19600,24 @@ final class $$StayChargesTableReferences
       $_db.payments,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_paymentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BedCategoriesTable _categoryIdTable(_$AppDatabase db) => db
+      .bedCategories
+      .createAlias('stay_charges__category_id__bed_categories__id');
+
+  $$BedCategoriesTableProcessedTableManager get categoryId {
+    final $_column = $_itemColumn<String>('category_id')!;
+
+    final manager = $$BedCategoriesTableTableManager(
+      $_db,
+      $_db.bedCategories,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_categoryIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -19466,6 +19684,11 @@ class $$StayChargesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$StaysTableFilterComposer get stayId {
     final $$StaysTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -19503,6 +19726,29 @@ class $$StayChargesTableFilterComposer
           }) => $$PaymentsTableFilterComposer(
             $db: $db,
             $table: $db.payments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BedCategoriesTableFilterComposer get categoryId {
+    final $$BedCategoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.bedCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BedCategoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.bedCategories,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -19572,6 +19818,11 @@ class $$StayChargesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$StaysTableOrderingComposer get stayId {
     final $$StaysTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -19609,6 +19860,29 @@ class $$StayChargesTableOrderingComposer
           }) => $$PaymentsTableOrderingComposer(
             $db: $db,
             $table: $db.payments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BedCategoriesTableOrderingComposer get categoryId {
+    final $$BedCategoriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.bedCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BedCategoriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bedCategories,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -19662,6 +19936,11 @@ class $$StayChargesTableAnnotationComposer
   GeneratedColumn<DateTime> get periodEnd =>
       $composableBuilder(column: $table.periodEnd, builder: (column) => column);
 
+  GeneratedColumn<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => column,
+  );
+
   $$StaysTableAnnotationComposer get stayId {
     final $$StaysTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -19707,6 +19986,29 @@ class $$StayChargesTableAnnotationComposer
     );
     return composer;
   }
+
+  $$BedCategoriesTableAnnotationComposer get categoryId {
+    final $$BedCategoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.bedCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BedCategoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bedCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$StayChargesTableTableManager
@@ -19722,7 +20024,7 @@ class $$StayChargesTableTableManager
           $$StayChargesTableUpdateCompanionBuilder,
           (StayChargeRow, $$StayChargesTableReferences),
           StayChargeRow,
-          PrefetchHooks Function({bool stayId, bool paymentId})
+          PrefetchHooks Function({bool stayId, bool paymentId, bool categoryId})
         > {
   $$StayChargesTableTableManager(_$AppDatabase db, $StayChargesTable table)
     : super(
@@ -19749,6 +20051,8 @@ class $$StayChargesTableTableManager
                 Value<int> amount = const Value.absent(),
                 Value<DateTime> periodStart = const Value.absent(),
                 Value<DateTime> periodEnd = const Value.absent(),
+                Value<String> categoryId = const Value.absent(),
+                Value<String> categoryName = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StayChargesCompanion(
                 id: id,
@@ -19763,6 +20067,8 @@ class $$StayChargesTableTableManager
                 amount: amount,
                 periodStart: periodStart,
                 periodEnd: periodEnd,
+                categoryId: categoryId,
+                categoryName: categoryName,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -19779,6 +20085,8 @@ class $$StayChargesTableTableManager
                 required int amount,
                 required DateTime periodStart,
                 required DateTime periodEnd,
+                required String categoryId,
+                required String categoryName,
                 Value<int> rowid = const Value.absent(),
               }) => StayChargesCompanion.insert(
                 id: id,
@@ -19793,6 +20101,8 @@ class $$StayChargesTableTableManager
                 amount: amount,
                 periodStart: periodStart,
                 periodEnd: periodEnd,
+                categoryId: categoryId,
+                categoryName: categoryName,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -19803,56 +20113,68 @@ class $$StayChargesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({stayId = false, paymentId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (stayId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.stayId,
-                        referencedTable: $$StayChargesTableReferences
-                            ._stayIdTable(db),
-                        referencedColumn: $$StayChargesTableReferences
-                            ._stayIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-                    if (paymentId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.paymentId,
-                        referencedTable: $$StayChargesTableReferences
-                            ._paymentIdTable(db),
-                        referencedColumn: $$StayChargesTableReferences
-                            ._paymentIdTable(db)
-                            .id,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({stayId = false, paymentId = false, categoryId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (stayId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.stayId,
+                            referencedTable: $$StayChargesTableReferences
+                                ._stayIdTable(db),
+                            referencedColumn: $$StayChargesTableReferences
+                                ._stayIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (paymentId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.paymentId,
+                            referencedTable: $$StayChargesTableReferences
+                                ._paymentIdTable(db),
+                            referencedColumn: $$StayChargesTableReferences
+                                ._paymentIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (categoryId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoryId,
+                            referencedTable: $$StayChargesTableReferences
+                                ._categoryIdTable(db),
+                            referencedColumn: $$StayChargesTableReferences
+                                ._categoryIdTable(db)
+                                .id,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -19869,7 +20191,7 @@ typedef $$StayChargesTableProcessedTableManager =
       $$StayChargesTableUpdateCompanionBuilder,
       (StayChargeRow, $$StayChargesTableReferences),
       StayChargeRow,
-      PrefetchHooks Function({bool stayId, bool paymentId})
+      PrefetchHooks Function({bool stayId, bool paymentId, bool categoryId})
     >;
 typedef $$RefundsTableCreateCompanionBuilder = RefundsCompanion Function({
   Value<String> id,

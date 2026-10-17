@@ -13,13 +13,21 @@ const checkout = ClockTime(10, 0);
 const grace = 60;
 const price = 700;
 
+/// Bed 3A, Deluxe.
+LetBed deluxeBed({int pricePerNight = price}) => LetBed(
+  bedId: 'bed-3a',
+  categoryId: 'deluxe',
+  categoryName: 'Deluxe',
+  pricePerNight: pricePerNight,
+);
+
 /// A stay on one bed, checked in at [checkInAt] for [nights].
 Stay stayFrom(DateTime checkInAt, int nights, {int pricePerNight = price}) {
   final plan = planCheckIn(
     checkInAt: checkInAt,
     nights: nights,
     checkout: checkout,
-    beds: [(bedId: 'bed-3a', pricePerNight: pricePerNight)],
+    beds: [deluxeBed(pricePerNight: pricePerNight)],
   );
   return Stay.fromCheckIn(
     id: 'stay-1',
@@ -122,6 +130,17 @@ void main() {
     expect((refund.pricePerNight, refund.amount), (700, 2100));
   });
 
+  test('later charges keep the check-in charge’s category, like its price', () {
+    // Even if the bed moves to another category after check-in.
+    final stay = stayFrom(oct(15, 19), 2);
+    final extension = extensionCharge(stay, 1);
+    final late = lateCheckoutCharge(stay, oct(17, 11, 30), grace)!;
+    for (final charge in [extension, late]) {
+      expect((charge.categoryId, charge.categoryName), ('deluxe', 'Deluxe'));
+    }
+    expect(stay.categoryName, 'Deluxe');
+  });
+
   group('required test case 8: late checkout', () {
     final stay = stayFrom(oct(15, 19), 1); // paid until Fri 10:00
 
@@ -188,12 +207,25 @@ void main() {
       nights: 2,
       checkout: checkout,
       beds: [
-        (bedId: 'bed-3a', pricePerNight: 700),
-        (bedId: 'bed-3b', pricePerNight: 500),
+        deluxeBed(),
+        const LetBed(
+          bedId: 'bed-3b',
+          categoryId: 'normal',
+          categoryName: 'Normal',
+          pricePerNight: 500,
+        ),
       ],
     );
     expect([for (final s in plan.stays) s.bedId], ['bed-3a', 'bed-3b']);
     expect([for (final s in plan.stays) s.charge.amount], [1400, 1000]);
+    // Each charge keeps its own bed's category (v2).
+    expect(
+      [
+        for (final s in plan.stays)
+          (s.charge.categoryId, s.charge.categoryName),
+      ],
+      [('deluxe', 'Deluxe'), ('normal', 'Normal')],
+    );
     expect(plan.paymentAmount, 2400);
     for (final s in plan.stays) {
       expect(s.charge.periodStart, oct(15, 19));
@@ -220,7 +252,7 @@ void main() {
           checkInAt: oct(15, 19),
           nights: 0,
           checkout: checkout,
-          beds: [(bedId: 'bed-3a', pricePerNight: 700)],
+          beds: [deluxeBed()],
         ),
         throwsArgumentError,
       );

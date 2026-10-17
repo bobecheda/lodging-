@@ -18,6 +18,12 @@ import 'package:lodging_pos/features/auth/data/user_repository.dart';
 import 'package:lodging_pos/features/auth/domain/setup.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
 import 'package:lodging_pos/features/bed_board/presentation/bed_board_providers.dart';
+import 'package:lodging_pos/features/guests/data/guests_repository.dart';
+import 'package:lodging_pos/features/guests/domain/guest.dart';
+import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
+import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
+import 'package:lodging_pos/features/stays/data/check_in_repository.dart';
+import 'package:lodging_pos/features/stays/domain/check_in.dart';
 import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 
 /// 22:00 Nairobi, 14 Oct 2026.
@@ -95,86 +101,62 @@ class TestEnv {
     );
   }
 
-  /// Test-only stand-in for FD-4 check-in, until it exists: writes a
-  /// guest, an active stay on [bedId] for [nights] at [pricePerNight] (paid
-  /// until 10:00 per the stay rules),
-  /// a cash payment and its charge, through the writer. Opens a shift for
-  /// [by] if this device has none. Returns the stay id.
+  late final guests = GuestsRepository(db, audit);
+  late final checkIns = CheckInRepository(db, audit, guests);
+
+  /// Checks a new "Test Guest" (0700000000) into [bedId] for [nights], paid
+  /// in cash, through the real check-in (FD-4) at the bed's category price.
+  /// Opens a shift for [by] first if this device has none. Returns the stay
+  /// id.
   Future<String> checkIn(
     String bedId, {
     required UserAccount by,
     int nights = 1,
-    int pricePerNight = 700,
-  }) {
-    final now = clock.now();
-    final charge = planCheckIn(
-      checkInAt: now,
-      nights: nights,
-      checkout: const ClockTime(10, 0),
-      beds: [(bedId: bedId, pricePerNight: pricePerNight)],
-    ).stays.single.charge;
-    final paidUntil = charge.periodEnd;
-    return audit.writeWithAudit(
-      action: 'stay.check_in',
-      userId: by.id,
-      body: (w) async {
-        final open = await (db.select(
-          db.shifts,
-        )..where((s) => s.status.equals('open'))).getSingleOrNull();
-        final shiftId =
-            open?.id ??
-            (await w.insert(
-              db.shifts,
-              ShiftsCompanion.insert(
-                userId: by.id,
-                openedAt: now,
-                openingFloat: 0,
-                status: 'open',
-              ),
-              action: 'shift.open',
-            )).id;
-        final guest = await w.insert(
-          db.guests,
-          GuestsCompanion.insert(fullName: 'Test Guest', phone: '0700000000'),
-        );
-        final stay = await w.insert(
-          db.stays,
-          StaysCompanion.insert(
-            guestId: guest.id,
-            bedId: bedId,
-            checkInAt: now,
-            paidUntil: paidUntil,
-            status: 'active',
-            checkedInBy: by.id,
+  }) async {
+    final shifts = ShiftRepository(db, audit);
+    if (await shifts.openShiftOnThisDevice() == null) {
+      await shifts.openShift(user: by, openingFloat: 0);
+    }
+    final row = await (db.select(db.beds).join([
+      innerJoin(
+        db.bedCategories,
+        db.bedCategories.id.equalsExp(db.beds.categoryId),
+      ),
+    ])..where(db.beds.id.equals(bedId))).getSingle();
+    final category = row.readTable(db.bedCategories);
+    const phone = '0700000000';
+    final result = await checkIns.checkIn(
+      by,
+      CheckInRequest(
+        guest: NewGuest(
+          const GuestForm(
+            fullName: 'Test Guest',
+            phone: phone,
+            idType: null,
+            idNumber: '',
           ),
-        );
-        final payment = await w.insert(
-          db.payments,
-          PaymentsCompanion.insert(
-            receiptNumber: 'T-${stay.id.substring(0, 8)}',
-            shiftId: shiftId,
-            receivedBy: by.id,
-            receivedAt: now,
-            amount: charge.amount,
-            method: 'cash',
-          ),
-        );
-        await w.insert(
-          db.stayCharges,
-          StayChargesCompanion.insert(
-            stayId: stay.id,
-            paymentId: payment.id,
-            kind: charge.kind.code,
-            nights: nights,
-            pricePerNight: pricePerNight,
-            amount: charge.amount,
-            periodStart: now,
-            periodEnd: paidUntil,
-          ),
-        );
-        return stay.id;
-      },
+          phoneSharedWith: {
+            for (final g in await guests.withPhone(phone)) g.id,
+          },
+        ),
+        method: PaymentMethod.cash,
+        mpesaCode: null,
+        shown: quoteCheckIn(
+          checkInAt: clock.now(),
+          nights: nights,
+          checkout: const ClockTime(10, 0),
+          beds: [
+            LetBed(
+              bedId: bedId,
+              categoryId: category.id,
+              categoryName: category.name,
+              pricePerNight: category.pricePerNight,
+            ),
+          ],
+        ),
+      ),
     );
+    return result.stayIds.single;
   }
 
   /// Test-only stand-in for FD-8 checkout.

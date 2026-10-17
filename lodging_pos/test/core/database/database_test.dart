@@ -224,6 +224,8 @@ void main() {
           amount: amount ?? nights * pricePerNight,
           periodStart: t0,
           periodEnd: t0.add(Duration(days: nights < 1 ? 1 : nights)),
+          categoryId: SeedIds.deluxe,
+          categoryName: 'Deluxe',
         ),
       );
 

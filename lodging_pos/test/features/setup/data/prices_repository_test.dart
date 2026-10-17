@@ -112,7 +112,7 @@ void main() {
           bedBCategoryId: null,
         ),
       );
-      await env.checkIn(room.beds.single.id, by: owner, pricePerNight: 700);
+      await env.checkIn(room.beds.single.id, by: owner);
       await prices.savePrices(owner, {SeedIds.deluxe: 750});
       final charge = await env.db.select(env.db.stayCharges).getSingle();
       expect(charge.pricePerNight, 700);
