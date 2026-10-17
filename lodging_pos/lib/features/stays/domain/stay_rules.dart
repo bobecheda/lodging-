@@ -168,9 +168,21 @@ Occupancy occupancyOf({
   required Stay? activeStay,
   required DateTime now,
   required int graceMinutes,
+}) => occupancyAt(
+  paidUntil: activeStay?.paidUntil,
+  now: now,
+  graceMinutes: graceMinutes,
+);
+
+/// [occupancyOf] from just the active stay's `paid_until` (null: no active
+/// stay), for screens that don't load the whole stay (the bed board).
+Occupancy occupancyAt({
+  required DateTime? paidUntil,
+  required DateTime now,
+  required int graceMinutes,
 }) {
-  if (activeStay == null) return Occupancy.available;
-  final overstayAt = activeStay.paidUntil.add(Duration(minutes: graceMinutes));
+  if (paidUntil == null) return Occupancy.available;
+  final overstayAt = paidUntil.add(Duration(minutes: graceMinutes));
   return now.isAfter(overstayAt) ? Occupancy.overstay : Occupancy.occupied;
 }
 

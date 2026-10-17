@@ -35,12 +35,15 @@ class BedStatusTile extends StatelessWidget {
   /// "A" or "B".
   final String label;
 
-  /// e.g. "Deluxe · KES 700".
+  /// e.g. "Deluxe", or the guest's name on a let bed. One line.
   final String title;
 
-  /// e.g. "Ready to let", "Peter Kamau · until 22:15", "paid to 10:00".
+  /// e.g. "KES 700 / night", "Deluxe · until Fri 10:00". One line.
   final String subtitle;
   final BedTileStatus status;
+
+  /// Null: the tile isn't interactive and doesn't look it (no hover, no
+  /// hand cursor, no ripple).
   final VoidCallback? onTap;
 
   @override
@@ -116,44 +119,57 @@ class BedStatusTile extends StatelessWidget {
             child: Text(label, style: t.bodyStrong.copyWith(color: letterFg)),
           ),
           const SizedBox(width: Space.x12),
+          // The label sits on the title line so the second line gets the
+          // tile's full width (e.g. "until Fri 10:00 · Deluxe").
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: t.bodyStrong.copyWith(color: fg)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.bodyStrong.copyWith(color: fg),
+                      ),
+                    ),
+                    const SizedBox(width: Space.x8),
+                    badge,
+                  ],
+                ),
                 Text(
                   subtitle,
-                  maxLines: 2,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: t.small.copyWith(color: subtitleColor),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: Space.x8),
-          badge,
         ],
       ),
     );
 
+    final tile = status == BedTileStatus.toClean
+        ? DashedBorder(color: c.butterBorder, radius: Radii.tile, child: body)
+        : body;
     return Semantics(
       button: onTap != null,
       label: 'Bed $label, $title. ${status.spoken}. $subtitle',
       excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(Radii.tile),
-          child: status == BedTileStatus.toClean
-              ? DashedBorder(
-                  color: c.butterBorder,
-                  radius: Radii.tile,
-                  child: body,
-                )
-              : body,
-        ),
-      ),
+      child: onTap == null
+          ? tile
+          : Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(Radii.tile),
+                child: tile,
+              ),
+            ),
     );
   }
 }

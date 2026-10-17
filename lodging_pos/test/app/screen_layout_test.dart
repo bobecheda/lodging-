@@ -463,4 +463,73 @@ void main() {
       await expectCleanLayout(tester, app, Routes.guests, 'Register guest');
     });
   });
+
+  group('Bed board (FD-2)', () {
+    /// 12 rooms as on the artboard: 6 with one bed, 6 with two (18 beds),
+    /// some in use, some to clean; with [overstay], Room 5 B overstays.
+    Future<ProviderContainer> openBoard(
+      WidgetTester tester, {
+      required bool overstay,
+    }) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final repo = RoomsRepository(env.db, env.audit);
+      final created = <String, RoomSummary>{};
+      for (var n = 1; n <= 12; n++) {
+        final twoBeds = const {2, 3, 5, 7, 8, 11}.contains(n);
+        created['$n'] = await repo.createRoom(
+          owner,
+          NewRoom(
+            number: '$n',
+            floor: null,
+            notes: null,
+            bedACategoryId: n.isEven ? SeedIds.deluxe : SeedIds.comfort,
+            bedBCategoryId: twoBeds ? SeedIds.normal : null,
+          ),
+        );
+      }
+      if (overstay) {
+        // Yesterday's 1-night stay: paid to 10:00 today, long past grace.
+        env.clock.set(env.clock.now().subtract(const Duration(days: 2)));
+        await env.checkIn(created['5']!.beds.last.id, by: owner);
+        env.clock.set(env.clock.now().add(const Duration(days: 2)));
+      }
+      for (final n in ['2', '3', '6', '8', '9']) {
+        await env.checkIn(created[n]!.beds.first.id, by: owner, nights: 3);
+      }
+      final gone = await env.checkIn(created['4']!.beds.first.id, by: owner);
+      await env.checkOut(gone, by: owner);
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      return app;
+    }
+
+    double gridOverflow(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byKey(const ValueKey('board.grid')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        )
+        .position
+        .maxScrollExtent;
+
+    testWidgets('12 rooms, no overstay: everything fits without scrolling', (
+      tester,
+    ) async {
+      final app = await openBoard(tester, overstay: false);
+      await expectCleanLayout(tester, app, Routes.home, 'Bed board');
+      expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
+      expect(find.byKey(const ValueKey('board.room.12')), findsOneWidget);
+      expect(gridOverflow(tester), 0);
+    });
+
+    testWidgets('12 rooms with the overstay bar: no overflow', (tester) async {
+      final app = await openBoard(tester, overstay: true);
+      await expectCleanLayout(tester, app, Routes.home, 'Bed board');
+      expect(find.byKey(const ValueKey('board.overstayBar')), findsOneWidget);
+    });
+  });
 }

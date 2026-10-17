@@ -38,12 +38,14 @@ Status is never shown by colour alone: each has a label and a distinct border st
 
 | Status | Background | Border | Text | Label |
 |---|---|---|---|---|
-| Ready (available + clean) | white | 1.5px **solid** marine | ink | `READY` (marine) |
-| Occupied | marine | 1.5px solid marine | white | `IN USE` + guest name · "until 22:15" |
-| Overstay | red | 1.5px solid `redDark` | white | `OVERSTAY` in a white pill with redDark text + "paid to 10:00" |
-| Needs cleaning | butter | 1.5px **dashed** `butterBorder` | butterText | `TO CLEAN` + "Needs cleaning · assign" |
+| Ready (available + clean) | white | 1.5px **solid** marine | ink | `READY` (marine) + category + "KES 700 / night" |
+| Occupied | marine | 1.5px solid marine | white | `IN USE` + guest name + "until Fri 10:00 · Deluxe" (checkout day and time from `paid_until`) |
+| Overstay | red | 1.5px solid `redDark` | white | `OVERSTAY` in a white pill with redDark text + guest name + "paid to Fri 10:00 · Deluxe" |
+| Needs cleaning | butter | 1.5px **dashed** `butterBorder` | butterText | `TO CLEAN` + category + "Needs cleaning" ("· assign" arrives with FD-9) |
 
-Overstays are also listed in a red-tint alert bar at the top of the bed board, with **Renew** (red filled) and **Check out** (white, redText outline) buttons.
+Every tile shows its category; only Ready tiles show a price (the category's current price). Tiles are two lines with the status label on the first line, and aren't clickable until FD-4/FD-8 give them an action (no hover state or hand cursor before then).
+
+Overstays are also listed in a one-line red-tint alert bar, fixed above the bed board's grid: the oldest overstay and how many more. FD-7/FD-8 add its **Extend** (red filled) and **Check out** (white, redText outline) buttons; until then the bar has none.
 
 ## Typography
 
@@ -87,7 +89,7 @@ Overstays are also listed in a red-tint alert bar at the top of the bed board, w
 |---|---|---|
 | FD-1 | Sign in and screen lock | Split screen: marine brand panel left, form right. Lock version shows a butter "Screen locked after 10 minutes idle" chip and "The open shift is kept." Username field empty. |
 | FD-1 | Open or resume shift | Centred card. Opening float in a large mono money input. Resume shows open-since and taken-so-far. Blocked shows "X's shift must be closed first" with Sign out / View bed board only. |
-| FD-2 | Bed board | Title + date/time, guest search, "New check-in" primary. Overstay alert bar. Filter chips with counts (All, Ready, Occupied, Overstay, Needs cleaning). Room grid. |
+| FD-2 | Bed board | Title + date/time, search (room number, or current occupant's name or phone; phones never shown unmasked), "New check-in" primary (from FD-4). Overstay alert bar. Filter chips with counts (All, Ready, Occupied, Overstay, Needs cleaning). Room grid. |
 | FD-3/4/5 | Check-in | Step pills (Bed ✓, Guest ✓, Stay & payment, Receipt). Three cards: Bed (shows why Bed B can't be added), Guest (search by phone/ID, returning guest card with masked ID), Stay & payment (nights stepper, "Check-in Thu 19:00" and "Check out by Fri 16 Oct, 10:00", total in mono, Cash/Paybill, M-Pesa code with "each code can be used once", "Save and issue receipt", note "The bed becomes Occupied only after this is saved"). |
 | FD-6 | Receipt | 400 wide. Black-and-white friendly (future thermal printer). Logo + lodging name, RECEIPT + number in mono, guest/room/category/from/check-out-by rows, nights × price, total, paid by, M-Pesa code, served by. Footer: "Checkout is at 10:00." Reprints show "COPY". Refund receipts use the same layout titled REFUND, with a negative amount. |
 | FD-7/8 | Bed panel — overstay | Red banner with minutes past grace. Guest, paid-so-far rows with receipt numbers. Extend card: nights stepper, "New checkout Sat 17 Oct, 10:00", price labelled "(check-in price)", Cash/Paybill, primary button "Extend and issue receipt". Checkout after grace: "Charge 1 night and check out" (confirmed by owner). |

@@ -17,6 +17,7 @@ import 'package:lodging_pos/core/database/database_provider.dart';
 import 'package:lodging_pos/features/auth/data/user_repository.dart';
 import 'package:lodging_pos/features/auth/domain/setup.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
+import 'package:lodging_pos/features/bed_board/presentation/bed_board_providers.dart';
 import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 
 /// 22:00 Nairobi, 14 Oct 2026.
@@ -46,13 +47,18 @@ class TestEnv {
 
   Future<void> close() => db.close();
 
+  /// The bed board's clock tick; null (no timer) unless a test sets it.
+  Duration? boardTick;
+
   /// Provider overrides that run the real app against this environment.
-  /// The idle-lock timer is off; tests call `IdleLock.check()` themselves.
+  /// The idle-lock timer and the bed board's clock tick are off; tests call
+  /// `IdleLock.check()` or set the clock themselves.
   List<Override> get overrides => [
     appDatabaseProvider.overrideWithValue(db),
     clockProvider.overrideWithValue(clock),
     passwordHasherProvider.overrideWithValue(hasher),
     idleCheckIntervalProvider.overrideWithValue(null),
+    boardTickIntervalProvider.overrideWithValue(boardTick),
   ];
 
   /// Until AD-4 adds user management, tests create receptionists directly
@@ -172,19 +178,27 @@ class TestEnv {
   }
 
   /// Test-only stand-in for FD-8 checkout.
+  /// Closes the stay and leaves the bed `not_cleaned` (BR-9).
   Future<void> checkOut(String stayId, {required UserAccount by}) =>
       audit.writeWithAudit(
         action: 'stay.check_out',
         userId: by.id,
-        body: (w) => w.update(
-          db.stays,
-          stayId,
-          StaysCompanion(
-            status: const Value('closed'),
-            checkedOutAt: Value(clock.now()),
-            checkedOutBy: Value(by.id),
-          ),
-        ),
+        body: (w) async {
+          final stay = await w.update(
+            db.stays,
+            stayId,
+            StaysCompanion(
+              status: const Value('closed'),
+              checkedOutAt: Value(clock.now()),
+              checkedOutBy: Value(by.id),
+            ),
+          );
+          await w.update(
+            db.beds,
+            stay.bedId,
+            const BedsCompanion(cleanliness: Value('not_cleaned')),
+          );
+        },
       );
 
   Future<List<AuditLogRow>> auditFor(String action) =>

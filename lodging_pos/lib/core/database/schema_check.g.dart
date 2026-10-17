@@ -53,7 +53,7 @@ final class SchemaDriftProvider
   }
 }
 
-String _$schemaDriftHash() => r'7c88f55b9661eb66b633ea08b6b34eb31aff4453';
+String _$schemaDriftHash() => r'513636c573f76df077882cabf6329d867fb77524';
 
 /// Whether the mismatch screen may offer a reset: debug builds only. A
 /// release build never throws data away; it shows an error instead.

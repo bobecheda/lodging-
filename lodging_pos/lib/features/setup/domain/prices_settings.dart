@@ -103,6 +103,17 @@ final List<ClockTime> checkoutTimeOptions = List.unmodifiable([
 ]);
 
 const graceMinutesRange = (min: 0, max: 180);
+
+/// Minutes of grace after `paid_until` (BR-6), from the `grace_minutes`
+/// setting. Anything missing or outside [graceMinutesRange] uses the
+/// default (60).
+int graceMinutesFrom(String? setting) {
+  if (setting == null || _graceError(setting) != null) {
+    return int.parse(settingDefaults[SettingKeys.graceMinutes]!);
+  }
+  return int.parse(setting.trim());
+}
+
 const _maxLodgingName = 60;
 final _receiptPrefix = RegExp(r'^[A-Z]{1,4}$');
 
