@@ -79,6 +79,11 @@ class Stays extends Table with SyncedColumns {
   @ReferenceName('staysCheckedOut')
   TextColumn get checkedOutBy => text().nullable().references(Users, #id)();
 
+  // v3: the room number and bed label at check-in, so a receipt still says
+  // what was let after the owner renumbers a room (AD-2).
+  TextColumn get roomNumber => text()();
+  TextColumn get bedLabel => text().check(bedLabel.isIn(['A', 'B']))();
+
   @override
   List<String> get customConstraints => [
     "CHECK ((status = 'active') = (checked_out_at IS NULL))",

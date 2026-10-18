@@ -4501,6 +4501,29 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
       'REFERENCES users (id)',
     ),
   );
+  static const VerificationMeta _roomNumberMeta = const VerificationMeta(
+    'roomNumber',
+  );
+  @override
+  late final GeneratedColumn<String> roomNumber = GeneratedColumn<String>(
+    'room_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bedLabelMeta = const VerificationMeta(
+    'bedLabel',
+  );
+  @override
+  late final GeneratedColumn<String> bedLabel = GeneratedColumn<String>(
+    'bed_label',
+    aliasedName,
+    false,
+    check: () => bedLabel.isIn(['A', 'B']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4515,6 +4538,8 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
     status,
     checkedInBy,
     checkedOutBy,
+    roomNumber,
+    bedLabel,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4618,6 +4643,22 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
         ),
       );
     }
+    if (data.containsKey('room_number')) {
+      context.handle(
+        _roomNumberMeta,
+        roomNumber.isAcceptableOrUnknown(data['room_number']!, _roomNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roomNumberMeta);
+    }
+    if (data.containsKey('bed_label')) {
+      context.handle(
+        _bedLabelMeta,
+        bedLabel.isAcceptableOrUnknown(data['bed_label']!, _bedLabelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bedLabelMeta);
+    }
     return context;
   }
 
@@ -4675,6 +4716,14 @@ class $StaysTable extends Stays with TableInfo<$StaysTable, StayRow> {
         DriftSqlType.string,
         data['${effectivePrefix}checked_out_by'],
       ),
+      roomNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_number'],
+      )!,
+      bedLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bed_label'],
+      )!,
     );
   }
 
@@ -4698,6 +4747,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
   final String status;
   final String checkedInBy;
   final String? checkedOutBy;
+  final String roomNumber;
+  final String bedLabel;
   const StayRow({
     required this.id,
     required this.createdAt,
@@ -4711,6 +4762,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     required this.status,
     required this.checkedInBy,
     this.checkedOutBy,
+    required this.roomNumber,
+    required this.bedLabel,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4731,6 +4784,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     if (!nullToAbsent || checkedOutBy != null) {
       map['checked_out_by'] = Variable<String>(checkedOutBy);
     }
+    map['room_number'] = Variable<String>(roomNumber);
+    map['bed_label'] = Variable<String>(bedLabel);
     return map;
   }
 
@@ -4752,6 +4807,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
       checkedOutBy: checkedOutBy == null && nullToAbsent
           ? const Value.absent()
           : Value(checkedOutBy),
+      roomNumber: Value(roomNumber),
+      bedLabel: Value(bedLabel),
     );
   }
 
@@ -4773,6 +4830,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
       status: serializer.fromJson<String>(json['status']),
       checkedInBy: serializer.fromJson<String>(json['checked_in_by']),
       checkedOutBy: serializer.fromJson<String?>(json['checked_out_by']),
+      roomNumber: serializer.fromJson<String>(json['room_number']),
+      bedLabel: serializer.fromJson<String>(json['bed_label']),
     );
   }
   @override
@@ -4791,6 +4850,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
       'status': serializer.toJson<String>(status),
       'checked_in_by': serializer.toJson<String>(checkedInBy),
       'checked_out_by': serializer.toJson<String?>(checkedOutBy),
+      'room_number': serializer.toJson<String>(roomNumber),
+      'bed_label': serializer.toJson<String>(bedLabel),
     };
   }
 
@@ -4807,6 +4868,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     String? status,
     String? checkedInBy,
     Value<String?> checkedOutBy = const Value.absent(),
+    String? roomNumber,
+    String? bedLabel,
   }) => StayRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -4820,6 +4883,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     status: status ?? this.status,
     checkedInBy: checkedInBy ?? this.checkedInBy,
     checkedOutBy: checkedOutBy.present ? checkedOutBy.value : this.checkedOutBy,
+    roomNumber: roomNumber ?? this.roomNumber,
+    bedLabel: bedLabel ?? this.bedLabel,
   );
   StayRow copyWithCompanion(StaysCompanion data) {
     return StayRow(
@@ -4841,6 +4906,10 @@ class StayRow extends DataClass implements Insertable<StayRow> {
       checkedOutBy: data.checkedOutBy.present
           ? data.checkedOutBy.value
           : this.checkedOutBy,
+      roomNumber: data.roomNumber.present
+          ? data.roomNumber.value
+          : this.roomNumber,
+      bedLabel: data.bedLabel.present ? data.bedLabel.value : this.bedLabel,
     );
   }
 
@@ -4858,7 +4927,9 @@ class StayRow extends DataClass implements Insertable<StayRow> {
           ..write('checkedOutAt: $checkedOutAt, ')
           ..write('status: $status, ')
           ..write('checkedInBy: $checkedInBy, ')
-          ..write('checkedOutBy: $checkedOutBy')
+          ..write('checkedOutBy: $checkedOutBy, ')
+          ..write('roomNumber: $roomNumber, ')
+          ..write('bedLabel: $bedLabel')
           ..write(')'))
         .toString();
   }
@@ -4877,6 +4948,8 @@ class StayRow extends DataClass implements Insertable<StayRow> {
     status,
     checkedInBy,
     checkedOutBy,
+    roomNumber,
+    bedLabel,
   );
   @override
   bool operator ==(Object other) =>
@@ -4893,7 +4966,9 @@ class StayRow extends DataClass implements Insertable<StayRow> {
           other.checkedOutAt == this.checkedOutAt &&
           other.status == this.status &&
           other.checkedInBy == this.checkedInBy &&
-          other.checkedOutBy == this.checkedOutBy);
+          other.checkedOutBy == this.checkedOutBy &&
+          other.roomNumber == this.roomNumber &&
+          other.bedLabel == this.bedLabel);
 }
 
 class StaysCompanion extends UpdateCompanion<StayRow> {
@@ -4909,6 +4984,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
   final Value<String> status;
   final Value<String> checkedInBy;
   final Value<String?> checkedOutBy;
+  final Value<String> roomNumber;
+  final Value<String> bedLabel;
   final Value<int> rowid;
   const StaysCompanion({
     this.id = const Value.absent(),
@@ -4923,6 +5000,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     this.status = const Value.absent(),
     this.checkedInBy = const Value.absent(),
     this.checkedOutBy = const Value.absent(),
+    this.roomNumber = const Value.absent(),
+    this.bedLabel = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   StaysCompanion.insert({
@@ -4938,13 +5017,17 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     required String status,
     required String checkedInBy,
     this.checkedOutBy = const Value.absent(),
+    required String roomNumber,
+    required String bedLabel,
     this.rowid = const Value.absent(),
   }) : guestId = Value(guestId),
        bedId = Value(bedId),
        checkInAt = Value(checkInAt),
        paidUntil = Value(paidUntil),
        status = Value(status),
-       checkedInBy = Value(checkedInBy);
+       checkedInBy = Value(checkedInBy),
+       roomNumber = Value(roomNumber),
+       bedLabel = Value(bedLabel);
   static Insertable<StayRow> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -4958,6 +5041,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     Expression<String>? status,
     Expression<String>? checkedInBy,
     Expression<String>? checkedOutBy,
+    Expression<String>? roomNumber,
+    Expression<String>? bedLabel,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4973,6 +5058,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
       if (status != null) 'status': status,
       if (checkedInBy != null) 'checked_in_by': checkedInBy,
       if (checkedOutBy != null) 'checked_out_by': checkedOutBy,
+      if (roomNumber != null) 'room_number': roomNumber,
+      if (bedLabel != null) 'bed_label': bedLabel,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4990,6 +5077,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     Value<String>? status,
     Value<String>? checkedInBy,
     Value<String?>? checkedOutBy,
+    Value<String>? roomNumber,
+    Value<String>? bedLabel,
     Value<int>? rowid,
   }) {
     return StaysCompanion(
@@ -5005,6 +5094,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
       status: status ?? this.status,
       checkedInBy: checkedInBy ?? this.checkedInBy,
       checkedOutBy: checkedOutBy ?? this.checkedOutBy,
+      roomNumber: roomNumber ?? this.roomNumber,
+      bedLabel: bedLabel ?? this.bedLabel,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5048,6 +5139,12 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
     if (checkedOutBy.present) {
       map['checked_out_by'] = Variable<String>(checkedOutBy.value);
     }
+    if (roomNumber.present) {
+      map['room_number'] = Variable<String>(roomNumber.value);
+    }
+    if (bedLabel.present) {
+      map['bed_label'] = Variable<String>(bedLabel.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5069,6 +5166,8 @@ class StaysCompanion extends UpdateCompanion<StayRow> {
           ..write('status: $status, ')
           ..write('checkedInBy: $checkedInBy, ')
           ..write('checkedOutBy: $checkedOutBy, ')
+          ..write('roomNumber: $roomNumber, ')
+          ..write('bedLabel: $bedLabel, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18006,6 +18105,8 @@ typedef $$StaysTableCreateCompanionBuilder = StaysCompanion Function({
   required String status,
   required String checkedInBy,
   Value<String?> checkedOutBy,
+  required String roomNumber,
+  required String bedLabel,
   Value<int> rowid,
 });
 typedef $$StaysTableUpdateCompanionBuilder = StaysCompanion Function({
@@ -18021,6 +18122,8 @@ typedef $$StaysTableUpdateCompanionBuilder = StaysCompanion Function({
   Value<String> status,
   Value<String> checkedInBy,
   Value<String?> checkedOutBy,
+  Value<String> roomNumber,
+  Value<String> bedLabel,
   Value<int> rowid,
 });
 
@@ -18179,6 +18282,16 @@ class $$StaysTableFilterComposer extends Composer<_$AppDatabase, $StaysTable> {
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get roomNumber => $composableBuilder(
+    column: $table.roomNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bedLabel => $composableBuilder(
+    column: $table.bedLabel,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18374,6 +18487,16 @@ class $$StaysTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get roomNumber => $composableBuilder(
+    column: $table.roomNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bedLabel => $composableBuilder(
+    column: $table.bedLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$GuestsTableOrderingComposer get guestId {
     final $$GuestsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -18501,6 +18624,14 @@ class $$StaysTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get roomNumber => $composableBuilder(
+    column: $table.roomNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bedLabel =>
+      $composableBuilder(column: $table.bedLabel, builder: (column) => column);
 
   $$GuestsTableAnnotationComposer get guestId {
     final $$GuestsTableAnnotationComposer composer = $composerBuilder(
@@ -18692,6 +18823,8 @@ class $$StaysTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String> checkedInBy = const Value.absent(),
                 Value<String?> checkedOutBy = const Value.absent(),
+                Value<String> roomNumber = const Value.absent(),
+                Value<String> bedLabel = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StaysCompanion(
                 id: id,
@@ -18706,6 +18839,8 @@ class $$StaysTableTableManager
                 status: status,
                 checkedInBy: checkedInBy,
                 checkedOutBy: checkedOutBy,
+                roomNumber: roomNumber,
+                bedLabel: bedLabel,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -18722,6 +18857,8 @@ class $$StaysTableTableManager
                 required String status,
                 required String checkedInBy,
                 Value<String?> checkedOutBy = const Value.absent(),
+                required String roomNumber,
+                required String bedLabel,
                 Value<int> rowid = const Value.absent(),
               }) => StaysCompanion.insert(
                 id: id,
@@ -18736,6 +18873,8 @@ class $$StaysTableTableManager
                 status: status,
                 checkedInBy: checkedInBy,
                 checkedOutBy: checkedOutBy,
+                roomNumber: roomNumber,
+                bedLabel: bedLabel,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

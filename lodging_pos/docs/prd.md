@@ -108,6 +108,10 @@ Each story lists the conditions that must all hold before it counts as done.
 - Generated automatically after payment, with the next sequential number.
 - Header shows the lodging name only; body shows receipt number, guest, room and bed, category, nights, check-in, check out by, amount, method, M-Pesa code, receptionist.
 - Can be viewed on screen and saved as PDF; reprints are marked "Copy".
+- The first print or PDF save is the original; every later one says COPY. Viewing on screen or cancelling the print dialog doesn't count.
+- A Receipts screen finds any receipt by its number or the guest's phone (not by name; phones masked) to view, print or save again.
+- The receipt shows the room number and bed as let, even after a room is renumbered.
+- Footer: "Thank you for staying with us." and "Checkout is at 10:00. After 11:00, one more night is charged." (the stay's checkout time plus the grace setting).
 
 **FD-7 Extend a stay or flag an overstay.** As a receptionist, I want overstays flagged so that no extra time goes unpaid.
 

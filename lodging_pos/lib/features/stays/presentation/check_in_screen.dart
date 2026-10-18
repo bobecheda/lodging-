@@ -19,6 +19,7 @@ import '../../guests/data/guests_repository.dart';
 import '../../guests/domain/guest.dart';
 import '../../guests/presentation/widgets/guest_finder_card.dart';
 import '../../payments/domain/payment_rules.dart';
+import '../../receipts/presentation/receipt_view.dart';
 import '../../setup/domain/rooms.dart';
 import '../../shifts/domain/shift_rules.dart';
 import '../../shifts/presentation/shift_providers.dart';
@@ -31,7 +32,7 @@ import 'check_in_providers.dart';
 /// "Check-in — bed, guest, blocks, payment": the bed (and Bed B for the
 /// whole room), the guest, then nights and payment. Nothing is saved until
 /// "Save and issue receipt"; then step 4 shows what was saved (the printed
-/// receipt arrives with FD-6).
+/// receipt, FD-6).
 class CheckInScreen extends ConsumerStatefulWidget {
   const CheckInScreen({super.key, this.bedId});
 
@@ -176,7 +177,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           Expanded(
             child: SingleChildScrollView(
               child: Align(
-                alignment: Alignment.topCenter,
+                alignment: Alignment.topLeft,
                 child: _Done(
                   saved: saved,
                   onBoard: () => context.go(Routes.home),
@@ -868,7 +869,8 @@ class _StayCard extends StatelessWidget {
   }
 }
 
-/// Step 4 until FD-6 brings the receipt itself.
+/// Step 4: the receipt (FD-6), with Print as the main button. No print
+/// dialog opens by itself.
 class _Done extends StatelessWidget {
   const _Done({
     required this.saved,
@@ -885,84 +887,44 @@ class _Done extends StatelessWidget {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final r = saved.result;
-    Widget row(String label, String value, {bool mono = false, Key? key}) =>
-        Padding(
-          padding: const EdgeInsets.only(bottom: Space.x8),
-          child: Row(
+    return ReceiptPanel(
+      key: const ValueKey('checkIn.done'),
+      paymentId: r.paymentId,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              SizedBox(
-                width: 120,
-                child: Text(label, style: t.small.copyWith(color: c.muted)),
-              ),
-              Expanded(
-                child: Text(
-                  value,
-                  key: key,
-                  style: mono ? t.monoStrong : t.bodyStrong,
-                ),
+              Icon(Icons.check_circle_rounded, color: c.marine, size: 24),
+              const SizedBox(width: Space.x8),
+              Semantics(
+                header: true,
+                child: Text('Checked in', style: t.sectionTitle),
               ),
             ],
           ),
-        );
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 520),
-      child: Card(
-        key: const ValueKey('checkIn.done'),
-        child: Padding(
-          padding: const EdgeInsets.all(Space.x28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.check_circle_rounded, color: c.marine, size: 28),
-                  const SizedBox(width: Space.x10),
-                  Semantics(
-                    header: true,
-                    child: Text('Checked in', style: t.cardTitle),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Space.x20),
-              row('Guest', saved.guestName),
-              row(
-                'Room',
-                checkedInSummary(roomNumber: r.roomNumber, labels: r.labels),
-                key: const ValueKey('checkIn.done.room'),
-              ),
-              row('Check out by', formatDayDateComma(r.paidUntil)),
-              row(
-                'Receipt',
-                r.receiptNumber,
-                mono: true,
-                key: const ValueKey('checkIn.done.receipt'),
-              ),
-              row(
-                'Paid',
-                [formatKes(r.total), r.method.label, ?r.mpesaCode].join(' · '),
-                key: const ValueKey('checkIn.done.paid'),
-              ),
-              const SizedBox(height: Space.x16),
-              Wrap(
-                spacing: Space.x12,
-                runSpacing: Space.x8,
-                children: [
-                  AppButton.primary(
-                    key: const ValueKey('checkIn.done.board'),
-                    label: 'Back to bed board',
-                    onPressed: onBoard,
-                  ),
-                  AppButton.secondary(
-                    key: const ValueKey('checkIn.done.another'),
-                    label: 'Check in another guest',
-                    onPressed: onAnother,
-                  ),
-                ],
-              ),
-            ],
+          const SizedBox(height: Space.x4),
+          Text(
+            '${saved.guestName} · '
+            '${checkedInSummary(roomNumber: r.roomNumber, labels: r.labels)}',
+            key: const ValueKey('checkIn.done.summary'),
+            style: t.small.copyWith(color: c.inkSoft),
           ),
-        ),
+        ],
       ),
+      actions: [
+        Divider(color: c.lineSoft),
+        AppButton.secondary(
+          key: const ValueKey('checkIn.done.board'),
+          label: 'Back to bed board',
+          onPressed: onBoard,
+        ),
+        AppButton.secondary(
+          key: const ValueKey('checkIn.done.another'),
+          label: 'Check in another guest',
+          onPressed: onAnother,
+        ),
+      ],
     );
   }
 }

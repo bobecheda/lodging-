@@ -664,4 +664,38 @@ void main() {
       await expectCleanLayout(tester, app, Routes.checkIn, 'Checked in');
     });
   });
+
+  group('Receipts (FD-6)', () {
+    testWidgets('a list of receipts and a two-bed receipt, saved', (
+      tester,
+    ) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      await ShiftRepository(
+        env.db,
+        env.audit,
+      ).openShift(user: owner, openingFloat: 0);
+      final repo = RoomsRepository(env.db, env.audit);
+      for (var n = 1; n <= 12; n++) {
+        final room = await repo.createRoom(
+          owner,
+          NewRoom(
+            number: '$n',
+            floor: null,
+            notes: null,
+            bedACategoryId: SeedIds.deluxe,
+            bedBCategoryId: SeedIds.comfort,
+          ),
+        );
+        await env.checkIn(room.beds.first.id, by: owner, nights: n);
+      }
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'nav.${Routes.receipts}');
+      await tapKey(tester, 'receipts.item.R-000012');
+      await tapKey(tester, 'receipt.save');
+      await expectCleanLayout(tester, app, Routes.receipts, 'Receipts');
+      expect(find.byKey(const ValueKey('receipt.saved')), findsOneWidget);
+    });
+  });
 }

@@ -15,6 +15,9 @@ abstract final class Routes {
   /// FD-4; `?bed=<id>` starts with that bed chosen.
   static const checkIn = '/check-in';
 
+  /// FD-6: find and reprint receipts.
+  static const receipts = '/receipts';
+
   /// The shift screen, coming back to [location] once a shift is open.
   static String shiftThen(String location) =>
       Uri(path: shift, queryParameters: {'then': location}).toString();
@@ -35,6 +38,7 @@ abstract final class Routes {
   static const permissions = {
     guests: {Permission.registerGuests},
     checkIn: {Permission.checkIn},
+    receipts: {Permission.printReceipts},
     adminRooms: {Permission.manageRooms},
     adminPrices: {Permission.editPrices, Permission.editSettings},
     adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},

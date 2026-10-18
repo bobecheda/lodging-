@@ -168,6 +168,8 @@ void main() {
             ),
             checkedInBy: userId,
             checkedOutBy: Value(closed ? userId : null),
+            roomNumber: '7',
+            bedLabel: 'A',
           ),
         );
     return id;

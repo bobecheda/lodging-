@@ -10,6 +10,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/setup_screen.dart';
 import '../features/bed_board/presentation/bed_board_screen.dart';
 import '../features/guests/presentation/guests_screen.dart';
+import '../features/receipts/presentation/receipts_screen.dart';
 import '../features/stays/presentation/check_in_screen.dart';
 import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
@@ -96,6 +97,10 @@ GoRouter router(Ref ref) {
               key: ValueKey(state.uri.toString()),
               bedId: state.uri.queryParameters['bed'],
             ),
+          ),
+          GoRoute(
+            path: Routes.receipts,
+            builder: (_, _) => const ReceiptsScreen(),
           ),
           GoRoute(
             path: Routes.adminRooms,

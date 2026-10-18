@@ -62,7 +62,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -151,6 +151,27 @@ class AppDatabase extends _$AppDatabase {
           columnTransformer: {
             charges.categoryId: fromBed('id'),
             charges.categoryName: fromBed('name'),
+          },
+        ),
+      );
+    },
+    // v3 (FD-6): each stay keeps its room number and bed label as at
+    // check-in, filled for existing stays from their bed and room.
+    from2To3: (m, schema) async {
+      final stays = schema.stays;
+      await m.alterTable(
+        TableMigration(
+          stays,
+          newColumns: [stays.roomNumber, stays.bedLabel],
+          columnTransformer: {
+            stays.roomNumber: const CustomExpression<String>(
+              '(SELECT rooms.room_number FROM beds '
+              'JOIN rooms ON rooms.id = beds.room_id '
+              'WHERE beds.id = stays.bed_id)',
+            ),
+            stays.bedLabel: const CustomExpression<String>(
+              '(SELECT beds.label FROM beds WHERE beds.id = stays.bed_id)',
+            ),
           },
         ),
       );

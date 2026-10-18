@@ -36,6 +36,10 @@ enum Permission {
   /// Find, register and correct guests (FD-3). Exporting guest data will be
   /// a separate admin-only permission.
   registerGuests,
+
+  /// Find receipts and print or save them; after the first, they print as
+  /// COPY (FD-6).
+  printReceipts,
 }
 
 const _adminOnly = {Role.admin};
@@ -67,6 +71,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.recordStock: _everyone,
   Permission.viewOwnReport: _everyone,
   Permission.registerGuests: _everyone,
+  Permission.printReceipts: _everyone,
 };
 
 /// Whether [user] may do [permission]. A disabled user may do nothing.

@@ -19,6 +19,7 @@ import 'package:lodging_pos/features/auth/domain/setup.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
 import 'package:lodging_pos/features/bed_board/presentation/bed_board_providers.dart';
 import 'package:lodging_pos/features/guests/data/guests_repository.dart';
+import 'package:lodging_pos/features/receipts/presentation/receipts_providers.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
@@ -56,6 +57,9 @@ class TestEnv {
   /// The bed board's clock tick; null (no timer) unless a test sets it.
   Duration? boardTick;
 
+  /// Stands in for the print dialog and the Documents folder.
+  final receiptOutput = FakeReceiptOutput();
+
   /// Provider overrides that run the real app against this environment.
   /// The idle-lock timer and the bed board's clock tick are off; tests call
   /// `IdleLock.check()` or set the clock themselves.
@@ -65,6 +69,7 @@ class TestEnv {
     passwordHasherProvider.overrideWithValue(hasher),
     idleCheckIntervalProvider.overrideWithValue(null),
     boardTickIntervalProvider.overrideWithValue(boardTick),
+    receiptOutputProvider.overrideWithValue(receiptOutput),
   ];
 
   /// Until AD-4 adds user management, tests create receptionists directly
@@ -267,4 +272,37 @@ Future<void> loadAppFonts() async {
     }
     await loader.load();
   }
+}
+
+/// Records what would have been printed or saved. [printResult] false acts
+/// like a cancelled print dialog.
+class FakeReceiptOutput implements ReceiptOutput {
+  bool printResult = true;
+  final printed = <String>[];
+  final saved = <String>[];
+  final opened = <String>[];
+  Uint8List? lastPdf;
+
+  @override
+  Future<bool> print(Uint8List pdf, {required String name}) async {
+    lastPdf = pdf;
+    if (printResult) printed.add(name);
+    return printResult;
+  }
+
+  @override
+  Future<String> save(
+    Uint8List pdf, {
+    required String folder,
+    required String file,
+  }) async {
+    lastPdf = pdf;
+    const documents = r'C:\Users\Desk\Documents';
+    final path = [documents, folder, file].join(r'\');
+    saved.add(path);
+    return path;
+  }
+
+  @override
+  Future<void> openFolder(String path) async => opened.add(path);
 }

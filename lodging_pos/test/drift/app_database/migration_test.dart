@@ -17,6 +17,7 @@ import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -26,11 +27,11 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  /// What the v1 app's `createAll` ran: every table, index and trigger from
-  /// the frozen snapshot's SQL, in order.
-  List<String> v1AppStatements() {
+  /// What the app's `createAll` ran at [version]: every table, index and
+  /// trigger from that version's frozen snapshot SQL, in order.
+  List<String> appStatements(int version) {
     final snapshot = jsonDecode(
-      File('drift_schemas/app_database/drift_schema_v1.json')
+      File('drift_schemas/app_database/drift_schema_v$version.json')
           .readAsStringSync(),
     ) as Map<String, Object?>;
     return [
@@ -96,8 +97,8 @@ void main() {
       (key: key, value: value),
   ];
 
-  test('migration from v1 to v2 keeps every row and gives each charge its '
-      'bed’s category', () async {
+  test('migration from v1 to v3 keeps every row, gives each charge its '
+      'bed’s category and each stay its room and bed', () async {
     final oldUsersData = <v1.UsersData>[
       const v1.UsersData(
         id: admin,
@@ -112,8 +113,8 @@ void main() {
         mustChangePassword: 0,
       ),
     ];
-    final expectedNewUsersData = <v2.UsersData>[
-      const v2.UsersData(
+    final expectedNewUsersData = <v3.UsersData>[
+      const v3.UsersData(
         id: admin,
         createdAt: t,
         updatedAt: t,
@@ -138,9 +139,9 @@ void main() {
           deviceId: 'seed',
         ),
     ];
-    final expectedNewSettingsData = <v2.SettingsData>[
+    final expectedNewSettingsData = <v3.SettingsData>[
       for (final s in settings)
-        v2.SettingsData(
+        v3.SettingsData(
           key: s.key,
           value: s.value,
           createdAt: t,
@@ -171,8 +172,8 @@ void main() {
         isActive: 1,
       ),
     ];
-    final expectedNewBedCategoriesData = <v2.BedCategoriesData>[
-      const v2.BedCategoriesData(
+    final expectedNewBedCategoriesData = <v3.BedCategoriesData>[
+      const v3.BedCategoriesData(
         id: deluxe,
         createdAt: t,
         updatedAt: t,
@@ -182,7 +183,7 @@ void main() {
         sortOrder: 1,
         isActive: 1,
       ),
-      const v2.BedCategoriesData(
+      const v3.BedCategoriesData(
         id: normal,
         createdAt: t,
         updatedAt: t,
@@ -205,8 +206,8 @@ void main() {
         isActive: 1,
       ),
     ];
-    final expectedNewRoomsData = <v2.RoomsData>[
-      const v2.RoomsData(
+    final expectedNewRoomsData = <v3.RoomsData>[
+      const v3.RoomsData(
         id: room,
         createdAt: t,
         updatedAt: t,
@@ -234,12 +235,12 @@ void main() {
           isActive: 1,
         ),
     ];
-    final expectedNewBedsData = <v2.BedsData>[
+    final expectedNewBedsData = <v3.BedsData>[
       for (final (id, label, category) in const [
         (bedA, 'A', deluxe),
         (bedB, 'B', normal),
       ])
-        v2.BedsData(
+        v3.BedsData(
           id: id,
           createdAt: t,
           updatedAt: t,
@@ -264,8 +265,8 @@ void main() {
         idNumber: '12343921',
       ),
     ];
-    final expectedNewGuestsData = <v2.GuestsData>[
-      const v2.GuestsData(
+    final expectedNewGuestsData = <v3.GuestsData>[
+      const v3.GuestsData(
         id: guest,
         createdAt: t,
         updatedAt: t,
@@ -289,8 +290,8 @@ void main() {
         status: 'open',
       ),
     ];
-    final expectedNewShiftsData = <v2.ShiftsData>[
-      const v2.ShiftsData(
+    final expectedNewShiftsData = <v3.ShiftsData>[
+      const v3.ShiftsData(
         id: shift,
         createdAt: t,
         updatedAt: t,
@@ -322,12 +323,13 @@ void main() {
           checkedInBy: admin,
         ),
     ];
-    final expectedNewStaysData = <v2.StaysData>[
-      for (final (id, bed, paid) in const [
-        (stayA, bedA, paidA),
-        (stayB, bedB, paidB),
+    // v3: room 7 and each stay's bed label, from the bed.
+    final expectedNewStaysData = <v3.StaysData>[
+      for (final (id, bed, paid, label) in const [
+        (stayA, bedA, paidA, 'A'),
+        (stayB, bedB, paidB, 'B'),
       ])
-        v2.StaysData(
+        v3.StaysData(
           id: id,
           createdAt: t,
           updatedAt: t,
@@ -338,6 +340,8 @@ void main() {
           paidUntil: paid,
           status: 'active',
           checkedInBy: admin,
+          roomNumber: '7',
+          bedLabel: label,
         ),
     ];
 
@@ -370,8 +374,8 @@ void main() {
         printCount: 1,
       ),
     ];
-    final expectedNewPaymentsData = <v2.PaymentsData>[
-      const v2.PaymentsData(
+    final expectedNewPaymentsData = <v3.PaymentsData>[
+      const v3.PaymentsData(
         id: pay1,
         createdAt: t,
         updatedAt: t,
@@ -384,7 +388,7 @@ void main() {
         method: 'cash',
         printCount: 1,
       ),
-      const v2.PaymentsData(
+      const v3.PaymentsData(
         id: pay2,
         createdAt: later,
         updatedAt: later,
@@ -434,10 +438,10 @@ void main() {
           periodEnd: end,
         ),
     ];
-    final expectedNewStayChargesData = <v2.StayChargesData>[
+    final expectedNewStayChargesData = <v3.StayChargesData>[
       for (final (id, at, stay, pay, kind, price, start, end, cat, name)
           in charges)
-        v2.StayChargesData(
+        v3.StayChargesData(
           id: id,
           createdAt: at,
           updatedAt: at,
@@ -458,22 +462,22 @@ void main() {
     final oldDeviceData = <v1.DeviceData>[
       const v1.DeviceData(deviceId: dev, createdAt: t),
     ];
-    final expectedNewDeviceData = <v2.DeviceData>[
-      const v2.DeviceData(deviceId: dev, createdAt: t),
+    final expectedNewDeviceData = <v3.DeviceData>[
+      const v3.DeviceData(deviceId: dev, createdAt: t),
     ];
 
     final oldReceiptCounterData = <v1.ReceiptCounterData>[
       const v1.ReceiptCounterData(deviceId: dev, nextNumber: 3),
     ];
-    final expectedNewReceiptCounterData = <v2.ReceiptCounterData>[
-      const v2.ReceiptCounterData(deviceId: dev, nextNumber: 3),
+    final expectedNewReceiptCounterData = <v3.ReceiptCounterData>[
+      const v3.ReceiptCounterData(deviceId: dev, nextNumber: 3),
     ];
 
     await verifier.testWithDataIntegrity(
       oldVersion: 1,
-      newVersion: 2,
+      newVersion: 3,
       createOld: v1.DatabaseAtV1.new,
-      createNew: v2.DatabaseAtV2.new,
+      createNew: v3.DatabaseAtV3.new,
       openTestedDatabase: open,
       createItems: (batch, oldDb) {
         batch.insertAll(oldDb.users, oldUsersData);
@@ -525,55 +529,67 @@ void main() {
   });
 
   group('upgrade safety', () {
-    test('an upgraded file matches what this build creates (the startup '
-        'check passes), with foreign keys back on and charges still never '
-        'deleted', () async {
-      // The verifier's v1 writes its SQL differently from the app, so this
-      // uses the exact statements the v1 app ran (the snapshot's fixed_sql).
-      final db = open(
-        NativeDatabase.memory(
-          setup: (raw) {
-            v1AppStatements().forEach(raw.execute);
-            raw.execute('PRAGMA user_version = 1');
-          },
-        ),
-      );
-      addTearDown(db.close);
-      final fresh = open(NativeDatabase.memory());
-      addTearDown(fresh.close);
+    for (final from in [1, 2]) {
+      test('an upgraded v$from file matches what this build creates (the '
+          'startup check passes), with foreign keys back on and the rebuilt '
+          'tables keeping their triggers and indexes', () async {
+        // The verifier writes its SQL differently from the app, so this uses
+        // the exact statements that version of the app ran (fixed_sql).
+        final db = open(
+          NativeDatabase.memory(
+            setup: (raw) {
+              appStatements(from).forEach(raw.execute);
+              raw.execute('PRAGMA user_version = $from');
+            },
+          ),
+        );
+        addTearDown(db.close);
+        final fresh = open(NativeDatabase.memory());
+        addTearDown(fresh.close);
 
-      expect(await schemaDifferences(db, fresh), isEmpty);
-      final fk = await db.customSelect('PRAGMA foreign_keys').getSingle();
-      expect(fk.read<int>('foreign_keys'), 1);
-      expect(
-        (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
-          'user_version',
-        ),
-        2,
-      );
-      final triggers = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'trigger' "
-            "AND tbl_name = 'stay_charges'",
-          )
-          .get();
-      expect(
-        {for (final r in triggers) r.read<String>('name')},
-        {'stay_charges_stamped_update', 'stay_charges_no_delete'},
-      );
-    });
+        expect(await schemaDifferences(db, fresh), isEmpty);
+        final fk = await db.customSelect('PRAGMA foreign_keys').getSingle();
+        expect(fk.read<int>('foreign_keys'), 1);
+        expect(
+          (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
+            'user_version',
+          ),
+          3,
+        );
+        final objects = await db
+            .customSelect(
+              'SELECT name FROM sqlite_master '
+              "WHERE tbl_name IN ('stay_charges', 'stays') "
+              "AND type IN ('trigger', 'index') AND sql IS NOT NULL",
+            )
+            .get();
+        expect(
+          {for (final r in objects) r.read<String>('name')},
+          {
+            'stay_charges_stamped_update',
+            'stay_charges_no_delete',
+            'stay_charges_stay',
+            'stay_charges_payment',
+            'stays_stamped_update',
+            'stays_no_delete',
+            'stays_guest',
+            'stays_one_active_per_bed',
+          },
+        );
+      });
+    }
 
     test('a foreign key pointing nowhere after the steps undoes the whole '
         'upgrade', () async {
       final schema = await verifier.schemaAt(1);
-      // A v1 file with a stay whose guest, bed and user don't exist (foreign
+      // A v1 file with a payment whose shift and user don't exist (foreign
       // keys are off on the raw connection, as on an old file that had
-      // them off).
+      // them off). No step reads payments, so only the final check sees it.
       schema.rawDatabase.execute(
-        'INSERT INTO stays (id, created_at, updated_at, device_id, guest_id, '
-        'bed_id, check_in_at, paid_until, status, checked_in_by) VALUES '
-        "('stay-x', '$t', '$t', 'd', 'no-guest', 'no-bed', '$t', '$later', "
-        "'active', 'no-user')",
+        'INSERT INTO payments (id, created_at, updated_at, device_id, '
+        'receipt_number, shift_id, received_by, received_at, amount, method, '
+        "print_count) VALUES ('pay-x', '$t', '$t', 'd', 'R-000009', "
+        "'no-shift', 'no-user', '$t', 700, 'cash', 0)",
       );
       final db = open(schema.newConnection());
       addTearDown(db.close);
@@ -583,18 +599,42 @@ void main() {
         throwsA(
           isA<MigrationFailed>()
               .having((e) => e.from, 'from', 1)
-              .having((e) => e.problems.join(), 'problems', contains('stays')),
+              .having(
+                (e) => e.problems.join(),
+                'problems',
+                contains('payments'),
+              ),
         ),
       );
-      // Still v1: the version and the charges table are as they were.
+      // Still v1: the version and the rebuilt tables are as they were.
       final raw = schema.rawDatabase;
       expect(raw.select('PRAGMA user_version').single['user_version'], 1);
-      final columns = {
-        for (final row in raw.select('PRAGMA table_info(stay_charges)'))
+      Set<String> columns(String table) => {
+        for (final row in raw.select('PRAGMA table_info($table)'))
           row['name'] as String,
       };
-      expect(columns, isNot(contains('category_id')));
-      expect(columns, contains('price_per_night'));
+      expect(columns('stay_charges'), isNot(contains('category_id')));
+      expect(columns('stays'), isNot(contains('room_number')));
+    });
+
+    test('a stay whose bed is gone can’t be filled in: the upgrade fails '
+        'and is undone', () async {
+      final schema = await verifier.schemaAt(1);
+      schema.rawDatabase.execute(
+        'INSERT INTO stays (id, created_at, updated_at, device_id, guest_id, '
+        'bed_id, check_in_at, paid_until, status, checked_in_by) VALUES '
+        "('stay-x', '$t', '$t', 'd', 'no-guest', 'no-bed', '$t', '$later', "
+        "'active', 'no-user')",
+      );
+      final db = open(schema.newConnection());
+      addTearDown(db.close);
+      await expectLater(db.customSelect('SELECT 1').get(), throwsA(anything));
+      final raw = schema.rawDatabase;
+      expect(raw.select('PRAGMA user_version').single['user_version'], 1);
+      expect(
+        raw.select('PRAGMA table_info(stay_charges)').map((r) => r['name']),
+        isNot(contains('category_id')),
+      );
     });
 
     test(
