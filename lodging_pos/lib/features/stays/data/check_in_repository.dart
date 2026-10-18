@@ -292,6 +292,7 @@ class CheckInRepository {
 
         final receipt = await _nextReceiptNumber(w, settings.receiptPrefix);
         final stays = <String, StayRow>{};
+        final labels = {for (final b in beds) b.id: b.label};
         for (final planned in now.plan.stays) {
           stays[planned.bedId] = await w.insert(
             _db.stays,
@@ -302,6 +303,9 @@ class CheckInRepository {
               paidUntil: planned.charge.periodEnd,
               status: 'active',
               checkedInBy: user.id,
+              // Kept as let (v3), so a receipt survives a renumbering.
+              roomNumber: roomNumber!,
+              bedLabel: labels[planned.bedId]!.code,
             ),
           );
         }

@@ -2212,8 +2212,854 @@ i1.GeneratedColumn<int> _column_110(String aliasedName) =>
       type: i1.DriftSqlType.int,
       $customConstraints: 'NOT NULL CHECK (next_number >= 1)',
     );
+
+final class Schema3 extends i0.VersionedSchema {
+  Schema3({required super.database}) : super(version: 3);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    users,
+    usersStampedUpdate,
+    settings,
+    settingsStampedUpdate,
+    bedCategories,
+    bedCategoriesStampedUpdate,
+    rooms,
+    roomsStampedUpdate,
+    beds,
+    bedsStampedUpdate,
+    housekeepers,
+    housekeepersStampedUpdate,
+    guests,
+    guestsStampedUpdate,
+    shifts,
+    shiftsStampedUpdate,
+    stays,
+    staysStampedUpdate,
+    payments,
+    paymentsStampedUpdate,
+    stayCharges,
+    stayChargesStampedUpdate,
+    refunds,
+    refundsStampedUpdate,
+    housekeepingTasks,
+    housekeepingTasksStampedUpdate,
+    inventoryItems,
+    inventoryMovements,
+    inventoryMovementsStampedUpdate,
+    voids,
+    voidsStampedUpdate,
+    expenses,
+    expensesStampedUpdate,
+    inventoryItemsStampedUpdate,
+    refundDecisions,
+    refundDecisionsStampedUpdate,
+    auditLog,
+    auditLogNoUpdate,
+    staysNoDelete,
+    paymentsNoDelete,
+    stayChargesNoDelete,
+    voidsNoDelete,
+    auditLogNoDelete,
+    refundsNoDelete,
+    refundDecisionsNoDelete,
+    refundDecisionsNoUpdate,
+    refundsRequestedUnpaid,
+    refundsFixedTerms,
+    refundsPaidOnce,
+    refundsPaidIfApproved,
+    paymentsMpesaCodeUnusedInsert,
+    paymentsMpesaCodeUnusedUpdate,
+    refundsMpesaCodeUnusedInsert,
+    refundsMpesaCodeUnusedUpdate,
+    outbox,
+    device,
+    receiptCounter,
+    auditLogAt,
+    auditLogUser,
+    auditLogAction,
+    auditLogEntity,
+    auditLogOperation,
+    outboxUnsent,
+    guestsPhone,
+    guestsIdNumber,
+    guestsIdUnique,
+    shiftsOneOpenPerDevice,
+    staysGuest,
+    staysOneActivePerBed,
+    paymentsShift,
+    stayChargesStay,
+    stayChargesPayment,
+    refundsShift,
+    housekeepingTasksBed,
+    housekeepingTasksOneOpenPerBed,
+    inventoryMovementsItem,
+  ];
+  late final Shape0 users = Shape0(
+    source: i0.VersionedTable(
+      entityName: 'users',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_7,
+        _column_8,
+        _column_9,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger usersStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER users_stamped_update BEFORE UPDATE ON users WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'users_stamped_update',
+  );
+  late final Shape1 settings = Shape1(
+    source: i0.VersionedTable(
+      entityName: 'settings',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY("key")'],
+      columns: [
+        _column_10,
+        _column_11,
+        _column_12,
+        _column_1,
+        _column_2,
+        _column_3,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger settingsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER settings_stamped_update BEFORE UPDATE ON settings WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'settings_stamped_update',
+  );
+  late final Shape2 bedCategories = Shape2(
+    source: i0.VersionedTable(
+      entityName: 'bed_categories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_13,
+        _column_14,
+        _column_15,
+        _column_8,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger bedCategoriesStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER bed_categories_stamped_update BEFORE UPDATE ON bed_categories WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'bed_categories_stamped_update',
+  );
+  late final Shape3 rooms = Shape3(
+    source: i0.VersionedTable(
+      entityName: 'rooms',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_16,
+        _column_17,
+        _column_18,
+        _column_8,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger roomsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER rooms_stamped_update BEFORE UPDATE ON rooms WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'rooms_stamped_update',
+  );
+  late final Shape4 beds = Shape4(
+    source: i0.VersionedTable(
+      entityName: 'beds',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)', 'UNIQUE(room_id, label)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_8,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger bedsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER beds_stamped_update BEFORE UPDATE ON beds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'beds_stamped_update',
+  );
+  late final Shape5 housekeepers = Shape5(
+    source: i0.VersionedTable(
+      entityName: 'housekeepers',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_23,
+        _column_8,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger housekeepersStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER housekeepers_stamped_update BEFORE UPDATE ON housekeepers WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'housekeepers_stamped_update',
+  );
+  late final Shape6 guests = Shape6(
+    source: i0.VersionedTable(
+      entityName: 'guests',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK(id_number IS NULL OR id_type IS NOT NULL)',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_24,
+        _column_25,
+        _column_26,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger guestsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER guests_stamped_update BEFORE UPDATE ON guests WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'guests_stamped_update',
+  );
+  late final Shape7 shifts = Shape7(
+    source: i0.VersionedTable(
+      entityName: 'shifts',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK((status = \'open\')=(closed_at IS NULL))',
+        'CHECK(status = \'open\' OR(expected_cash IS NOT NULL AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL AND variance IS NOT NULL AND variance = counted_cash - expected_cash))',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_30,
+        _column_31,
+        _column_32,
+        _column_33,
+        _column_34,
+        _column_35,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger shiftsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'shifts_stamped_update',
+  );
+  late final Shape22 stays = Shape22(
+    source: i0.VersionedTable(
+      entityName: 'stays',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK((status = \'active\')=(checked_out_at IS NULL))',
+        'CHECK((status = \'active\')=(checked_out_by IS NULL))',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_36,
+        _column_37,
+        _column_38,
+        _column_39,
+        _column_40,
+        _column_41,
+        _column_42,
+        _column_43,
+        _column_111,
+        _column_112,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger staysStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'stays_stamped_update',
+  );
+  late final Shape9 payments = Shape9(
+    source: i0.VersionedTable(
+      entityName: 'payments',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK((method = \'paybill\')=(mpesa_code IS NOT NULL))',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_44,
+        _column_45,
+        _column_46,
+        _column_47,
+        _column_48,
+        _column_49,
+        _column_50,
+        _column_51,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger paymentsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER payments_stamped_update BEFORE UPDATE ON payments WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'payments_stamped_update',
+  );
+  late final Shape10 stayCharges = Shape10(
+    source: i0.VersionedTable(
+      entityName: 'stay_charges',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK(amount = nights * price_per_night)',
+        'CHECK(period_end > period_start)',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_52,
+        _column_53,
+        _column_54,
+        _column_55,
+        _column_56,
+        _column_57,
+        _column_58,
+        _column_59,
+        _column_21,
+        _column_60,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger stayChargesStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER stay_charges_stamped_update BEFORE UPDATE ON stay_charges WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'stay_charges_stamped_update',
+  );
+  late final Shape11 refunds = Shape11(
+    source: i0.VersionedTable(
+      entityName: 'refunds',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK(amount = nights * price_per_night)',
+        'CHECK((paid_at IS NULL)=(method IS NULL))',
+        'CHECK((paid_at IS NULL)=(shift_id IS NULL))',
+        'CHECK((paid_at IS NULL)=(paid_by IS NULL))',
+        'CHECK((paid_at IS NULL)=(receipt_number IS NULL))',
+        'CHECK((method IS \'paybill\')=(mpesa_code IS NOT NULL))',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_61,
+        _column_55,
+        _column_56,
+        _column_57,
+        _column_62,
+        _column_63,
+        _column_64,
+        _column_50,
+        _column_65,
+        _column_66,
+        _column_67,
+        _column_68,
+        _column_51,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger refundsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER refunds_stamped_update BEFORE UPDATE ON refunds WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'refunds_stamped_update',
+  );
+  late final Shape12 housekeepingTasks = Shape12(
+    source: i0.VersionedTable(
+      entityName: 'housekeeping_tasks',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK((completed_at IS NULL)=(completed_by IS NULL))',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_37,
+        _column_69,
+        _column_70,
+        _column_71,
+        _column_72,
+        _column_73,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger housekeepingTasksStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER housekeeping_tasks_stamped_update BEFORE UPDATE ON housekeeping_tasks WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'housekeeping_tasks_stamped_update',
+  );
+  late final Shape13 inventoryItems = Shape13(
+    source: i0.VersionedTable(
+      entityName: 'inventory_items',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_74,
+        _column_75,
+        _column_76,
+        _column_8,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape14 inventoryMovements = Shape14(
+    source: i0.VersionedTable(
+      entityName: 'inventory_movements',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_77,
+        _column_78,
+        _column_79,
+        _column_80,
+        _column_81,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger inventoryMovementsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER inventory_movements_stamped_update BEFORE UPDATE ON inventory_movements WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'inventory_movements_stamped_update',
+  );
+  late final Shape15 voids = Shape15(
+    source: i0.VersionedTable(
+      entityName: 'voids',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)', 'UNIQUE(target_type, target_id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_82,
+        _column_83,
+        _column_84,
+        _column_85,
+        _column_86,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger voidsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER voids_stamped_update BEFORE UPDATE ON voids WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'voids_stamped_update',
+  );
+  late final Shape16 expenses = Shape16(
+    source: i0.VersionedTable(
+      entityName: 'expenses',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK(spent_on GLOB \'[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]\')',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_87,
+        _column_48,
+        _column_88,
+        _column_89,
+        _column_81,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger expensesStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER expenses_stamped_update BEFORE UPDATE ON expenses WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'expenses_stamped_update',
+  );
+  final i1.Trigger inventoryItemsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER inventory_items_stamped_update BEFORE UPDATE ON inventory_items WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'inventory_items_stamped_update',
+  );
+  late final Shape17 refundDecisions = Shape17(
+    source: i0.VersionedTable(
+      entityName: 'refund_decisions',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(id)',
+        'CHECK(decision = \'approved\' OR coalesce(length(trim(note)), 0) > 0)',
+      ],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_90,
+        _column_91,
+        _column_89,
+        _column_92,
+        _column_93,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger refundDecisionsStampedUpdate = i1.Trigger(
+    'CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'refund_decisions_stamped_update',
+  );
+  late final Shape18 auditLog = Shape18(
+    source: i0.VersionedTable(
+      entityName: 'audit_log',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_94,
+        _column_95,
+        _column_96,
+        _column_97,
+        _column_98,
+        _column_99,
+        _column_100,
+        _column_101,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Trigger auditLogNoUpdate = i1.Trigger(
+    'CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
+    'audit_log_no_update',
+  );
+  final i1.Trigger staysNoDelete = i1.Trigger(
+    'CREATE TRIGGER stays_no_delete BEFORE DELETE ON stays BEGIN SELECT RAISE (ABORT, \'stays rows are never deleted\');END',
+    'stays_no_delete',
+  );
+  final i1.Trigger paymentsNoDelete = i1.Trigger(
+    'CREATE TRIGGER payments_no_delete BEFORE DELETE ON payments BEGIN SELECT RAISE (ABORT, \'payments rows are never deleted\');END',
+    'payments_no_delete',
+  );
+  final i1.Trigger stayChargesNoDelete = i1.Trigger(
+    'CREATE TRIGGER stay_charges_no_delete BEFORE DELETE ON stay_charges BEGIN SELECT RAISE (ABORT, \'stay_charges rows are never deleted\');END',
+    'stay_charges_no_delete',
+  );
+  final i1.Trigger voidsNoDelete = i1.Trigger(
+    'CREATE TRIGGER voids_no_delete BEFORE DELETE ON voids BEGIN SELECT RAISE (ABORT, \'voids rows are never deleted\');END',
+    'voids_no_delete',
+  );
+  final i1.Trigger auditLogNoDelete = i1.Trigger(
+    'CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
+    'audit_log_no_delete',
+  );
+  final i1.Trigger refundsNoDelete = i1.Trigger(
+    'CREATE TRIGGER refunds_no_delete BEFORE DELETE ON refunds BEGIN SELECT RAISE (ABORT, \'refunds rows are never deleted\');END',
+    'refunds_no_delete',
+  );
+  final i1.Trigger refundDecisionsNoDelete = i1.Trigger(
+    'CREATE TRIGGER refund_decisions_no_delete BEFORE DELETE ON refund_decisions BEGIN SELECT RAISE (ABORT, \'refund_decisions rows are never deleted\');END',
+    'refund_decisions_no_delete',
+  );
+  final i1.Trigger refundDecisionsNoUpdate = i1.Trigger(
+    'CREATE TRIGGER refund_decisions_no_update BEFORE UPDATE ON refund_decisions BEGIN SELECT RAISE (ABORT, \'refund_decisions rows are never edited\');END',
+    'refund_decisions_no_update',
+  );
+  final i1.Trigger refundsRequestedUnpaid = i1.Trigger(
+    'CREATE TRIGGER refunds_requested_unpaid BEFORE INSERT ON refunds WHEN NEW.paid_at IS NOT NULL BEGIN SELECT RAISE (ABORT, \'a refund is requested before it is paid\');END',
+    'refunds_requested_unpaid',
+  );
+  final i1.Trigger refundsFixedTerms = i1.Trigger(
+    'CREATE TRIGGER refunds_fixed_terms BEFORE UPDATE ON refunds WHEN NEW.stay_id IS NOT OLD.stay_id OR NEW.nights IS NOT OLD.nights OR NEW.price_per_night IS NOT OLD.price_per_night OR NEW.amount IS NOT OLD.amount OR NEW.requested_by IS NOT OLD.requested_by OR NEW.requested_at IS NOT OLD.requested_at BEGIN SELECT RAISE (ABORT, \'refund terms cannot change\');END',
+    'refunds_fixed_terms',
+  );
+  final i1.Trigger refundsPaidOnce = i1.Trigger(
+    'CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NOT NULL AND(NEW.paid_at IS NOT OLD.paid_at OR NEW.method IS NOT OLD.method OR NEW.mpesa_code IS NOT OLD.mpesa_code OR NEW.shift_id IS NOT OLD.shift_id OR NEW.paid_by IS NOT OLD.paid_by OR NEW.receipt_number IS NOT OLD.receipt_number)BEGIN SELECT RAISE (ABORT, \'refund is already paid\');END',
+    'refunds_paid_once',
+  );
+  final i1.Trigger refundsPaidIfApproved = i1.Trigger(
+    'CREATE TRIGGER refunds_paid_if_approved BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NULL AND NEW.paid_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM refund_decisions WHERE refund_id = NEW.id AND decision = \'approved\') BEGIN SELECT RAISE (ABORT, \'refund is not approved\');END',
+    'refunds_paid_if_approved',
+  );
+  final i1.Trigger paymentsMpesaCodeUnusedInsert = i1.Trigger(
+    'CREATE TRIGGER payments_mpesa_code_unused_insert BEFORE INSERT ON payments WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'payments_mpesa_code_unused_insert',
+  );
+  final i1.Trigger paymentsMpesaCodeUnusedUpdate = i1.Trigger(
+    'CREATE TRIGGER payments_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON payments WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM refunds WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'payments_mpesa_code_unused_update',
+  );
+  final i1.Trigger refundsMpesaCodeUnusedInsert = i1.Trigger(
+    'CREATE TRIGGER refunds_mpesa_code_unused_insert BEFORE INSERT ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'refunds_mpesa_code_unused_insert',
+  );
+  final i1.Trigger refundsMpesaCodeUnusedUpdate = i1.Trigger(
+    'CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
+    'refunds_mpesa_code_unused_update',
+  );
+  late final Shape19 outbox = Shape19(
+    source: i0.VersionedTable(
+      entityName: 'outbox',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [],
+      columns: [
+        _column_102,
+        _column_103,
+        _column_104,
+        _column_105,
+        _column_1,
+        _column_106,
+        _column_107,
+        _column_108,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape20 device = Shape20(
+    source: i0.VersionedTable(
+      entityName: 'device',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(device_id)'],
+      columns: [_column_3, _column_1],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape21 receiptCounter = Shape21(
+    source: i0.VersionedTable(
+      entityName: 'receipt_counter',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(device_id)'],
+      columns: [_column_109, _column_110],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Index auditLogAt = i1.Index(
+    'audit_log_at',
+    'CREATE INDEX audit_log_at ON audit_log (at)',
+  );
+  final i1.Index auditLogUser = i1.Index(
+    'audit_log_user',
+    'CREATE INDEX audit_log_user ON audit_log (user_id)',
+  );
+  final i1.Index auditLogAction = i1.Index(
+    'audit_log_action',
+    'CREATE INDEX audit_log_action ON audit_log ("action")',
+  );
+  final i1.Index auditLogEntity = i1.Index(
+    'audit_log_entity',
+    'CREATE INDEX audit_log_entity ON audit_log (entity, entity_id)',
+  );
+  final i1.Index auditLogOperation = i1.Index(
+    'audit_log_operation',
+    'CREATE INDEX audit_log_operation ON audit_log (operation_id)',
+  );
+  final i1.Index outboxUnsent = i1.Index(
+    'outbox_unsent',
+    'CREATE INDEX outbox_unsent ON outbox (seq) WHERE sent_at IS NULL',
+  );
+  final i1.Index guestsPhone = i1.Index(
+    'guests_phone',
+    'CREATE INDEX guests_phone ON guests (phone)',
+  );
+  final i1.Index guestsIdNumber = i1.Index(
+    'guests_id_number',
+    'CREATE INDEX guests_id_number ON guests (id_number)',
+  );
+  final i1.Index guestsIdUnique = i1.Index(
+    'guests_id_unique',
+    'CREATE UNIQUE INDEX guests_id_unique ON guests (id_type, id_number) WHERE id_number IS NOT NULL',
+  );
+  final i1.Index shiftsOneOpenPerDevice = i1.Index(
+    'shifts_one_open_per_device',
+    'CREATE UNIQUE INDEX shifts_one_open_per_device ON shifts (device_id) WHERE status = \'open\'',
+  );
+  final i1.Index staysGuest = i1.Index(
+    'stays_guest',
+    'CREATE INDEX stays_guest ON stays (guest_id)',
+  );
+  final i1.Index staysOneActivePerBed = i1.Index(
+    'stays_one_active_per_bed',
+    'CREATE UNIQUE INDEX stays_one_active_per_bed ON stays (bed_id) WHERE status = \'active\'',
+  );
+  final i1.Index paymentsShift = i1.Index(
+    'payments_shift',
+    'CREATE INDEX payments_shift ON payments (shift_id)',
+  );
+  final i1.Index stayChargesStay = i1.Index(
+    'stay_charges_stay',
+    'CREATE INDEX stay_charges_stay ON stay_charges (stay_id)',
+  );
+  final i1.Index stayChargesPayment = i1.Index(
+    'stay_charges_payment',
+    'CREATE INDEX stay_charges_payment ON stay_charges (payment_id)',
+  );
+  final i1.Index refundsShift = i1.Index(
+    'refunds_shift',
+    'CREATE INDEX refunds_shift ON refunds (shift_id)',
+  );
+  final i1.Index housekeepingTasksBed = i1.Index(
+    'housekeeping_tasks_bed',
+    'CREATE INDEX housekeeping_tasks_bed ON housekeeping_tasks (bed_id)',
+  );
+  final i1.Index housekeepingTasksOneOpenPerBed = i1.Index(
+    'housekeeping_tasks_one_open_per_bed',
+    'CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL',
+  );
+  final i1.Index inventoryMovementsItem = i1.Index(
+    'inventory_movements_item',
+    'CREATE INDEX inventory_movements_item ON inventory_movements (item_id)',
+  );
+}
+
+class Shape22 extends i0.VersionedTable {
+  Shape22({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get deviceId =>
+      columnsByName['device_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get guestId =>
+      columnsByName['guest_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get bedId =>
+      columnsByName['bed_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get checkInAt =>
+      columnsByName['check_in_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get paidUntil =>
+      columnsByName['paid_until']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get checkedOutAt =>
+      columnsByName['checked_out_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get status =>
+      columnsByName['status']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get checkedInBy =>
+      columnsByName['checked_in_by']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get checkedOutBy =>
+      columnsByName['checked_out_by']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get roomNumber =>
+      columnsByName['room_number']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get bedLabel =>
+      columnsByName['bed_label']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_111(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'room_number',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL',
+    );
+i1.GeneratedColumn<String> _column_112(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'bed_label',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL CHECK (bed_label IN (\'A\', \'B\'))',
+    );
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -2222,6 +3068,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from1To2(migrator, schema);
         return 2;
+      case 2:
+        final schema = Schema3(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from2To3(migrator, schema);
+        return 3;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -2230,6 +3081,7 @@ i0.MigrationStepWithVersion migrationSteps({
 
 i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) => i0.VersionedSchema.stepByStepHelper(
-  step: migrationSteps(from1To2: from1To2),
+  step: migrationSteps(from1To2: from1To2, from2To3: from2To3),
 );

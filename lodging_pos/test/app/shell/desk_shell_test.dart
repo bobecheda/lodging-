@@ -73,6 +73,7 @@ void main() {
     expect(app.read(deskNavItemsProvider).map((i) => i.route), [
       Routes.home,
       Routes.guests,
+      Routes.receipts,
       Routes.adminRooms,
       Routes.adminPrices,
       Routes.adminStaff,

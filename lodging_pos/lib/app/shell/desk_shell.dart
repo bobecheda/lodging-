@@ -59,6 +59,12 @@ List<NavItem> deskNavItems(Ref ref) => const [
     permissions: {Permission.registerGuests},
   ),
   NavItem(
+    route: Routes.receipts,
+    label: 'Receipts',
+    icon: Icons.receipt_long_outlined,
+    permissions: {Permission.printReceipts},
+  ),
+  NavItem(
     route: Routes.adminRooms,
     label: 'Rooms & beds',
     icon: Icons.bed_outlined,

@@ -121,9 +121,11 @@ void main() {
     await tapKey(tester, 'checkIn.save');
 
     expect(find.byKey(const ValueKey('checkIn.done')), findsOneWidget);
-    expect(text(tester, 'checkIn.done.receipt'), 'R-000002');
-    expect(text(tester, 'checkIn.done.room'), 'Room 7, Bed A');
-    expect(text(tester, 'checkIn.done.paid'), 'KES 1,400 · Cash');
+    expect(text(tester, 'receipt.number'), 'R-000002');
+    expect(text(tester, 'receipt.room'), 'Room 7 · Bed A');
+    expect(text(tester, 'receipt.total'), 'KES 1,400');
+    expect(find.text('Cash'), findsWidgets);
+    expect(find.byKey(const ValueKey('receipt.copy')), findsNothing);
     expect(
       find.byKey(const ValueKey('checkIn.step.4.current')),
       findsOneWidget,
@@ -205,7 +207,11 @@ void main() {
     await tapKey(tester, 'choice.PaymentMethod.cash');
     await tapKey(tester, 'checkIn.save');
 
-    expect(text(tester, 'checkIn.done.room'), 'Room 7, Beds A and B');
+    expect(text(tester, 'receipt.room'), 'Room 7 · Beds A and B');
+    expect(
+      text(tester, 'checkIn.done.summary'),
+      'Grace Achieng · Room 7, Beds A and B',
+    );
     expect(
       await env.db.select(env.db.stays).get(),
       hasLength(3),
@@ -255,7 +261,8 @@ void main() {
     }
 
     await payByMpesa(r7.beds.single.id);
-    expect(text(tester, 'checkIn.done.paid'), 'KES 700 · M-Pesa · QJK7H2LM4P');
+    expect(text(tester, 'receipt.total'), 'KES 700');
+    expect(find.text('QJK7H2LM4P'), findsOneWidget);
     await payByMpesa(r8.beds.single.id);
     expect(
       find.text(

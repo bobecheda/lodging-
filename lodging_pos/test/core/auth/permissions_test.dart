@@ -72,6 +72,7 @@ void main() {
       Permission.recordStock,
       Permission.viewOwnReport,
       Permission.registerGuests,
+      Permission.printReceipts,
     };
     expect({...adminOnly, ...everyone}, Permission.values.toSet());
     for (final p in adminOnly) {

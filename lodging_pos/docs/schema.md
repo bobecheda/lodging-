@@ -10,6 +10,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 |---|---|---|
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
+| v3 | 18 Oct 2026 (FD-6) | `stays.room_number` and `bed_label`, as let; existing stays filled from their bed and room by rebuilding the table |
 
 **How an upgrade runs** (`AppDatabase._upgrade`):
 
@@ -145,6 +146,8 @@ At most one open shift per device. A closed shift must have `closed_at`, `expect
 | status | TEXT | `active` \| `closed` |
 | checked_in_by | TEXT → users | |
 | checked_out_by | TEXT → users | |
+| room_number | TEXT | v3: the room's number at check-in, so a receipt survives a renumbering |
+| bed_label | TEXT | v3: `A` \| `B`, as let |
 
 Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced by the database. `checked_out_at` and `checked_out_by` are set exactly when `status = 'closed'`.
 
@@ -158,7 +161,7 @@ Partial UNIQUE(bed_id) WHERE status = 'active' — one guest per bed, enforced b
 | amount | INT | = sum of its `stay_charges.amount` |
 | method | TEXT | `cash` \| `paybill` |
 | mpesa_code | TEXT | UNIQUE (ignoring case), also across refund payouts (trigger); required for `paybill`, null for `cash` |
-| print_count | INT | reprints after the first are marked "Copy" |
+| print_count | INT | times printed or saved (`payment.print`); the first is the original, every later one says COPY. Viewing on screen or a cancelled print dialog doesn't count |
 
 ### stay_charges
 | Column | Type | Notes |
