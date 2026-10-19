@@ -9,7 +9,7 @@ import '../../../core/settings/setting_defaults.dart';
 import '../../guests/data/guests_repository.dart';
 import '../../guests/domain/guest.dart';
 import '../../payments/domain/payment_rules.dart';
-import '../../receipts/domain/receipt_number.dart';
+import '../../payments/data/payment_writes.dart';
 import '../../setup/domain/prices_settings.dart';
 import '../../setup/domain/rooms.dart';
 import '../../shifts/domain/shift_rules.dart';
@@ -190,14 +190,7 @@ class CheckInRepository {
       userId: user.id,
       body: (w) async {
         // BR-12: the payment goes into the user's own open shift.
-        final shift =
-            await (_db.select(_db.shifts)..where(
-                  (s) =>
-                      s.status.equals('open') &
-                      s.deviceId.equals(w.deviceId) &
-                      s.userId.equals(user.id),
-                ))
-                .getSingleOrNull();
+        final shift = await ownOpenShift(_db, w, user.id);
         if (shift == null) throw const NoOpenShift();
 
         final code = r.method == PaymentMethod.paybill && r.mpesaCode != null
@@ -207,7 +200,7 @@ class CheckInRepository {
           r,
           codeUsedOn: code == null || code.trim().isEmpty
               ? null
-              : await _codeUse(code),
+              : await mpesaCodeUse(_db, code),
         );
         if (errors.isNotEmpty) throw InvalidCheckIn(errors);
 
@@ -290,7 +283,7 @@ class CheckInRepository {
           NewGuest() => await _register(w, guest),
         };
 
-        final receipt = await _nextReceiptNumber(w, settings.receiptPrefix);
+        final receipt = await takeReceiptNumber(_db, w, settings.receiptPrefix);
         final stays = <String, StayRow>{};
         final labels = {for (final b in beds) b.id: b.label};
         for (final planned in now.plan.stays) {
@@ -356,35 +349,6 @@ class CheckInRepository {
     );
   }
 
-  /// Where [code] was already used, in a payment or a refund payout.
-  Future<MpesaCodeUse?> _codeUse(String code) async {
-    // Both columns are COLLATE NOCASE, so equals ignores case.
-    final payment =
-        await (_db.select(_db.payments)
-              ..where((p) => p.mpesaCode.equals(code))
-              ..limit(1))
-            .getSingleOrNull();
-    if (payment != null) {
-      return MpesaCodeUse(
-        receiptNumber: payment.receiptNumber,
-        at: payment.receivedAt,
-      );
-    }
-    final refund =
-        await (_db.select(_db.refunds)
-              ..where((p) => p.mpesaCode.equals(code))
-              ..limit(1))
-            .getSingleOrNull();
-    if (refund != null) {
-      return MpesaCodeUse(
-        receiptNumber: refund.receiptNumber!,
-        at: refund.paidAt!,
-        isRefund: true,
-      );
-    }
-    return null;
-  }
-
   Future<String> _returning(String guestId) async {
     final row = await (_db.select(
       _db.guests,
@@ -418,19 +382,5 @@ class CheckInRepository {
       action: 'guest.create',
     );
     return row.id;
-  }
-
-  /// Takes this device's next receipt number (gap-free: the counter moves
-  /// in the same transaction as the payment).
-  Future<String> _nextReceiptNumber(AuditedWrites w, String prefix) async {
-    final counter = await (_db.select(
-      _db.receiptCounter,
-    )..where((c) => c.deviceId.equals(w.deviceId))).getSingle();
-    await w.update(
-      _db.receiptCounter,
-      w.deviceId,
-      ReceiptCounterCompanion(nextNumber: Value(counter.nextNumber + 1)),
-    );
-    return formatReceiptNumber(prefix, counter.nextNumber);
   }
 }

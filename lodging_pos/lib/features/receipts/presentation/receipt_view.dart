@@ -53,12 +53,16 @@ class ReceiptPanel extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < receiptWidth + Space.x24 + actionsWidth) {
+          // Stacked, as wide as there is room for (e.g. the bed panel).
+          final width = constraints.maxWidth < receiptWidth
+              ? constraints.maxWidth
+              : receiptWidth;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(width: receiptWidth, child: side),
+              SizedBox(width: width, child: side),
               const SizedBox(height: Space.x16),
-              SizedBox(width: receiptWidth, child: view),
+              SizedBox(width: width, child: view),
             ],
           );
         }
@@ -291,8 +295,7 @@ class ReceiptView extends StatelessWidget {
               key: const ValueKey('receipt.room'),
             ),
             if (r.category case final category?) row('Category', category),
-            row('From', r.fromText),
-            row('Check out by', r.checkOutByText),
+            for (final (label, value) in r.stayRows) row(label, value),
             soft(),
             for (final (label, amount) in r.chargeRows)
               row(label, amount, mono: true),

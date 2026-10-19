@@ -11,11 +11,13 @@ enum BoardStatus { ready, occupied, overstay, toClean }
 /// The active stay on a bed, as the board shows it.
 final class BoardStay {
   const BoardStay({
+    required this.stayId,
     required this.guestName,
     required this.guestPhone,
     required this.paidUntil,
   });
 
+  final String stayId;
   final String guestName;
   final String guestPhone;
 
@@ -91,6 +93,7 @@ final class BoardFilter {
 /// One overstaying bed, for the alert bar.
 final class OverstayAlert {
   const OverstayAlert({
+    required this.stayId,
     required this.roomNumber,
     required this.label,
     required this.guestName,
@@ -98,6 +101,7 @@ final class OverstayAlert {
     required this.graceEnded,
   });
 
+  final String stayId;
   final String roomNumber;
   final BedLabel label;
   final String guestName;
@@ -151,6 +155,7 @@ BoardView boardView(
       if (s == BoardStatus.overstay) {
         overstays.add(
           OverstayAlert(
+            stayId: bed.stay!.stayId,
             roomNumber: room.number,
             label: bed.label,
             guestName: bed.stay!.guestName,

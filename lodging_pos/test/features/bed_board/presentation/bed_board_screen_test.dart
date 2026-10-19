@@ -140,22 +140,32 @@ void main() {
     expect(chip(tester, 'toClean'), 'Needs cleaning, 1');
   });
 
-  testWidgets('a Ready tile starts a check-in on that bed; other tiles are '
-      'not interactive and do not look it', (tester) async {
+  testWidgets('a Ready tile starts a check-in on that bed; an In use tile '
+      'opens its bed panel; a To clean tile is not interactive yet', (
+    tester,
+  ) async {
     final r1 = await room('1');
     final r2 = await room('2');
+    final r3 = await room('3');
     await env.checkIn(r2.beds.single.id, by: owner);
+    final gone = await env.checkIn(r3.beds.single.id, by: owner);
+    await env.checkOut(gone, by: owner); // 3A needs cleaning (FD-9)
     final app = await openBoard(tester);
 
-    final inUse = find.byKey(const ValueKey('board.bed.2A'));
+    final toClean = find.byKey(const ValueKey('board.bed.3A'));
     expect(
-      find.descendant(of: inUse, matching: find.byType(InkWell)),
+      find.descendant(of: toClean, matching: find.byType(InkWell)),
       findsNothing,
     );
     expect(
-      find.descendant(of: inUse, matching: find.byType(MouseRegion)),
+      find.descendant(of: toClean, matching: find.byType(MouseRegion)),
       findsNothing,
     );
+
+    await tapKey(tester, 'board.bed.2A');
+    expect(find.byKey(const ValueKey('panel.title')), findsOneWidget);
+    await tapKey(tester, 'panel.close');
+    expect(find.byKey(const ValueKey('panel.title')), findsNothing);
 
     await tapKey(tester, 'board.bed.1A');
     expect(locationOf(app), Routes.checkIn);

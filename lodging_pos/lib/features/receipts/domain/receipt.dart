@@ -42,6 +42,7 @@ final class Receipt {
     required this.servedBy,
     required this.printCount,
     required this.graceMinutes,
+    this.checkedOutAt,
   });
 
   final String lodgingName;
@@ -74,6 +75,12 @@ final class Receipt {
   /// The current grace setting, for the footer.
   final int graceMinutes;
 
+  /// UTC. Set on a late-checkout receipt (FD-8): the guest has left, so it
+  /// says when instead of a check-out-by time.
+  final DateTime? checkedOutAt;
+
+  bool get isLateCheckout => checkedOutAt != null;
+
   /// The first print or save is the original; every later one says COPY.
   /// Viewing on screen doesn't count.
   bool get isCopy => printCount > 0;
@@ -94,6 +101,16 @@ final class Receipt {
 
   String get fromText => formatDayDateComma(from);
   String get checkOutByText => formatDayDateComma(checkOutBy);
+
+  /// The rows about the stay after room and category: From / Check out by,
+  /// or for a late checkout, Charge / Checked out.
+  List<(String, String)> get stayRows => switch (checkedOutAt) {
+    final DateTime out => [
+      ('Charge', 'Late checkout'),
+      ('Checked out', formatDayDateComma(out)),
+    ],
+    null => [('From', fromText), ('Check out by', checkOutByText)],
+  };
 
   /// (label, amount) per bed: `2 nights` · `2 × 600`, or with two beds
   /// `Bed A · Deluxe` · `2 × 700`.
@@ -116,9 +133,11 @@ final class Receipt {
   /// checkout + the grace setting, BR-7a).
   List<String> get footer => [
     'Thank you for staying with us.',
-    'Checkout is at ${formatTime(checkOutBy)}. After '
-        '${formatTime(checkOutBy.add(Duration(minutes: graceMinutes)))}, one '
-        'more night is charged.',
+    // The guest has left: no checkout reminder on a late-checkout receipt.
+    if (!isLateCheckout)
+      'Checkout is at ${formatTime(checkOutBy)}. After '
+          '${formatTime(checkOutBy.add(Duration(minutes: graceMinutes)))}, one '
+          'more night is charged.',
   ];
 
   /// `1,200` (no "KES" inside a line).

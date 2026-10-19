@@ -62,6 +62,7 @@ class BedBoardRepository {
                 stay: stay == null || guest == null
                     ? null
                     : BoardStay(
+                        stayId: stay.id,
                         guestName: guest.fullName,
                         guestPhone: guest.phone,
                         paidUntil: stay.paidUntil,

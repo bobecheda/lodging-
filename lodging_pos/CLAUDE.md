@@ -100,4 +100,4 @@ flutter build windows --release
 
 ## Current sprint
 
-Sprint 1 (14–27 Oct 2026): a receptionist can run a full stay offline — login and shifts (FD-1), admin setup on the desk app (AD-1 to AD-4), guests (FD-3), bed board (FD-2), check-in (FD-4), payment (FD-5), receipt (FD-6), checkout (FD-8). Not in sprint 1: sync, admin phone app, extension UI, refund approval UI, shift close, voids UI, inventory, expenses, reports.
+Sprint 1 (14–27 Oct 2026): a receptionist can run a full stay offline — login and shifts (FD-1), admin setup on the desk app (AD-1 to AD-4), guests (FD-3), bed board (FD-2), check-in (FD-4), payment (FD-5), receipt (FD-6), checkout (FD-8, refund requests only), housekeeping (FD-9: assign and mark clean). Not in sprint 1: sync, admin phone app, extension UI (FD-7), refund approval, payout and REFUND receipt (AD-7, sprint 2), shift close, voids UI, inventory, expenses, reports.

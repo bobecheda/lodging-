@@ -20,6 +20,7 @@ Receipt receipt({
   String? mpesaCode = 'QJK7H2LM4P',
   int printCount = 0,
   int graceMinutes = 60,
+  DateTime? checkedOutAt,
 }) => Receipt(
   lodgingName: 'Sunrise Lodge',
   receiptNumber: 'R-000041',
@@ -34,6 +35,7 @@ Receipt receipt({
   servedBy: 'Mary Wanjiku',
   printCount: printCount,
   graceMinutes: graceMinutes,
+  checkedOutAt: checkedOutAt,
 );
 
 void main() {
@@ -145,5 +147,27 @@ void main() {
       expect(receiptFileName(receipt(printCount: 1)), 'R-000041 COPY 1.pdf');
       expect(receiptFileName(receipt(printCount: 3)), 'R-000041 COPY 3.pdf');
     });
+  });
+
+  test('a late-checkout receipt says when they left; no checkout reminder', () {
+    final r = receipt(
+      lines: const [
+        ReceiptLine(
+          bedLabel: 'B',
+          categoryName: 'Deluxe',
+          nights: 1,
+          pricePerNight: 700,
+        ),
+      ],
+      checkedOutAt: oct(16, 11, 24),
+    );
+    expect(r.isLateCheckout, isTrue);
+    expect(r.stayRows, [
+      ('Charge', 'Late checkout'),
+      ('Checked out', 'Fri 16 Oct, 11:24'),
+    ]);
+    expect(r.chargeRows, [('1 night', '1 × 700')]);
+    expect(r.footer, ['Thank you for staying with us.']);
+    expect(receipt().stayRows.first.$1, 'From');
   });
 }
