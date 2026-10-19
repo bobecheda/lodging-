@@ -16,6 +16,7 @@ import '../../../core/money/kes.dart';
 import '../../payments/domain/payment_rules.dart';
 import '../data/shift_repository.dart';
 import '../domain/shift.dart';
+import '../domain/shift_close.dart';
 import '../domain/shift_rules.dart';
 import 'shift_providers.dart';
 
@@ -343,6 +344,10 @@ class _Blocked extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final first = openShift.userName.split(' ').first;
+    final user = ref.watch(sessionProvider);
+    // FD-11: the owner can close it here; anyone else is told who can.
+    final canClose =
+        user != null && mayCloseShift(user, shiftUserId: openShift.userId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -353,6 +358,20 @@ class _Blocked extends ConsumerWidget {
           '${formatDayDateTime(openShift.openedAt)}. A new shift can start '
           'once it is closed.',
         ),
+        const SizedBox(height: Space.x12),
+        if (canClose)
+          AppButton.primary(
+            key: const ValueKey('shift.closeOther'),
+            label: "Close $first's shift",
+            onPressed: () => context.go(Routes.closeShiftFor(openShift.id)),
+          )
+        else
+          Text(
+            'Ask $first to sign in and close it, or ask the owner to close '
+            "$first's shift.",
+            key: const ValueKey('shift.askToClose'),
+            style: LodgingType.of(context).body,
+          ),
         const SizedBox(height: Space.x20),
         if (onBack != null) ...[
           AppButton.secondary(

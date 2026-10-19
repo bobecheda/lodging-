@@ -250,3 +250,132 @@ final class ShiftTakingsFamily extends $Family
   @override
   String toString() => r'shiftTakingsProvider';
 }
+
+/// The owner's list of shifts (FD-11), watched.
+
+@ProviderFor(shiftList)
+final shiftListProvider = ShiftListProvider._();
+
+/// The owner's list of shifts (FD-11), watched.
+
+final class ShiftListProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ShiftSummary>>,
+          List<ShiftSummary>,
+          Stream<List<ShiftSummary>>
+        >
+    with
+        $FutureModifier<List<ShiftSummary>>,
+        $StreamProvider<List<ShiftSummary>> {
+  /// The owner's list of shifts (FD-11), watched.
+  ShiftListProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'shiftListProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$shiftListHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<ShiftSummary>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<ShiftSummary>> create(Ref ref) {
+    return shiftList(ref);
+  }
+}
+
+String _$shiftListHash() => r'84f439c2c423d2f1a49accf295a6e18ca1f9d104';
+
+/// An open shift by id, for closing someone else's (FD-11).
+
+@ProviderFor(openShiftById)
+final openShiftByIdProvider = OpenShiftByIdFamily._();
+
+/// An open shift by id, for closing someone else's (FD-11).
+
+final class OpenShiftByIdProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<OpenShift?>,
+          OpenShift?,
+          FutureOr<OpenShift?>
+        >
+    with $FutureModifier<OpenShift?>, $FutureProvider<OpenShift?> {
+  /// An open shift by id, for closing someone else's (FD-11).
+  OpenShiftByIdProvider._({
+    required OpenShiftByIdFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'openShiftByIdProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$openShiftByIdHash();
+
+  @override
+  String toString() {
+    return r'openShiftByIdProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<OpenShift?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<OpenShift?> create(Ref ref) {
+    final argument = this.argument as String;
+    return openShiftById(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OpenShiftByIdProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$openShiftByIdHash() => r'af9ba93b7f2ee0f9aeaa8112927558f3571ac17e';
+
+/// An open shift by id, for closing someone else's (FD-11).
+
+final class OpenShiftByIdFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<OpenShift?>, String> {
+  OpenShiftByIdFamily._()
+    : super(
+        retry: null,
+        name: r'openShiftByIdProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// An open shift by id, for closing someone else's (FD-11).
+
+  OpenShiftByIdProvider call(String shiftId) =>
+      OpenShiftByIdProvider._(argument: shiftId, from: this);
+
+  @override
+  String toString() => r'openShiftByIdProvider';
+}

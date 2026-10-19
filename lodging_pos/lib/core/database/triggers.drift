@@ -42,6 +42,11 @@ CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts
   WHEN NEW.updated_at IS OLD.updated_at
   BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
 
+-- v5 (FD-11): a closed shift cannot be reopened or changed.
+CREATE TRIGGER shifts_closed_final BEFORE UPDATE ON shifts
+  WHEN OLD.status = 'closed'
+  BEGIN SELECT RAISE(ABORT, 'a closed shift cannot be changed'); END;
+
 CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays
   WHEN NEW.updated_at IS OLD.updated_at
   BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;

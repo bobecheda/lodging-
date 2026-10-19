@@ -19,6 +19,7 @@ import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -98,7 +99,7 @@ void main() {
       (key: key, value: value),
   ];
 
-  test('migration from v1 to v4 keeps every row, gives each charge its '
+  test('migration from v1 to v5 keeps every row, gives each charge its '
       'bed’s category and each stay its room and bed', () async {
     final oldUsersData = <v1.UsersData>[
       const v1.UsersData(
@@ -114,8 +115,8 @@ void main() {
         mustChangePassword: 0,
       ),
     ];
-    final expectedNewUsersData = <v4.UsersData>[
-      const v4.UsersData(
+    final expectedNewUsersData = <v5.UsersData>[
+      const v5.UsersData(
         id: admin,
         createdAt: t,
         updatedAt: t,
@@ -140,9 +141,9 @@ void main() {
           deviceId: 'seed',
         ),
     ];
-    final expectedNewSettingsData = <v4.SettingsData>[
+    final expectedNewSettingsData = <v5.SettingsData>[
       for (final s in settings)
-        v4.SettingsData(
+        v5.SettingsData(
           key: s.key,
           value: s.value,
           createdAt: t,
@@ -173,8 +174,8 @@ void main() {
         isActive: 1,
       ),
     ];
-    final expectedNewBedCategoriesData = <v4.BedCategoriesData>[
-      const v4.BedCategoriesData(
+    final expectedNewBedCategoriesData = <v5.BedCategoriesData>[
+      const v5.BedCategoriesData(
         id: deluxe,
         createdAt: t,
         updatedAt: t,
@@ -184,7 +185,7 @@ void main() {
         sortOrder: 1,
         isActive: 1,
       ),
-      const v4.BedCategoriesData(
+      const v5.BedCategoriesData(
         id: normal,
         createdAt: t,
         updatedAt: t,
@@ -207,8 +208,8 @@ void main() {
         isActive: 1,
       ),
     ];
-    final expectedNewRoomsData = <v4.RoomsData>[
-      const v4.RoomsData(
+    final expectedNewRoomsData = <v5.RoomsData>[
+      const v5.RoomsData(
         id: room,
         createdAt: t,
         updatedAt: t,
@@ -236,12 +237,12 @@ void main() {
           isActive: 1,
         ),
     ];
-    final expectedNewBedsData = <v4.BedsData>[
+    final expectedNewBedsData = <v5.BedsData>[
       for (final (id, label, category) in const [
         (bedA, 'A', deluxe),
         (bedB, 'B', normal),
       ])
-        v4.BedsData(
+        v5.BedsData(
           id: id,
           createdAt: t,
           updatedAt: t,
@@ -266,8 +267,8 @@ void main() {
         idNumber: '12343921',
       ),
     ];
-    final expectedNewGuestsData = <v4.GuestsData>[
-      const v4.GuestsData(
+    final expectedNewGuestsData = <v5.GuestsData>[
+      const v5.GuestsData(
         id: guest,
         createdAt: t,
         updatedAt: t,
@@ -291,8 +292,8 @@ void main() {
         status: 'open',
       ),
     ];
-    final expectedNewShiftsData = <v4.ShiftsData>[
-      const v4.ShiftsData(
+    final expectedNewShiftsData = <v5.ShiftsData>[
+      const v5.ShiftsData(
         id: shift,
         createdAt: t,
         updatedAt: t,
@@ -325,12 +326,12 @@ void main() {
         ),
     ];
     // v3: room 7 and each stay's bed label, from the bed.
-    final expectedNewStaysData = <v4.StaysData>[
+    final expectedNewStaysData = <v5.StaysData>[
       for (final (id, bed, paid, label) in const [
         (stayA, bedA, paidA, 'A'),
         (stayB, bedB, paidB, 'B'),
       ])
-        v4.StaysData(
+        v5.StaysData(
           id: id,
           createdAt: t,
           updatedAt: t,
@@ -375,8 +376,8 @@ void main() {
         printCount: 1,
       ),
     ];
-    final expectedNewPaymentsData = <v4.PaymentsData>[
-      const v4.PaymentsData(
+    final expectedNewPaymentsData = <v5.PaymentsData>[
+      const v5.PaymentsData(
         id: pay1,
         createdAt: t,
         updatedAt: t,
@@ -389,7 +390,7 @@ void main() {
         method: 'cash',
         printCount: 1,
       ),
-      const v4.PaymentsData(
+      const v5.PaymentsData(
         id: pay2,
         createdAt: later,
         updatedAt: later,
@@ -439,10 +440,10 @@ void main() {
           periodEnd: end,
         ),
     ];
-    final expectedNewStayChargesData = <v4.StayChargesData>[
+    final expectedNewStayChargesData = <v5.StayChargesData>[
       for (final (id, at, stay, pay, kind, price, start, end, cat, name)
           in charges)
-        v4.StayChargesData(
+        v5.StayChargesData(
           id: id,
           createdAt: at,
           updatedAt: at,
@@ -463,22 +464,22 @@ void main() {
     final oldDeviceData = <v1.DeviceData>[
       const v1.DeviceData(deviceId: dev, createdAt: t),
     ];
-    final expectedNewDeviceData = <v4.DeviceData>[
-      const v4.DeviceData(deviceId: dev, createdAt: t),
+    final expectedNewDeviceData = <v5.DeviceData>[
+      const v5.DeviceData(deviceId: dev, createdAt: t),
     ];
 
     final oldReceiptCounterData = <v1.ReceiptCounterData>[
       const v1.ReceiptCounterData(deviceId: dev, nextNumber: 3),
     ];
-    final expectedNewReceiptCounterData = <v4.ReceiptCounterData>[
-      const v4.ReceiptCounterData(deviceId: dev, nextNumber: 3),
+    final expectedNewReceiptCounterData = <v5.ReceiptCounterData>[
+      const v5.ReceiptCounterData(deviceId: dev, nextNumber: 3),
     ];
 
     await verifier.testWithDataIntegrity(
       oldVersion: 1,
-      newVersion: 4,
+      newVersion: 5,
       createOld: v1.DatabaseAtV1.new,
-      createNew: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
       openTestedDatabase: open,
       createItems: (batch, oldDb) {
         batch.insertAll(oldDb.users, oldUsersData);
@@ -658,8 +659,111 @@ void main() {
     );
   });
 
+  test('migration from v4 to v5: a closed shift gets its count and closer, '
+      'an open one stays empty; afterwards a closed shift never changes', () async {
+    const deskUser = 'user-desk';
+    final users = [
+      for (final (id, name, role) in const [
+        (admin, 'owner', 'admin'),
+        (deskUser, 'mary', 'receptionist'),
+      ])
+        v4.UsersData(
+          id: id,
+          createdAt: t,
+          updatedAt: t,
+          deviceId: dev,
+          fullName: name,
+          username: name,
+          passwordHash: 'not-a-real-hash',
+          role: role,
+          isActive: 1,
+          mustChangePassword: 0,
+        ),
+    ];
+    // Mary's shift closed KES 200 short; the owner's shift still open.
+    const closed = v4.ShiftsData(
+      id: 'shift-closed',
+      createdAt: t,
+      updatedAt: later,
+      deviceId: dev,
+      userId: deskUser,
+      openedAt: t,
+      openingFloat: 1000,
+      closedAt: later,
+      expectedCash: 5000,
+      expectedPaybill: 1400,
+      countedCash: 4800,
+      variance: -200,
+      status: 'closed',
+    );
+    const stillOpen = v4.ShiftsData(
+      id: 'shift-open',
+      createdAt: later,
+      updatedAt: later,
+      deviceId: dev,
+      userId: admin,
+      openedAt: later,
+      openingFloat: 0,
+      status: 'open',
+    );
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 4,
+      newVersion: 5,
+      createOld: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
+      openTestedDatabase: open,
+      createItems: (batch, oldDb) {
+        batch.insertAll(oldDb.users, users);
+        batch.insertAll(oldDb.shifts, const [closed, stillOpen]);
+      },
+      validateItems: (newDb) async {
+        final shifts = await (newDb.select(
+          newDb.shifts,
+        )..orderBy([(x) => OrderingTerm.asc(x.id)])).get();
+        expect(shifts, const [
+          v5.ShiftsData(
+            id: 'shift-closed',
+            createdAt: t,
+            updatedAt: later,
+            deviceId: dev,
+            userId: deskUser,
+            openedAt: t,
+            openingFloat: 1000,
+            closedAt: later,
+            expectedCash: 5000,
+            expectedPaybill: 1400,
+            countedCash: 4800,
+            variance: -200,
+            status: 'closed',
+            firstCount: 4800,
+            closedBy: deskUser,
+          ),
+          v5.ShiftsData(
+            id: 'shift-open',
+            createdAt: later,
+            updatedAt: later,
+            deviceId: dev,
+            userId: admin,
+            openedAt: later,
+            openingFloat: 0,
+            status: 'open',
+          ),
+        ]);
+        // The v5 trigger: a closed shift can't be reopened or changed.
+        await expectLater(
+          newDb.customStatement(
+            "UPDATE shifts SET status = 'open', closed_at = NULL, "
+            "updated_at = '2030-01-01T00:00:00.000Z' WHERE id = 'shift-closed'",
+          ),
+          throwsA(anything),
+        );
+      },
+    );
+  });
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3]) {
+    for (final from in [1, 2, 3, 4]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -684,7 +788,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          4,
+          5,
         );
         final objects = await db
             .customSelect(

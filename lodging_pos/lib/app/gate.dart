@@ -18,6 +18,15 @@ abstract final class Routes {
   /// FD-6: find and reprint receipts.
   static const receipts = '/receipts';
 
+  /// FD-11: close your shift; `?shift=<id>` closes someone else's (owner).
+  static const closeShift = '/close-shift';
+
+  /// FD-11: the owner's list of shifts and their variances.
+  static const shifts = '/shifts';
+
+  static String closeShiftFor(String shiftId) =>
+      Uri(path: closeShift, queryParameters: {'shift': shiftId}).toString();
+
   /// The shift screen, coming back to [location] once a shift is open.
   static String shiftThen(String location) =>
       Uri(path: shift, queryParameters: {'then': location}).toString();
@@ -39,6 +48,8 @@ abstract final class Routes {
     guests: {Permission.registerGuests},
     checkIn: {Permission.checkIn},
     receipts: {Permission.printReceipts},
+    closeShift: {Permission.closeShift, Permission.closeOtherShifts},
+    shifts: {Permission.viewAllReports},
     adminRooms: {Permission.manageRooms},
     adminPrices: {Permission.editPrices, Permission.editSettings},
     adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},

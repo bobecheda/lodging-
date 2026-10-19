@@ -10,6 +10,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 |---|---|---|
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
+| v5 | 19 Oct 2026 (FD-11) | `shifts.first_count`, `close_note` (≤ 200) and `closed_by`; shifts already closed get `first_count = counted_cash` and `closed_by = user_id`; trigger `shifts_closed_final` refuses any change to a closed shift |
 | v4 | 19 Oct 2026 (FD-9) | `housekeeping_tasks.cancelled_at` and `cancelled_by` (empty for existing tasks); the one-open-task index leaves out cancelled tasks; a task can't be both completed and cancelled |
 | v3 | 18 Oct 2026 (FD-6) | `stays.room_number` and `bed_label`, as let; existing stays filled from their bed and room by rebuilding the table |
 
@@ -132,9 +133,12 @@ Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL, ignoring case: t
 | expected_paybill | INT | set on close |
 | counted_cash | INT | set on close |
 | variance | INT | counted − expected |
+| first_count | INT | v5: the first, blind count; `counted_cash` is the final one after any recount |
+| close_note | TEXT | v5: ≤ 200 characters; the app requires it when variance ≠ 0 |
+| closed_by | TEXT → users | v5: who closed it (the owner may close someone else's, `closeOtherShifts`) |
 | status | TEXT | `open` \| `closed` |
 
-At most one open shift per device. A closed shift must have `closed_at`, `expected_cash`, `expected_paybill`, `counted_cash` and `variance`, with `variance = counted_cash − expected_cash`.
+At most one open shift per device. A closed shift must have `closed_at`, `expected_cash`, `expected_paybill`, `counted_cash` and `variance`, with `variance = counted_cash − expected_cash`. Since v5 it also has `first_count` and `closed_by`, and trigger `shifts_closed_final` refuses any change to it: a closed shift can't be reopened (FD-11). Closing is one `shift.close` write; its audit entry keeps both counts.
 
 ### stays
 | Column | Type | Notes |

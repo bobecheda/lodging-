@@ -40,6 +40,11 @@ enum Permission {
   /// Find receipts and print or save them; after the first, they print as
   /// COPY (FD-6).
   printReceipts,
+
+  /// Close someone else's shift with a cash count (FD-11), e.g. one left
+  /// open by a receptionist who went home. Admin only for now; a
+  /// receptionist "handover close" later only needs this map changed.
+  closeOtherShifts,
 }
 
 const _adminOnly = {Role.admin};
@@ -59,6 +64,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.manageInventoryItems: _adminOnly,
   Permission.recordExpenses: _adminOnly,
   Permission.workWithoutShift: _adminOnly,
+  Permission.closeOtherShifts: _adminOnly,
   Permission.openShift: _everyone,
   Permission.closeShift: _everyone,
   Permission.checkIn: _everyone,

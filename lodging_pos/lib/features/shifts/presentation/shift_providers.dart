@@ -53,3 +53,13 @@ class ShiftContinued extends _$ShiftContinued {
 @riverpod
 Future<ShiftTakings> shiftTakings(Ref ref, String shiftId) =>
     ref.watch(shiftRepositoryProvider).takings(shiftId);
+
+/// The owner's list of shifts (FD-11), watched.
+@riverpod
+Stream<List<ShiftSummary>> shiftList(Ref ref) =>
+    ref.watch(shiftRepositoryProvider).watchShifts();
+
+/// An open shift by id, for closing someone else's (FD-11).
+@riverpod
+Future<OpenShift?> openShiftById(Ref ref, String shiftId) =>
+    ref.watch(shiftRepositoryProvider).openShiftById(shiftId);

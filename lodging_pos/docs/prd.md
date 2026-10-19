@@ -149,6 +149,10 @@ Each story lists the conditions that must all hold before it counts as done.
 - Shows expected cash (float + cash payments) and expected Paybill total.
 - Requires the counted cash; the variance is saved and shown to the admin.
 - A closed shift cannot be reopened.
+- The count is blind: the cash counted is entered before the expected amount is shown. A recount is allowed; the first count is kept beside the final one.
+- A short or over variance needs a note (at most 200 characters).
+- The owner can close someone else's open shift (e.g. left open overnight), recorded as "closed by X for Y's shift"; a blocked receptionist is told who can close it.
+- The owner's Shifts screen lists shifts with their variance, highlighting any over 1% of the shift's takings, with the recount and the note.
 
 **FD-12 Download my monthly report.** As a receptionist, I want a PDF of my takings for the month.
 

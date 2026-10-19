@@ -3732,6 +3732,43 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _firstCountMeta = const VerificationMeta(
+    'firstCount',
+  );
+  @override
+  late final GeneratedColumn<int> firstCount = GeneratedColumn<int>(
+    'first_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closeNoteMeta = const VerificationMeta(
+    'closeNote',
+  );
+  @override
+  late final GeneratedColumn<String> closeNote = GeneratedColumn<String>(
+    'close_note',
+    aliasedName,
+    true,
+    check: () => ComparableExpr(closeNote.length).isSmallerOrEqualValue(200),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closedByMeta = const VerificationMeta(
+    'closedBy',
+  );
+  @override
+  late final GeneratedColumn<String> closedBy = GeneratedColumn<String>(
+    'closed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3747,6 +3784,9 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     countedCash,
     variance,
     status,
+    firstCount,
+    closeNote,
+    closedBy,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3855,6 +3895,24 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
+    if (data.containsKey('first_count')) {
+      context.handle(
+        _firstCountMeta,
+        firstCount.isAcceptableOrUnknown(data['first_count']!, _firstCountMeta),
+      );
+    }
+    if (data.containsKey('close_note')) {
+      context.handle(
+        _closeNoteMeta,
+        closeNote.isAcceptableOrUnknown(data['close_note']!, _closeNoteMeta),
+      );
+    }
+    if (data.containsKey('closed_by')) {
+      context.handle(
+        _closedByMeta,
+        closedBy.isAcceptableOrUnknown(data['closed_by']!, _closedByMeta),
+      );
+    }
     return context;
   }
 
@@ -3916,6 +3974,18 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      firstCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_count'],
+      ),
+      closeNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}close_note'],
+      ),
+      closedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}closed_by'],
+      ),
     );
   }
 
@@ -3940,6 +4010,14 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
   final int? countedCash;
   final int? variance;
   final String status;
+
+  /// The first, blind count; `counted_cash` is the final one after any
+  /// recount. Equal when there was no recount.
+  final int? firstCount;
+
+  /// Why the cash is short or over; the app requires it when variance != 0.
+  final String? closeNote;
+  final String? closedBy;
   const ShiftRow({
     required this.id,
     required this.createdAt,
@@ -3954,6 +4032,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     this.countedCash,
     this.variance,
     required this.status,
+    this.firstCount,
+    this.closeNote,
+    this.closedBy,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3981,6 +4062,15 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
       map['variance'] = Variable<int>(variance);
     }
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || firstCount != null) {
+      map['first_count'] = Variable<int>(firstCount);
+    }
+    if (!nullToAbsent || closeNote != null) {
+      map['close_note'] = Variable<String>(closeNote);
+    }
+    if (!nullToAbsent || closedBy != null) {
+      map['closed_by'] = Variable<String>(closedBy);
+    }
     return map;
   }
 
@@ -4009,6 +4099,15 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           ? const Value.absent()
           : Value(variance),
       status: Value(status),
+      firstCount: firstCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstCount),
+      closeNote: closeNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closeNote),
+      closedBy: closedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedBy),
     );
   }
 
@@ -4031,6 +4130,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
       countedCash: serializer.fromJson<int?>(json['counted_cash']),
       variance: serializer.fromJson<int?>(json['variance']),
       status: serializer.fromJson<String>(json['status']),
+      firstCount: serializer.fromJson<int?>(json['first_count']),
+      closeNote: serializer.fromJson<String?>(json['close_note']),
+      closedBy: serializer.fromJson<String?>(json['closed_by']),
     );
   }
   @override
@@ -4050,6 +4152,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
       'counted_cash': serializer.toJson<int?>(countedCash),
       'variance': serializer.toJson<int?>(variance),
       'status': serializer.toJson<String>(status),
+      'first_count': serializer.toJson<int?>(firstCount),
+      'close_note': serializer.toJson<String?>(closeNote),
+      'closed_by': serializer.toJson<String?>(closedBy),
     };
   }
 
@@ -4067,6 +4172,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     Value<int?> countedCash = const Value.absent(),
     Value<int?> variance = const Value.absent(),
     String? status,
+    Value<int?> firstCount = const Value.absent(),
+    Value<String?> closeNote = const Value.absent(),
+    Value<String?> closedBy = const Value.absent(),
   }) => ShiftRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -4083,6 +4191,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     countedCash: countedCash.present ? countedCash.value : this.countedCash,
     variance: variance.present ? variance.value : this.variance,
     status: status ?? this.status,
+    firstCount: firstCount.present ? firstCount.value : this.firstCount,
+    closeNote: closeNote.present ? closeNote.value : this.closeNote,
+    closedBy: closedBy.present ? closedBy.value : this.closedBy,
   );
   ShiftRow copyWithCompanion(ShiftsCompanion data) {
     return ShiftRow(
@@ -4107,6 +4218,11 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           : this.countedCash,
       variance: data.variance.present ? data.variance.value : this.variance,
       status: data.status.present ? data.status.value : this.status,
+      firstCount: data.firstCount.present
+          ? data.firstCount.value
+          : this.firstCount,
+      closeNote: data.closeNote.present ? data.closeNote.value : this.closeNote,
+      closedBy: data.closedBy.present ? data.closedBy.value : this.closedBy,
     );
   }
 
@@ -4125,7 +4241,10 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           ..write('expectedPaybill: $expectedPaybill, ')
           ..write('countedCash: $countedCash, ')
           ..write('variance: $variance, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('firstCount: $firstCount, ')
+          ..write('closeNote: $closeNote, ')
+          ..write('closedBy: $closedBy')
           ..write(')'))
         .toString();
   }
@@ -4145,6 +4264,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     countedCash,
     variance,
     status,
+    firstCount,
+    closeNote,
+    closedBy,
   );
   @override
   bool operator ==(Object other) =>
@@ -4162,7 +4284,10 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           other.expectedPaybill == this.expectedPaybill &&
           other.countedCash == this.countedCash &&
           other.variance == this.variance &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.firstCount == this.firstCount &&
+          other.closeNote == this.closeNote &&
+          other.closedBy == this.closedBy);
 }
 
 class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
@@ -4179,6 +4304,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
   final Value<int?> countedCash;
   final Value<int?> variance;
   final Value<String> status;
+  final Value<int?> firstCount;
+  final Value<String?> closeNote;
+  final Value<String?> closedBy;
   final Value<int> rowid;
   const ShiftsCompanion({
     this.id = const Value.absent(),
@@ -4194,6 +4322,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.countedCash = const Value.absent(),
     this.variance = const Value.absent(),
     this.status = const Value.absent(),
+    this.firstCount = const Value.absent(),
+    this.closeNote = const Value.absent(),
+    this.closedBy = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ShiftsCompanion.insert({
@@ -4210,6 +4341,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.countedCash = const Value.absent(),
     this.variance = const Value.absent(),
     required String status,
+    this.firstCount = const Value.absent(),
+    this.closeNote = const Value.absent(),
+    this.closedBy = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId),
        openedAt = Value(openedAt),
@@ -4229,6 +4363,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     Expression<int>? countedCash,
     Expression<int>? variance,
     Expression<String>? status,
+    Expression<int>? firstCount,
+    Expression<String>? closeNote,
+    Expression<String>? closedBy,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4245,6 +4382,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
       if (countedCash != null) 'counted_cash': countedCash,
       if (variance != null) 'variance': variance,
       if (status != null) 'status': status,
+      if (firstCount != null) 'first_count': firstCount,
+      if (closeNote != null) 'close_note': closeNote,
+      if (closedBy != null) 'closed_by': closedBy,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4263,6 +4403,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     Value<int?>? countedCash,
     Value<int?>? variance,
     Value<String>? status,
+    Value<int?>? firstCount,
+    Value<String?>? closeNote,
+    Value<String?>? closedBy,
     Value<int>? rowid,
   }) {
     return ShiftsCompanion(
@@ -4279,6 +4422,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
       countedCash: countedCash ?? this.countedCash,
       variance: variance ?? this.variance,
       status: status ?? this.status,
+      firstCount: firstCount ?? this.firstCount,
+      closeNote: closeNote ?? this.closeNote,
+      closedBy: closedBy ?? this.closedBy,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4325,6 +4471,15 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (firstCount.present) {
+      map['first_count'] = Variable<int>(firstCount.value);
+    }
+    if (closeNote.present) {
+      map['close_note'] = Variable<String>(closeNote.value);
+    }
+    if (closedBy.present) {
+      map['closed_by'] = Variable<String>(closedBy.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4347,6 +4502,9 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
           ..write('countedCash: $countedCash, ')
           ..write('variance: $variance, ')
           ..write('status: $status, ')
+          ..write('firstCount: $firstCount, ')
+          ..write('closeNote: $closeNote, ')
+          ..write('closedBy: $closedBy, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12875,6 +13033,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE TRIGGER shifts_stamped_update BEFORE UPDATE ON shifts WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
     'shifts_stamped_update',
   );
+  late final Trigger shiftsClosedFinal = Trigger(
+    'CREATE TRIGGER shifts_closed_final BEFORE UPDATE ON shifts WHEN OLD.status = \'closed\' BEGIN SELECT RAISE (ABORT, \'a closed shift cannot be changed\');END',
+    'shifts_closed_final',
+  );
   late final $StaysTable stays = $StaysTable(this);
   late final Trigger staysStampedUpdate = Trigger(
     'CREATE TRIGGER stays_stamped_update BEFORE UPDATE ON stays WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
@@ -13098,6 +13260,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     guestsStampedUpdate,
     shifts,
     shiftsStampedUpdate,
+    shiftsClosedFinal,
     stays,
     staysStampedUpdate,
     payments,
@@ -13206,6 +13369,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'guests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shifts',
         limitUpdateKind: UpdateKind.update,
       ),
       result: [],
@@ -13475,6 +13645,25 @@ final class $$UsersTableReferences
     ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_shiftsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ShiftsTable, List<ShiftRow>> _shiftsClosedTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.shifts,
+    aliasName: 'users__id__shifts__closed_by',
+  );
+
+  $$ShiftsTableProcessedTableManager get shiftsClosed {
+    final manager = $$ShiftsTableTableManager(
+      $_db,
+      $_db.shifts,
+    ).filter((f) => f.closedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_shiftsClosedTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -13827,6 +14016,31 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.shifts,
       getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableFilterComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> shiftsClosed(
+    Expression<bool> Function($$ShiftsTableFilterComposer f) f,
+  ) {
+    final $$ShiftsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.closedBy,
       builder:
           (
             joinBuilder, {
@@ -14323,6 +14537,31 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> shiftsClosed<T extends Object>(
+    Expression<T> Function($$ShiftsTableAnnotationComposer a) f,
+  ) {
+    final $$ShiftsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.closedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> staysCheckedIn<T extends Object>(
     Expression<T> Function($$StaysTableAnnotationComposer a) f,
   ) {
@@ -14669,6 +14908,7 @@ class $$UsersTableTableManager
           PrefetchHooks Function({
             bool settingsRefs,
             bool shiftsRefs,
+            bool shiftsClosed,
             bool staysCheckedIn,
             bool staysCheckedOut,
             bool paymentsRefs,
@@ -14759,6 +14999,7 @@ class $$UsersTableTableManager
               ({
                 settingsRefs = false,
                 shiftsRefs = false,
+                shiftsClosed = false,
                 staysCheckedIn = false,
                 staysCheckedOut = false,
                 paymentsRefs = false,
@@ -14778,6 +15019,7 @@ class $$UsersTableTableManager
                   explicitlyWatchedTables: [
                     if (settingsRefs) db.settings,
                     if (shiftsRefs) db.shifts,
+                    if (shiftsClosed) db.shifts,
                     if (staysCheckedIn) db.stays,
                     if (staysCheckedOut) db.stays,
                     if (paymentsRefs) db.payments,
@@ -14830,6 +15072,27 @@ class $$UsersTableTableManager
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (shiftsClosed)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          ShiftRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._shiftsClosedTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).shiftsClosed,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.closedBy == item.id,
                               ),
                           typedResults: items,
                         ),
@@ -15121,6 +15384,7 @@ typedef $$UsersTableProcessedTableManager =
       PrefetchHooks Function({
         bool settingsRefs,
         bool shiftsRefs,
+        bool shiftsClosed,
         bool staysCheckedIn,
         bool staysCheckedOut,
         bool paymentsRefs,
@@ -17653,6 +17917,9 @@ typedef $$ShiftsTableCreateCompanionBuilder = ShiftsCompanion Function({
   Value<int?> countedCash,
   Value<int?> variance,
   required String status,
+  Value<int?> firstCount,
+  Value<String?> closeNote,
+  Value<String?> closedBy,
   Value<int> rowid,
 });
 typedef $$ShiftsTableUpdateCompanionBuilder = ShiftsCompanion Function({
@@ -17669,6 +17936,9 @@ typedef $$ShiftsTableUpdateCompanionBuilder = ShiftsCompanion Function({
   Value<int?> countedCash,
   Value<int?> variance,
   Value<String> status,
+  Value<int?> firstCount,
+  Value<String?> closeNote,
+  Value<String?> closedBy,
   Value<int> rowid,
 });
 
@@ -17687,6 +17957,23 @@ final class $$ShiftsTableReferences
       $_db.users,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _closedByTable(_$AppDatabase db) =>
+      db.users.createAlias('shifts__closed_by__users__id');
+
+  $$UsersTableProcessedTableManager? get closedBy {
+    final $_column = $_itemColumn<String>('closed_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_closedByTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -17800,10 +18087,43 @@ class $$ShiftsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get firstCount => $composableBuilder(
+    column: $table.firstCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get closeNote => $composableBuilder(
+    column: $table.closeNote,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$UsersTableFilterComposer get userId {
     final $$UsersTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get closedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.closedBy,
       referencedTable: $db.users,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -17943,10 +18263,43 @@ class $$ShiftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get firstCount => $composableBuilder(
+    column: $table.firstCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get closeNote => $composableBuilder(
+    column: $table.closeNote,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get closedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.closedBy,
       referencedTable: $db.users,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -18020,10 +18373,41 @@ class $$ShiftsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<int> get firstCount => $composableBuilder(
+    column: $table.firstCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get closeNote =>
+      $composableBuilder(column: $table.closeNote, builder: (column) => column);
+
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get closedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.closedBy,
       referencedTable: $db.users,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -18109,6 +18493,7 @@ class $$ShiftsTableTableManager
           ShiftRow,
           PrefetchHooks Function({
             bool userId,
+            bool closedBy,
             bool paymentsRefs,
             bool refundsRefs,
           })
@@ -18139,6 +18524,9 @@ class $$ShiftsTableTableManager
                 Value<int?> countedCash = const Value.absent(),
                 Value<int?> variance = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<int?> firstCount = const Value.absent(),
+                Value<String?> closeNote = const Value.absent(),
+                Value<String?> closedBy = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShiftsCompanion(
                 id: id,
@@ -18154,6 +18542,9 @@ class $$ShiftsTableTableManager
                 countedCash: countedCash,
                 variance: variance,
                 status: status,
+                firstCount: firstCount,
+                closeNote: closeNote,
+                closedBy: closedBy,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -18171,6 +18562,9 @@ class $$ShiftsTableTableManager
                 Value<int?> countedCash = const Value.absent(),
                 Value<int?> variance = const Value.absent(),
                 required String status,
+                Value<int?> firstCount = const Value.absent(),
+                Value<String?> closeNote = const Value.absent(),
+                Value<String?> closedBy = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShiftsCompanion.insert(
                 id: id,
@@ -18186,6 +18580,9 @@ class $$ShiftsTableTableManager
                 countedCash: countedCash,
                 variance: variance,
                 status: status,
+                firstCount: firstCount,
+                closeNote: closeNote,
+                closedBy: closedBy,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -18197,7 +18594,12 @@ class $$ShiftsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({userId = false, paymentsRefs = false, refundsRefs = false}) {
+              ({
+                userId = false,
+                closedBy = false,
+                paymentsRefs = false,
+                refundsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
@@ -18228,6 +18630,17 @@ class $$ShiftsTableTableManager
                                 ._userIdTable(db),
                             referencedColumn: $$ShiftsTableReferences
                                 ._userIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (closedBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.closedBy,
+                            referencedTable: $$ShiftsTableReferences
+                                ._closedByTable(db),
+                            referencedColumn: $$ShiftsTableReferences
+                                ._closedByTable(db)
                                 .id,
                           ) as T;
                         }
@@ -18298,7 +18711,12 @@ typedef $$ShiftsTableProcessedTableManager =
       $$ShiftsTableUpdateCompanionBuilder,
       (ShiftRow, $$ShiftsTableReferences),
       ShiftRow,
-      PrefetchHooks Function({bool userId, bool paymentsRefs, bool refundsRefs})
+      PrefetchHooks Function({
+        bool userId,
+        bool closedBy,
+        bool paymentsRefs,
+        bool refundsRefs,
+      })
     >;
 typedef $$StaysTableCreateCompanionBuilder = StaysCompanion Function({
   Value<String> id,
