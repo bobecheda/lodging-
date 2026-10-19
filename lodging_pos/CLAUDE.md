@@ -106,6 +106,7 @@ GitHub Actions (`.github/workflows/ci.yml`), Flutter pinned to the local version
 - **`CI / checks`** (Ubuntu, 15 min) runs on every pull request and every push to `main`, and is required to merge into `main`: `flutter pub get --enforce-lockfile`, `build_runner` then `git diff --exit-code` (committed generated code must be current), `drift_dev make-migrations` then no changed or new files (a schema change needs its numbered migration and snapshot), `dart format --set-exit-if-changed`, `flutter analyze --fatal-infos`, `flutter test --timeout 120s`. Run these locally before pushing; a red check blocks the merge.
 - **`windows-build`** (Windows, 30 min) runs on pushes to `main` and on demand: `flutter build windows --release`, kept as a zip artifact for 14 days. Not required.
 - GitGuardian runs separately, unchanged.
+- `.drift` files are checked out as CRLF on every OS (`.gitattributes`) because drift copies trigger SQL text, line endings included, into the schema snapshots. Don't change this rule without regenerating and reviewing all snapshots.
 - If a golden test ever fails on Ubuntu only because of font rendering, tag it `golden`, skip that tag in `checks` and run it in `windows-build`; never move `checks` to Windows for that.
 - Locally, don't run `flutter build windows --debug` while the app may be running from `flutter run`: they share the Debug folder. Use `--release` to check a build.
 
