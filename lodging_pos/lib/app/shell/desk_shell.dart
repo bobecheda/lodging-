@@ -65,6 +65,12 @@ List<NavItem> deskNavItems(Ref ref) => const [
     permissions: {Permission.printReceipts},
   ),
   NavItem(
+    route: Routes.shifts,
+    label: 'Shifts',
+    icon: Icons.point_of_sale_outlined,
+    permissions: {Permission.viewAllReports},
+  ),
+  NavItem(
     route: Routes.adminRooms,
     label: 'Rooms & beds',
     icon: Icons.bed_outlined,
@@ -286,13 +292,14 @@ class _UserBlock extends ConsumerWidget {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final shift = ref.watch(currentShiftProvider).value;
-    final role = switch (user.role) {
-      Role.admin => 'Owner · admin',
-      Role.receptionist =>
-        shift?.userId == user.id
-            ? 'Receptionist · shift since ${formatTime(shift!.openedAt)}'
-            : 'Receptionist',
-    };
+    final ownShift = shift != null && shift.userId == user.id;
+    final role = [
+      switch (user.role) {
+        Role.admin => 'Owner · admin',
+        Role.receptionist => 'Receptionist',
+      },
+      if (ownShift) 'shift since ${formatTime(shift.openedAt)}',
+    ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -307,6 +314,24 @@ class _UserBlock extends ConsumerWidget {
           style: t.small.copyWith(color: c.navMuted),
         ),
         const SizedBox(height: Space.x12),
+        // FD-11: close your own shift (count the cash, then sign out).
+        if (ownShift && can(user, Permission.closeShift)) ...[
+          OutlinedButton.icon(
+            key: const ValueKey('shell.closeShift'),
+            onPressed: () => context.go(Routes.closeShift),
+            icon: Icon(Icons.point_of_sale_outlined, size: 18, color: c.white),
+            label: Text(
+              'Close shift',
+              style: t.bodyStrong.copyWith(color: c.white),
+            ),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: c.marine,
+              side: BorderSide(color: c.navMuted),
+              minimumSize: const Size(Sizes.target, Sizes.targetCompact),
+            ),
+          ),
+          const SizedBox(height: Space.x8),
+        ],
         OutlinedButton.icon(
           key: const ValueKey('shell.lock'),
           onPressed: () => ref.read(idleLockProvider.notifier).lockNow(),

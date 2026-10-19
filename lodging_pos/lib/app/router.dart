@@ -13,7 +13,9 @@ import '../features/guests/presentation/guests_screen.dart';
 import '../features/receipts/presentation/receipts_screen.dart';
 import '../features/stays/presentation/check_in_screen.dart';
 import '../features/shifts/domain/shift_rules.dart';
+import '../features/shifts/presentation/close_shift_screen.dart';
 import '../features/shifts/presentation/open_shift_screen.dart';
+import '../features/shifts/presentation/shifts_screen.dart';
 import '../features/shifts/presentation/shift_providers.dart';
 import 'gate.dart';
 import '../features/setup/presentation/prices_screen.dart';
@@ -106,6 +108,14 @@ GoRouter router(Ref ref) {
             path: Routes.receipts,
             builder: (_, _) => const ReceiptsScreen(),
           ),
+          GoRoute(
+            path: Routes.closeShift,
+            builder: (_, state) => CloseShiftScreen(
+              key: ValueKey(state.uri.toString()),
+              shiftId: state.uri.queryParameters['shift'],
+            ),
+          ),
+          GoRoute(path: Routes.shifts, builder: (_, _) => const ShiftsScreen()),
           GoRoute(
             path: Routes.adminRooms,
             builder: (_, _) => const RoomsScreen(),

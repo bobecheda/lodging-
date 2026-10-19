@@ -138,6 +138,8 @@ void main() {
             expectedPaybill: Value(closed ? 0 : null),
             countedCash: Value(closed ? counted : null),
             variance: Value(closed ? variance ?? counted - 1000 : null),
+            firstCount: Value(closed ? counted : null),
+            closedBy: Value(closed ? userId : null),
           ),
         );
     return id;

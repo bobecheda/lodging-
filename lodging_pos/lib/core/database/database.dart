@@ -56,14 +56,15 @@ class AppDatabase extends _$AppDatabase {
 
   /// v1 is frozen as of 16 Oct 2026; v2 (FD-4) adds the category to each
   /// stay charge, v3 (FD-6) the room and bed to each stay, v4 (FD-9) task
-  /// cancelling. Snapshots: `drift_schemas/app_database/`.
+  /// cancelling, v5 (FD-11) the shift close details. Snapshots:
+  /// `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
   /// `dart run drift_dev make-migrations`, add the generated step to
   /// [_steps], and fill `test/drift/app_database/migration_test.dart` with
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -191,6 +192,29 @@ class AppDatabase extends _$AppDatabase {
       );
       await m.drop(schema.housekeepingTasksOneOpenPerBed);
       await m.createIndex(schema.housekeepingTasksOneOpenPerBed);
+    },
+    // v5 (FD-11): a shift keeps its blind first count, a note and who closed
+    // it, and can never change once closed. Shifts closed before v5 had no
+    // recount and could only be closed by their own user, so they get
+    // first_count = counted_cash and closed_by = user_id; open ones stay
+    // empty. The trigger is created after the rebuild has copied the rows.
+    from4To5: (m, schema) async {
+      final shifts = schema.shifts;
+      await m.alterTable(
+        TableMigration(
+          shifts,
+          newColumns: [shifts.firstCount, shifts.closeNote, shifts.closedBy],
+          columnTransformer: {
+            shifts.firstCount: const CustomExpression<int>(
+              "CASE WHEN status = 'closed' THEN counted_cash END",
+            ),
+            shifts.closedBy: const CustomExpression<String>(
+              "CASE WHEN status = 'closed' THEN user_id END",
+            ),
+          },
+        ),
+      );
+      await m.createTrigger(schema.shiftsClosedFinal);
     },
   );
 

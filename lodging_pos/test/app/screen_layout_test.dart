@@ -807,4 +807,74 @@ void main() {
       );
     });
   });
+
+  group('Shift close (FD-11)', () {
+    Future<(ProviderContainer, String)> withMaryShift(
+      WidgetTester tester, {
+      required String signIn,
+    }) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final mary = await env.addReceptionist('mary');
+      final shift = await ShiftRepository(
+        env.db,
+        env.audit,
+      ).openShift(user: mary, openingFloat: 1000);
+      final room = await RoomsRepository(env.db, env.audit).createRoom(
+        owner,
+        const NewRoom(
+          number: '7',
+          floor: null,
+          notes: null,
+          bedACategoryId: SeedIds.deluxe,
+          bedBCategoryId: null,
+        ),
+      );
+      await env.checkIn(room.beds.single.id, by: mary, nights: 3);
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(
+        tester,
+        signIn,
+        signIn == 'owner' ? 'owner-pass' : 'desk-pass',
+      );
+      return (app, shift.id);
+    }
+
+    testWidgets('review after a recount, short, with the note error', (
+      tester,
+    ) async {
+      final (app, _) = await withMaryShift(tester, signIn: 'mary');
+      await tapKey(tester, 'shift.continue');
+      await tapKey(tester, 'shell.closeShift');
+      await enterKey(tester, 'closeShift.count', '2000');
+      await tapKey(tester, 'closeShift.review');
+      await tapKey(tester, 'closeShift.recount');
+      await enterKey(tester, 'closeShift.count', '2900');
+      await tapKey(tester, 'closeShift.review');
+      await tapKey(tester, 'closeShift.confirm');
+      await expectCleanLayout(tester, app, Routes.closeShift, 'Close shift');
+      expect(find.text('Say why the cash is short.'), findsOneWidget);
+    });
+
+    testWidgets('the owner’s Shifts: a closed shift with a high variance, '
+        'a recount and who closed it', (tester) async {
+      final (app, shiftId) = await withMaryShift(tester, signIn: 'owner');
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final shifts = ShiftRepository(env.db, env.audit);
+      await tester.runAsync(
+        () async => shifts.closeShift(
+          owner,
+          shiftId,
+          firstCount: 2600,
+          counted: 2800,
+          note: 'Change for a large note was given from the float twice',
+          shown: await shifts.takings(shiftId),
+        ),
+      );
+      await tapKey(tester, 'nav.${Routes.shifts}');
+      await expectCleanLayout(tester, app, Routes.shifts, 'Shifts');
+      expect(find.byKey(ValueKey('shifts.recount.$shiftId')), findsOneWidget);
+      expect(find.byKey(ValueKey('shifts.closedBy.$shiftId')), findsOneWidget);
+    });
+  });
 }

@@ -33,7 +33,10 @@ class Guests extends Table with SyncedColumns {
   ];
 }
 
-/// Close fields (expected_*, counted_cash, variance) are set on close.
+/// Close fields (expected_*, counted_cash, variance) are set on close
+/// (FD-11). Since v5 also the blind first count, a note, and who closed it
+/// (the owner may close someone else's). A closed shift never changes
+/// again (trigger `shifts_closed_final`).
 @DataClassName('ShiftRow')
 @TableIndex.sql(
   'CREATE UNIQUE INDEX shifts_one_open_per_device ON shifts (device_id) '
@@ -51,12 +54,25 @@ class Shifts extends Table with SyncedColumns {
   IntColumn get variance => integer().nullable()();
   TextColumn get status => text().check(status.isIn(['open', 'closed']))();
 
+  // v5 (FD-11).
+  /// The first, blind count; `counted_cash` is the final one after any
+  /// recount. Equal when there was no recount.
+  IntColumn get firstCount => integer().nullable()();
+
+  /// Why the cash is short or over; the app requires it when variance != 0.
+  TextColumn get closeNote =>
+      text().nullable().check(closeNote.length.isSmallerOrEqualValue(200))();
+  @ReferenceName('shiftsClosed')
+  TextColumn get closedBy => text().nullable().references(Users, #id)();
+
   @override
   List<String> get customConstraints => [
     "CHECK ((status = 'open') = (closed_at IS NULL))",
     "CHECK (status = 'open' OR (expected_cash IS NOT NULL "
         'AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL '
         'AND variance IS NOT NULL AND variance = counted_cash - expected_cash))',
+    "CHECK ((status = 'open') = (closed_by IS NULL))",
+    "CHECK ((status = 'open') = (first_count IS NULL))",
   ];
 }
 

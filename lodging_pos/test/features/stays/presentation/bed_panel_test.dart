@@ -1,14 +1,13 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/clock/nairobi.dart';
-import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
+import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
@@ -180,24 +179,16 @@ void main() {
   testWidgets('an admin without a shift: the note, then Open shift and back '
       'to the same panel, ready to check out', (tester) async {
     final stayId = await env.checkIn(r5.beds.single.id, by: desk);
-    // Desk's shift ends (shift close, FD-11, isn't built yet: closed here
-    // directly), so the device has no open shift.
-    final shift = await env.db.select(env.db.shifts).getSingle();
-    await env.audit.writeWithAudit(
-      action: 'shift.close',
-      userId: desk.id,
-      body: (w) => w.update(
-        env.db.shifts,
-        shift.id,
-        ShiftsCompanion(
-          status: const Value('closed'),
-          closedAt: Value(env.clock.now()),
-          expectedCash: const Value(700),
-          expectedPaybill: const Value(0),
-          countedCash: const Value(700),
-          variance: const Value(0),
-        ),
-      ),
+    // Desk closes her shift (FD-11), so the device has no open shift.
+    final shifts = ShiftRepository(env.db, env.audit);
+    final shift = (await shifts.openShiftOnThisDevice())!;
+    await shifts.closeShift(
+      desk,
+      shift.id,
+      firstCount: 700,
+      counted: 700,
+      note: '',
+      shown: await shifts.takings(shift.id),
     );
     env.clock.set(nairobiInstant(2026, 10, 16, 9));
     final app = await pumpDeskApp(tester, env);
