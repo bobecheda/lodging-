@@ -3,5 +3,12 @@
 # spurious "schema differs".
 lodging_pos/drift_schemas/** text eol=lf
 
+# drift copies trigger SQL text, line endings included, into the schema
+# snapshots, and the v1-v4 snapshots were made from a Windows (CRLF)
+# checkout. Check .drift files out as CRLF on every OS, so Linux CI produces
+# byte-identical snapshots. Don't change this without regenerating and
+# reviewing all snapshots. (Stored in the repo as LF, as before.)
+lodging_pos/**/*.drift text eol=crlf
+
 # Fonts are binary; never touch their line endings.
 *.ttf binary
