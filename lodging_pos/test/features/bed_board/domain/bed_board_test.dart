@@ -28,7 +28,12 @@ BoardStay stay(
   String name,
   DateTime paidUntil, {
   String phone = '0722418905',
-}) => BoardStay(guestName: name, guestPhone: phone, paidUntil: paidUntil);
+}) => BoardStay(
+  stayId: 'stay-$name',
+  guestName: name,
+  guestPhone: phone,
+  paidUntil: paidUntil,
+);
 
 void main() {
   const grace = 60;

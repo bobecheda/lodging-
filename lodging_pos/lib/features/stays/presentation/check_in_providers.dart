@@ -7,6 +7,7 @@ import '../../guests/domain/guest.dart';
 import '../../guests/presentation/guests_providers.dart';
 import '../../setup/domain/rooms.dart';
 import '../data/check_in_repository.dart';
+import '../data/check_out_repository.dart';
 
 part 'check_in_providers.g.dart';
 
@@ -31,3 +32,14 @@ Stream<ClockTime> checkInCheckoutTime(Ref ref) =>
 @riverpod
 Future<GuestHistory> guestHistory(Ref ref, String guestId) =>
     ref.watch(checkInRepositoryProvider).guestHistory(guestId);
+
+@Riverpod(keepAlive: true)
+CheckOutRepository checkOutRepository(Ref ref) => CheckOutRepository(
+  ref.watch(appDatabaseProvider),
+  ref.watch(auditWriterProvider),
+);
+
+/// One stay as the bed panel shows it, watched.
+@riverpod
+Stream<StayDetail> stayDetail(Ref ref, String stayId) =>
+    ref.watch(checkOutRepositoryProvider).watchStay(stayId);

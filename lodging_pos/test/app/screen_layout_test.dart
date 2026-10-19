@@ -8,6 +8,7 @@ import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
+import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/prices_repository.dart';
@@ -696,6 +697,77 @@ void main() {
       await tapKey(tester, 'receipt.save');
       await expectCleanLayout(tester, app, Routes.receipts, 'Receipts');
       expect(find.byKey(const ValueKey('receipt.saved')), findsOneWidget);
+    });
+  });
+
+  group('Bed panel (FD-8)', () {
+    /// The owner with a shift, room 5 let for [nights] from Thu 19:00, the
+    /// clock then set to [now]; the panel open.
+    Future<ProviderContainer> openPanel(
+      WidgetTester tester, {
+      required int nights,
+      required DateTime now,
+      bool viaBar = false,
+    }) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      env.clock.set(nairobiInstant(2026, 10, 15, 19));
+      final room = await RoomsRepository(env.db, env.audit).createRoom(
+        owner,
+        const NewRoom(
+          number: '5',
+          floor: null,
+          notes: null,
+          bedACategoryId: SeedIds.deluxe,
+          bedBCategoryId: SeedIds.comfort,
+        ),
+      );
+      await env.checkIn(room.beds.first.id, by: owner, nights: nights);
+      env.clock.set(now);
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, viaBar ? 'board.overstay.checkOut' : 'board.bed.5A');
+      return app;
+    }
+
+    testWidgets('early checkout with the refund figures', (tester) async {
+      final app = await openPanel(
+        tester,
+        nights: 10,
+        now: nairobiInstant(2026, 10, 21, 15),
+      );
+      await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
+      expect(find.byKey(const ValueKey('panel.refund')), findsOneWidget);
+    });
+
+    testWidgets('late, from the overstay bar, with M-Pesa and an error', (
+      tester,
+    ) async {
+      final app = await openPanel(
+        tester,
+        nights: 1,
+        now: nairobiInstant(2026, 10, 17, 13),
+        viaBar: true,
+      );
+      await tapKey(tester, 'choice.PaymentMethod.paybill');
+      await tapKey(tester, 'panel.checkOut');
+      await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
+      expect(find.text('Enter the M-Pesa code.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('panel.overstay')), findsOneWidget);
+    });
+
+    testWidgets('after a late checkout: the receipt in the panel', (
+      tester,
+    ) async {
+      final app = await openPanel(
+        tester,
+        nights: 1,
+        now: nairobiInstant(2026, 10, 16, 11, 30),
+      );
+      await tapKey(tester, 'choice.PaymentMethod.cash');
+      await tapKey(tester, 'panel.checkOut');
+      await expectCleanLayout(tester, app, Routes.home, 'Late checkout');
+      expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
     });
   });
 }

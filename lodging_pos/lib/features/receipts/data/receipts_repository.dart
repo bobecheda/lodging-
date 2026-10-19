@@ -200,6 +200,10 @@ class ReceiptsRepository {
       servedBy: servedBy.fullName,
       printCount: payment.printCount,
       graceMinutes: graceMinutesFrom(settings[SettingKeys.graceMinutes]),
+      // A late-checkout payment: the guest has left; say when.
+      checkedOutAt: charges.first.kind == 'late_checkout'
+          ? stays.first.checkedOutAt
+          : null,
     );
   }
 }

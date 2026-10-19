@@ -109,8 +109,7 @@ Future<Uint8List> buildReceiptPdf(Receipt r, ReceiptFonts fonts) {
           row('Guest', r.guestName),
           row('Room / bed', r.roomAndBed),
           if (r.category case final category?) row('Category', category),
-          row('From', r.fromText),
-          row('Check out by', r.checkOutByText),
+          for (final (label, value) in r.stayRows) row(label, value),
           dashed(),
           for (final (label, amount) in r.chargeRows)
             row(label, amount, mono: true),

@@ -24,6 +24,8 @@ import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 import 'package:lodging_pos/features/stays/data/check_in_repository.dart';
+import 'package:lodging_pos/features/stays/data/check_out_repository.dart';
+import 'package:lodging_pos/features/stays/domain/check_out.dart';
 import 'package:lodging_pos/features/stays/domain/check_in.dart';
 import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 
@@ -169,29 +171,30 @@ class TestEnv {
     return result.stayIds.single;
   }
 
-  /// Test-only stand-in for FD-8 checkout.
-  /// Closes the stay and leaves the bed `not_cleaned` (BR-9).
-  Future<void> checkOut(String stayId, {required UserAccount by}) =>
-      audit.writeWithAudit(
-        action: 'stay.check_out',
-        userId: by.id,
-        body: (w) async {
-          final stay = await w.update(
-            db.stays,
-            stayId,
-            StaysCompanion(
-              status: const Value('closed'),
-              checkedOutAt: Value(clock.now()),
-              checkedOutBy: Value(by.id),
-            ),
-          );
-          await w.update(
-            db.beds,
-            stay.bedId,
-            const BedsCompanion(cleanliness: Value('not_cleaned')),
-          );
-        },
-      );
+  late final checkOuts = CheckOutRepository(db, audit);
+
+  /// Checks [stayId] out now through the real checkout (FD-8): free, with a
+  /// refund request, or with a late charge paid in cash, whichever applies.
+  /// The bed is left `not_cleaned` (BR-9). [by] needs an open shift.
+  Future<CheckOutResult> checkOut(
+    String stayId, {
+    required UserAccount by,
+  }) async {
+    final detail = await checkOuts.stay(stayId);
+    final terms = checkoutTerms(
+      detail.stay,
+      clock.now(),
+      await checkOuts.graceMinutes(),
+    );
+    return checkOuts.checkOut(
+      by,
+      CheckOutRequest(
+        stayId: stayId,
+        shown: terms,
+        method: terms is LateCheckout ? PaymentMethod.cash : null,
+      ),
+    );
+  }
 
   Future<List<AuditLogRow>> auditFor(String action) =>
       (db.select(db.auditLog)..where((a) => a.action.equals(action))).get();

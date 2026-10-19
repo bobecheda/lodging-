@@ -225,3 +225,134 @@ final class GuestHistoryFamily extends $Family
   @override
   String toString() => r'guestHistoryProvider';
 }
+
+@ProviderFor(checkOutRepository)
+final checkOutRepositoryProvider = CheckOutRepositoryProvider._();
+
+final class CheckOutRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CheckOutRepository,
+          CheckOutRepository,
+          CheckOutRepository
+        >
+    with $Provider<CheckOutRepository> {
+  CheckOutRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'checkOutRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$checkOutRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CheckOutRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CheckOutRepository create(Ref ref) {
+    return checkOutRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CheckOutRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CheckOutRepository>(value),
+    );
+  }
+}
+
+String _$checkOutRepositoryHash() =>
+    r'7d53c372ff442db5a06a6770c25e58d72acaa423';
+
+/// One stay as the bed panel shows it, watched.
+
+@ProviderFor(stayDetail)
+final stayDetailProvider = StayDetailFamily._();
+
+/// One stay as the bed panel shows it, watched.
+
+final class StayDetailProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<StayDetail>,
+          StayDetail,
+          Stream<StayDetail>
+        >
+    with $FutureModifier<StayDetail>, $StreamProvider<StayDetail> {
+  /// One stay as the bed panel shows it, watched.
+  StayDetailProvider._({
+    required StayDetailFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'stayDetailProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$stayDetailHash();
+
+  @override
+  String toString() {
+    return r'stayDetailProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<StayDetail> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<StayDetail> create(Ref ref) {
+    final argument = this.argument as String;
+    return stayDetail(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is StayDetailProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$stayDetailHash() => r'3151f57c509f267643d59effc597c7e3ec4c0e94';
+
+/// One stay as the bed panel shows it, watched.
+
+final class StayDetailFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<StayDetail>, String> {
+  StayDetailFamily._()
+    : super(
+        retry: null,
+        name: r'stayDetailProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// One stay as the bed panel shows it, watched.
+
+  StayDetailProvider call(String stayId) =>
+      StayDetailProvider._(argument: stayId, from: this);
+
+  @override
+  String toString() => r'stayDetailProvider';
+}

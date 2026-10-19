@@ -11,14 +11,19 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
+import '../../stays/presentation/bed_panel.dart';
 import '../domain/bed_board.dart';
 import 'bed_board_providers.dart';
 
 /// FD-2 "Bed board": every active bed's status at a glance (artboard "Bed
-/// board — front desk"). "New check-in" and a Ready tile start a check-in
-/// (FD-4); FD-7/8 add the overstay buttons and the bed panel.
+/// board — front desk"). "New check-in" and a Ready tile start a check-in;
+/// In use and Overstay tiles open the bed panel to check out (FD-8).
 class BedBoardScreen extends ConsumerStatefulWidget {
-  const BedBoardScreen({super.key});
+  const BedBoardScreen({super.key, this.openStayId});
+
+  /// `/home?stay=<id>`: open that stay's bed panel, e.g. coming back after
+  /// opening a shift from it.
+  final String? openStayId;
 
   @override
   ConsumerState<BedBoardScreen> createState() => _BedBoardScreenState();
@@ -28,6 +33,32 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
   final _search = TextEditingController();
   BoardStatus? _status;
   String? _categoryId;
+
+  String? _opened;
+
+  @override
+  void initState() {
+    super.initState();
+    _openFromAddress();
+  }
+
+  @override
+  void didUpdateWidget(BedBoardScreen old) {
+    super.didUpdateWidget(old);
+    _openFromAddress();
+  }
+
+  void _openFromAddress() {
+    final id = widget.openStayId;
+    if (id == null || id == _opened) return;
+    _opened = id;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await showBedPanel(context, id);
+      _opened = null;
+      if (mounted) context.go(Routes.home);
+    });
+  }
 
   @override
   void dispose() {
@@ -44,6 +75,8 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
     final now = ref.watch(boardNowProvider).value;
     final user = ref.watch(sessionProvider);
     final canCheckIn = user != null && can(user, Permission.checkIn);
+    final canCheckOut = user != null && can(user, Permission.checkOut);
+    void openPanel(String stayId) => showBedPanel(context, stayId);
 
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +165,10 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
         header,
         const SizedBox(height: Space.x16),
         if (view.overstays.isNotEmpty) ...[
-          _OverstayBar(view.overstays),
+          _OverstayBar(
+            view.overstays,
+            onCheckOut: canCheckOut ? openPanel : null,
+          ),
           const SizedBox(height: Space.x12),
         ],
         Row(
@@ -191,6 +227,7 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
                   rooms: view.rooms,
                   now: now,
                   graceMinutes: grace,
+                  onOpen: canCheckOut ? openPanel : null,
                   onLet: canCheckIn
                       ? (bedId) => context.go(Routes.checkInFor(bedId))
                       : null,
@@ -209,11 +246,14 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
 }
 
 /// One line, fixed above the grid: the oldest overstay, and how many more.
-/// The Extend and Check out buttons come with FD-7/FD-8.
+/// Check out opens its bed panel (FD-8); Extend comes with FD-7.
 class _OverstayBar extends StatelessWidget {
-  const _OverstayBar(this.overstays);
+  const _OverstayBar(this.overstays, {required this.onCheckOut});
 
   final List<OverstayAlert> overstays;
+
+  /// Opens the oldest overstay's bed panel (FD-8). Extend comes with FD-7.
+  final ValueChanged<String>? onCheckOut;
 
   @override
   Widget build(BuildContext context) {
@@ -259,6 +299,15 @@ class _OverstayBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (onCheckOut != null) ...[
+            const SizedBox(width: Space.x12),
+            AppButton.destructive(
+              key: const ValueKey('board.overstay.checkOut'),
+              label: 'Check out',
+              compact: true,
+              onPressed: () => onCheckOut!(first.stayId),
+            ),
+          ],
         ],
       ),
     );
@@ -380,6 +429,7 @@ class _RoomGrid extends StatelessWidget {
     required this.now,
     required this.graceMinutes,
     required this.onLet,
+    required this.onOpen,
   });
 
   final List<BoardRoom> rooms;
@@ -388,6 +438,9 @@ class _RoomGrid extends StatelessWidget {
 
   /// Starts a check-in on a Ready bed; null without [Permission.checkIn].
   final ValueChanged<String>? onLet;
+
+  /// Opens an In use or Overstay bed's panel with its stay id (FD-8).
+  final ValueChanged<String>? onOpen;
 
   static const _minCard = 250.0;
   static const _gap = Space.x12;
@@ -418,6 +471,7 @@ class _RoomGrid extends StatelessWidget {
                             now: now,
                             graceMinutes: graceMinutes,
                             onLet: onLet,
+                            onOpen: onOpen,
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -437,9 +491,13 @@ class _RoomCard extends StatelessWidget {
     required this.now,
     required this.graceMinutes,
     required this.onLet,
+    required this.onOpen,
   });
 
   final ValueChanged<String>? onLet;
+
+  /// Opens an In use or Overstay bed's panel with its stay id (FD-8).
+  final ValueChanged<String>? onOpen;
 
   final BoardRoom room;
   final DateTime now;
@@ -501,6 +559,7 @@ class _RoomCard extends StatelessWidget {
         subtitle:
             'until ${formatWeekdayTime(stay.paidUntil)} · ${bed.categoryName}',
         status: BedTileStatus.occupied,
+        onTap: onOpen == null ? null : () => onOpen!(stay.stayId),
       ),
       BoardStatus.overstay => BedStatusTile(
         key: key,
@@ -510,6 +569,7 @@ class _RoomCard extends StatelessWidget {
             'paid to ${formatWeekdayTime(stay.paidUntil)} · '
             '${bed.categoryName}',
         status: BedTileStatus.overstay,
+        onTap: onOpen == null ? null : () => onOpen!(stay.stayId),
       ),
       BoardStatus.toClean => BedStatusTile(
         key: key,

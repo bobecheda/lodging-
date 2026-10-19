@@ -122,7 +122,11 @@ Each story lists the conditions that must all hold before it counts as done.
 **FD-8 Check a guest out.** As a receptionist, I want to close a stay so that the bed can be cleaned and let again.
 
 - Checkout records the actual time; the bed becomes Available and Not cleaned.
-- Early checkout closes the stay at once and creates a refund request for nights not yet started, at the check-in price. Once the admin approves, the receptionist pays it from the cash drawer or the Paybill account (with the M-Pesa code) and a refund receipt is printed; the payout reduces that shift's cash or Paybill total.
+- Early checkout closes the stay at once and creates a refund request for nights not yet started, at the check-in price.
+- Checking out after paid-until + grace first charges each night started (normally 1) at the stay's price, with its own payment (Cash or M-Pesa) and a late-checkout receipt.
+- What a checkout costs or refunds is worked out again when it's confirmed; if a night or the grace time started meanwhile, nothing is saved and the panel says what changed.
+- Checkout needs the user's own open shift (BR-12).
+- *Sprint 2, with AD-7:* once the admin approves a refund, the receptionist pays it from the cash drawer or the Paybill account (with the M-Pesa code) and a refund receipt is printed; the payout reduces that shift's cash or Paybill total.
 
 **FD-9 Assign housekeeping.** As a receptionist, I want to assign a dirty bed to a housekeeper so that it gets cleaned.
 
@@ -256,8 +260,8 @@ The project runs as two-week Scrum sprints adapted for one developer, with the o
 
 | Sprint | Dates | Goal | Stories | Est. hours |
 | --- | --- | --- | --- | --- |
-| 1 | 14–27 Oct | A receptionist can run a full stay offline: check-in, payment, receipt, checkout | Project setup and audit logging, FD-1 to FD-6, FD-8, AD-1 to AD-4 (on the desk app) | \~118 |
-| 2 | 28 Oct–10 Nov | Money is controlled and the owner can see it from his phone | FD-7, FD-11, FD-9 (assign and mark clean), AD-7, cloud sync, admin app, AD-5 (today and monthly revenue), Windows installer | \~106 |
+| 1 | 14–27 Oct | A receptionist can run a full stay offline: check-in, payment, receipt, checkout | Project setup and audit logging, FD-1 to FD-6, FD-8 (refund requests; approval and payout move to sprint 2 with AD-7), FD-9 (assign and mark clean, so a checked-out bed can be let again), AD-1 to AD-4 (on the desk app) | \~118 |
+| 2 | 28 Oct–10 Nov | Money is controlled and the owner can see it from his phone | FD-7, FD-11, AD-7 with FD-8's refund approval, payout and REFUND receipt, cloud sync, admin app, AD-5 (today and monthly revenue), Windows installer | \~106 |
 | **Go-live** | **11 Nov** | **Core in use at the lodging, alongside paper records for the first week** |  |  |
 | 3 | 11–24 Nov | Complete the MVP and fix pilot issues | FD-10, AD-10, AD-6, AD-8 (audit trail screen), AD-9, FD-12, full dashboard metrics, pilot fixes | \~90 |
 

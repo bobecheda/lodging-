@@ -88,7 +88,11 @@ GoRouter router(Ref ref) {
         builder: (context, state, child) =>
             DeskShell(location: state.matchedLocation, child: child),
         routes: [
-          GoRoute(path: Routes.home, builder: (_, _) => const BedBoardScreen()),
+          GoRoute(
+            path: Routes.home,
+            builder: (_, state) =>
+                BedBoardScreen(openStayId: state.uri.queryParameters['stay']),
+          ),
           GoRoute(path: Routes.guests, builder: (_, _) => const GuestsScreen()),
           GoRoute(
             path: Routes.checkIn,
