@@ -35,6 +35,7 @@ final class BoardBed {
     required this.pricePerNight,
     required this.cleanliness,
     required this.stay,
+    this.cleaner,
   });
 
   final String id;
@@ -46,6 +47,10 @@ final class BoardBed {
   final int pricePerNight;
   final Cleanliness cleanliness;
   final BoardStay? stay;
+
+  /// Who has this bed to clean (an open task, FD-9), by display name; null
+  /// when nobody has it.
+  final String? cleaner;
 }
 
 /// An open room and its active beds (A, B). Closed rooms and inactive beds

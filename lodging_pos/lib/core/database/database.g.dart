@@ -7798,6 +7798,31 @@ class $HousekeepingTasksTable extends HousekeepingTasks
       'REFERENCES users (id)',
     ),
   );
+  static const VerificationMeta _cancelledAtMeta = const VerificationMeta(
+    'cancelledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> cancelledAt = GeneratedColumn<DateTime>(
+    'cancelled_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cancelledByMeta = const VerificationMeta(
+    'cancelledBy',
+  );
+  @override
+  late final GeneratedColumn<String> cancelledBy = GeneratedColumn<String>(
+    'cancelled_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7810,6 +7835,8 @@ class $HousekeepingTasksTable extends HousekeepingTasks
     assignedAt,
     completedAt,
     completedBy,
+    cancelledAt,
+    cancelledBy,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7897,6 +7924,24 @@ class $HousekeepingTasksTable extends HousekeepingTasks
         ),
       );
     }
+    if (data.containsKey('cancelled_at')) {
+      context.handle(
+        _cancelledAtMeta,
+        cancelledAt.isAcceptableOrUnknown(
+          data['cancelled_at']!,
+          _cancelledAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cancelled_by')) {
+      context.handle(
+        _cancelledByMeta,
+        cancelledBy.isAcceptableOrUnknown(
+          data['cancelled_by']!,
+          _cancelledByMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7946,6 +7991,14 @@ class $HousekeepingTasksTable extends HousekeepingTasks
         DriftSqlType.string,
         data['${effectivePrefix}completed_by'],
       ),
+      cancelledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cancelled_at'],
+      ),
+      cancelledBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cancelled_by'],
+      ),
     );
   }
 
@@ -7968,6 +8021,8 @@ class HousekeepingTaskRow extends DataClass
   final DateTime assignedAt;
   final DateTime? completedAt;
   final String? completedBy;
+  final DateTime? cancelledAt;
+  final String? cancelledBy;
   const HousekeepingTaskRow({
     required this.id,
     required this.createdAt,
@@ -7979,6 +8034,8 @@ class HousekeepingTaskRow extends DataClass
     required this.assignedAt,
     this.completedAt,
     this.completedBy,
+    this.cancelledAt,
+    this.cancelledBy,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7996,6 +8053,12 @@ class HousekeepingTaskRow extends DataClass
     }
     if (!nullToAbsent || completedBy != null) {
       map['completed_by'] = Variable<String>(completedBy);
+    }
+    if (!nullToAbsent || cancelledAt != null) {
+      map['cancelled_at'] = Variable<DateTime>(cancelledAt);
+    }
+    if (!nullToAbsent || cancelledBy != null) {
+      map['cancelled_by'] = Variable<String>(cancelledBy);
     }
     return map;
   }
@@ -8016,6 +8079,12 @@ class HousekeepingTaskRow extends DataClass
       completedBy: completedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(completedBy),
+      cancelledAt: cancelledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cancelledAt),
+      cancelledBy: cancelledBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cancelledBy),
     );
   }
 
@@ -8035,6 +8104,8 @@ class HousekeepingTaskRow extends DataClass
       assignedAt: serializer.fromJson<DateTime>(json['assigned_at']),
       completedAt: serializer.fromJson<DateTime?>(json['completed_at']),
       completedBy: serializer.fromJson<String?>(json['completed_by']),
+      cancelledAt: serializer.fromJson<DateTime?>(json['cancelled_at']),
+      cancelledBy: serializer.fromJson<String?>(json['cancelled_by']),
     );
   }
   @override
@@ -8051,6 +8122,8 @@ class HousekeepingTaskRow extends DataClass
       'assigned_at': serializer.toJson<DateTime>(assignedAt),
       'completed_at': serializer.toJson<DateTime?>(completedAt),
       'completed_by': serializer.toJson<String?>(completedBy),
+      'cancelled_at': serializer.toJson<DateTime?>(cancelledAt),
+      'cancelled_by': serializer.toJson<String?>(cancelledBy),
     };
   }
 
@@ -8065,6 +8138,8 @@ class HousekeepingTaskRow extends DataClass
     DateTime? assignedAt,
     Value<DateTime?> completedAt = const Value.absent(),
     Value<String?> completedBy = const Value.absent(),
+    Value<DateTime?> cancelledAt = const Value.absent(),
+    Value<String?> cancelledBy = const Value.absent(),
   }) => HousekeepingTaskRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -8076,6 +8151,8 @@ class HousekeepingTaskRow extends DataClass
     assignedAt: assignedAt ?? this.assignedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     completedBy: completedBy.present ? completedBy.value : this.completedBy,
+    cancelledAt: cancelledAt.present ? cancelledAt.value : this.cancelledAt,
+    cancelledBy: cancelledBy.present ? cancelledBy.value : this.cancelledBy,
   );
   HousekeepingTaskRow copyWithCompanion(HousekeepingTasksCompanion data) {
     return HousekeepingTaskRow(
@@ -8099,6 +8176,12 @@ class HousekeepingTaskRow extends DataClass
       completedBy: data.completedBy.present
           ? data.completedBy.value
           : this.completedBy,
+      cancelledAt: data.cancelledAt.present
+          ? data.cancelledAt.value
+          : this.cancelledAt,
+      cancelledBy: data.cancelledBy.present
+          ? data.cancelledBy.value
+          : this.cancelledBy,
     );
   }
 
@@ -8114,7 +8197,9 @@ class HousekeepingTaskRow extends DataClass
           ..write('assignedBy: $assignedBy, ')
           ..write('assignedAt: $assignedAt, ')
           ..write('completedAt: $completedAt, ')
-          ..write('completedBy: $completedBy')
+          ..write('completedBy: $completedBy, ')
+          ..write('cancelledAt: $cancelledAt, ')
+          ..write('cancelledBy: $cancelledBy')
           ..write(')'))
         .toString();
   }
@@ -8131,6 +8216,8 @@ class HousekeepingTaskRow extends DataClass
     assignedAt,
     completedAt,
     completedBy,
+    cancelledAt,
+    cancelledBy,
   );
   @override
   bool operator ==(Object other) =>
@@ -8145,7 +8232,9 @@ class HousekeepingTaskRow extends DataClass
           other.assignedBy == this.assignedBy &&
           other.assignedAt == this.assignedAt &&
           other.completedAt == this.completedAt &&
-          other.completedBy == this.completedBy);
+          other.completedBy == this.completedBy &&
+          other.cancelledAt == this.cancelledAt &&
+          other.cancelledBy == this.cancelledBy);
 }
 
 class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
@@ -8159,6 +8248,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
   final Value<DateTime> assignedAt;
   final Value<DateTime?> completedAt;
   final Value<String?> completedBy;
+  final Value<DateTime?> cancelledAt;
+  final Value<String?> cancelledBy;
   final Value<int> rowid;
   const HousekeepingTasksCompanion({
     this.id = const Value.absent(),
@@ -8171,6 +8262,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     this.assignedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.completedBy = const Value.absent(),
+    this.cancelledAt = const Value.absent(),
+    this.cancelledBy = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HousekeepingTasksCompanion.insert({
@@ -8184,6 +8277,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     required DateTime assignedAt,
     this.completedAt = const Value.absent(),
     this.completedBy = const Value.absent(),
+    this.cancelledAt = const Value.absent(),
+    this.cancelledBy = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : bedId = Value(bedId),
        housekeeperId = Value(housekeeperId),
@@ -8200,6 +8295,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     Expression<DateTime>? assignedAt,
     Expression<DateTime>? completedAt,
     Expression<String>? completedBy,
+    Expression<DateTime>? cancelledAt,
+    Expression<String>? cancelledBy,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8213,6 +8310,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
       if (assignedAt != null) 'assigned_at': assignedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (completedBy != null) 'completed_by': completedBy,
+      if (cancelledAt != null) 'cancelled_at': cancelledAt,
+      if (cancelledBy != null) 'cancelled_by': cancelledBy,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8228,6 +8327,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     Value<DateTime>? assignedAt,
     Value<DateTime?>? completedAt,
     Value<String?>? completedBy,
+    Value<DateTime?>? cancelledAt,
+    Value<String?>? cancelledBy,
     Value<int>? rowid,
   }) {
     return HousekeepingTasksCompanion(
@@ -8241,6 +8342,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
       assignedAt: assignedAt ?? this.assignedAt,
       completedAt: completedAt ?? this.completedAt,
       completedBy: completedBy ?? this.completedBy,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8278,6 +8381,12 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
     if (completedBy.present) {
       map['completed_by'] = Variable<String>(completedBy.value);
     }
+    if (cancelledAt.present) {
+      map['cancelled_at'] = Variable<DateTime>(cancelledAt.value);
+    }
+    if (cancelledBy.present) {
+      map['cancelled_by'] = Variable<String>(cancelledBy.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8297,6 +8406,8 @@ class HousekeepingTasksCompanion extends UpdateCompanion<HousekeepingTaskRow> {
           ..write('assignedAt: $assignedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('completedBy: $completedBy, ')
+          ..write('cancelledAt: $cancelledAt, ')
+          ..write('cancelledBy: $cancelledBy, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12960,7 +13071,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final Index housekeepingTasksOneOpenPerBed = Index(
     'housekeeping_tasks_one_open_per_bed',
-    'CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL',
+    'CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL AND cancelled_at IS NULL',
   );
   late final Index inventoryMovementsItem = Index(
     'inventory_movements_item',
@@ -13504,6 +13615,27 @@ final class $$UsersTableReferences
     );
   }
 
+  static MultiTypedResultKey<$HousekeepingTasksTable, List<HousekeepingTaskRow>>
+  _housekeepingTasksCancelledTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.housekeepingTasks,
+        aliasName: 'users__id__housekeeping_tasks__cancelled_by',
+      );
+
+  $$HousekeepingTasksTableProcessedTableManager get housekeepingTasksCancelled {
+    final manager = $$HousekeepingTasksTableTableManager(
+      $_db,
+      $_db.housekeepingTasks,
+    ).filter((f) => f.cancelledBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _housekeepingTasksCancelledTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<
     $InventoryMovementsTable,
     List<InventoryMovementRow>
@@ -13870,6 +14002,31 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.housekeepingTasks,
       getReferencedColumn: (t) => t.completedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HousekeepingTasksTableFilterComposer(
+            $db: $db,
+            $table: $db.housekeepingTasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> housekeepingTasksCancelled(
+    Expression<bool> Function($$HousekeepingTasksTableFilterComposer f) f,
+  ) {
+    final $$HousekeepingTasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.housekeepingTasks,
+      getReferencedColumn: (t) => t.cancelledBy,
       builder:
           (
             joinBuilder, {
@@ -14343,6 +14500,32 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> housekeepingTasksCancelled<T extends Object>(
+    Expression<T> Function($$HousekeepingTasksTableAnnotationComposer a) f,
+  ) {
+    final $$HousekeepingTasksTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.housekeepingTasks,
+          getReferencedColumn: (t) => t.cancelledBy,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$HousekeepingTasksTableAnnotationComposer(
+                $db: $db,
+                $table: $db.housekeepingTasks,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> inventoryMovementsRefs<T extends Object>(
     Expression<T> Function($$InventoryMovementsTableAnnotationComposer a) f,
   ) {
@@ -14493,6 +14676,7 @@ class $$UsersTableTableManager
             bool refundsPaid,
             bool housekeepingTasksAssigned,
             bool housekeepingTasksCompleted,
+            bool housekeepingTasksCancelled,
             bool inventoryMovementsRefs,
             bool voidsRefs,
             bool expensesRefs,
@@ -14582,6 +14766,7 @@ class $$UsersTableTableManager
                 refundsPaid = false,
                 housekeepingTasksAssigned = false,
                 housekeepingTasksCompleted = false,
+                housekeepingTasksCancelled = false,
                 inventoryMovementsRefs = false,
                 voidsRefs = false,
                 expensesRefs = false,
@@ -14600,6 +14785,7 @@ class $$UsersTableTableManager
                     if (refundsPaid) db.refunds,
                     if (housekeepingTasksAssigned) db.housekeepingTasks,
                     if (housekeepingTasksCompleted) db.housekeepingTasks,
+                    if (housekeepingTasksCancelled) db.housekeepingTasks,
                     if (inventoryMovementsRefs) db.inventoryMovements,
                     if (voidsRefs) db.voids,
                     if (expensesRefs) db.expenses,
@@ -14790,6 +14976,27 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (housekeepingTasksCancelled)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          HousekeepingTaskRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._housekeepingTasksCancelledTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).housekeepingTasksCancelled,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.cancelledBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (inventoryMovementsRefs)
                         await $_getPrefetchedData<
                           UserRow,
@@ -14921,6 +15128,7 @@ typedef $$UsersTableProcessedTableManager =
         bool refundsPaid,
         bool housekeepingTasksAssigned,
         bool housekeepingTasksCompleted,
+        bool housekeepingTasksCancelled,
         bool inventoryMovementsRefs,
         bool voidsRefs,
         bool expensesRefs,
@@ -21258,6 +21466,8 @@ typedef $$HousekeepingTasksTableCreateCompanionBuilder =
       required DateTime assignedAt,
       Value<DateTime?> completedAt,
       Value<String?> completedBy,
+      Value<DateTime?> cancelledAt,
+      Value<String?> cancelledBy,
       Value<int> rowid,
     });
 typedef $$HousekeepingTasksTableUpdateCompanionBuilder =
@@ -21272,6 +21482,8 @@ typedef $$HousekeepingTasksTableUpdateCompanionBuilder =
       Value<DateTime> assignedAt,
       Value<DateTime?> completedAt,
       Value<String?> completedBy,
+      Value<DateTime?> cancelledAt,
+      Value<String?> cancelledBy,
       Value<int> rowid,
     });
 
@@ -21356,6 +21568,23 @@ final class $$HousekeepingTasksTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static $UsersTable _cancelledByTable(_$AppDatabase db) =>
+      db.users.createAlias('housekeeping_tasks__cancelled_by__users__id');
+
+  $$UsersTableProcessedTableManager? get cancelledBy {
+    final $_column = $_itemColumn<String>('cancelled_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cancelledByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 }
 
 class $$HousekeepingTasksTableFilterComposer
@@ -21394,6 +21623,11 @@ class $$HousekeepingTasksTableFilterComposer
 
   ColumnFilters<DateTime> get completedAt => $composableBuilder(
     column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get cancelledAt => $composableBuilder(
+    column: $table.cancelledAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21488,6 +21722,29 @@ class $$HousekeepingTasksTableFilterComposer
     );
     return composer;
   }
+
+  $$UsersTableFilterComposer get cancelledBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cancelledBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$HousekeepingTasksTableOrderingComposer
@@ -21526,6 +21783,11 @@ class $$HousekeepingTasksTableOrderingComposer
 
   ColumnOrderings<DateTime> get completedAt => $composableBuilder(
     column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get cancelledAt => $composableBuilder(
+    column: $table.cancelledAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -21620,6 +21882,29 @@ class $$HousekeepingTasksTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsersTableOrderingComposer get cancelledBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cancelledBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$HousekeepingTasksTableAnnotationComposer
@@ -21650,6 +21935,11 @@ class $$HousekeepingTasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get completedAt => $composableBuilder(
     column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get cancelledAt => $composableBuilder(
+    column: $table.cancelledAt,
     builder: (column) => column,
   );
 
@@ -21744,6 +22034,29 @@ class $$HousekeepingTasksTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsersTableAnnotationComposer get cancelledBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cancelledBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$HousekeepingTasksTableTableManager
@@ -21764,6 +22077,7 @@ class $$HousekeepingTasksTableTableManager
             bool housekeeperId,
             bool assignedBy,
             bool completedBy,
+            bool cancelledBy,
           })
         > {
   $$HousekeepingTasksTableTableManager(
@@ -21794,6 +22108,8 @@ class $$HousekeepingTasksTableTableManager
                 Value<DateTime> assignedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> completedBy = const Value.absent(),
+                Value<DateTime?> cancelledAt = const Value.absent(),
+                Value<String?> cancelledBy = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HousekeepingTasksCompanion(
                 id: id,
@@ -21806,6 +22122,8 @@ class $$HousekeepingTasksTableTableManager
                 assignedAt: assignedAt,
                 completedAt: completedAt,
                 completedBy: completedBy,
+                cancelledAt: cancelledAt,
+                cancelledBy: cancelledBy,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -21820,6 +22138,8 @@ class $$HousekeepingTasksTableTableManager
                 required DateTime assignedAt,
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> completedBy = const Value.absent(),
+                Value<DateTime?> cancelledAt = const Value.absent(),
+                Value<String?> cancelledBy = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HousekeepingTasksCompanion.insert(
                 id: id,
@@ -21832,6 +22152,8 @@ class $$HousekeepingTasksTableTableManager
                 assignedAt: assignedAt,
                 completedAt: completedAt,
                 completedBy: completedBy,
+                cancelledAt: cancelledAt,
+                cancelledBy: cancelledBy,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -21850,6 +22172,7 @@ class $$HousekeepingTasksTableTableManager
                 housekeeperId = false,
                 assignedBy = false,
                 completedBy = false,
+                cancelledBy = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -21914,6 +22237,17 @@ class $$HousekeepingTasksTableTableManager
                                 .id,
                           ) as T;
                         }
+                        if (cancelledBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.cancelledBy,
+                            referencedTable: $$HousekeepingTasksTableReferences
+                                ._cancelledByTable(db),
+                            referencedColumn: $$HousekeepingTasksTableReferences
+                                ._cancelledByTable(db)
+                                .id,
+                          ) as T;
+                        }
 
                         return state;
                       },
@@ -21943,6 +22277,7 @@ typedef $$HousekeepingTasksTableProcessedTableManager =
         bool housekeeperId,
         bool assignedBy,
         bool completedBy,
+        bool cancelledBy,
       })
     >;
 typedef $$InventoryItemsTableCreateCompanionBuilder =

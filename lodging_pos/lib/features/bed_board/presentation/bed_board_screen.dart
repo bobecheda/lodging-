@@ -11,13 +11,16 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
+import '../../housekeeping/domain/housekeeping.dart';
+import '../../housekeeping/presentation/cleaning_panel.dart';
 import '../../stays/presentation/bed_panel.dart';
 import '../domain/bed_board.dart';
 import 'bed_board_providers.dart';
 
 /// FD-2 "Bed board": every active bed's status at a glance (artboard "Bed
 /// board — front desk"). "New check-in" and a Ready tile start a check-in;
-/// In use and Overstay tiles open the bed panel to check out (FD-8).
+/// In use and Overstay tiles open the bed panel to check out (FD-8), and
+/// To clean tiles the cleaning panel (FD-9).
 class BedBoardScreen extends ConsumerStatefulWidget {
   const BedBoardScreen({super.key, this.openStayId});
 
@@ -76,6 +79,10 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
     final user = ref.watch(sessionProvider);
     final canCheckIn = user != null && can(user, Permission.checkIn);
     final canCheckOut = user != null && can(user, Permission.checkOut);
+    final canClean =
+        user != null &&
+        (can(user, Permission.assignHousekeeping) ||
+            can(user, Permission.markClean));
     void openPanel(String stayId) => showBedPanel(context, stayId);
 
     final header = Row(
@@ -228,6 +235,9 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
                   now: now,
                   graceMinutes: grace,
                   onOpen: canCheckOut ? openPanel : null,
+                  onClean: canClean
+                      ? (bedId) => showCleaningPanel(context, bedId)
+                      : null,
                   onLet: canCheckIn
                       ? (bedId) => context.go(Routes.checkInFor(bedId))
                       : null,
@@ -430,6 +440,7 @@ class _RoomGrid extends StatelessWidget {
     required this.graceMinutes,
     required this.onLet,
     required this.onOpen,
+    required this.onClean,
   });
 
   final List<BoardRoom> rooms;
@@ -441,6 +452,9 @@ class _RoomGrid extends StatelessWidget {
 
   /// Opens an In use or Overstay bed's panel with its stay id (FD-8).
   final ValueChanged<String>? onOpen;
+
+  /// Opens a To clean bed's cleaning panel with its bed id (FD-9).
+  final ValueChanged<String>? onClean;
 
   static const _minCard = 250.0;
   static const _gap = Space.x12;
@@ -472,6 +486,7 @@ class _RoomGrid extends StatelessWidget {
                             graceMinutes: graceMinutes,
                             onLet: onLet,
                             onOpen: onOpen,
+                            onClean: onClean,
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -492,12 +507,16 @@ class _RoomCard extends StatelessWidget {
     required this.graceMinutes,
     required this.onLet,
     required this.onOpen,
+    required this.onClean,
   });
 
   final ValueChanged<String>? onLet;
 
   /// Opens an In use or Overstay bed's panel with its stay id (FD-8).
   final ValueChanged<String>? onOpen;
+
+  /// Opens a To clean bed's cleaning panel with its bed id (FD-9).
+  final ValueChanged<String>? onClean;
 
   final BoardRoom room;
   final DateTime now;
@@ -521,6 +540,17 @@ class _RoomCard extends StatelessWidget {
                 Expanded(
                   child: Text('Room ${room.number}', style: t.bodyStrong),
                 ),
+                // FD-9: a room shows Not cleaned while any bed is.
+                if (roomNeedsCleaning([
+                  for (final b in room.beds) b.cleanliness,
+                ])) ...[
+                  StatusBadge(
+                    'TO CLEAN',
+                    key: ValueKey('board.room.${room.number}.toClean'),
+                    tone: BadgeTone.warning,
+                  ),
+                  const SizedBox(width: Space.x8),
+                ],
                 Text(
                   beds == 1 ? '1 bed' : '$beds beds',
                   style: t.small.copyWith(color: c.muted),
@@ -575,8 +605,9 @@ class _RoomCard extends StatelessWidget {
         key: key,
         label: bed.label.code,
         title: bed.categoryName,
-        subtitle: 'Needs cleaning',
+        subtitle: cleaningLine(bed.cleaner),
         status: BedTileStatus.toClean,
+        onTap: onClean == null ? null : () => onClean!(bed.id),
       ),
     };
   }

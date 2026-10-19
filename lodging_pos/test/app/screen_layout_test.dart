@@ -770,4 +770,41 @@ void main() {
       expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
     });
   });
+
+  group('Cleaning panel (FD-9)', () {
+    testWidgets('assign, then the assigned state with Reassign open', (
+      tester,
+    ) async {
+      await withOwner();
+      final owner = (await env.users.findByUsername('owner'))!.account;
+      final room = await RoomsRepository(env.db, env.audit).createRoom(
+        owner,
+        const NewRoom(
+          number: '7',
+          floor: null,
+          notes: null,
+          bedACategoryId: SeedIds.deluxe,
+          bedBCategoryId: SeedIds.comfort,
+        ),
+      );
+      final staff = StaffRepository(env.db, env.audit, env.hasher);
+      await staff.addHousekeeper(owner, name: 'Rose Akinyi', phone: '');
+      await staff.addHousekeeper(owner, name: 'Rose Mutua', phone: '');
+      final stay = await env.checkIn(room.beds.first.id, by: owner);
+      await env.checkOut(stay, by: owner);
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'board.bed.7A');
+      await tapKey(tester, 'cleaning.housekeeper');
+      await tester.tap(find.text('Rose Akinyi').last);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'cleaning.assign');
+      await tapKey(tester, 'cleaning.reassign');
+      await expectCleanLayout(tester, app, Routes.home, 'Room 7 · Bed A');
+      expect(
+        find.byKey(const ValueKey('cleaning.reassignSave')),
+        findsOneWidget,
+      );
+    });
+  });
 }

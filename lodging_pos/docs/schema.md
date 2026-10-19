@@ -10,6 +10,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 |---|---|---|
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
+| v4 | 19 Oct 2026 (FD-9) | `housekeeping_tasks.cancelled_at` and `cancelled_by` (empty for existing tasks); the one-open-task index leaves out cancelled tasks; a task can't be both completed and cancelled |
 | v3 | 18 Oct 2026 (FD-6) | `stays.room_number` and `bed_label`, as let; existing stays filled from their bed and room by rebuilding the table |
 
 **How an upgrade runs** (`AppDatabase._upgrade`):
@@ -213,8 +214,10 @@ The payout columns are null together until paid, then set together. Triggers: a 
 | assigned_at | DATETIME | |
 | completed_at | DATETIME | null until done |
 | completed_by | TEXT → users | receptionist who marked it done |
+| cancelled_at | DATETIME | v4: null unless the bed or room was closed with the task open |
+| cancelled_by | TEXT → users | v4: who closed it |
 
-Partial UNIQUE(bed_id) WHERE completed_at IS NULL: at most one open task per bed. `completed_at` and `completed_by` are set together.
+Partial UNIQUE(bed_id) WHERE completed_at IS NULL AND cancelled_at IS NULL: at most one open task per bed. `completed_at` and `completed_by` are set together, and so are `cancelled_at` and `cancelled_by` (v4); a task is never both. Completing a task (`bed.mark_clean`) is the only way a bed becomes clean (BR-9). Closing a bed or room cancels its open task (`housekeeping.cancel`) and leaves the bed not cleaned. Reassigning changes `housekeeper_id` on the open task (`housekeeping.reassign`). "Already cleaned" creates and completes a task in one operation (`housekeeping.assign` + `bed.mark_clean`).
 
 ## Admin-owned records
 
