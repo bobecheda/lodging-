@@ -1,0 +1,115 @@
+# CI for lodging_pos (the Flutter app lives in lodging_pos/).
+#
+# `checks` runs on every pull request and every push to main, and is the
+# required status check for main ("CI / checks"). `windows-build` builds the
+# desk app on pushes to main (and on demand) and keeps the release folder
+# for 14 days. GitGuardian runs separately as a GitHub app.
+#
+# Actions are pinned to exact commits (the version is in the comment), so a
+# moved tag can't change what runs.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The version used locally (`flutter --version`). Change both together.
+  FLUTTER_VERSION: 3.47.5
+
+defaults:
+  run:
+    working-directory: lodging_pos
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          # Caches the Flutter SDK and the pub packages between runs.
+          cache: true
+          pub-cache-key: pub-${{ runner.os }}-${{ hashFiles('lodging_pos/pubspec.lock') }}
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Get packages (pubspec.lock must already be up to date)
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate code (drift, riverpod)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Committed generated code is up to date
+        run: git diff --exit-code
+
+      - name: Drift schema snapshot is up to date
+        # A table changed without a new numbered migration and snapshot
+        # shows up here as a changed or new file (CLAUDE.md, schema rules).
+        run: |
+          dart run drift_dev make-migrations
+          git diff --exit-code
+          untracked="$(git status --porcelain --untracked-files=all -- .)"
+          if [ -n "$untracked" ]; then
+            echo "make-migrations created files that aren't committed:"
+            echo "$untracked"
+            exit 1
+          fi
+
+      - name: Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Tests
+        # A per-test cap, so a hanging test fails fast instead of using up
+        # the job's time.
+        run: flutter test --timeout 120s
+
+  windows-build:
+    name: windows-build
+    # Not on every PR: it adds about 10 minutes. Main must still build for
+    # the desk, so it runs after every merge, and on demand.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache-key: pub-${{ runner.os }}-${{ hashFiles('lodging_pos/pubspec.lock') }}
+
+      - name: Get packages
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build the desk app (release)
+        run: flutter build windows --release
+
+      - name: Keep the release folder (14 days)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lodging_pos-windows-${{ github.sha }}
+          path: lodging_pos/build/windows/x64/runner/Release/
+          retention-days: 14
+          if-no-files-found: error

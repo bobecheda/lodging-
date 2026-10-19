@@ -96,8 +96,21 @@ flutter analyze
 flutter test
 flutter run -d windows
 flutter build windows --release
+dart format --output=none --set-exit-if-changed .   # what CI checks
 ```
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`), Flutter pinned to the local version (**3.47.5**; change it there and locally together).
+
+- **`CI / checks`** (Ubuntu, 15 min) runs on every pull request and every push to `main`, and is required to merge into `main`: `flutter pub get --enforce-lockfile`, `build_runner` then `git diff --exit-code` (committed generated code must be current), `drift_dev make-migrations` then no changed or new files (a schema change needs its numbered migration and snapshot), `dart format --set-exit-if-changed`, `flutter analyze --fatal-infos`, `flutter test --timeout 120s`. Run these locally before pushing; a red check blocks the merge.
+- **`windows-build`** (Windows, 30 min) runs on pushes to `main` and on demand: `flutter build windows --release`, kept as a zip artifact for 14 days. Not required.
+- GitGuardian runs separately, unchanged.
+- If a golden test ever fails on Ubuntu only because of font rendering, tag it `golden`, skip that tag in `checks` and run it in `windows-build`; never move `checks` to Windows for that.
+- Locally, don't run `flutter build windows --debug` while the app may be running from `flutter run`: they share the Debug folder. Use `--release` to check a build.
 
 ## Current sprint
 
 Sprint 1 (14–27 Oct 2026): a receptionist can run a full stay offline — login and shifts (FD-1), admin setup on the desk app (AD-1 to AD-4), guests (FD-3), bed board (FD-2), check-in (FD-4), payment (FD-5), receipt (FD-6), checkout (FD-8, refund requests only), housekeeping (FD-9: assign and mark clean). Not in sprint 1: sync, admin phone app, extension UI (FD-7), refund approval, payout and REFUND receipt (AD-7, sprint 2), shift close, voids UI, inventory, expenses, reports.
+
+Next, in order, each planned before coding: FD-11 shift close → FD-7 extend → the daily local backup. AD-7 (refund approval, payout and REFUND receipt) is one of the first stories of sprint 2.
