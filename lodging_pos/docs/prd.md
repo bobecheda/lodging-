@@ -134,6 +134,9 @@ Each story lists the conditions that must all hold before it counts as done.
 - Marking the task done sets the bed to Clean and records the time.
 - A room shows Not cleaned while any of its beds is Not cleaned.
 - A housekeeper with an unfinished cleaning task cannot be deactivated: "Rose has a bed to clean. Finish or reassign it first."
+- A cleaning can be reassigned to another housekeeper; "Already cleaned · mark clean" records the task and its completion in one step.
+- Closing a bed or room cancels its open cleaning task; the bed stays Not cleaned and needs assigning again when reopened.
+- No shift is needed: no money moves.
 
 **FD-10 Record stock movements.** As a receptionist, I want to record stock in and out so that the owner knows what is on hand.
 

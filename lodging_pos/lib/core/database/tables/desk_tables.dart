@@ -179,11 +179,15 @@ class Refunds extends Table with SyncedColumns {
   ];
 }
 
+/// A bed to clean (FD-9). Open until completed (the bed becomes clean,
+/// BR-9) or, since v4, cancelled when the bed or room is closed (the bed
+/// stays not cleaned). Never both.
 @DataClassName('HousekeepingTaskRow')
 @TableIndex(name: 'housekeeping_tasks_bed', columns: {#bedId})
 @TableIndex.sql(
   'CREATE UNIQUE INDEX housekeeping_tasks_one_open_per_bed '
-  'ON housekeeping_tasks (bed_id) WHERE completed_at IS NULL',
+  'ON housekeeping_tasks (bed_id) '
+  'WHERE completed_at IS NULL AND cancelled_at IS NULL',
 )
 class HousekeepingTasks extends Table with SyncedColumns {
   TextColumn get bedId => text().references(Beds, #id)();
@@ -194,10 +198,16 @@ class HousekeepingTasks extends Table with SyncedColumns {
   DateTimeColumn get completedAt => dateTime().nullable()();
   @ReferenceName('housekeepingTasksCompleted')
   TextColumn get completedBy => text().nullable().references(Users, #id)();
+  // v4: closing the bed or room cancels its open task.
+  DateTimeColumn get cancelledAt => dateTime().nullable()();
+  @ReferenceName('housekeepingTasksCancelled')
+  TextColumn get cancelledBy => text().nullable().references(Users, #id)();
 
   @override
   List<String> get customConstraints => [
     'CHECK ((completed_at IS NULL) = (completed_by IS NULL))',
+    'CHECK ((cancelled_at IS NULL) = (cancelled_by IS NULL))',
+    'CHECK (completed_at IS NULL OR cancelled_at IS NULL)',
   ];
 }
 

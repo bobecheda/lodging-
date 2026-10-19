@@ -5,6 +5,8 @@ import '../../../core/auth/password_hasher.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../housekeeping/data/housekeeping_repository.dart';
+import '../../housekeeping/domain/housekeeping.dart';
 import '../../auth/domain/credentials.dart';
 import '../domain/staff.dart';
 
@@ -242,7 +244,8 @@ class StaffRepository {
     return true;
   }
 
-  /// `housekeeper.deactivate`. FD-9 adds the open-cleaning-task guard.
+  /// `housekeeper.deactivate`; refused while they have beds to clean
+  /// (FD-9): "Rose has a bed to clean. Finish or reassign it first."
   Future<void> deactivateHousekeeper(UserAccount actor, String id) =>
       _setHousekeeperActive(actor, id, active: false);
 
@@ -260,11 +263,20 @@ class StaffRepository {
     await _audit.writeWithAudit(
       action: active ? 'housekeeper.reactivate' : 'housekeeper.deactivate',
       userId: actor.id,
-      body: (w) => w.update(
-        _db.housekeepers,
-        id,
-        HousekeepersCompanion(isActive: Value(active)),
-      ),
+      body: (w) async {
+        if (!active) {
+          final problem = housekeeperDeactivateBlocker(
+            (await _housekeeper(id)).fullName,
+            await openTaskCount(_db, id),
+          );
+          if (problem != null) throw StaffRuleViolation(problem);
+        }
+        await w.update(
+          _db.housekeepers,
+          id,
+          HousekeepersCompanion(isActive: Value(active)),
+        );
+      },
     );
   }
 

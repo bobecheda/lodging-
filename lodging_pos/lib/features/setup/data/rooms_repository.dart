@@ -4,6 +4,7 @@ import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../housekeeping/data/housekeeping_repository.dart';
 import '../domain/bed_category.dart';
 import '../domain/rooms.dart';
 
@@ -187,6 +188,8 @@ class RoomsRepository {
           bedId,
           const BedsCompanion(isActive: Value(false)),
         );
+        // FD-9: closing cancels its cleaning; the bed stays not cleaned.
+        await cancelOpenCleaning(_db, w, [bedId], admin.id);
       },
     );
     return room(roomId);
@@ -226,12 +229,17 @@ class RoomsRepository {
       action: 'room.deactivate',
       userId: admin.id,
       body: (w) async {
-        _block(deactivateRoomBlocker(await room(roomId)));
+        final current = await room(roomId);
+        _block(deactivateRoomBlocker(current));
         await w.update(
           _db.rooms,
           roomId,
           const RoomsCompanion(isActive: Value(false)),
         );
+        // FD-9: closing cancels its beds' cleaning; they stay not cleaned.
+        await cancelOpenCleaning(_db, w, [
+          for (final b in current.beds) b.id,
+        ], admin.id);
       },
     );
     return room(roomId);

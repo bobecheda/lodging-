@@ -55,14 +55,15 @@ class AppDatabase extends _$AppDatabase {
   String? _deviceId;
 
   /// v1 is frozen as of 16 Oct 2026; v2 (FD-4) adds the category to each
-  /// stay charge. Snapshots: `drift_schemas/app_database/`.
+  /// stay charge, v3 (FD-6) the room and bed to each stay, v4 (FD-9) task
+  /// cancelling. Snapshots: `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
   /// `dart run drift_dev make-migrations`, add the generated step to
   /// [_steps], and fill `test/drift/app_database/migration_test.dart` with
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -175,6 +176,21 @@ class AppDatabase extends _$AppDatabase {
           },
         ),
       );
+    },
+    // v4 (FD-9): a cleaning task can be cancelled (its bed or room closed).
+    // Both new columns start empty: no task was cancelled before. The
+    // rebuild puts back the old "one open task per bed" index, so it's
+    // replaced with the new one that also leaves out cancelled tasks.
+    from3To4: (m, schema) async {
+      final tasks = schema.housekeepingTasks;
+      await m.alterTable(
+        TableMigration(
+          tasks,
+          newColumns: [tasks.cancelledAt, tasks.cancelledBy],
+        ),
+      );
+      await m.drop(schema.housekeepingTasksOneOpenPerBed);
+      await m.createIndex(schema.housekeepingTasksOneOpenPerBed);
     },
   );
 

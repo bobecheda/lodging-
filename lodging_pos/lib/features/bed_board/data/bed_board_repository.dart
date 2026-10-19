@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/database.dart';
+import '../../housekeeping/data/housekeeping_repository.dart';
 import '../../../core/settings/setting_defaults.dart';
 import '../../setup/domain/prices_settings.dart';
 import '../../setup/domain/rooms.dart';
@@ -36,11 +37,19 @@ class BedBoardRepository {
               _db.guests,
               _db.guests.id.equalsExp(_db.stays.guestId),
             ),
+            // FD-9: the bed's open cleaning task, if any.
+            leftOuterJoin(
+              _db.housekeepingTasks,
+              _db.housekeepingTasks.bedId.equalsExp(_db.beds.id) &
+                  _db.housekeepingTasks.completedAt.isNull() &
+                  _db.housekeepingTasks.cancelledAt.isNull(),
+            ),
           ])
           ..where(_db.rooms.isActive.equals(true))
           ..orderBy([OrderingTerm.asc(_db.beds.label)]);
 
-    return query.watch().map((rows) {
+    return query.watch().asyncMap((rows) async {
+      final names = await activeHousekeeperNames(_db);
       final rooms = <String, (RoomRow, List<BoardBed>)>{};
       for (final row in rows) {
         final room = row.readTable(_db.rooms);
@@ -48,6 +57,7 @@ class BedBoardRepository {
         final category = row.readTable(_db.bedCategories);
         final stay = row.readTableOrNull(_db.stays);
         final guest = row.readTableOrNull(_db.guests);
+        final task = row.readTableOrNull(_db.housekeepingTasks);
         rooms
             .putIfAbsent(room.id, () => (room, <BoardBed>[]))
             .$2
@@ -67,6 +77,7 @@ class BedBoardRepository {
                         guestPhone: guest.phone,
                         paidUntil: stay.paidUntil,
                       ),
+                cleaner: task == null ? null : names[task.housekeeperId],
               ),
             );
       }

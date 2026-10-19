@@ -18,6 +18,7 @@ import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -97,7 +98,7 @@ void main() {
       (key: key, value: value),
   ];
 
-  test('migration from v1 to v3 keeps every row, gives each charge its '
+  test('migration from v1 to v4 keeps every row, gives each charge its '
       'bed’s category and each stay its room and bed', () async {
     final oldUsersData = <v1.UsersData>[
       const v1.UsersData(
@@ -113,8 +114,8 @@ void main() {
         mustChangePassword: 0,
       ),
     ];
-    final expectedNewUsersData = <v3.UsersData>[
-      const v3.UsersData(
+    final expectedNewUsersData = <v4.UsersData>[
+      const v4.UsersData(
         id: admin,
         createdAt: t,
         updatedAt: t,
@@ -139,9 +140,9 @@ void main() {
           deviceId: 'seed',
         ),
     ];
-    final expectedNewSettingsData = <v3.SettingsData>[
+    final expectedNewSettingsData = <v4.SettingsData>[
       for (final s in settings)
-        v3.SettingsData(
+        v4.SettingsData(
           key: s.key,
           value: s.value,
           createdAt: t,
@@ -172,8 +173,8 @@ void main() {
         isActive: 1,
       ),
     ];
-    final expectedNewBedCategoriesData = <v3.BedCategoriesData>[
-      const v3.BedCategoriesData(
+    final expectedNewBedCategoriesData = <v4.BedCategoriesData>[
+      const v4.BedCategoriesData(
         id: deluxe,
         createdAt: t,
         updatedAt: t,
@@ -183,7 +184,7 @@ void main() {
         sortOrder: 1,
         isActive: 1,
       ),
-      const v3.BedCategoriesData(
+      const v4.BedCategoriesData(
         id: normal,
         createdAt: t,
         updatedAt: t,
@@ -206,8 +207,8 @@ void main() {
         isActive: 1,
       ),
     ];
-    final expectedNewRoomsData = <v3.RoomsData>[
-      const v3.RoomsData(
+    final expectedNewRoomsData = <v4.RoomsData>[
+      const v4.RoomsData(
         id: room,
         createdAt: t,
         updatedAt: t,
@@ -235,12 +236,12 @@ void main() {
           isActive: 1,
         ),
     ];
-    final expectedNewBedsData = <v3.BedsData>[
+    final expectedNewBedsData = <v4.BedsData>[
       for (final (id, label, category) in const [
         (bedA, 'A', deluxe),
         (bedB, 'B', normal),
       ])
-        v3.BedsData(
+        v4.BedsData(
           id: id,
           createdAt: t,
           updatedAt: t,
@@ -265,8 +266,8 @@ void main() {
         idNumber: '12343921',
       ),
     ];
-    final expectedNewGuestsData = <v3.GuestsData>[
-      const v3.GuestsData(
+    final expectedNewGuestsData = <v4.GuestsData>[
+      const v4.GuestsData(
         id: guest,
         createdAt: t,
         updatedAt: t,
@@ -290,8 +291,8 @@ void main() {
         status: 'open',
       ),
     ];
-    final expectedNewShiftsData = <v3.ShiftsData>[
-      const v3.ShiftsData(
+    final expectedNewShiftsData = <v4.ShiftsData>[
+      const v4.ShiftsData(
         id: shift,
         createdAt: t,
         updatedAt: t,
@@ -324,12 +325,12 @@ void main() {
         ),
     ];
     // v3: room 7 and each stay's bed label, from the bed.
-    final expectedNewStaysData = <v3.StaysData>[
+    final expectedNewStaysData = <v4.StaysData>[
       for (final (id, bed, paid, label) in const [
         (stayA, bedA, paidA, 'A'),
         (stayB, bedB, paidB, 'B'),
       ])
-        v3.StaysData(
+        v4.StaysData(
           id: id,
           createdAt: t,
           updatedAt: t,
@@ -374,8 +375,8 @@ void main() {
         printCount: 1,
       ),
     ];
-    final expectedNewPaymentsData = <v3.PaymentsData>[
-      const v3.PaymentsData(
+    final expectedNewPaymentsData = <v4.PaymentsData>[
+      const v4.PaymentsData(
         id: pay1,
         createdAt: t,
         updatedAt: t,
@@ -388,7 +389,7 @@ void main() {
         method: 'cash',
         printCount: 1,
       ),
-      const v3.PaymentsData(
+      const v4.PaymentsData(
         id: pay2,
         createdAt: later,
         updatedAt: later,
@@ -438,10 +439,10 @@ void main() {
           periodEnd: end,
         ),
     ];
-    final expectedNewStayChargesData = <v3.StayChargesData>[
+    final expectedNewStayChargesData = <v4.StayChargesData>[
       for (final (id, at, stay, pay, kind, price, start, end, cat, name)
           in charges)
-        v3.StayChargesData(
+        v4.StayChargesData(
           id: id,
           createdAt: at,
           updatedAt: at,
@@ -462,22 +463,22 @@ void main() {
     final oldDeviceData = <v1.DeviceData>[
       const v1.DeviceData(deviceId: dev, createdAt: t),
     ];
-    final expectedNewDeviceData = <v3.DeviceData>[
-      const v3.DeviceData(deviceId: dev, createdAt: t),
+    final expectedNewDeviceData = <v4.DeviceData>[
+      const v4.DeviceData(deviceId: dev, createdAt: t),
     ];
 
     final oldReceiptCounterData = <v1.ReceiptCounterData>[
       const v1.ReceiptCounterData(deviceId: dev, nextNumber: 3),
     ];
-    final expectedNewReceiptCounterData = <v3.ReceiptCounterData>[
-      const v3.ReceiptCounterData(deviceId: dev, nextNumber: 3),
+    final expectedNewReceiptCounterData = <v4.ReceiptCounterData>[
+      const v4.ReceiptCounterData(deviceId: dev, nextNumber: 3),
     ];
 
     await verifier.testWithDataIntegrity(
       oldVersion: 1,
-      newVersion: 3,
+      newVersion: 4,
       createOld: v1.DatabaseAtV1.new,
-      createNew: v3.DatabaseAtV3.new,
+      createNew: v4.DatabaseAtV4.new,
       openTestedDatabase: open,
       createItems: (batch, oldDb) {
         batch.insertAll(oldDb.users, oldUsersData);
@@ -528,8 +529,137 @@ void main() {
     );
   });
 
+  test('migration from v3 to v4 keeps cleaning tasks, none cancelled, and '
+      'still allows one open task per bed', () async {
+    const user = v3.UsersData(
+      id: admin,
+      createdAt: t,
+      updatedAt: t,
+      deviceId: dev,
+      fullName: 'Grace Owner',
+      username: 'owner',
+      passwordHash: 'not-a-real-hash',
+      role: 'admin',
+      isActive: 1,
+      mustChangePassword: 0,
+    );
+    const category = v3.BedCategoriesData(
+      id: deluxe,
+      createdAt: t,
+      updatedAt: t,
+      deviceId: 'seed',
+      name: 'Deluxe',
+      pricePerNight: 700,
+      sortOrder: 1,
+      isActive: 1,
+    );
+    const roomRow = v3.RoomsData(
+      id: room,
+      createdAt: t,
+      updatedAt: t,
+      deviceId: dev,
+      roomNumber: '7',
+      isActive: 1,
+    );
+    final beds = [
+      for (final (id, label) in const [(bedA, 'A'), (bedB, 'B')])
+        v3.BedsData(
+          id: id,
+          createdAt: t,
+          updatedAt: t,
+          deviceId: dev,
+          roomId: room,
+          label: label,
+          categoryId: deluxe,
+          cleanliness: label == 'A' ? 'not_cleaned' : 'clean',
+          isActive: 1,
+        ),
+    ];
+    const rose = v3.HousekeepersData(
+      id: 'hk-rose',
+      createdAt: t,
+      updatedAt: t,
+      deviceId: dev,
+      fullName: 'Rose Akinyi',
+      isActive: 1,
+    );
+    // An open task on Bed A; a finished one on Bed B.
+    const oldTasks = [
+      v3.HousekeepingTasksData(
+        id: 'task-open',
+        createdAt: t,
+        updatedAt: t,
+        deviceId: dev,
+        bedId: bedA,
+        housekeeperId: 'hk-rose',
+        assignedBy: admin,
+        assignedAt: t,
+      ),
+      v3.HousekeepingTasksData(
+        id: 'task-done',
+        createdAt: t,
+        updatedAt: later,
+        deviceId: dev,
+        bedId: bedB,
+        housekeeperId: 'hk-rose',
+        assignedBy: admin,
+        assignedAt: t,
+        completedAt: later,
+        completedBy: admin,
+      ),
+    ];
+    final expectedTasks = [
+      for (final o in oldTasks)
+        v4.HousekeepingTasksData(
+          id: o.id,
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt,
+          deviceId: o.deviceId,
+          bedId: o.bedId,
+          housekeeperId: o.housekeeperId,
+          assignedBy: o.assignedBy,
+          assignedAt: o.assignedAt,
+          completedAt: o.completedAt,
+          completedBy: o.completedBy,
+        ),
+    ];
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 3,
+      newVersion: 4,
+      createOld: v3.DatabaseAtV3.new,
+      createNew: v4.DatabaseAtV4.new,
+      openTestedDatabase: open,
+      createItems: (batch, oldDb) {
+        batch.insert(oldDb.users, user);
+        batch.insert(oldDb.bedCategories, category);
+        batch.insert(oldDb.rooms, roomRow);
+        batch.insertAll(oldDb.beds, beds);
+        batch.insert(oldDb.housekeepers, rose);
+        batch.insertAll(oldDb.housekeepingTasks, oldTasks);
+      },
+      validateItems: (newDb) async {
+        final tasks = await (newDb.select(
+          newDb.housekeepingTasks,
+        )..orderBy([(x) => OrderingTerm.asc(x.id)])).get();
+        expect(tasks, [expectedTasks.last, expectedTasks.first]);
+        expect(tasks.every((x) => x.cancelledAt == null), isTrue);
+        // Still one open task per bed: a second open one on Bed A fails.
+        await expectLater(
+          newDb.customStatement(
+            'INSERT INTO housekeeping_tasks (id, created_at, updated_at, '
+            'device_id, bed_id, housekeeper_id, assigned_by, assigned_at) '
+            "VALUES ('task-2', '$t', '$t', '$dev', '$bedA', 'hk-rose', "
+            "'$admin', '$t')",
+          ),
+          throwsA(anything),
+        );
+      },
+    );
+  });
+
   group('upgrade safety', () {
-    for (final from in [1, 2]) {
+    for (final from in [1, 2, 3]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -554,7 +684,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          3,
+          4,
         );
         final objects = await db
             .customSelect(

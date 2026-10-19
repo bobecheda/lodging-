@@ -8,6 +8,7 @@ import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/labeled_field.dart';
 import '../../../app/widgets/notes.dart';
 import '../../../app/widgets/segmented_choice.dart';
+import '../../../app/widgets/side_panel.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/auth/user_account.dart';
@@ -27,26 +28,11 @@ import 'check_in_providers.dart';
 /// Opens the bed panel for [stayId]: 440px from the right over the dimmed
 /// board (docs/design.md, "Bed panel"). Escape or a tap on the scrim
 /// closes it.
-Future<void> showBedPanel(BuildContext context, String stayId) {
-  final c = LodgingColors.of(context);
-  return showGeneralDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Close the bed panel',
-    barrierColor: c.scrim,
-    pageBuilder: (context, _, _) => Align(
-      alignment: Alignment.centerRight,
-      child: SizedBox(
-        width: Sizes.bedPanelWidth,
-        height: double.infinity,
-        child: Material(
-          color: c.white,
-          child: BedPanel(key: ValueKey('panel.$stayId'), stayId: stayId),
-        ),
-      ),
-    ),
-  );
-}
+Future<void> showBedPanel(BuildContext context, String stayId) => showSidePanel(
+  context,
+  barrierLabel: 'Close the bed panel',
+  child: BedPanel(key: ValueKey('panel.$stayId'), stayId: stayId),
+);
 
 /// FD-8 "Bed panel — check out": the guest, what they've paid, and the
 /// checkout that applies right now: free, with a refund request, or with a
