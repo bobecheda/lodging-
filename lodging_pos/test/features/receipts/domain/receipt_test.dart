@@ -21,6 +21,7 @@ Receipt receipt({
   int printCount = 0,
   int graceMinutes = 60,
   DateTime? checkedOutAt,
+  bool isExtension = false,
 }) => Receipt(
   lodgingName: 'Sunrise Lodge',
   receiptNumber: 'R-000041',
@@ -36,6 +37,7 @@ Receipt receipt({
   printCount: printCount,
   graceMinutes: graceMinutes,
   checkedOutAt: checkedOutAt,
+  isExtension: isExtension,
 );
 
 void main() {
@@ -170,4 +172,17 @@ void main() {
     expect(r.footer, ['Thank you for staying with us.']);
     expect(receipt().stayRows.first.$1, 'From');
   });
+
+  test(
+    'an extension receipt: the charge, from the old checkout to the new',
+    () {
+      final r = receipt(isExtension: true);
+      expect(r.stayRows, [
+        ('Charge', 'Extension · 2 nights'),
+        ('From', 'Thu 15 Oct, 11:24'),
+        ('Check out by', 'Sat 17 Oct, 10:00'),
+      ]);
+      expect(r.footer.last, startsWith('Checkout is at 10:00.'));
+    },
+  );
 }

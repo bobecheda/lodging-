@@ -356,3 +356,49 @@ final class StayDetailFamily extends $Family
   @override
   String toString() => r'stayDetailProvider';
 }
+
+@ProviderFor(extendRepository)
+final extendRepositoryProvider = ExtendRepositoryProvider._();
+
+final class ExtendRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ExtendRepository,
+          ExtendRepository,
+          ExtendRepository
+        >
+    with $Provider<ExtendRepository> {
+  ExtendRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'extendRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$extendRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ExtendRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ExtendRepository create(Ref ref) {
+    return extendRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ExtendRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ExtendRepository>(value),
+    );
+  }
+}
+
+String _$extendRepositoryHash() => r'f71308623cab4f5369f38a109635a0204ea8d280';

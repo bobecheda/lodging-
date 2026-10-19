@@ -204,6 +204,7 @@ class ReceiptsRepository {
       checkedOutAt: charges.first.kind == 'late_checkout'
           ? stays.first.checkedOutAt
           : null,
+      isExtension: charges.first.kind == 'extension',
     );
   }
 }

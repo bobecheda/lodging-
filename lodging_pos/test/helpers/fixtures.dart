@@ -234,6 +234,19 @@ Future<void> tapKey(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
+/// Taps [key] inside [scope], where the same key appears more than once
+/// on screen (e.g. the Extend card's and the checkout's Cash / M-Pesa).
+Future<void> tapKeyIn(WidgetTester tester, String scope, String key) async {
+  final finder = find.descendant(
+    of: find.byKey(ValueKey(scope)),
+    matching: find.byKey(ValueKey(key)),
+  );
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
 Future<void> enterKey(WidgetTester tester, String key, String text) async {
   final finder = find.byKey(ValueKey(key));
   await tester.ensureVisible(finder);

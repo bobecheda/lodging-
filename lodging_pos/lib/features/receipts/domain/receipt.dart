@@ -43,6 +43,7 @@ final class Receipt {
     required this.printCount,
     required this.graceMinutes,
     this.checkedOutAt,
+    this.isExtension = false,
   });
 
   final String lodgingName;
@@ -81,6 +82,9 @@ final class Receipt {
 
   bool get isLateCheckout => checkedOutAt != null;
 
+  /// An extension's receipt (FD-7): from the old checkout to the new one.
+  final bool isExtension;
+
   /// The first print or save is the original; every later one says COPY.
   /// Viewing on screen doesn't count.
   bool get isCopy => printCount > 0;
@@ -109,7 +113,16 @@ final class Receipt {
       ('Charge', 'Late checkout'),
       ('Checked out', formatDayDateComma(out)),
     ],
-    null => [('From', fromText), ('Check out by', checkOutByText)],
+    null => [
+      if (isExtension)
+        (
+          'Charge',
+          'Extension · ${lines.first.nights} '
+              '${lines.first.nights == 1 ? 'night' : 'nights'}',
+        ),
+      ('From', fromText),
+      ('Check out by', checkOutByText),
+    ],
   };
 
   /// (label, amount) per bed: `2 nights` · `2 × 600`, or with two beds

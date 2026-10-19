@@ -700,7 +700,7 @@ void main() {
     });
   });
 
-  group('Bed panel (FD-8)', () {
+  group('Bed panel (FD-7, FD-8)', () {
     /// The owner with a shift, room 5 let for [nights] from Thu 19:00, the
     /// clock then set to [now]; the panel open.
     Future<ProviderContainer> openPanel(
@@ -708,6 +708,7 @@ void main() {
       required int nights,
       required DateTime now,
       bool viaBar = false,
+      bool viaExtend = false,
     }) async {
       await withOwner();
       final owner = (await env.users.findByUsername('owner'))!.account;
@@ -726,7 +727,14 @@ void main() {
       env.clock.set(now);
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'owner', 'owner-pass');
-      await tapKey(tester, viaBar ? 'board.overstay.checkOut' : 'board.bed.5A');
+      await tapKey(
+        tester,
+        viaExtend
+            ? 'board.overstay.extend'
+            : viaBar
+            ? 'board.overstay.checkOut'
+            : 'board.bed.5A',
+      );
       return app;
     }
 
@@ -749,7 +757,7 @@ void main() {
         now: nairobiInstant(2026, 10, 17, 13),
         viaBar: true,
       );
-      await tapKey(tester, 'choice.PaymentMethod.paybill');
+      await tapKeyIn(tester, 'panel.method', 'choice.PaymentMethod.paybill');
       await tapKey(tester, 'panel.checkOut');
       await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
       expect(find.text('Enter the M-Pesa code.'), findsOneWidget);
@@ -764,9 +772,40 @@ void main() {
         nights: 1,
         now: nairobiInstant(2026, 10, 16, 11, 30),
       );
-      await tapKey(tester, 'choice.PaymentMethod.cash');
+      await tapKeyIn(tester, 'panel.method', 'choice.PaymentMethod.cash');
       await tapKey(tester, 'panel.checkOut');
       await expectCleanLayout(tester, app, Routes.home, 'Late checkout');
+      expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
+    });
+
+    testWidgets('extend during an overstay: the minimum, its reason and a '
+        'nights error (FD-7)', (tester) async {
+      final app = await openPanel(
+        tester,
+        nights: 1,
+        now: nairobiInstant(2026, 10, 18, 12),
+        viaExtend: true,
+      );
+      await enterKey(tester, 'stepper.value', '1');
+      await tester.pumpAndSettle();
+      await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.paybill');
+      await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
+      expect(find.byKey(const ValueKey('extend.minReason')), findsOneWidget);
+      expect(find.byKey(const ValueKey('extend.nightsError')), findsOneWidget);
+    });
+
+    testWidgets('after an extension: the receipt in the panel (FD-7)', (
+      tester,
+    ) async {
+      final app = await openPanel(
+        tester,
+        nights: 1,
+        now: nairobiInstant(2026, 10, 16, 8),
+      );
+      await tapKey(tester, 'stepper.plus');
+      await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.cash');
+      await tapKey(tester, 'extend.save');
+      await expectCleanLayout(tester, app, Routes.home, 'Extended by 2 nights');
       expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
     });
   });

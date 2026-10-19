@@ -21,9 +21,11 @@ import '../../receipts/presentation/receipt_view.dart';
 import '../../shifts/domain/shift_rules.dart';
 import '../../shifts/presentation/shift_providers.dart';
 import '../data/check_out_repository.dart';
+import '../data/extend_repository.dart';
 import '../domain/check_out.dart';
 import '../domain/stay_rules.dart';
 import 'check_in_providers.dart';
+import 'extend_card.dart';
 
 /// Opens the bed panel for [stayId]: 440px from the right over the dimmed
 /// board (docs/design.md, "Bed panel"). Escape or a tap on the scrim
@@ -54,6 +56,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
   String? _problem;
   var _busy = false;
   CheckOutResult? _result;
+  ExtendResult? _extended;
 
   static const _noShift = 'Checkout records money. Open a shift first.';
 
@@ -162,9 +165,12 @@ class _BedPanelState extends ConsumerState<BedPanel> {
     );
 
     final result = _result;
+    final extended = _extended;
     final List<Widget> body;
     if (result != null) {
       body = [_Result(result: result, onDone: _close)];
+    } else if (extended != null) {
+      body = [ExtendedView(result: extended, onDone: _close)];
     } else if (!detail.isActive) {
       body = [
         Note.info(
@@ -198,6 +204,19 @@ class _BedPanelState extends ConsumerState<BedPanel> {
         _caps(context, 'PAID SO FAR'),
         for (final paid in detail.charges) _PaidRow(paid),
         const SizedBox(height: Space.x20),
+        // FD-7: Extend first, then Check out (artboard order).
+        if (can(user, Permission.extendStay)) ...[
+          _caps(context, 'EXTEND STAY'),
+          ExtendCard(
+            key: ValueKey('extend.${detail.id}.${detail.stay.paidUntil}'),
+            detail: detail,
+            now: now,
+            graceMinutes: grace,
+            ownShift: ownShift,
+            onExtended: (r) => setState(() => _extended = r),
+          ),
+          const SizedBox(height: Space.x20),
+        ],
         _caps(context, 'CHECK OUT'),
         ..._checkoutSection(context, terms),
         if (!ownShift) ...[
@@ -326,6 +345,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
         Text('Paid by', style: t.fieldLabel),
         const SizedBox(height: Space.x6),
         SegmentedChoice<PaymentMethod>(
+          key: const ValueKey('panel.method'),
           options: [
             for (final m in PaymentMethod.values) ChoiceOption(m, m.label),
           ],
