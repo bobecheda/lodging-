@@ -20,6 +20,7 @@ void main() {
       'grace_minutes': '60',
       'receipt_prefix': 'R',
       'idle_lock_minutes': '10',
+      'backup_second_folder': '',
     });
   });
 

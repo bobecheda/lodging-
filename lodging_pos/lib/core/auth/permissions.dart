@@ -45,6 +45,10 @@ enum Permission {
   /// open by a receptionist who went home. Admin only for now; a
   /// receptionist "handover close" later only needs this map changed.
   closeOtherShifts,
+
+  /// "Back up now" and the backup folders on the Backups card. The daily
+  /// backups themselves run for everyone, signed in or not.
+  manageBackups,
 }
 
 const _adminOnly = {Role.admin};
@@ -65,6 +69,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.recordExpenses: _adminOnly,
   Permission.workWithoutShift: _adminOnly,
   Permission.closeOtherShifts: _adminOnly,
+  Permission.manageBackups: _adminOnly,
   Permission.openShift: _everyone,
   Permission.closeShift: _everyone,
   Permission.checkIn: _everyone,

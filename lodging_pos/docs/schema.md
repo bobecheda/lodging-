@@ -68,7 +68,7 @@ bed_categories 1──* beds *──1 rooms
 
 The one exception to the `id` rule: `key` is the primary key and sync upserts by `key`.
 
-Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `checkout_time` = `10:00` (`HH:MM`, Nairobi; range 06:00–14:00), `grace_minutes` = `60` (0–180; a change applies at once to every guest, since overstay is derived), `receipt_prefix` = `R` (1–4 letters, stored uppercase), `idle_lock_minutes` = `10` (1–60; a stored value outside that falls back to 10). `lodging_name` is required, at most 60 characters. AD-3 edits them; each changed key is one `settings.update` audit row with its old and new value. There is no early-arrival cut-off: every arrival checks out at `checkout_time` on the next calendar day. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
+Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `checkout_time` = `10:00` (`HH:MM`, Nairobi; range 06:00–14:00), `grace_minutes` = `60` (0–180; a change applies at once to every guest, since overstay is derived), `receipt_prefix` = `R` (1–4 letters, stored uppercase), `idle_lock_minutes` = `10` (1–60; a stored value outside that falls back to 10), `backup_second_folder` = `""` (the optional second folder each daily backup is also copied to, e.g. a USB drive; a path on the desk PC, set on the Backups card; sprint 2 sync must keep it on the device). `lodging_name` is required, at most 60 characters. AD-3 edits them; each changed key is one `settings.update` audit row with its old and new value. There is no early-arrival cut-off: every arrival checks out at `checkout_time` on the next calendar day. Defaults come from one map in code (`settingDefaults`); the settings reader falls back to it for any key missing from the database.
 
 ### bed_categories
 | Column | Type | Notes |
@@ -299,6 +299,10 @@ Audit JSON redacts `users.password_hash` and guests' `full_name` as `"[redacted]
 | created_at | DATETIME | |
 
 Exactly one row. Its `device_id` is stamped on every synced row written by this install.
+
+## Backup files
+
+Daily local backups (`docs/backup-restore.md`) are whole copies of the database file, made with `VACUUM INTO` and checked (`integrity_check`, `user_version`) before they count: `lodging_pos-YYYY-MM-DD-HHMM.sqlite` (Nairobi time) in `<app support>\backups`, and in the optional `backup_second_folder`. They need no table: the newest is read from the folder. Each is audited with `recordEvent` (`backup.create`, `backup.failed`, entity `backups`, the file name as id).
 
 ## Worked examples
 

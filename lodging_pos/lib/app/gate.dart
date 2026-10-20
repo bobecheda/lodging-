@@ -51,7 +51,11 @@ abstract final class Routes {
     closeShift: {Permission.closeShift, Permission.closeOtherShifts},
     shifts: {Permission.viewAllReports},
     adminRooms: {Permission.manageRooms},
-    adminPrices: {Permission.editPrices, Permission.editSettings},
+    adminPrices: {
+      Permission.editPrices,
+      Permission.editSettings,
+      Permission.manageBackups,
+    },
     adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},
   };
 

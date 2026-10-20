@@ -12,6 +12,7 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
+import '../../backup/presentation/backup_providers.dart';
 import '../data/shift_repository.dart';
 import '../domain/shift.dart';
 import '../domain/shift_close.dart';
@@ -105,6 +106,9 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
             note: _note.text,
             shown: takings,
           );
+      // The day's takings go into a backup straight away, in the
+      // background; the summary doesn't wait.
+      ref.read(backupsProvider.notifier).afterShiftClose(user);
       if (!mounted) return;
       setState(() {
         _closed = figures;

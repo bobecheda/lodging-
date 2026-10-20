@@ -6,10 +6,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/auth/permissions.dart';
 import '../../core/auth/session.dart';
 import '../../core/auth/user_account.dart';
+import '../../core/clock/clock.dart';
 import '../../core/clock/nairobi.dart';
 import '../../core/settings/settings_repository.dart';
 import '../../core/sync/outbox_status.dart';
 import '../../features/auth/presentation/idle_lock.dart';
+import '../../features/backup/domain/backup.dart';
+import '../../features/backup/presentation/backup_providers.dart';
 import '../../features/shifts/presentation/shift_providers.dart';
 import '../gate.dart';
 import '../theme/theme.dart';
@@ -81,7 +84,11 @@ List<NavItem> deskNavItems(Ref ref) => const [
     route: Routes.adminPrices,
     label: 'Prices & settings',
     icon: Icons.sell_outlined,
-    permissions: {Permission.editPrices, Permission.editSettings},
+    permissions: {
+      Permission.editPrices,
+      Permission.editSettings,
+      Permission.manageBackups,
+    },
     setup: true,
   ),
   NavItem(
@@ -152,6 +159,7 @@ class DeskShell extends ConsumerWidget {
               ],
             ),
           ),
+          const _BackupPill(),
           const _SyncPill(),
           const SizedBox(height: Space.x16),
           if (user != null) _UserBlock(user),
@@ -277,6 +285,64 @@ class _SyncPill extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Only when the main backup failed or yesterday and today have none
+/// ([backupOverdue]); everyone sees it, so a receptionist can tell the
+/// owner. An owner's tap opens the Backups card. A missing second copy is
+/// never shown here.
+class _BackupPill extends ConsumerWidget {
+  const _BackupPill();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    final status = ref.watch(backupsProvider);
+    if (!status.overdueAt(ref.watch(clockProvider).now())) {
+      return const SizedBox.shrink();
+    }
+    final user = ref.watch(sessionProvider);
+    final canFix = user != null && can(user, Permission.manageBackups);
+    final text = backupOverdueText(
+      newest: status.newest?.takenAt,
+      failed: status.lastFailure != null,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.x8),
+      child: Material(
+        color: c.butter,
+        borderRadius: BorderRadius.circular(Radii.control),
+        child: InkWell(
+          key: const ValueKey('shell.backupPill'),
+          borderRadius: BorderRadius.circular(Radii.control),
+          onTap: canFix ? () => context.go(Routes.adminPrices) : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.x12,
+              vertical: Space.x10,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: c.butterText,
+                ),
+                const SizedBox(width: Space.x8),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: t.smallStrong.copyWith(color: c.butterText),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

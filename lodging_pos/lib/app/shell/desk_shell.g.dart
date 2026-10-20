@@ -55,4 +55,4 @@ final class DeskNavItemsProvider
   }
 }
 
-String _$deskNavItemsHash() => r'c1e9b6de9e6e7fdd027c6147bb7be88c95232903';
+String _$deskNavItemsHash() => r'bfb96a723e3feb54a6599902e44782dff4518f76';

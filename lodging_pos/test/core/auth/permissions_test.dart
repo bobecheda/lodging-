@@ -47,6 +47,7 @@ void main() {
   test('the map as agreed with the owner', () {
     const adminOnly = {
       Permission.closeOtherShifts,
+      Permission.manageBackups,
       Permission.manageRooms,
       Permission.editPrices,
       Permission.editSettings,

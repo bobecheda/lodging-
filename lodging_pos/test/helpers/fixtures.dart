@@ -17,6 +17,7 @@ import 'package:lodging_pos/core/database/database_provider.dart';
 import 'package:lodging_pos/features/auth/data/user_repository.dart';
 import 'package:lodging_pos/features/auth/domain/setup.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
+import 'package:lodging_pos/features/backup/presentation/backup_providers.dart';
 import 'package:lodging_pos/features/bed_board/presentation/bed_board_providers.dart';
 import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/receipts/presentation/receipts_providers.dart';
@@ -62,9 +63,20 @@ class TestEnv {
   /// Stands in for the print dialog and the Documents folder.
   final receiptOutput = FakeReceiptOutput();
 
+  /// The main backup folder (a temporary one), or null: no backups, as on
+  /// web. Set it before pumping the app.
+  String? backupFolder;
+
+  /// The backup check's interval; null (no timer) unless a test sets it.
+  Duration? backupCheck;
+
+  /// Stands in for the folder picker and Explorer.
+  final backupShell = FakeBackupShell();
+
   /// Provider overrides that run the real app against this environment.
-  /// The idle-lock timer and the bed board's clock tick are off; tests call
-  /// `IdleLock.check()` or set the clock themselves.
+  /// The idle-lock timer, the bed board's clock tick and the hourly backup
+  /// check are off; tests call `IdleLock.check()`, set the clock or call
+  /// `Backups.checkNow()` themselves.
   List<Override> get overrides => [
     appDatabaseProvider.overrideWithValue(db),
     clockProvider.overrideWithValue(clock),
@@ -72,6 +84,12 @@ class TestEnv {
     idleCheckIntervalProvider.overrideWithValue(null),
     boardTickIntervalProvider.overrideWithValue(boardTick),
     receiptOutputProvider.overrideWithValue(receiptOutput),
+    backupFolderProvider.overrideWithValue(switch (backupFolder) {
+      final folder? => () async => folder,
+      null => null,
+    }),
+    backupCheckIntervalProvider.overrideWithValue(backupCheck),
+    backupShellProvider.overrideWithValue(backupShell),
   ];
 
   /// Until AD-4 adds user management, tests create receptionists directly
@@ -225,6 +243,20 @@ Future<ProviderContainer> pumpDeskApp(
   return container;
 }
 
+/// Lets work that does real file I/O (backups) finish: fake time never
+/// completes it, so real time passes and the app pumps, in turns, until
+/// [done].
+Future<void> settleRealIo(WidgetTester tester, bool Function() done) async {
+  for (var i = 0; i < 150 && !done(); i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
+    await tester.pump();
+  }
+  expect(done(), isTrue, reason: 'the file work never finished');
+  await tester.pumpAndSettle();
+}
+
 /// Scrolls the widget with [key] into view, then taps it.
 Future<void> tapKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
@@ -288,6 +320,19 @@ Future<void> loadAppFonts() async {
     }
     await loader.load();
   }
+}
+
+/// Answers the folder picker with [pick] (null: cancelled) and records
+/// folders opened in Explorer.
+class FakeBackupShell implements BackupShell {
+  String? pick;
+  final opened = <String>[];
+
+  @override
+  Future<String?> pickFolder() async => pick;
+
+  @override
+  Future<void> openFolder(String path) async => opened.add(path);
 }
 
 /// Records what would have been printed or saved. [printResult] false acts
