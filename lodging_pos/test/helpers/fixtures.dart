@@ -312,6 +312,8 @@ Future<void> loadAppFonts() async {
       'assets/fonts/ibm_plex_mono/IBMPlexMono-Medium.ttf',
       'assets/fonts/ibm_plex_mono/IBMPlexMono-SemiBold.ttf',
     ],
+    'PirataOne': ['assets/fonts/pirata_one/PirataOne-Regular.ttf'],
+    'IMFellEnglishSC': ['assets/fonts/im_fell_english_sc/IMFeENsc28P.ttf'],
   };
   for (final MapEntry(key: family, value: files) in families.entries) {
     final loader = FontLoader(family);

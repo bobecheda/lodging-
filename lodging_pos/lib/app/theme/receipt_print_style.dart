@@ -16,6 +16,8 @@ final class ReceiptFonts {
     required this.heading,
     required this.mono,
     required this.monoStrong,
+    required this.brandName,
+    required this.brandWord,
   });
 
   final pw.Font body;
@@ -23,6 +25,11 @@ final class ReceiptFonts {
   final pw.Font heading;
   final pw.Font mono;
   final pw.Font monoStrong;
+
+  /// The wordmark's fonts: Pirata One for the lodging name, IM Fell English
+  /// SC for "LODGING".
+  final pw.Font brandName;
+  final pw.Font brandWord;
 
   static Future<ReceiptFonts> load(AssetBundle bundle) async {
     Future<pw.Font> font(String path) async =>
@@ -35,6 +42,8 @@ final class ReceiptFonts {
       monoStrong: await font(
         'assets/fonts/ibm_plex_mono/IBMPlexMono-SemiBold.ttf',
       ),
+      brandName: await font('assets/fonts/pirata_one/PirataOne-Regular.ttf'),
+      brandWord: await font('assets/fonts/im_fell_english_sc/IMFeENsc28P.ttf'),
     );
   }
 }
@@ -52,8 +61,15 @@ final class ReceiptPrintStyle {
   static const hairline = 0.5;
   static const gap = 6.0;
 
+  /// The header's wordmark, plain black (no shadow on paper).
   pw.TextStyle get lodgingName =>
-      pw.TextStyle(font: fonts.heading, fontSize: 14, color: ink);
+      pw.TextStyle(font: fonts.brandName, fontSize: 20, color: ink);
+  pw.TextStyle get lodgingWord => pw.TextStyle(
+    font: fonts.brandWord,
+    fontSize: 8,
+    letterSpacing: 8 * 0.3,
+    color: ink,
+  );
   pw.TextStyle get caps => pw.TextStyle(
     font: fonts.bodyStrong,
     fontSize: 7.5,

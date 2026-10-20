@@ -208,5 +208,21 @@ void main() {
       }
       expect(receiptPageFormat.width, closeTo(226.77, 0.01));
     });
+
+    testWidgets('the header is the wordmark: both brand fonts are embedded', (
+      tester,
+    ) async {
+      final fonts = await tester.runAsync(() => ReceiptFonts.load(rootBundle));
+      final r = await ReceiptsRepository(
+        env.db,
+        env.audit,
+      ).receipt(saved.first.paymentId);
+      final pdf = await tester.runAsync(() => buildReceiptPdf(r, fonts!));
+      final names = RegExp(r'/BaseFont\s*/([^\s/>]+)')
+          .allMatches(latin1.decode(pdf!))
+          .map((m) => m[1])
+          .toSet();
+      expect(names, containsAll(['PirataOne-Regular', 'IM_FELL_English_SC']));
+    });
   });
 }

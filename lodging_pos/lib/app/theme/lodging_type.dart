@@ -6,6 +6,11 @@ import 'lodging_colors.dart';
 const manrope = 'Manrope';
 const plexMono = 'IBMPlexMono';
 
+/// The wordmark: the lodging name in Pirata One, "Lodging" under it in
+/// IM Fell English SC.
+const pirataOne = 'PirataOne';
+const imFellEnglishSc = 'IMFellEnglishSC';
+
 /// Type scale (docs/design.md, "Typography"): Manrope for the interface,
 /// IBM Plex Mono for receipt numbers, M-Pesa codes, money and counts. Font
 /// sizes live only in this file. Minimum 12, except caps labels at 11.

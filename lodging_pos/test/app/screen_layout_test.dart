@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
+import 'package:lodging_pos/features/auth/domain/setup.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
 import 'package:lodging_pos/features/backup/data/backup_service.dart';
 import 'package:lodging_pos/features/backup/domain/backup.dart';
@@ -175,6 +176,58 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
     await expectCleanLayout(tester, app, Routes.home, 'Owner · admin');
+  });
+
+  group('Wordmark (branding)', () {
+    // The longest name settings allow (60), so the wordmark wraps.
+    const longName =
+        'Sunrise Lodge and Guest House, Kakamega Road, Nairobi West';
+    Future<void> withLongName() async {
+      expect(longName.length, lessThanOrEqualTo(60));
+      await env.users.createFirstAdmin(
+        const SetupInput(
+          fullName: 'Grace Owner',
+          username: 'Owner',
+          password: 'owner-pass',
+          confirmPassword: 'owner-pass',
+          lodgingName: longName,
+        ),
+      );
+    }
+
+    Finder wordmark() => find.byKey(const ValueKey('brand.wordmark'));
+
+    testWidgets('sign in: the brand panel', (tester) async {
+      await withLongName();
+      final app = await pumpDeskApp(tester, env);
+      await expectCleanLayout(tester, app, Routes.login, 'Sign in');
+      expect(wordmark(), findsOne);
+      expect(find.text('Lodging'), findsOne);
+      expect(find.text('LOGO'), findsNothing);
+    });
+
+    testWidgets('the sidebar', (tester) async {
+      await withLongName();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await expectCleanLayout(tester, app, Routes.home, 'Owner · admin');
+      expect(
+        find.descendant(of: wordmark(), matching: find.text(longName)),
+        findsOne,
+      );
+      expect(find.text('Front desk'), findsOne);
+      // Inside the 232-wide sidebar, its padding included.
+      expect(tester.getRect(wordmark()).right, lessThanOrEqualTo(232 - 16));
+    });
+
+    testWidgets('the shift screen\'s top bar', (tester) async {
+      await withLongName();
+      await env.addReceptionist('desk');
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'desk', 'desk-pass');
+      await expectCleanLayout(tester, app, Routes.shift, 'Opening cash float');
+      expect(wordmark(), findsOne);
+    });
   });
 
   testWidgets('desk shell: receptionist in a shift', (tester) async {

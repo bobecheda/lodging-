@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/settings/settings_repository.dart';
 import '../theme/theme.dart';
-import 'brand.dart';
+import 'wordmark.dart';
 
 /// Sign-in style screens (sign in, lock, change password, first-run setup):
 /// a marine brand panel on the left and the form on the right (artboard
@@ -32,7 +31,6 @@ class SplitGateLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final name = ref.watch(lodgingNameProvider).value;
 
     return Scaffold(
       body: LayoutBuilder(
@@ -48,7 +46,7 @@ class SplitGateLayout extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    BrandHeader(lodgingName: name),
+                    const LodgingWordmark(size: WordmarkSize.panel),
                     const Spacer(),
                     Text(
                       'Front desk',

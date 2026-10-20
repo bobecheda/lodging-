@@ -90,6 +90,13 @@ flutter:
           weight: 500
         - asset: assets/fonts/ibm_plex_mono/IBMPlexMono-SemiBold.ttf
           weight: 600
+    # The wordmark: the lodging name, and "Lodging" under it.
+    - family: PirataOne
+      fonts:
+        - asset: assets/fonts/pirata_one/PirataOne-Regular.ttf
+    - family: IMFellEnglishSC
+      fonts:
+        - asset: assets/fonts/im_fell_english_sc/IMFeENsc28P.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

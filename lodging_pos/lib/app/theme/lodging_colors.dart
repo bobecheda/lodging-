@@ -34,6 +34,9 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     required this.navActive,
     required this.syncOnline,
     required this.scrim,
+    required this.brandCream,
+    required this.brandGoldOnDark,
+    required this.brandGoldOnLight,
   });
 
   static const light = LodgingColors(
@@ -66,6 +69,11 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     syncOnline: Color(0x1FFFFFFF),
     // ink at 35%: dims the board behind the bed panel.
     scrim: Color(0x590F1B2D),
+    // The wordmark (and the UB40 app icon): cream letters on marine with a
+    // gold offset shadow; on a light ground, marine letters, brighter gold.
+    brandCream: Color(0xFFF5EDD8),
+    brandGoldOnDark: Color(0xFFC9962E),
+    brandGoldOnLight: Color(0xFFE9B53F),
   );
 
   final Color marine;
@@ -95,6 +103,13 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
   final Color navActive;
   final Color syncOnline;
   final Color scrim;
+
+  /// The wordmark's letters on marine.
+  final Color brandCream;
+
+  /// The wordmark's offset shadow on marine, and on a light ground.
+  final Color brandGoldOnDark;
+  final Color brandGoldOnLight;
 
   static LodgingColors of(BuildContext context) {
     final colors = Theme.of(context).extension<LodgingColors>();
