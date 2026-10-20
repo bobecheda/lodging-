@@ -252,7 +252,7 @@ These apply across the whole product.
 | Security | Passwords stored hashed; admin actions checked by the cloud, not just hidden in the app; data encrypted in transit; sessions time out after inactivity. |
 | Privacy | Guest ID data is personal data under the Data Protection Act 2019: only collected fields, visible to logged-in staff only, exportable only by the admin, kept for a period the owner sets. |
 | Integrity | Audit log is append-only; receipt numbers are sequential with no gaps; M-Pesa codes unique. |
-| Backup | Cloud database exported regularly; a local backup on the desk PC each day; restore tested before go-live. |
+| Backup | Cloud database exported regularly; a local backup on the desk PC each day; restore tested before go-live. The desk backs up at start (once a day), every hour it's open if the day still has none, after each shift close and on the owner's "Back up now"; each copy is checked (`integrity_check`, schema version) before it counts; every backup from today and yesterday plus the latest of each day for 30 days are kept; an optional second folder (USB drive) gets a copy too, and a missing drive is only noted on the Backups card. The sidebar warns everyone when the main backup failed or yesterday and today have none. Restore steps and the go-live checklist (restore rehearsal, a Windows password on every account, BitLocker or device encryption) are in `docs/backup-restore.md`. |
 | Platforms | Front desk: Windows 10 or later. Admin: Android phone and a modern web browser. |
 | Usability | A receptionist can complete check-in after 30 minutes of training; English interface; amounts in KES. |
 | Maintainability | Built in Flutter with one codebase for desk and admin; schema changes go through versioned migrations. |

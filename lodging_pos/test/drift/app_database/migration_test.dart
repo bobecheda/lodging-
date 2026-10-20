@@ -130,7 +130,8 @@ void main() {
       ),
     ];
 
-    // Every key present, so the upgrade adds no settings.
+    // Every v1 key present; the upgrade adds only the keys created since,
+    // at their default (backup_second_folder, daily backups).
     final oldSettingsData = <v1.SettingsData>[
       for (final s in settings)
         v1.SettingsData(
@@ -150,6 +151,14 @@ void main() {
           updatedAt: t,
           deviceId: 'seed',
         ),
+      // Stamped with the upgrade's clock (testT0).
+      const v5.SettingsData(
+        key: 'backup_second_folder',
+        value: '',
+        createdAt: '2026-10-14T19:00:00.000Z',
+        updatedAt: '2026-10-14T19:00:00.000Z',
+        deviceId: 'seed',
+      ),
     ];
 
     final oldBedCategoriesData = <v1.BedCategoriesData>[

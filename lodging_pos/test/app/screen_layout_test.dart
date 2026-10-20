@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
+import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
+import 'package:lodging_pos/features/backup/data/backup_service.dart';
+import 'package:lodging_pos/features/backup/domain/backup.dart';
+import 'package:lodging_pos/features/backup/presentation/backup_providers.dart';
 import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
@@ -11,6 +17,7 @@ import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
+import 'package:lodging_pos/core/settings/settings_repository.dart';
 import 'package:lodging_pos/features/setup/data/prices_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/data/staff_repository.dart';
@@ -278,7 +285,11 @@ void main() {
   });
 
   group('Prices & settings (AD-3)', () {
-    Future<ProviderContainer> openPrices(WidgetTester tester) async {
+    /// [before] runs once the data is in, before the app starts.
+    Future<ProviderContainer> openPrices(
+      WidgetTester tester, {
+      Future<void> Function(UserAccount owner)? before,
+    }) async {
       await withOwner();
       final owner = (await env.users.findByUsername('owner'))!.account;
       final prices = PricesRepository(env.db, env.audit);
@@ -305,6 +316,7 @@ void main() {
           bedBCategoryId: SeedIds.vip,
         ),
       );
+      await before?.call(owner);
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'owner', 'owner-pass');
       await tapKey(tester, 'nav.${Routes.adminPrices}');
@@ -332,6 +344,70 @@ void main() {
         Routes.adminPrices,
         'The price can be at most KES 100,000.',
       );
+    });
+
+    group('with the Backups card', () {
+      late Directory temp;
+      setUp(() {
+        temp = Directory.systemTemp.createTempSync('lodging_layout');
+        env.backupFolder = temp.path;
+        env.clock.set(nairobiInstant(2026, 10, 20, 9));
+      });
+      tearDown(() => temp.deleteSync(recursive: true));
+
+      /// A long second-folder path that isn't there (the USB drive out).
+      Future<void> unpluggedSecondFolder(UserAccount owner) async {
+        await BackupService(
+          env.db,
+          env.audit,
+          env.clock,
+          SettingsRepository(env.db),
+          folder: temp.path,
+        ).setSecondFolder(
+          owner,
+          r'E:\Sunrise Lodge backups\Front desk PC\Daily copies 2026',
+        );
+      }
+
+      testWidgets('a backup with its second copy skipped', (tester) async {
+        final app = await openPrices(tester, before: unpluggedSecondFolder);
+        await settleRealIo(
+          tester,
+          () => app.read(backupsProvider).second is SecondSkipped,
+        );
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('backups.second.note')),
+        );
+        await expectCleanLayout(
+          tester,
+          app,
+          Routes.adminPrices,
+          'Second copy skipped: USB drive not found. Main backup OK.',
+        );
+      });
+
+      testWidgets('a failed backup: the sidebar chip and the reason', (
+        tester,
+      ) async {
+        Directory(
+          '${temp.path}${Platform.pathSeparator}'
+          '${backupFileName(env.clock.now())}.partial',
+        ).createSync();
+        final app = await openPrices(tester, before: unpluggedSecondFolder);
+        await settleRealIo(
+          tester,
+          () => app.read(backupsProvider).lastFailure != null,
+        );
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('backups.failed')),
+        );
+        await expectCleanLayout(
+          tester,
+          app,
+          Routes.adminPrices,
+          'Backup failed · none yet',
+        );
+      });
     });
 
     testWidgets('the confirmation dialog', (tester) async {

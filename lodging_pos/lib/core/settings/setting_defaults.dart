@@ -6,6 +6,9 @@ const settingDefaults = {
   'grace_minutes': '60',
   'receipt_prefix': 'R',
   'idle_lock_minutes': '10',
+  // Daily backups: an optional second folder (e.g. a USB drive) each backup
+  // is also copied to. Empty: none. A path on this desk PC.
+  'backup_second_folder': '',
 };
 
 abstract final class SettingKeys {
@@ -14,4 +17,5 @@ abstract final class SettingKeys {
   static const graceMinutes = 'grace_minutes';
   static const receiptPrefix = 'receipt_prefix';
   static const idleLockMinutes = 'idle_lock_minutes';
+  static const backupSecondFolder = 'backup_second_folder';
 }
