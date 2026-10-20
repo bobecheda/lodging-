@@ -8,6 +8,7 @@ import '../../guests/presentation/guests_providers.dart';
 import '../../setup/domain/rooms.dart';
 import '../data/check_in_repository.dart';
 import '../data/check_out_repository.dart';
+import '../data/extend_repository.dart';
 
 part 'check_in_providers.g.dart';
 
@@ -43,3 +44,9 @@ CheckOutRepository checkOutRepository(Ref ref) => CheckOutRepository(
 @riverpod
 Stream<StayDetail> stayDetail(Ref ref, String stayId) =>
     ref.watch(checkOutRepositoryProvider).watchStay(stayId);
+
+@Riverpod(keepAlive: true)
+ExtendRepository extendRepository(Ref ref) => ExtendRepository(
+  ref.watch(appDatabaseProvider),
+  ref.watch(auditWriterProvider),
+);

@@ -79,6 +79,7 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
     final user = ref.watch(sessionProvider);
     final canCheckIn = user != null && can(user, Permission.checkIn);
     final canCheckOut = user != null && can(user, Permission.checkOut);
+    final canExtend = user != null && can(user, Permission.extendStay);
     final canClean =
         user != null &&
         (can(user, Permission.assignHousekeeping) ||
@@ -174,6 +175,7 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
         if (view.overstays.isNotEmpty) ...[
           _OverstayBar(
             view.overstays,
+            onExtend: canExtend ? openPanel : null,
             onCheckOut: canCheckOut ? openPanel : null,
           ),
           const SizedBox(height: Space.x12),
@@ -256,13 +258,19 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
 }
 
 /// One line, fixed above the grid: the oldest overstay, and how many more.
-/// Check out opens its bed panel (FD-8); Extend comes with FD-7.
+/// Extend (FD-7) and Check out (FD-8) both open its bed panel, where Extend
+/// comes first.
 class _OverstayBar extends StatelessWidget {
-  const _OverstayBar(this.overstays, {required this.onCheckOut});
+  const _OverstayBar(
+    this.overstays, {
+    required this.onExtend,
+    required this.onCheckOut,
+  });
 
   final List<OverstayAlert> overstays;
 
-  /// Opens the oldest overstay's bed panel (FD-8). Extend comes with FD-7.
+  /// Each opens the oldest overstay's bed panel.
+  final ValueChanged<String>? onExtend;
   final ValueChanged<String>? onCheckOut;
 
   @override
@@ -309,8 +317,17 @@ class _OverstayBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (onCheckOut != null) ...[
+          if (onExtend != null) ...[
             const SizedBox(width: Space.x12),
+            AppButton.urgent(
+              key: const ValueKey('board.overstay.extend'),
+              label: 'Extend',
+              compact: true,
+              onPressed: () => onExtend!(first.stayId),
+            ),
+          ],
+          if (onCheckOut != null) ...[
+            const SizedBox(width: Space.x8),
             AppButton.destructive(
               key: const ValueKey('board.overstay.checkOut'),
               label: 'Check out',

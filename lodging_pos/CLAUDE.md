@@ -112,6 +112,6 @@ GitHub Actions (`.github/workflows/ci.yml`), Flutter pinned to the local version
 
 ## Current sprint
 
-Sprint 1 (14–27 Oct 2026): a receptionist can run a full stay offline — login and shifts (FD-1), admin setup on the desk app (AD-1 to AD-4), guests (FD-3), bed board (FD-2), check-in (FD-4), payment (FD-5), receipt (FD-6), checkout (FD-8, refund requests only), housekeeping (FD-9: assign and mark clean). Not in sprint 1: sync, admin phone app, extension UI (FD-7), refund approval, payout and REFUND receipt (AD-7, sprint 2), shift close, voids UI, inventory, expenses, reports.
+Sprint 1 (14–27 Oct 2026): a receptionist can run a full stay offline — login and shifts (FD-1), admin setup on the desk app (AD-1 to AD-4), guests (FD-3), bed board (FD-2), check-in (FD-4), payment (FD-5), receipt (FD-6), checkout (FD-8, refund requests only), housekeeping (FD-9: assign and mark clean), then CI, shift close (FD-11) and extend (FD-7: in the bed panel and on the overstay bar; during an overstay at least the nights already started, counted like a late checkout). Not in sprint 1: sync, admin phone app, refund approval, payout and REFUND receipt (AD-7, sprint 2), voids UI, inventory, expenses, reports.
 
-Next, in order, each planned before coding: FD-11 shift close → FD-7 extend → the daily local backup. AD-7 (refund approval, payout and REFUND receipt) is one of the first stories of sprint 2.
+Next, planned before coding: the daily local backup. AD-7 (refund approval, payout and REFUND receipt) is one of the first stories of sprint 2.

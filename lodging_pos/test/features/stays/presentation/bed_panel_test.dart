@@ -47,6 +47,8 @@ void main() {
   String text(WidgetTester tester, String key) =>
       tester.widget<Text>(find.byKey(ValueKey(key))).data!;
 
+  Finder stepperValue() => find.byKey(const ValueKey('stepper.value'));
+
   String buttonLabel(WidgetTester tester) => tester
       .widget<Text>(
         find.descendant(
@@ -145,7 +147,7 @@ void main() {
     expect(find.text('Choose how they paid.'), findsOneWidget);
     expect(find.byKey(const ValueKey('panel.confirm')), findsNothing);
 
-    await tapKey(tester, 'choice.PaymentMethod.cash');
+    await tapKeyIn(tester, 'panel.method', 'choice.PaymentMethod.cash');
     await tapKey(tester, 'panel.checkOut');
     expect(text(tester, 'panel.result.title'), 'Checked out at 11:30');
     expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
@@ -235,5 +237,116 @@ void main() {
     await tapKey(tester, 'shift.back');
     expect(locationOf(app), Routes.home);
     expect(text(tester, 'panel.title'), 'Room 5 · Bed A');
+  });
+
+  group('Extend (FD-7)', () {
+    Finder extendButton() => find.descendant(
+      of: find.byKey(const ValueKey('extend.save')),
+      matching: find.byType(TextButton),
+    );
+
+    testWidgets('within paid time: Extend comes before Check out; the '
+        'payment is required; then the extension receipt with Print', (
+      tester,
+    ) async {
+      final stayId = await env.checkIn(r5.beds.single.id, by: desk);
+      env.clock.set(nairobiInstant(2026, 10, 16, 8)); // Fri 08:00
+      await deskOnBoard(tester);
+      await tapKey(tester, 'board.bed.5A');
+
+      expect(
+        tester.getTopLeft(find.text('EXTEND STAY')).dy,
+        lessThan(tester.getTopLeft(find.text('CHECK OUT')).dy),
+      );
+      expect(find.byKey(const ValueKey('extend.minReason')), findsNothing);
+      expect(
+        find.textContaining('Sat 17 Oct, 10:00', findRichText: true),
+        findsOneWidget,
+      );
+      expect(text(tester, 'extend.total'), 'KES 700');
+      await tapKey(tester, 'stepper.plus');
+      expect(text(tester, 'extend.total'), 'KES 1,400');
+      expect(find.text('2 × KES 700 (check-in price)'), findsOneWidget);
+
+      await tapKey(tester, 'extend.save'); // no method yet
+      expect(text(tester, 'extend.paymentError'), 'Choose how they paid.');
+      expect((await env.checkOuts.stay(stayId)).charges, hasLength(1));
+
+      await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.cash');
+      await tapKey(tester, 'extend.save');
+      expect(text(tester, 'extend.result.title'), 'Extended by 2 nights');
+      expect(
+        text(tester, 'extend.result.checkout'),
+        'New checkout Sun 18 Oct, 10:00.',
+      );
+      expect(text(tester, 'receipt.number'), 'R-000002');
+      expect(find.text('Extension · 2 nights'), findsOneWidget);
+      await tapKey(tester, 'receipt.print');
+      expect(env.receiptOutput.printed, ['R-000002.pdf']);
+
+      await tapKey(tester, 'extend.done');
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('board.bed.5A')),
+          matching: find.textContaining('until Sun 10:00'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('from the overstay bar: at least the nights already started, '
+        'with the reason; fewer is refused; then no longer an overstay', (
+      tester,
+    ) async {
+      await env.checkIn(r5.beds.single.id, by: desk); // paid to Fri 10:00
+      env.clock.set(nairobiInstant(2026, 10, 18, 12)); // Sun 12:00: 3 started
+      await deskOnBoard(tester);
+
+      await tapKey(tester, 'board.overstay.extend');
+      expect(
+        text(tester, 'extend.minReason'),
+        'At least 3 nights: 3 have started since Fri 10:00.',
+      );
+      expect(tester.widget<TextField>(stepperValue()).controller!.text, '3');
+      expect(
+        tester
+            .widget<OutlinedButton>(find.byKey(const ValueKey('stepper.minus')))
+            .onPressed,
+        isNull,
+      );
+      expect(text(tester, 'extend.total'), 'KES 2,100');
+
+      await enterKey(tester, 'stepper.value', '2');
+      await tester.pumpAndSettle();
+      expect(
+        text(tester, 'extend.nightsError'),
+        'At least 3 nights: that many have already started.',
+      );
+      expect(tester.widget<TextButton>(extendButton()).onPressed, isNull);
+
+      await enterKey(tester, 'stepper.value', '4');
+      await tester.pumpAndSettle();
+      await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.paybill');
+      await enterKey(tester, 'extend.mpesaCode', 'QJK7H2LM4P');
+      await tapKey(tester, 'extend.save');
+      expect(text(tester, 'extend.result.title'), 'Extended by 4 nights');
+      expect(
+        text(tester, 'extend.result.checkout'),
+        'New checkout Tue 20 Oct, 10:00.',
+      );
+      await tapKey(tester, 'extend.done');
+      expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
+    });
+
+    testWidgets('an admin without a shift of their own: the note, and '
+        'Extend is disabled', (tester) async {
+      await env.checkIn(r5.beds.single.id, by: desk); // desk's shift is open
+      await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'board.bed.5A');
+      expect(find.byKey(const ValueKey('panel.noShift')), findsOneWidget);
+      expect(find.byKey(const ValueKey('extend.card')), findsOneWidget);
+      expect(tester.widget<TextButton>(extendButton()).onPressed, isNull);
+    });
   });
 }

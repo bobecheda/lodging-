@@ -188,6 +188,8 @@ A check-in (FD-4) writes, in one transaction: the new guest if any (`guest.creat
 
 A checkout (FD-8) writes, in one transaction and in the user's own open shift: for a late checkout, a `late_checkout` charge with its own payment and receipt (`stay.late_charge`, `payment.create`) that moves `paid_until`; for an early one, a `refunds` row as a **request** (`refund.request`); then the stay closed and the bed `not_cleaned` (`stay.check_out`). The terms are worked out again at the moment of saving and must match what the panel showed.
 
+An extension (FD-7) writes, in one transaction and in the user's own open shift: one payment with the next receipt number (`payment.create`), one `extension` charge for one bed from the old `paid_until`, n nights at the stay's check-in price (`stay.extend`), and the stay's new `paid_until` (`stay.extend`). It is refused if `paid_until` changed since the panel showed it, or if more nights have started meanwhile than were chosen (the minimum during an overstay is the late-checkout night count at that moment).
+
 ### refunds
 A refund of prepaid nights not yet started (BR-8), created as a **request** in the early-checkout transaction that also closes the stay. Its status is derived, never stored: no decision → `requested`; decision `rejected` → `rejected`; decision `approved` and no payout → `approved`; payout set → `paid`.
 

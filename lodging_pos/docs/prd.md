@@ -117,6 +117,10 @@ Each story lists the conditions that must all hold before it counts as done.
 
 - One hour after expected checkout, the bed shows Overstay without anyone acting.
 - Extending adds nights from the paid-until 10:00, with a new payment and receipt. Checking out after the grace hour first charges one night.
+- Extend is in the bed panel above Check out, and on the overstay bar beside Check out. 1–30 nights, one bed per extension, at the stay's check-in price, paid now (Cash or M-Pesa) into the user's own open shift; the payment form is the confirmation.
+- During an overstay the minimum is the nights already started, counted exactly as a late checkout at that moment would (`lateNights`), and the card says why ("At least 3 nights: 3 have started since Fri 10:00."). Within the grace hour the minimum is 1.
+- The receipt shows "Charge: Extension · n nights", From the old checkout and Check out by the new one, with the usual footer.
+- An early checkout after an extension refunds unstarted nights across all of the stay's charges, at its locked price.
 - Overstay clears only by renewal or checkout.
 
 **FD-8 Check a guest out.** As a receptionist, I want to close a stay so that the bed can be cleaned and let again.
