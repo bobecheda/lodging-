@@ -12,13 +12,13 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount mary;
   late String shiftId;
 
   setUp(() async {
     env = TestEnv();
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     mary = await env.addReceptionist('mary');
     await env.addReceptionist('tom');
     // Mary: float KES 1,000, then KES 700 in cash → expected KES 1,700.
@@ -27,7 +27,7 @@ void main() {
       env.audit,
     ).openShift(user: mary, openingFloat: 1000)).id;
     final room = await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '7',
         floor: null,
@@ -97,43 +97,46 @@ void main() {
     await signInAs(tester, 'tom', 'desk-pass');
     expect(
       text(tester, 'shift.askToClose'),
-      "Ask Desk to sign in and close it, or ask the owner to close Desk's "
+      "Ask Desk to sign in and close it, or ask the supervisor to close Desk's "
       'shift.',
     );
     expect(find.byKey(const ValueKey('shift.closeOther')), findsNothing);
   });
 
-  testWidgets('the owner closes Mary’s shift from Shifts; the list says who '
-      'closed it', (tester) async {
-    final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
-    await tapKey(tester, 'nav.${Routes.shifts}');
-    expect(find.text('OPEN'), findsOneWidget);
-    await tapKey(tester, 'shifts.close.$shiftId');
-    expect(text(tester, 'closeShift.whose'), startsWith('Desk MARY'));
+  testWidgets(
+    'the supervisor closes Mary’s shift from Shifts; the list says who '
+    'closed it',
+    (tester) async {
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'supervisor', 'super-pass');
+      await tapKey(tester, 'nav.${Routes.shifts}');
+      expect(find.text('OPEN'), findsOneWidget);
+      await tapKey(tester, 'shifts.close.$shiftId');
+      expect(text(tester, 'closeShift.whose'), startsWith('Desk MARY'));
 
-    await count(tester, '1800');
-    expect(find.text('OVER KES 100'), findsOneWidget);
-    await enterKey(tester, 'closeShift.note', 'Guest left a tip in the till');
-    await tapKey(tester, 'closeShift.confirm');
-    await tapKey(tester, 'closeShift.backToShifts');
-    expect(locationOf(app), Routes.shifts);
+      await count(tester, '1800');
+      expect(find.text('OVER KES 100'), findsOneWidget);
+      await enterKey(tester, 'closeShift.note', 'Guest left a tip in the till');
+      await tapKey(tester, 'closeShift.confirm');
+      await tapKey(tester, 'closeShift.backToShifts');
+      expect(locationOf(app), Routes.shifts);
 
-    expect(text(tester, 'shifts.variance.$shiftId'), 'Over KES 100');
-    expect(
-      text(tester, 'shifts.closedBy.$shiftId'),
-      'closed by Grace Owner for Desk MARY’s shift',
-    );
-    expect(find.text('“Guest left a tip in the till”'), findsOneWidget);
-    // Mary's shift no longer blocks the device.
-    expect(find.text('OPEN'), findsNothing);
-  });
+      expect(text(tester, 'shifts.variance.$shiftId'), 'Over KES 100');
+      expect(
+        text(tester, 'shifts.closedBy.$shiftId'),
+        'closed by Grace Supervisor for Desk MARY’s shift',
+      );
+      expect(find.text('“Guest left a tip in the till”'), findsOneWidget);
+      // Mary's shift no longer blocks the device.
+      expect(find.text('OPEN'), findsNothing);
+    },
+  );
 
   testWidgets('the owner reaching the blocked card can close it there', (
     tester,
   ) async {
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     app.read(routerProvider).go(Routes.shiftThen(Routes.home));
     await tester.pumpAndSettle();
     await tapKey(tester, 'shift.closeOther');

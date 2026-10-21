@@ -5,7 +5,7 @@ import 'package:drift/drift.dart';
 
 import 'common.dart';
 
-// Setup tables: owned by the admin.
+// Setup tables: owned by the supervisor.
 
 @DataClassName('UserRow')
 class Users extends Table with SyncedColumns {
@@ -16,7 +16,10 @@ class Users extends Table with SyncedColumns {
     'NOT NULL UNIQUE CHECK (username = lower(trim(username)))',
   )();
   TextColumn get passwordHash => text()();
-  TextColumn get role => text().check(role.isIn(['admin', 'receptionist']))();
+
+  /// v6: `admin` became `supervisor`, and `owner` was added.
+  TextColumn get role =>
+      text().check(role.isIn(['owner', 'supervisor', 'receptionist']))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   BoolColumn get mustChangePassword => boolean()();
 }

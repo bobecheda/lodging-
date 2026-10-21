@@ -58,8 +58,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) => SplitGateLayout(
     title: 'Choose a new password',
-    subtitle:
-        'The owner gave you a temporary password. Choose your own to carry on.',
+    subtitle: 'The supervisor gave you a temporary password. Choose your own to carry on.',
     children: [
       LabeledField(
         label: 'New password',

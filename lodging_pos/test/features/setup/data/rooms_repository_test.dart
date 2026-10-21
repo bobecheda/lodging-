@@ -14,17 +14,17 @@ import '../../../helpers/fixtures.dart';
 void main() {
   late TestEnv env;
   late RoomsRepository rooms;
-  late UserAccount owner;
+  late UserAccount supervisor;
 
   setUp(() async {
     env = TestEnv();
     rooms = RoomsRepository(env.db, env.audit);
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
   Future<RoomSummary> twoBedRoom([String number = '5']) => rooms.createRoom(
-    owner,
+    supervisor,
     NewRoom(
       number: number,
       floor: 'Ground',
@@ -46,7 +46,7 @@ void main() {
       'a 2-bed room: normalized number, clean beds with categories',
       () async {
         final room = await rooms.createRoom(
-          owner,
+          supervisor,
           const NewRoom(
             number: ' 3a ',
             floor: ' First ',
@@ -87,12 +87,12 @@ void main() {
         'bed.create',
       ]);
       expect(entries.map((e) => e.operationId).toSet(), hasLength(1));
-      expect(entries.map((e) => e.userId).toSet(), {owner.id});
+      expect(entries.map((e) => e.userId).toSet(), {supervisor.id});
     });
 
     test('a 1-bed room has bed A only', () async {
       final room = await rooms.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '1',
           floor: null,
@@ -114,7 +114,7 @@ void main() {
       await expectLater(
         env.audit.writeWithAudit(
           action: 'room.create',
-          userId: owner.id,
+          userId: supervisor.id,
           body: (w) =>
               w.insert(env.db.rooms, RoomsCompanion.insert(roomNumber: '3a')),
         ),
@@ -125,7 +125,7 @@ void main() {
     test('rejects an invalid form without writing', () async {
       await expectLater(
         rooms.createRoom(
-          owner,
+          supervisor,
           const NewRoom(
             number: 'Room 5',
             floor: null,
@@ -145,7 +145,7 @@ void main() {
     });
   });
 
-  group('owner only (AD-1)', () {
+  group('supervisor only (AD-1)', () {
     test(
       'a receptionist cannot change rooms or beds, and nothing is written',
       () async {
@@ -180,7 +180,7 @@ void main() {
         final auditAfter = await env.db.select(env.db.auditLog).get();
         expect(
           auditAfter.skip(auditBefore.length).map((e) => e.userId).toSet(),
-          {owner.id},
+          {supervisor.id},
         );
       },
     );
@@ -190,7 +190,7 @@ void main() {
     test('saves number, floor and a bed category as one operation', () async {
       final room = await twoBedRoom();
       final updated = await rooms.updateRoom(
-        owner,
+        supervisor,
         room.id,
         const RoomEdit(
           number: '5b',
@@ -224,7 +224,7 @@ void main() {
     test('nothing changed: no write, no audit', () async {
       final room = await twoBedRoom();
       await rooms.updateRoom(
-        owner,
+        supervisor,
         room.id,
         const RoomEdit(
           number: '5',
@@ -241,7 +241,7 @@ void main() {
       final room = await twoBedRoom('5');
       await expectLater(
         rooms.updateRoom(
-          owner,
+          supervisor,
           room.id,
           const RoomEdit(number: '4', floor: null, notes: null),
         ),
@@ -252,10 +252,10 @@ void main() {
     test('changing a category affects new check-ins only', () async {
       final room = await twoBedRoom();
       final bedA = bedOf(room, BedLabel.a); // Normal, 500
-      final stayId = await env.checkIn(bedA.id, by: owner);
+      final stayId = await env.checkIn(bedA.id, by: supervisor);
 
       await rooms.updateRoom(
-        owner,
+        supervisor,
         room.id,
         const RoomEdit(
           number: '5',
@@ -278,10 +278,10 @@ void main() {
       test('a bed with a guest cannot be deactivated', () async {
         final room = await twoBedRoom();
         final bedB = bedOf(room, BedLabel.b);
-        await env.checkIn(bedB.id, by: owner);
+        await env.checkIn(bedB.id, by: supervisor);
 
         await expectLater(
-          rooms.deactivateBed(owner, bedB.id),
+          rooms.deactivateBed(supervisor, bedB.id),
           blockedBecause('Bed B has a guest right now. Check them out first.'),
         );
         expect(bedOf(await rooms.room(room.id), BedLabel.b).isActive, isTrue);
@@ -290,10 +290,10 @@ void main() {
 
       test('a room with a guest in any bed cannot be deactivated', () async {
         final room = await twoBedRoom();
-        await env.checkIn(bedOf(room, BedLabel.b).id, by: owner);
+        await env.checkIn(bedOf(room, BedLabel.b).id, by: supervisor);
 
         await expectLater(
-          rooms.deactivateRoom(owner, room.id),
+          rooms.deactivateRoom(supervisor, room.id),
           blockedBecause('Bed B has a guest right now. Check them out first.'),
         );
         expect((await rooms.room(room.id)).isActive, isTrue);
@@ -303,12 +303,12 @@ void main() {
       test('after checkout, the bed and the room can be deactivated', () async {
         final room = await twoBedRoom();
         final bedB = bedOf(room, BedLabel.b);
-        final stayId = await env.checkIn(bedB.id, by: owner);
-        await env.checkOut(stayId, by: owner);
+        final stayId = await env.checkIn(bedB.id, by: supervisor);
+        await env.checkOut(stayId, by: supervisor);
 
-        final afterBed = await rooms.deactivateBed(owner, bedB.id);
+        final afterBed = await rooms.deactivateBed(supervisor, bedB.id);
         expect(bedOf(afterBed, BedLabel.b).isActive, isFalse);
-        final afterRoom = await rooms.deactivateRoom(owner, room.id);
+        final afterRoom = await rooms.deactivateRoom(supervisor, room.id);
         expect(afterRoom.isActive, isFalse);
         expect(await env.auditFor('bed.deactivate'), hasLength(1));
         expect(await env.auditFor('room.deactivate'), hasLength(1));
@@ -318,9 +318,9 @@ void main() {
         "an open room's last active bed: deactivate the room instead",
         () async {
           final room = await twoBedRoom();
-          await rooms.deactivateBed(owner, bedOf(room, BedLabel.b).id);
+          await rooms.deactivateBed(supervisor, bedOf(room, BedLabel.b).id);
           await expectLater(
-            rooms.deactivateBed(owner, bedOf(room, BedLabel.a).id),
+            rooms.deactivateBed(supervisor, bedOf(room, BedLabel.a).id),
             blockedBecause('Deactivate the room instead.'),
           );
         },
@@ -328,8 +328,8 @@ void main() {
 
       test('nothing is ever deleted', () async {
         final room = await twoBedRoom();
-        await rooms.deactivateBed(owner, bedOf(room, BedLabel.b).id);
-        await rooms.deactivateRoom(owner, room.id);
+        await rooms.deactivateBed(supervisor, bedOf(room, BedLabel.b).id);
+        await rooms.deactivateRoom(supervisor, room.id);
         expect(await env.db.select(env.db.rooms).get(), hasLength(1));
         expect(await env.db.select(env.db.beds).get(), hasLength(2));
       });
@@ -340,8 +340,8 @@ void main() {
     test('a reopened bed comes back not_cleaned (bed.reactivate)', () async {
       final room = await twoBedRoom();
       final bedB = bedOf(room, BedLabel.b);
-      await rooms.deactivateBed(owner, bedB.id);
-      final after = await rooms.reactivateBed(owner, bedB.id);
+      await rooms.deactivateBed(supervisor, bedB.id);
+      final after = await rooms.reactivateBed(supervisor, bedB.id);
       expect(bedOf(after, BedLabel.b).isActive, isTrue);
       expect(bedOf(after, BedLabel.b).cleanliness, Cleanliness.notCleaned);
       expect(await env.auditFor('bed.reactivate'), hasLength(1));
@@ -351,8 +351,8 @@ void main() {
       "a reopened room's beds come back not_cleaned, one operation",
       () async {
         final room = await twoBedRoom();
-        await rooms.deactivateRoom(owner, room.id);
-        final after = await rooms.reactivateRoom(owner, room.id);
+        await rooms.deactivateRoom(supervisor, room.id);
+        final after = await rooms.reactivateRoom(supervisor, room.id);
         expect(after.isActive, isTrue);
         expect(after.beds.map((b) => b.cleanliness).toSet(), {
           Cleanliness.notCleaned,
@@ -365,7 +365,7 @@ void main() {
 
     test('a room with no active bed cannot reopen', () async {
       final room = await rooms.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '1',
           floor: null,
@@ -374,10 +374,10 @@ void main() {
           bedBCategoryId: null,
         ),
       );
-      await rooms.deactivateRoom(owner, room.id);
-      await rooms.deactivateBed(owner, bedOf(room, BedLabel.a).id);
+      await rooms.deactivateRoom(supervisor, room.id);
+      await rooms.deactivateBed(supervisor, bedOf(room, BedLabel.a).id);
       await expectLater(
-        rooms.reactivateRoom(owner, room.id),
+        rooms.reactivateRoom(supervisor, room.id),
         blockedBecause('Reactivate a bed first.'),
       );
     });
@@ -386,7 +386,7 @@ void main() {
   group('add bed B', () {
     test('a 1-bed room gets a clean bed B (bed.create)', () async {
       final room = await rooms.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '1',
           floor: null,
@@ -395,7 +395,7 @@ void main() {
           bedBCategoryId: null,
         ),
       );
-      final after = await rooms.addBed(owner, room.id, SeedIds.normal);
+      final after = await rooms.addBed(supervisor, room.id, SeedIds.normal);
       expect(after.beds.map((b) => b.label), [BedLabel.a, BedLabel.b]);
       expect(bedOf(after, BedLabel.b).cleanliness, Cleanliness.clean);
     });
@@ -403,7 +403,7 @@ void main() {
     test('a room never gets a third bed', () async {
       final room = await twoBedRoom();
       await expectLater(
-        rooms.addBed(owner, room.id, SeedIds.normal),
+        rooms.addBed(supervisor, room.id, SeedIds.normal),
         blockedBecause('This room already has beds A and B.'),
       );
     });
@@ -411,7 +411,7 @@ void main() {
     test('an inactive category cannot be chosen', () async {
       await env.audit.writeWithAudit(
         action: 'category.update',
-        userId: owner.id,
+        userId: supervisor.id,
         body: (w) => w.update(
           env.db.bedCategories,
           SeedIds.comfort,
@@ -419,7 +419,7 @@ void main() {
         ),
       );
       final room = await rooms.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '1',
           floor: null,
@@ -429,7 +429,7 @@ void main() {
         ),
       );
       await expectLater(
-        rooms.addBed(owner, room.id, SeedIds.comfort),
+        rooms.addBed(supervisor, room.id, SeedIds.comfort),
         throwsA(isA<InvalidRoom>()),
       );
     });

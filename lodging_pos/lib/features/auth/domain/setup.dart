@@ -1,6 +1,6 @@
 import 'credentials.dart';
 
-/// The first-run "Set up this lodging" form: the first admin plus the
+/// The first-run "Set up this lodging" form: the first supervisor plus the
 /// lodging name that receipts print.
 class SetupInput {
   const SetupInput({

@@ -23,7 +23,7 @@ enum _Step { count, review, done }
 
 /// FD-11 "Close shift": a blind cash count, then the review (expected,
 /// counted, variance, M-Pesa), a note when it's short or over, and Close
-/// or Recount. Your own shift ends with Sign out; the owner closing
+/// or Recount. Your own shift ends with Sign out; a supervisor closing
 /// someone else's goes back to Shifts.
 class CloseShiftScreen extends ConsumerStatefulWidget {
   const CloseShiftScreen({super.key, this.shiftId});

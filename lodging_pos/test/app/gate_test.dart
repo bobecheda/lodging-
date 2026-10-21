@@ -82,13 +82,13 @@ void main() {
   });
 
   test(
-    'owner-only screens (AD-1): the owner stays, a receptionist goes home',
+    'setup screens (AD-1): the supervisor stays, a receptionist goes home',
     () {
-      const owner = UserAccount(
+      const supervisor = UserAccount(
         id: 'o1',
-        fullName: 'Owner',
-        username: 'owner',
-        role: Role.admin,
+        fullName: 'Grace Supervisor',
+        username: 'supervisor',
+        role: Role.supervisor,
         isActive: true,
         mustChangePassword: false,
       );
@@ -96,7 +96,7 @@ void main() {
         redirectFor(
           Routes.adminRooms,
           hasUsers: true,
-          user: owner,
+          user: supervisor,
           shiftStart: const ShiftReady(null),
         ),
         isNull,
@@ -106,7 +106,7 @@ void main() {
         redirectFor(
           Routes.adminPrices,
           hasUsers: true,
-          user: owner,
+          user: supervisor,
           shiftStart: const ShiftReady(null),
         ),
         isNull,
@@ -118,53 +118,56 @@ void main() {
     },
   );
 
-  group('an admin opening a shift (check-in takes a payment)', () {
-    const owner = UserAccount(
+  group('a supervisor opening a shift (check-in takes a payment)', () {
+    const supervisor = UserAccount(
       id: 'o1',
-      fullName: 'Owner',
-      username: 'owner',
-      role: Role.admin,
+      fullName: 'Grace Supervisor',
+      username: 'supervisor',
+      role: Role.supervisor,
       isActive: true,
       mustChangePassword: false,
     );
-    String? admin(
+    String? asSupervisor(
       String location, {
       ShiftStart shiftStart = const ShiftReady(null),
       String? returnTo,
     }) => redirectFor(
       location,
       hasUsers: true,
-      user: owner,
+      user: supervisor,
       shiftStart: shiftStart,
       returnTo: returnTo,
     );
 
-    test('signing in never sends an admin to the shift screen', () {
-      expect(admin(Routes.login), Routes.home);
-      expect(admin(Routes.home), isNull);
+    test('signing in never sends a supervisor to the shift screen', () {
+      expect(asSupervisor(Routes.login), Routes.home);
+      expect(asSupervisor(Routes.home), isNull);
     });
 
     test('with no shift of their own, they may go there by choice', () {
-      expect(admin(Routes.shift, returnTo: '/check-in?bed=b1'), isNull);
+      expect(asSupervisor(Routes.shift, returnTo: '/check-in?bed=b1'), isNull);
     });
 
     test('once their shift is open, they go back where they came from', () {
       final own = OpenShift(
         id: 's2',
         userId: 'o1',
-        userName: 'Owner',
+        userName: 'Grace Supervisor',
         openedAt: DateTime.utc(2026, 10, 17),
         openingFloat: 0,
       );
       expect(
-        admin(
+        asSupervisor(
           Routes.shift,
           shiftStart: ShiftReady(own),
           returnTo: '/check-in?bed=b1',
         ),
         '/check-in?bed=b1',
       );
-      expect(admin(Routes.shift, shiftStart: ShiftReady(own)), Routes.home);
+      expect(
+        asSupervisor(Routes.shift, shiftStart: ShiftReady(own)),
+        Routes.home,
+      );
     });
 
     test('only a working screen the user may open is a return address', () {

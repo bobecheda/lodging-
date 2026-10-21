@@ -12,7 +12,7 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late RoomsRepository rooms;
   late StaffRepository staff;
@@ -21,12 +21,12 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     rooms = RoomsRepository(env.db, env.audit);
     staff = StaffRepository(env.db, env.audit, env.hasher);
     r7 = await rooms.createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '7',
         floor: null,
@@ -44,8 +44,8 @@ void main() {
   tearDown(() => env.close());
 
   Future<void> housekeepers() async {
-    await staff.addHousekeeper(owner, name: 'Rose Akinyi', phone: '');
-    await staff.addHousekeeper(owner, name: 'Jane Wanjiru', phone: '');
+    await staff.addHousekeeper(supervisor, name: 'Rose Akinyi', phone: '');
+    await staff.addHousekeeper(supervisor, name: 'Jane Wanjiru', phone: '');
   }
 
   Future<void> onBoard(WidgetTester tester) async {
@@ -116,7 +116,7 @@ void main() {
     expect(text(tester, 'cleaning.assignee'), 'Jane · assigned 11:40');
   });
 
-  testWidgets('no housekeepers yet: says where the owner adds them', (
+  testWidgets('no housekeepers yet: says where the supervisor adds them', (
     tester,
   ) async {
     await onBoard(tester);
@@ -136,8 +136,8 @@ void main() {
     );
     final repo = HousekeepingRepository(env.db, env.audit);
     await repo.assign(desk, r7.beds.first.id, rose.id);
-    await rooms.deactivateBed(owner, r7.beds.first.id);
-    await rooms.reactivateBed(owner, r7.beds.first.id);
+    await rooms.deactivateBed(supervisor, r7.beds.first.id);
+    await rooms.reactivateBed(supervisor, r7.beds.first.id);
 
     await onBoard(tester);
     expect(tileText('Needs cleaning · assign'), findsOneWidget);

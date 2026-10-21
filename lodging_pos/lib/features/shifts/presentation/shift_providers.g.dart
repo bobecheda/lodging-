@@ -251,12 +251,12 @@ final class ShiftTakingsFamily extends $Family
   String toString() => r'shiftTakingsProvider';
 }
 
-/// The owner's list of shifts (FD-11), watched.
+/// The supervisor's list of shifts (FD-11), watched.
 
 @ProviderFor(shiftList)
 final shiftListProvider = ShiftListProvider._();
 
-/// The owner's list of shifts (FD-11), watched.
+/// The supervisor's list of shifts (FD-11), watched.
 
 final class ShiftListProvider
     extends
@@ -268,7 +268,7 @@ final class ShiftListProvider
     with
         $FutureModifier<List<ShiftSummary>>,
         $StreamProvider<List<ShiftSummary>> {
-  /// The owner's list of shifts (FD-11), watched.
+  /// The supervisor's list of shifts (FD-11), watched.
   ShiftListProvider._()
     : super(
         from: null,

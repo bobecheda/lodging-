@@ -9,7 +9,7 @@ enum LoginOutcome {
   /// Unknown username or wrong password; deliberately indistinguishable.
   invalidCredentials,
 
-  /// Right password, but the admin disabled the account.
+  /// Right password, but the supervisor disabled the account.
   disabled;
 
   bool get signsIn => this == success || this == mustChangePassword;

@@ -42,32 +42,32 @@ class UserRepository {
     return row == null ? null : StoredUser(_toAccount(row), row.passwordHash);
   }
 
-  /// Creates the first admin and sets the lodging name in one transaction
-  /// (one `operation_id`): `user.create` + `settings.update`, both with the
-  /// new admin as the user. Throws [SetupAlreadyDone] if any user exists,
+  /// Creates the first supervisor and sets the lodging name in one
+  /// transaction (one `operation_id`): `user.create` + `settings.update`,
+  /// both with the new supervisor as the user. Throws [SetupAlreadyDone] if any user exists,
   /// checked inside the transaction so two attempts can't both succeed.
-  Future<UserAccount> createFirstAdmin(SetupInput input) async {
+  Future<UserAccount> createFirstSupervisor(SetupInput input) async {
     if (validateSetup(input).isNotEmpty) {
       throw ArgumentError('Setup form is not valid');
     }
     final setup = input.normalized();
     final hash = await _hasher.hash(setup.password);
-    // Known up front so the audit rows can name the admin as their user.
-    final adminId = const Uuid().v4();
+    // Known up front so the audit rows can name the supervisor as their user.
+    final supervisorId = const Uuid().v4();
 
     final row = await _audit.writeWithAudit(
       action: 'user.create',
-      userId: adminId,
+      userId: supervisorId,
       body: (w) async {
         if (await hasAnyUser()) throw const SetupAlreadyDone();
         final user = await w.insert(
           _db.users,
           UsersCompanion.insert(
-            id: Value(adminId),
+            id: Value(supervisorId),
             fullName: setup.fullName,
             username: setup.username,
             passwordHash: hash,
-            role: Role.admin.name,
+            role: Role.supervisor.name,
             mustChangePassword: false,
           ),
         );
@@ -76,7 +76,7 @@ class UserRepository {
           'lodging_name',
           SettingsCompanion(
             value: Value(setup.lodgingName),
-            updatedBy: Value(adminId),
+            updatedBy: Value(supervisorId),
           ),
           action: 'settings.update',
         );

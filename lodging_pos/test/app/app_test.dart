@@ -17,23 +17,23 @@ void main() {
   setUp(() => env = TestEnv());
   tearDown(() => env.close());
 
-  testWidgets('first run: setup creates the owner, then goes to sign in', (
+  testWidgets('first run: setup creates the supervisor, then goes to sign in', (
     tester,
   ) async {
     final app = await pumpDeskApp(tester, env);
     expect(find.text('Set up this lodging'), findsOneWidget);
 
     await enterKey(tester, 'setup.lodgingName', 'Sunrise Lodge');
-    await enterKey(tester, 'setup.fullName', 'Grace Owner');
-    await enterKey(tester, 'setup.username', 'Owner');
-    await enterKey(tester, 'setup.password', 'owner-pass');
-    await enterKey(tester, 'setup.confirmPassword', 'owner-pass');
+    await enterKey(tester, 'setup.fullName', 'Grace Supervisor');
+    await enterKey(tester, 'setup.username', 'Supervisor');
+    await enterKey(tester, 'setup.password', 'super-pass');
+    await enterKey(tester, 'setup.confirmPassword', 'super-pass');
     await tapKey(tester, 'setup.submit');
 
     expect(locationOf(app), Routes.login);
     expect(
-      (await env.users.findByUsername('owner'))?.account.fullName,
-      'Grace Owner',
+      (await env.users.findByUsername('supervisor'))?.account.fullName,
+      'Grace Supervisor',
     );
     // The brand panel now shows the lodging name.
     expect(find.text('Sunrise Lodge'), findsOneWidget);
@@ -49,7 +49,7 @@ void main() {
   testWidgets('once any user exists, the setup screen is unreachable', (
     tester,
   ) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
     expect(locationOf(app), Routes.login);
 
@@ -60,22 +60,22 @@ void main() {
     expect(find.text('Set up this lodging'), findsNothing);
 
     // Signed in: it lands on home instead.
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     app.read(routerProvider).go(Routes.setup);
     await tester.pumpAndSettle();
     expect(locationOf(app), Routes.home);
     expect(find.text('Set up this lodging'), findsNothing);
   });
 
-  testWidgets('the owner signs in straight to home without a shift', (
+  testWidgets('the supervisor signs in straight to home without a shift', (
     tester,
   ) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'OWNER', 'owner-pass');
+    await signInAs(tester, 'SUPERVISOR', 'super-pass');
     expect(locationOf(app), Routes.home);
-    expect(find.text('Grace Owner'), findsOneWidget);
-    expect(find.text('Owner · admin'), findsOneWidget);
+    expect(find.text('Grace Supervisor'), findsOneWidget);
+    expect(find.text('Supervisor'), findsOneWidget);
     expect(find.text('Bed board'), findsWidgets);
     expect(await env.db.select(env.db.shifts).get(), isEmpty);
   });
@@ -83,9 +83,9 @@ void main() {
   testWidgets('a wrong password stays on sign in with a message', (
     tester,
   ) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'wrong-pass');
+    await signInAs(tester, 'supervisor', 'wrong-pass');
     expect(locationOf(app), Routes.login);
     expect(find.text('Wrong username or password. Try again.'), findsOneWidget);
   });
@@ -93,7 +93,7 @@ void main() {
   testWidgets('must change password, then open a shift, then home (FD-1)', (
     tester,
   ) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk', mustChangePassword: true);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -128,7 +128,7 @@ void main() {
   });
 
   testWidgets('an empty float is rejected on screen', (tester) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk');
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -140,7 +140,7 @@ void main() {
   testWidgets("another receptionist is blocked by an open shift", (
     tester,
   ) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
     await env.addReceptionist('tom');
     await ShiftRepository(
@@ -160,14 +160,14 @@ void main() {
   testWidgets(
     'the shift owner sees the resume card with takings, then continues',
     (tester) async {
-      final owner = await env.users.createFirstAdmin(testSetup);
+      final supervisor = await env.users.createFirstSupervisor(testSetup);
       final desk = await env.addReceptionist('desk');
       await ShiftRepository(
         env.db,
         env.audit,
       ).openShift(user: desk, openingFloat: 800);
       // Two payments on the shift, one voided, to show takings.
-      await _twoPaymentsOneVoided(env, desk.id, owner.id);
+      await _twoPaymentsOneVoided(env, desk.id, supervisor.id);
 
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'desk', 'desk-pass');
@@ -188,14 +188,14 @@ void main() {
 
   testWidgets('the resume card shows a paid refund as received, refunded and '
       'net', (tester) async {
-    final owner = await env.users.createFirstAdmin(testSetup);
+    final supervisor = await env.users.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
     await ShiftRepository(
       env.db,
       env.audit,
     ).openShift(user: desk, openingFloat: 800);
     final room = await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '3',
         floor: null,
@@ -206,7 +206,7 @@ void main() {
     );
     // 3 nights paid in cash (2,100), then 2 nights refunded in cash (1,400).
     final stayId = await env.checkIn(room.beds.single.id, by: desk, nights: 3);
-    await _paidCashRefund(env, stayId, deskId: desk.id, ownerId: owner.id);
+    await _paidCashRefund(env, stayId, deskId: desk.id, ownerId: supervisor.id);
 
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');

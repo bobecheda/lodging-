@@ -30,7 +30,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    final owner = await env.users.createFirstAdmin(testSetup);
+    final supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     await ShiftRepository(
       env.db,
@@ -38,7 +38,7 @@ void main() {
     ).openShift(user: desk, openingFloat: 0);
     final rooms = RoomsRepository(env.db, env.audit);
     Future<RoomSummary> room(String n) => rooms.createRoom(
-      owner,
+      supervisor,
       NewRoom(
         number: n,
         floor: null,

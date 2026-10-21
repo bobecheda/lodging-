@@ -15,14 +15,14 @@ import '../../../helpers/fixtures.dart';
 /// async in the way of file I/O).
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late Directory temp;
 
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 20, 7, 2));
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     temp = Directory.systemTemp.createTempSync('lodging_backup_ui');
     env.backupFolder = temp.path;
@@ -108,22 +108,25 @@ void main() {
     expect(afterClose.entityId, 'lodging_pos-2026-10-20-1830.sqlite');
   });
 
-  test('Back up now: the owner only; one backup at a time, a second request '
-      'waits and takes its own', () async {
-    final app = start();
-    await until(() => backups().length == 1);
-    final notifier = app.read(backupsProvider.notifier);
-    expect(() => notifier.backUpNow(desk), throwsA(isA<NotPermitted>()));
+  test(
+    'Back up now: the supervisor only; one backup at a time, a second request '
+    'waits and takes its own',
+    () async {
+      final app = start();
+      await until(() => backups().length == 1);
+      final notifier = app.read(backupsProvider.notifier);
+      expect(() => notifier.backUpNow(desk), throwsA(isA<NotPermitted>()));
 
-    env.clock.set(nairobiInstant(2026, 10, 20, 9));
-    final first = notifier.backUpNow(owner);
-    final second = notifier.backUpNow(owner);
-    await Future.wait([first, second]);
-    // Same minute, same name: the later copy replaced the first.
-    expect(backups(), hasLength(2));
-    expect(await env.auditFor('backup.create'), hasLength(3));
-    expect(app.read(backupsProvider).running, isFalse);
-  });
+      env.clock.set(nairobiInstant(2026, 10, 20, 9));
+      final first = notifier.backUpNow(supervisor);
+      final second = notifier.backUpNow(supervisor);
+      await Future.wait([first, second]);
+      // Same minute, same name: the later copy replaced the first.
+      expect(backups(), hasLength(2));
+      expect(await env.auditFor('backup.create'), hasLength(3));
+      expect(app.read(backupsProvider).running, isFalse);
+    },
+  );
 
   test('a failure shows as overdue until a backup succeeds', () async {
     // Today's backup can't be written: its partial file is a folder.
@@ -136,7 +139,7 @@ void main() {
     expect(app.read(backupsProvider).overdueAt(env.clock.now()), isTrue);
 
     env.clock.set(nairobiInstant(2026, 10, 20, 7, 3));
-    await app.read(backupsProvider.notifier).backUpNow(owner);
+    await app.read(backupsProvider.notifier).backUpNow(supervisor);
     final status = app.read(backupsProvider);
     expect(status.lastFailure, isNull);
     expect(status.overdueAt(env.clock.now()), isFalse);
@@ -149,15 +152,15 @@ void main() {
     await until(() => backups().length == 1);
     final notifier = app.read(backupsProvider.notifier);
 
-    await notifier.setSecondFolder(owner, usb.path);
+    await notifier.setSecondFolder(supervisor, usb.path);
     expect(app.read(backupsProvider).secondFolder, usb.path);
     env.clock.set(nairobiInstant(2026, 10, 20, 9));
-    await notifier.backUpNow(owner);
+    await notifier.backUpNow(supervisor);
     expect(app.read(backupsProvider).second, isA<SecondCopied>());
 
-    await notifier.setSecondFolder(owner, '${usb.path}-unplugged');
+    await notifier.setSecondFolder(supervisor, '${usb.path}-unplugged');
     env.clock.set(nairobiInstant(2026, 10, 20, 9, 1));
-    await notifier.backUpNow(owner);
+    await notifier.backUpNow(supervisor);
     final status = app.read(backupsProvider);
     expect(status.second, isA<SecondSkipped>());
     expect(status.overdueAt(env.clock.now()), isFalse);

@@ -14,7 +14,7 @@ part 'database.g.dart';
 
 @DriftDatabase(
   tables: [
-    // Setup (admin owns)
+    // Setup (the supervisor's)
     Users,
     Settings,
     BedCategories,
@@ -30,7 +30,7 @@ part 'database.g.dart';
     Refunds,
     HousekeepingTasks,
     InventoryMovements,
-    // Admin-owned records
+    // Records only the supervisor or owner decides on
     Voids,
     RefundDecisions,
     Expenses,
@@ -64,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -215,6 +215,23 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
       await m.createTrigger(schema.shiftsClosedFinal);
+    },
+    // v6 (roles): the `admin` role is now `supervisor`, and `owner` joins
+    // the CHECK. The rebuild copies the rows with the new name, so no UPDATE
+    // runs (none would get past the users' updated_at trigger) and no row's
+    // timestamps change. Old audit rows keep "admin": history isn't edited.
+    from5To6: (m, schema) async {
+      final users = schema.users;
+      await m.alterTable(
+        TableMigration(
+          users,
+          columnTransformer: {
+            users.role: const CustomExpression<String>(
+              "CASE WHEN role = 'admin' THEN 'supervisor' ELSE role END",
+            ),
+          },
+        ),
+      );
     },
   );
 

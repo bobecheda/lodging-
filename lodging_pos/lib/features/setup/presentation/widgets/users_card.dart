@@ -59,7 +59,9 @@ class _UsersCardState extends ConsumerState<UsersCard> {
     } on StaffRuleViolation catch (e) {
       if (mounted) setState(() => _error = e.message);
     } on NotPermitted {
-      if (mounted) setState(() => _error = 'Only the owner can manage users.');
+      if (mounted) {
+        setState(() => _error = 'Only the supervisor can manage users.');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -210,7 +212,8 @@ class _UserRow extends StatelessWidget {
         me != null &&
         accountActionBlocker(actor: me!, target: a) == null;
     final role = switch (a.role) {
-      Role.admin => 'Admin',
+      Role.owner => 'Owner',
+      Role.supervisor => 'Supervisor',
       Role.receptionist => 'Receptionist',
     };
     final since = user.shiftOpenSince;

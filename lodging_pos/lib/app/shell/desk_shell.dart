@@ -37,7 +37,7 @@ class NavItem {
   /// the same through `Routes.permissions`.
   final Set<Permission> permissions;
 
-  /// Listed under "SETUP · OWNER ONLY".
+  /// Listed under "SETUP · SUPERVISOR".
   final bool setup;
 
   bool visibleTo(UserAccount? user) =>
@@ -147,7 +147,7 @@ class DeskShell extends ConsumerWidget {
                       vertical: Space.x8,
                     ),
                     child: Text(
-                      'SETUP · OWNER ONLY',
+                      'SETUP · SUPERVISOR',
                       key: const ValueKey('shell.setupGroup'),
                       style: t.capsLabel.copyWith(color: c.navMuted),
                     ),
@@ -290,7 +290,7 @@ class _SyncPill extends ConsumerWidget {
 
 /// Only when the main backup failed or yesterday and today have none
 /// ([backupOverdue]); everyone sees it, so a receptionist can tell the
-/// owner. An owner's tap opens the Backups card. A missing second copy is
+/// supervisor. A supervisor's tap opens the Backups card. A missing second copy is
 /// never shown here.
 class _BackupPill extends ConsumerWidget {
   const _BackupPill();
@@ -359,7 +359,8 @@ class _UserBlock extends ConsumerWidget {
     final ownShift = shift != null && shift.userId == user.id;
     final role = [
       switch (user.role) {
-        Role.admin => 'Owner · admin',
+        Role.owner => 'Owner',
+        Role.supervisor => 'Supervisor',
         Role.receptionist => 'Receptionist',
       },
       if (ownShift) 'shift since ${formatTime(shift.openedAt)}',

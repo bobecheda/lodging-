@@ -34,10 +34,10 @@ import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 final testT0 = DateTime.utc(2026, 10, 14, 19);
 
 const testSetup = SetupInput(
-  fullName: 'Grace Owner',
-  username: 'Owner',
-  password: 'owner-pass',
-  confirmPassword: 'owner-pass',
+  fullName: 'Grace Supervisor',
+  username: 'Supervisor',
+  password: 'super-pass',
+  confirmPassword: 'super-pass',
   lodgingName: 'Sunrise Lodge',
 );
 

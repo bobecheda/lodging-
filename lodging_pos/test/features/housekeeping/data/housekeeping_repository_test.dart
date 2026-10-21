@@ -15,7 +15,7 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late HousekeepingRepository repo;
   late RoomsRepository rooms;
@@ -29,13 +29,13 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     repo = HousekeepingRepository(env.db, env.audit);
     rooms = RoomsRepository(env.db, env.audit);
     staff = StaffRepository(env.db, env.audit, env.hasher);
     r7 = await rooms.createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '7',
         floor: null,
@@ -47,12 +47,12 @@ void main() {
     bedA = r7.beds.first.id;
     bedB = r7.beds.last.id;
     rose = (await staff.addHousekeeper(
-      owner,
+      supervisor,
       name: 'Rose Akinyi',
       phone: '',
     )).id;
     jane = (await staff.addHousekeeper(
-      owner,
+      supervisor,
       name: 'Jane Wanjiru',
       phone: '',
     )).id;
@@ -199,9 +199,12 @@ void main() {
     test('the task is cancelled with time and user; the bed stays not '
         'cleaned; reopened, it needs assigning again', () async {
       await repo.assign(desk, bedA, rose);
-      await rooms.deactivateBed(owner, bedA);
+      await rooms.deactivateBed(supervisor, bedA);
       final task = (await tasks()).single;
-      expect((task.cancelledAt, task.cancelledBy), (env.clock.now(), owner.id));
+      expect(
+        (task.cancelledAt, task.cancelledBy),
+        (env.clock.now(), supervisor.id),
+      );
       expect(task.completedAt, isNull);
       expect((await bed(bedA)).cleanliness, 'not_cleaned');
       expect(
@@ -209,7 +212,7 @@ void main() {
         'housekeeping_tasks',
       );
 
-      await rooms.reactivateBed(owner, bedA);
+      await rooms.reactivateBed(supervisor, bedA);
       final reopened = await repo.watchBed(bedA).first;
       expect(reopened.openTask, isNull);
       expect(
@@ -231,7 +234,7 @@ void main() {
 
     test('closing the room cancels every bed’s open task', () async {
       await repo.assign(desk, bedA, rose);
-      await rooms.deactivateRoom(owner, r7.id);
+      await rooms.deactivateRoom(supervisor, r7.id);
       expect((await tasks()).single.cancelledAt, isNotNull);
     });
   });
@@ -241,7 +244,7 @@ void main() {
         'reassigned', () async {
       await repo.assign(desk, bedA, rose);
       await expectLater(
-        staff.deactivateHousekeeper(owner, rose),
+        staff.deactivateHousekeeper(supervisor, rose),
         throwsA(
           isA<StaffRuleViolation>().having(
             (e) => e.message,
@@ -251,16 +254,16 @@ void main() {
         ),
       );
       await repo.reassign(desk, bedA, jane);
-      await staff.deactivateHousekeeper(owner, rose);
+      await staff.deactivateHousekeeper(supervisor, rose);
       await repo.markClean(desk, bedA);
-      await staff.deactivateHousekeeper(owner, jane);
+      await staff.deactivateHousekeeper(supervisor, jane);
     });
   });
 
   test(
     'names: full names in the dropdown when two share a first name',
     () async {
-      await staff.addHousekeeper(owner, name: 'Rose Mutua', phone: '');
+      await staff.addHousekeeper(supervisor, name: 'Rose Mutua', phone: '');
       final names = await repo.names();
       expect(names[rose], 'Rose Akinyi');
       expect(names[jane], 'Jane');

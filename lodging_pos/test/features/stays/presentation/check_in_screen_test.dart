@@ -14,13 +14,13 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late RoomsRepository rooms;
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     rooms = RoomsRepository(env.db, env.audit);
   });
@@ -29,7 +29,7 @@ void main() {
   /// Room [number]: Bed A Deluxe 700, and Bed B Comfort 600 if [twoBeds].
   Future<RoomSummary> room(String number, {bool twoBeds = false}) =>
       rooms.createRoom(
-        owner,
+        supervisor,
         NewRoom(
           number: number,
           floor: null,
@@ -293,12 +293,12 @@ void main() {
     expect(saveEnabled(tester), isFalse);
   });
 
-  testWidgets('an admin without a shift: Save is off with the note; Open '
+  testWidgets('a supervisor without a shift: Save is off with the note; Open '
       'shift goes to the shift screen and comes back', (tester) async {
     final r7 = await room('7');
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
-    // Signing in doesn't send an admin to the shift screen.
+    await signInAs(tester, 'supervisor', 'super-pass');
+    // Signing in doesn't send a supervisor to the shift screen.
     expect(locationOf(app), Routes.home);
 
     await tapKey(tester, 'board.bed.7A');
@@ -332,6 +332,6 @@ void main() {
       env.db,
       env.audit,
     ).openShiftOnThisDevice();
-    expect((shift!.userId, shift.openingFloat), (owner.id, 500));
+    expect((shift!.userId, shift.openingFloat), (supervisor.id, 500));
   });
 }

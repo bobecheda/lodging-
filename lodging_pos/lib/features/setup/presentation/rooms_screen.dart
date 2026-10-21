@@ -10,7 +10,7 @@ import 'widgets/add_room_panel.dart';
 import 'widgets/edit_room_panel.dart';
 import 'widgets/room_table.dart';
 
-/// AD-2 "Rooms and beds" (owner only): a table of rooms and a side panel to
+/// AD-2 "Rooms and beds" (supervisor only): a table of rooms and a side panel to
 /// add or edit one (artboard "Setup — rooms and beds").
 class RoomsScreen extends ConsumerStatefulWidget {
   const RoomsScreen({super.key});

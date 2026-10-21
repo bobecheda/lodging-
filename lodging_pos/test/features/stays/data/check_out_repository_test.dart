@@ -18,7 +18,7 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late CheckOutRepository repo;
   late RoomSummary r5;
@@ -27,7 +27,7 @@ void main() {
     env = TestEnv();
     // Thu 15 Oct 19:00 Nairobi.
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     await ShiftRepository(
       env.db,
@@ -35,7 +35,7 @@ void main() {
     ).openShift(user: desk, openingFloat: 0);
     repo = env.checkOuts;
     r5 = await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '5',
         floor: null,
@@ -116,7 +116,7 @@ void main() {
     await PricesRepository(
       env.db,
       env.audit,
-    ).savePrices(owner, {SeedIds.deluxe: 750});
+    ).savePrices(supervisor, {SeedIds.deluxe: 750});
     env.clock.set(nairobiInstant(2026, 10, 21, 15)); // Wed 15:00
     final result = await checkOutNow(stayId);
 
@@ -261,7 +261,7 @@ void main() {
   test('BR-12: no shift of your own → refused, even when free', () async {
     final stayId = await env.checkIn(r5.beds.single.id, by: desk);
     await expectLater(
-      checkOutNow(stayId, by: owner),
+      checkOutNow(stayId, by: supervisor),
       throwsA(isA<NoOpenShift>()),
     );
     expect((await repo.stay(stayId)).isActive, isTrue);

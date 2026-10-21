@@ -11,6 +11,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
 | v5 | 19 Oct 2026 (FD-11) | `shifts.first_count`, `close_note` (≤ 200) and `closed_by`; shifts already closed get `first_count = counted_cash` and `closed_by = user_id`; trigger `shifts_closed_final` refuses any change to a closed shift |
+| v6 | 21 Oct 2026 (roles) | `users.role` CHECK becomes `owner` \| `supervisor` \| `receptionist`; the rebuild copies `admin` users as `supervisor` (no UPDATE, timestamps unchanged). Old audit rows keep `"role":"admin"`; sync (sprint 2) must read an unsent outbox payload's `admin` as `supervisor` |
 | v4 | 19 Oct 2026 (FD-9) | `housekeeping_tasks.cancelled_at` and `cancelled_by` (empty for existing tasks); the one-open-task index leaves out cancelled tasks; a task can't be both completed and cancelled |
 | v3 | 18 Oct 2026 (FD-6) | `stays.room_number` and `bed_label`, as let; existing stays filled from their bed and room by rebuilding the table |
 
@@ -28,7 +29,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 - Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges`, `refunds`, `refund_decisions` and `voids` rows cannot be deleted, and `audit_log` and `refund_decisions` cannot be updated. Triggers also enforce the refund lifecycle and M-Pesa codes across tables (see `refunds`).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
-- Ownership for sync: the **desk** owns operational tables (including `refunds`), the **admin** owns setup tables, `voids`, `refund_decisions`, `expenses` and `inventory_items`. Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
+- Ownership for sync: the **desk** owns operational tables (including `refunds`), the **admin side** owns setup tables, `voids`, `refund_decisions`, `expenses` and `inventory_items` (the supervisor's and the owner's records). Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
 - Payment and refund methods are `cash` | `paybill` everywhere; screens and reports label `paybill` as "M-Pesa".
 
 ## Relationships
@@ -44,7 +45,7 @@ bed_categories 1──* beds *──1 rooms
          inventory_items 1──* inventory_movements
 ```
 
-## Setup tables (admin owns)
+## Setup tables (supervisor owns)
 
 ### users
 | Column | Type | Notes |
@@ -52,7 +53,7 @@ bed_categories 1──* beds *──1 rooms
 | full_name | TEXT | required |
 | username | TEXT | UNIQUE; stored trimmed and lowercase (CHECK `username = lower(trim(username))`), so uniqueness is case-insensitive |
 | password_hash | TEXT | bcrypt |
-| role | TEXT | `admin` \| `receptionist` |
+| role | TEXT | `owner` \| `supervisor` \| `receptionist` (v6; `admin` before). What each may do is only in the permission map |
 | is_active | BOOL | disabled users cannot log in |
 | must_change_password | BOOL | set on create and reset |
 
@@ -82,7 +83,7 @@ A category can't be closed while active beds use it, counting beds in rooms clos
 
 Seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500, with fixed UUIDs so the cloud can seed the same rows.
 
-Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No user is seeded: when `users` is empty the desk shows a first-run setup screen that creates the admin (FD-1).
+Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No user is seeded: when `users` is empty the desk shows a first-run setup screen that creates the supervisor (FD-1; sprint 2: the owner first).
 
 ### rooms
 | Column | Type | Notes |
@@ -135,7 +136,7 @@ Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL, ignoring case: t
 | variance | INT | counted − expected |
 | first_count | INT | v5: the first, blind count; `counted_cash` is the final one after any recount |
 | close_note | TEXT | v5: ≤ 200 characters; the app requires it when variance ≠ 0 |
-| closed_by | TEXT → users | v5: who closed it (the owner may close someone else's, `closeOtherShifts`) |
+| closed_by | TEXT → users | v5: who closed it (a supervisor may close someone else's, `closeOtherShifts`) |
 | status | TEXT | `open` \| `closed` |
 
 At most one open shift per device. A closed shift must have `closed_at`, `expected_cash`, `expected_paybill`, `counted_cash` and `variance`, with `variance = counted_cash − expected_cash`. Since v5 it also has `first_count` and `closed_by`, and trigger `shifts_closed_final` refuses any change to it: a closed shift can't be reopened (FD-11). Closing is one `shift.close` write; its audit entry keeps both counts.
@@ -225,7 +226,7 @@ The payout columns are null together until paid, then set together. Triggers: a 
 
 Partial UNIQUE(bed_id) WHERE completed_at IS NULL AND cancelled_at IS NULL: at most one open task per bed. `completed_at` and `completed_by` are set together, and so are `cancelled_at` and `cancelled_by` (v4); a task is never both. Completing a task (`bed.mark_clean`) is the only way a bed becomes clean (BR-9). Closing a bed or room cancels its open task (`housekeeping.cancel`) and leaves the bed not cleaned. Reassigning changes `housekeeper_id` on the open task (`housekeeping.reassign`). "Already cleaned" creates and completes a task in one operation (`housekeeping.assign` + `bed.mark_clean`).
 
-## Admin-owned records
+## Supervisor and owner records
 
 ### voids
 | Column | Type | Notes |
@@ -233,7 +234,7 @@ Partial UNIQUE(bed_id) WHERE completed_at IS NULL AND cancelled_at IS NULL: at m
 | target_type | TEXT | `payment` \| `stay` \| `refund` (voids a refund's payout) |
 | target_id | TEXT | |
 | reason | TEXT | required |
-| voided_by | TEXT → users | needs `voidRecords` (admin) |
+| voided_by | TEXT → users | needs `voidRecords` (supervisor) |
 | voided_at | DATETIME | |
 
 Voided payments and refund payouts are excluded from shift totals and revenue.
@@ -244,7 +245,7 @@ Voided payments and refund payouts are excluded from shift totals and revenue.
 | refund_id | TEXT → refunds | UNIQUE: one decision per refund |
 | decision | TEXT | `approved` \| `rejected` |
 | note | TEXT | required (non-blank) when rejected |
-| decided_by | TEXT → users | needs `approveRefund` (admin) |
+| decided_by | TEXT → users | needs `approveRefund` (owner); never the refund's `requested_by` for an approval |
 | decided_at | DATETIME | |
 
 Written once, never updated or deleted. It holds no amount, so the approver cannot change it.

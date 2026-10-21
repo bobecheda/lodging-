@@ -1,6 +1,6 @@
 ---
 name: lodging-rules
-description: Business rules for lodging_pos — per-bed, per-night pricing with a fixed 10:00 checkout the day after arrival, grace period and overstay, extensions, late-checkout charge, admin-approved refunds for unused prepaid nights, bed statuses, payments, shifts, voids and permissions. Use before writing or changing any code or test that touches stays, payments, refunds, pricing, beds, occupancy, housekeeping, shifts or access control.
+description: Business rules for lodging_pos — per-bed, per-night pricing with a fixed 10:00 checkout the day after arrival, grace period and overstay, extensions, late-checkout charge, owner-approved refunds for unused prepaid nights, bed statuses, payments, shifts, voids and permissions. Use before writing or changing any code or test that touches stays, payments, refunds, pricing, beds, occupancy, housekeeping, shifts or access control.
 ---
 
 # Lodging business rules
@@ -24,7 +24,7 @@ There is **no** early-arrival cut-off: the owner confirmed that every arrival, w
 |---|---|
 | BR-1 | Price is per bed, **per night**. Every night ends at `checkout_time` (10:00). Arrival time never changes the price. |
 | BR-1a | **First checkout** = 10:00 on the calendar day **after** the arrival date, for any arrival time (03:00 Thu → Fri 10:00; 23:59 Thu → Fri 10:00; 00:30 Fri → Sat 10:00). |
-| BR-2 | Category prices are per night (seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500). Only users with `editPrices` permission change them; they can change at any time. |
+| BR-2 | Category prices are per night (seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500). Only users with `editPrices` change them directly, at any time: the **owner**. A supervisor asks for a change (`requestPriceChange`) and the owner approves or rejects it (`decidePriceChange`). **Temporary:** until the owner can sign in (sprint 2 owner sign-in story), `editPrices` (and adding or closing categories) stays with the supervisor. |
 | BR-3 | `price_per_night` is copied from the category at check-in and reused for every extension, late-checkout charge and refund of that stay. Price changes affect new check-ins only. |
 | BR-4 | One guest per bed. Strangers may share a 2-bed room. One guest may pay for both beds: two stays, one payment. |
 | BR-5 | A bed can be let only if it is active, Available and `clean`. It becomes Occupied only when the check-in transaction (stay + payment + charges) commits. |
@@ -32,23 +32,23 @@ There is **no** early-arrival cut-off: the owner confirmed that every arrival, w
 | BR-7 | **Extension:** adds n nights from `paid_until`: new `paid_until` = old `paid_until` + n days. Allowed any time the stay is active, including during an overstay. |
 | BR-7a | **Late checkout:** checking out after `paid_until` + grace first charges the nights that have started (normally 1), at the stay's price, as a `late_checkout` charge with its own payment and receipt. Between 10:00 and 11:00 checkout is free. The charge moves `paid_until` forward (invariant: `paid_until` = latest charge `period_end`). |
 | BR-8 | **Early checkout refund:** nights not yet started are refunded at the stay's price. The night in progress is never refunded. The amount is calculated by the system and cannot be typed or changed by anyone. |
-| BR-8a | **Refunds need admin approval.** At early checkout the stay closes at once (bed → Available, not_cleaned) and a refund **request** is created for the calculated amount. Only users with `approveRefund` (admin) can approve or reject it; a rejection needs a reason. The approver cannot change the amount. |
+| BR-8a | **Refunds need the owner's approval.** At early checkout the stay closes at once (bed → Available, not_cleaned) and a refund **request** is created for the calculated amount. Only users with `approveRefund` (the owner) can approve or reject it; a rejection needs a reason. The approver cannot change the amount, and nobody can approve a refund they requested themselves (rejecting it is allowed). |
 | BR-8b | **Paying an approved refund:** a user with `payRefund` records the payout from the **cash drawer** or the **Paybill account** (method `cash` or `paybill`; `paybill` requires the M-Pesa transaction code of the money sent). The payout needs an open shift, gets a receipt number from the same counter, and is counted in that shift: cash payouts reduce expected cash, Paybill payouts reduce the Paybill total. Requested and approved-but-unpaid refunds appear in the alerts. |
 | BR-9 | Checkout → bed `not_cleaned`. Only completing a housekeeping task sets `clean`. A reactivated bed or room starts `not_cleaned`; a new bed starts `clean`. |
 | BR-10 | An M-Pesa code can be used once across all payments and refund payouts. Required for `paybill`, null for `cash`. Methods are `cash` and `paybill` everywhere; screens label `paybill` as "M-Pesa". |
 | BR-11 | Stays, payments, charges, refunds, refund decisions and audit entries are never edited or deleted by users. Corrections are `voids` rows with a reason, by users with `voidRecords` permission. Voided payments and refund payouts are excluded from totals. |
 | BR-12 | Every payment and refund payout belongs to an open shift. No open shift → no check-in, extension, late-checkout charge, payment or refund payout. (Requesting a refund at checkout also requires the open shift, because checkout does.) |
-| BR-13 | **Permissions are checked by action**, through one permission map (`Permission` enum → allowed roles). Never compare `role == admin` in features. Roles today: `admin`, `receptionist`; a `supervisor` role will be added later by editing only the map. |
+| BR-13 | **Permissions are checked by action**, through one permission map (`Permission` enum → allowed roles). Never compare roles in features. Roles: `owner` (business view, phone, sprint 2: approves refunds, decides price changes, the dashboard, manages supervisors, sees all reports and the audit trail), `supervisor` (runs the desk: setup, staff, settings, voids, shift oversight, backups, all front-desk work; was `admin` before schema v6) and `receptionist` (front-desk work). A new role is added by editing only the map. |
 
 ## Refund lifecycle
 
 ```
-early checkout ──► requested ──(admin approves)──► approved ──(payout recorded)──► paid
-                       └──────(admin rejects + reason)──► rejected
+early checkout ──► requested ──(owner approves)──► approved ──(payout recorded)──► paid
+                       └──────(owner rejects + reason)──► rejected
 ```
 
 - Status is derived, never stored as free text: no decision row → `requested`; decision `rejected` → `rejected`; decision `approved` and no payout → `approved`; payout recorded → `paid`.
-- The admin can decide on the desk PC (admin sign-in) now, and from the phone once sync exists (sprint 2).
+- The owner decides from the business view (phone, sprint 2, needs sync); the payout is recorded at the desk by a supervisor or receptionist with an open shift.
 - Totals count a refund only when it is **paid**, in the shift that paid it.
 
 ## Calculations
@@ -110,7 +110,7 @@ Occupancy is never stored. It is always derived from the active stay and the `Cl
 | Extension | Occupied (paid_until moves forward) | unchanged |
 | Checkout (incl. late charge or refund request) | Available | not_cleaned |
 | Housekeeping task completed | unchanged | clean |
-| Stay voided by admin | Available | not_cleaned |
+| Stay voided by a supervisor | Available | not_cleaned |
 
 ## Required test cases
 
@@ -127,13 +127,13 @@ Every one of these must exist as a unit test in the matching `domain/` test file
 9. 10 nights from Thu 15 Oct 19:00, checkout Wed 21 Oct 15:00 → nights used 7, refund request 3 × price.
 10. 10 nights from Thu 15 Oct 19:00, checkout Fri 16 Oct 10:30 → used 1, refund 9. Checkout Fri 16 Oct 11:30 → used 2, refund 8.
 11. 1-night stay, early checkout → refund 0, no refund request created.
-12. Refund lifecycle: new request → `requested`; receptionist cannot approve; admin approves → `approved`; admin rejects without reason → refused; payout before approval → refused; payout after approval → `paid`; second payout → refused; approver cannot change the amount.
+12. Refund lifecycle: new request → `requested`; receptionist or supervisor cannot approve; owner approves → `approved`; the requester cannot approve their own request; owner rejects without reason → refused; payout before approval → refused; payout after approval → `paid`; second payout → refused; approver cannot change the amount.
 13. Cash payout reduces the paying shift's expected cash; Paybill payout reduces its Paybill total; requested/approved-unpaid refunds change no totals; voided payout is excluded.
 14. Both beds of a 2-bed room for one guest → two stays, one payment, amount = sum of both charges.
 15. Bed not_cleaned → cannot let. Bed inactive → cannot let. Bed with active stay → cannot let.
 16. Paybill without code → rejected. Reused code (in payments or refund payouts) → rejected. Cash with code → rejected.
 17. Payment or refund payout without an open shift → rejected.
-18. Permission map: receptionist cannot edit prices, void, manage users or approve refunds; admin can. Every `Permission` is assigned to at least one role. Features call the map, never compare roles.
+18. Permission map: receptionist cannot edit prices, void, manage users or approve refunds; the supervisor can do the first three (edit prices only until the owner can sign in); only the owner approves refunds; the owner has no front-desk permissions. Every `Permission` is assigned to at least one role. Features call the map, never compare roles.
 
 ## Receipts
 

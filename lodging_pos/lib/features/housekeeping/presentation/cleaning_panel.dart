@@ -189,7 +189,7 @@ class _CleaningPanelState extends ConsumerState<CleaningPanel> {
           ),
         ] else if (housekeepers.isEmpty) ...[
           const Note.info(
-            'No housekeepers yet. The owner adds them in Setup → Users & '
+            'No housekeepers yet. The supervisor adds them in Setup → Users & '
             'staff.',
             key: ValueKey('cleaning.noHousekeepers'),
           ),

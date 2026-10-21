@@ -75,17 +75,17 @@ void main() {
   });
 
   group('closing a shift (FD-11)', () {
-    late UserAccount owner;
+    late UserAccount supervisor;
     late UserAccount desk;
     late String shiftId;
 
     setUp(() async {
-      owner = await env.users.createFirstAdmin(testSetup);
+      supervisor = await env.users.createFirstSupervisor(testSetup);
       desk = await env.addReceptionist('mary');
       shiftId = (await shifts.openShift(user: desk, openingFloat: 1000)).id;
       // KES 700 in cash, taken on Mary's shift.
       final room = await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '7',
           floor: null,
@@ -151,7 +151,7 @@ void main() {
     test('a payment since the review stops the close', () async {
       final shown = await shifts.takings(shiftId);
       final room = await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '8',
           floor: null,
@@ -177,14 +177,14 @@ void main() {
         'as theirs; a receptionist may not', () async {
       final tom = await env.addReceptionist('tom');
       await expectLater(close(by: tom), throwsA(isA<NotPermitted>()));
-      await close(by: owner);
-      expect((await row()).closedBy, owner.id);
+      await close(by: supervisor);
+      expect((await row()).closedBy, supervisor.id);
       final list = await shifts.watchShifts().first;
       final s = list.single;
-      expect(s.closedByName, owner.fullName);
+      expect(s.closedByName, supervisor.fullName);
       expect(
         closedByLine(closer: s.closedByName!, owner: s.userName),
-        'closed by Grace Owner for Desk MARY’s shift',
+        'closed by Grace Supervisor for Desk MARY’s shift',
       );
     });
 

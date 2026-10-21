@@ -27,7 +27,7 @@ class InvalidSettings implements Exception {
   final Map<SettingsField, String> errors;
 }
 
-/// A category rule refused the change; [message] is shown to the owner.
+/// A category rule refused the change; [message] is shown to the supervisor.
 class CategoryRuleViolation implements Exception {
   const CategoryRuleViolation(this.message);
   final String message;

@@ -18,7 +18,9 @@ UserAccount user(String id, Role role) => UserAccount(
 void main() {
   final jane = user('jane', Role.receptionist);
   final tom = user('tom', Role.receptionist);
-  final owner = user('owner', Role.admin);
+  final supervisor = user('supervisor', Role.supervisor);
+  // Approves refunds (BR-8a).
+  final owner = user('owner', Role.owner);
   final janesShift = OpenShift(
     id: 's1',
     userId: 'jane',
@@ -66,14 +68,14 @@ void main() {
       expect((start as ShiftBlocked).openShift, janesShift);
     });
 
-    test('workWithoutShift (admin) is never forced to open a shift', () {
+    test('workWithoutShift (supervisor) is never forced to open a shift', () {
       expect(
-        shiftStartFor(openShift: null, user: owner),
+        shiftStartFor(openShift: null, user: supervisor),
         isA<ShiftReady>().having((s) => s.shift, 'shift', isNull),
       );
-      // Someone else's shift is not the admin's to use.
+      // Someone else's shift is not the supervisor's to use.
       expect(
-        shiftStartFor(openShift: janesShift, user: owner),
+        shiftStartFor(openShift: janesShift, user: supervisor),
         isA<ShiftReady>().having((s) => s.shift, 'shift', isNull),
       );
     });

@@ -37,12 +37,13 @@ Success is measured over the first three months after go-live. There is no digit
 
 ## Users
 
-Two roles log in; housekeepers and guests appear in the system but do not use it.
+Three roles log in (owner, supervisor, receptionist); housekeepers and guests appear in the system but do not use it. Until 21 Oct 2026 the supervisor was called "admin".
 
 | User | Who | Device | Needs |
 | --- | --- | --- | --- |
 | Receptionist | 1 now, 2 in shifts later; moderate computer skills | Front desk PC, often offline | Check guests in fast, take payment, print or share receipts, see which beds are free and clean |
-| Admin | The owner; often away from the lodging | Phone or PC, online | Set prices and rooms, see takings and profit, catch missing money, approve corrections |
+| Owner | The business owner; often away from the lodging | Phone, online (sprint 2) | See takings and profit, catch missing money, approve refunds and price changes, manage supervisors |
+| Supervisor | Runs the lodging day to day | Front desk PC | Set up rooms, beds, settings and staff; void mistakes; close shifts left open; everything a receptionist does |
 | Housekeeper | Cleaning staff; does not log in | None | Picked from a list when assigned a bed |
 | Guest | Walk-in customer | None | A fair charge and a receipt |
 
@@ -95,7 +96,7 @@ Each story lists the conditions that must all hold before it counts as done.
 - A check-in is for 1 to 30 nights (typed or stepped).
 - Saving re-checks what the screen showed: if the price, the bed's category or the checkout date changed meanwhile (e.g. the screen opened before midnight and was saved after), nothing is saved and the screen says what changed.
 - A new guest is registered in the same transaction as the check-in, so a cancelled or failed check-in leaves no stray guest.
-- The payment goes into the user's own open shift. An admin with no shift of their own can open one from the check-in screen ("Open shift") and comes back to the check-in; signing in as admin never forces the shift screen.
+- The payment goes into the user's own open shift. A supervisor with no shift of their own can open one from the check-in screen ("Open shift") and comes back to the check-in; signing in as admin never forces the shift screen.
 
 **FD-5 Take payment.** As a receptionist, I want to record cash or Paybill so that every let is paid. *Done with FD-4: the payment is part of the check-in transaction.*
 
@@ -130,11 +131,11 @@ Each story lists the conditions that must all hold before it counts as done.
 - Checking out after paid-until + grace first charges each night started (normally 1) at the stay's price, with its own payment (Cash or M-Pesa) and a late-checkout receipt.
 - What a checkout costs or refunds is worked out again when it's confirmed; if a night or the grace time started meanwhile, nothing is saved and the panel says what changed.
 - Checkout needs the user's own open shift (BR-12).
-- *Sprint 2, with AD-7:* once the admin approves a refund, the receptionist pays it from the cash drawer or the Paybill account (with the M-Pesa code) and a refund receipt is printed; the payout reduces that shift's cash or Paybill total.
+- *Sprint 2, with AD-7:* once the owner approves a refund, the receptionist pays it from the cash drawer or the Paybill account (with the M-Pesa code) and a refund receipt is printed; the payout reduces that shift's cash or Paybill total.
 
 **FD-9 Assign housekeeping.** As a receptionist, I want to assign a dirty bed to a housekeeper so that it gets cleaned.
 
-- Only Not cleaned beds can be assigned; the housekeeper is picked from the admin's list.
+- Only Not cleaned beds can be assigned; the housekeeper is picked from the supervisor's list.
 - Marking the task done sets the bed to Clean and records the time.
 - A room shows Not cleaned while any of its beds is Not cleaned.
 - A housekeeper with an unfinished cleaning task cannot be deactivated: "Rose has a bed to clean. Finish or reassign it first."
@@ -151,12 +152,12 @@ Each story lists the conditions that must all hold before it counts as done.
 **FD-11 Close a shift.** As a receptionist, I want to close my shift with a cash count so that my takings are reconciled.
 
 - Shows expected cash (float + cash payments) and expected Paybill total.
-- Requires the counted cash; the variance is saved and shown to the admin.
+- Requires the counted cash; the variance is saved and shown to the supervisor (and the owner, sprint 2).
 - A closed shift cannot be reopened.
 - The count is blind: the cash counted is entered before the expected amount is shown. A recount is allowed; the first count is kept beside the final one.
 - A short or over variance needs a note (at most 200 characters).
-- The owner can close someone else's open shift (e.g. left open overnight), recorded as "closed by X for Y's shift"; a blocked receptionist is told who can close it.
-- The owner's Shifts screen lists shifts with their variance, highlighting any over 1% of the shift's takings, with the recount and the note.
+- A supervisor can close someone else's open shift (e.g. left open overnight), recorded as "closed by X for Y's shift"; a blocked receptionist is told who can close it.
+- The supervisor's Shifts screen lists shifts with their variance, highlighting any over 1% of the shift's takings, with the recount and the note.
 
 **FD-12 Download my monthly report.** As a receptionist, I want a PDF of my takings for the month.
 
@@ -165,7 +166,7 @@ Each story lists the conditions that must all hold before it counts as done.
 
 ## Admin stories
 
-The admin works online from phone or PC; every change reaches the front desk on its next sync.
+AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner's own sign-in and screens (phone, online; every change reaches the desk on its next sync) are sprint 2 stories; "admin app" still names that app.
 
 **AD-1 Log in as admin.** As the owner, I want my own login so that only I can change prices and see the full business.
 
@@ -203,7 +204,7 @@ The admin works online from phone or PC; every change reaches the front desk on 
 
 **AD-7 Void a wrong entry.** As the owner, I want to correct mistakes without hiding them.
 
-- Only the admin can void a stay or payment, and a reason is required. Only the admin can approve or reject a refund request (a rejection needs a reason); the amount cannot be changed.
+- Only a supervisor can void a stay or payment, and a reason is required. Only the owner can approve or reject a refund request (a rejection needs a reason); nobody can approve a refund they requested themselves; the amount cannot be changed.
 - The original stays visible, marked void; totals exclude it.
 
 **AD-8 Review the audit trail.** As the owner, I want to see who did what so that I can investigate problems.
@@ -227,16 +228,16 @@ These rules are enforced by the system and override anything a user enters.
 | ID | Rule |
 | --- | --- |
 | BR-1 | Price is per bed, per night. Checkout is always 10:00. Every arrival, at any time, checks out at 10:00 the following day. Arrival time does not change the price. |
-| BR-2 | Starting prices per night: VIP KES 1,000, Deluxe 700, Comfort 600, Normal 500. Only the admin changes them. |
+| BR-2 | Starting prices per night: VIP KES 1,000, Deluxe 700, Comfort 600, Normal 500. Only the owner changes them; a supervisor asks for a change and the owner approves or rejects it. **Temporary:** until the owner can sign in (sprint 2 owner sign-in story), the supervisor changes prices and adds or closes categories directly. |
 | BR-3 | The price is locked at check-in and also applies to extensions and refunds of that stay; a price change affects new check-ins only. |
 | BR-4 | One guest per bed. Strangers may share a 2-bed room; one guest may pay for both beds. |
 | BR-5 | A bed can be let only when Available and Clean, and becomes Occupied only once payment is saved. |
 | BR-6 | Grace period is 1 hour after the 10:00 checkout; from 11:00 the bed shows Overstay. |
 | BR-7 | An extension adds nights from the paid-until 10:00. Leaving after the grace hour costs one more night. |
-| BR-8 | Early checkout refunds nights not yet started. The night in progress is never refunded. The system calculates the amount; the admin must approve it before it is paid from the cash drawer or the Paybill account, with a refund receipt. |
+| BR-8 | Early checkout refunds nights not yet started. The night in progress is never refunded. The system calculates the amount; the owner must approve it before it is paid from the cash drawer or the Paybill account, with a refund receipt. |
 | BR-9 | Checkout makes the bed Available and Not cleaned; only completed housekeeping makes it Clean. |
 | BR-10 | Each M-Pesa transaction code can be used once. |
-| BR-11 | Stays, payments and audit entries are never edited or deleted; the admin voids with a reason. |
+| BR-11 | Stays, payments and audit entries are never edited or deleted; a supervisor voids with a reason. |
 | BR-12 | Payments need an open shift; each shift closes with a cash count and recorded variance. |
 
 ## Non-functional requirements
@@ -250,7 +251,7 @@ These apply across the whole product.
 | Time | Checkout, grace, overstay and refund calculations use the desk PC clock, checked against the server time on each sync; a gap over 5 minutes shows a warning. |
 | Performance | Bed board loads in under 2 seconds; guest search returns in under 1 second; receipt PDF in under 3 seconds. |
 | Security | Passwords stored hashed; admin actions checked by the cloud, not just hidden in the app; data encrypted in transit; sessions time out after inactivity. |
-| Privacy | Guest ID data is personal data under the Data Protection Act 2019: only collected fields, visible to logged-in staff only, exportable only by the admin, kept for a period the owner sets. |
+| Privacy | Guest ID data is personal data under the Data Protection Act 2019: only collected fields, visible to logged-in staff only, exportable only by the owner, kept for a period the owner sets. |
 | Integrity | Audit log is append-only; receipt numbers are sequential with no gaps; M-Pesa codes unique. |
 | Backup | Cloud database exported regularly; a local backup on the desk PC each day; restore tested before go-live. The desk backs up at start (once a day), every hour it's open if the day still has none, after each shift close and on the owner's "Back up now"; each copy is checked (`integrity_check`, schema version) before it counts; every backup from today and yesterday plus the latest of each day for 30 days are kept; an optional second folder (USB drive) gets a copy too, and a missing drive is only noted on the Backups card. The sidebar warns everyone when the main backup failed or yesterday and today have none. Restore steps and the go-live checklist (restore rehearsal, a Windows password on every account, BitLocker or device encryption) are in `docs/backup-restore.md`. |
 | Platforms | Front desk: Windows 10 or later. Admin: Android phone and a modern web browser. |
@@ -272,7 +273,7 @@ The project runs as two-week Scrum sprints adapted for one developer, with the o
 | Sprint | Dates | Goal | Stories | Est. hours |
 | --- | --- | --- | --- | --- |
 | 1 | 14–27 Oct | A receptionist can run a full stay offline: check-in, payment, receipt, checkout | Project setup and audit logging, FD-1 to FD-6, FD-8 (refund requests; approval and payout move to sprint 2 with AD-7), FD-9 (assign and mark clean, so a checked-out bed can be let again), AD-1 to AD-4 (on the desk app); then CI, FD-11 shift close, FD-7 extend and the daily local backup, in that order | \~118 |
-| 2 | 28 Oct–10 Nov | Money is controlled and the owner can see it from his phone | AD-7 first (with FD-8's refund approval, payout and REFUND receipt), cloud sync, admin app, AD-5 (today and monthly revenue), Windows installer | \~106 |
+| 2 | 28 Oct–10 Nov | Money is controlled and the owner can see it from his phone | The owner's sign-in (first run creates the owner; `editPrices` moves to the owner; supervisors request price changes), AD-7 (the owner approves refunds; payout and REFUND receipt at the desk), cloud sync, admin app, AD-5 (today and monthly revenue), Windows installer | \~106 |
 | **Go-live** | **11 Nov** | **Core in use at the lodging, alongside paper records for the first week** |  |  |
 | 3 | 11–24 Nov | Complete the MVP and fix pilot issues | FD-10, AD-10, AD-6, AD-8 (audit trail screen), AD-9, FD-12, full dashboard metrics, pilot fixes | \~90 |
 
@@ -329,8 +330,14 @@ The main risks are people bypassing the system and the desk PC failing; both hav
 **Assumptions**
 
 - One front desk PC; a second desk device is out of scope.
-- One admin account (the owner).
-- No bookings or overstay fines in the MVP. Refunds only for prepaid nights not yet started, and only after admin approval. Supervisor role to be designed with the owner after the MVP; permissions are checked per action so it can be added.
+- One owner account and one supervisor account; receptionists added by the supervisor.
+- No bookings or overstay fines in the MVP. Refunds only for prepaid nights not yet started, and only after the owner's approval. Permissions are checked per action, so roles change by editing only the permission map.
+
+**Open items (sprint 2 owner stories)**
+
+- **First run creates the owner.** On a fresh install, first-run setup should create the owner's account, and the owner then creates the supervisor (`manageSupervisors`). Today first run creates the supervisor; not built yet.
+- **Prices move to the owner.** `editPrices` (and adding or closing categories) is the supervisor's only until the owner can sign in; then it moves to the owner, the supervisor gets "request a price change" (`requestPriceChange`) and the owner decides (`decidePriceChange`). Marked `// TEMPORARY` in the permission map.
+- **Refund approval from the owner's phone** needs sync; until then requested refunds wait. Payouts stay at the desk.
 
 ## Approval
 

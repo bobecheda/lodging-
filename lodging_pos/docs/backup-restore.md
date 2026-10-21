@@ -9,7 +9,7 @@ The desk PC keeps its own copies of the database, so a corrupted file, a bad upg
 | The app starts | Once the database check has passed (`schema_check.dart`), if today (Nairobi) has no backup yet, one is taken. A file that fails the check is never backed up as if it were good. |
 | Every hour the app is open | The same check, for a desk that stays on for days. |
 | A shift is closed | One more backup straight away, so the day's takings are in a copy. |
-| The owner taps **Back up now** | One more backup (`manageBackups`). |
+| The supervisor taps **Back up now** | One more backup (`manageBackups`). |
 
 Backups run in the background, one at a time (a request made while one runs waits, then takes its own), and never block the desk or need anyone signed in. Only the Windows desk takes them.
 
@@ -25,14 +25,14 @@ Each backup:
 ## Where
 
 - **Main folder:** `%APPDATA%\com.lodging\lodging_pos\backups` (the app support folder, next to `lodging_pos.sqlite`; the exact path is on the Backups card, with **Open folder**). It is outside Documents on purpose, so Windows doesn't upload it to OneDrive.
-- **Second folder (optional):** chosen by the owner on the Backups card (Prices and settings), e.g. `E:\Sunrise Lodge backups` on a USB drive. Stored in the `backup_second_folder` setting (empty: none).
+- **Second folder (optional):** chosen by the supervisor on the Backups card (Prices and settings), e.g. `E:\Sunrise Lodge backups` on a USB drive. Stored in the `backup_second_folder` setting (empty: none).
 
 Backups hold the same data as the live database: guests' names, phones and ID numbers, and password hashes. Keep the USB drive locked away.
 
 ## What people see
 
-- **Backups card** (Prices and settings, owner only): last backup ("Today 07:02 · 1.8 MB · checked"), the folder with Open folder, Back up now, the reason if the last backup failed, and the second folder (Choose / Change / Remove) with a quiet note about its last copy, e.g. "Second copy skipped: USB drive not found. Main backup OK."
-- **Sidebar chip** (everyone): only when the last main backup failed, or yesterday and today have no backup: "Backup failed · last Sun 18 Oct" / "Backup overdue · last Sun 18 Oct". The owner's tap opens the Backups card. A skipped or failed second copy never shows here.
+- **Backups card** (Prices and settings, supervisor only): last backup ("Today 07:02 · 1.8 MB · checked"), the folder with Open folder, Back up now, the reason if the last backup failed, and the second folder (Choose / Change / Remove) with a quiet note about its last copy, e.g. "Second copy skipped: USB drive not found. Main backup OK."
+- **Sidebar chip** (everyone): only when the last main backup failed, or yesterday and today have no backup: "Backup failed · last Sun 18 Oct" / "Backup overdue · last Sun 18 Oct". The supervisor's tap opens the Backups card. A skipped or failed second copy never shows here.
 
 ## Restore
 

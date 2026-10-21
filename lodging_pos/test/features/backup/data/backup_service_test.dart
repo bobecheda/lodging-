@@ -21,7 +21,7 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late Directory temp;
   late String folder;
@@ -37,7 +37,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 20, 7, 2)); // Tue 07:02
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     temp = Directory.systemTemp.createTempSync('lodging_backup_test');
     folder = '${temp.path}${Platform.pathSeparator}backups';
@@ -57,7 +57,7 @@ void main() {
 
   Future<void> letABed() async {
     final room = await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '5',
         floor: null,
@@ -228,7 +228,7 @@ void main() {
       Directory(second).createSync();
       File(inFolder(backupFileName(nairobiInstant(2026, 9, 1, 7)), second))
           .writeAsStringSync('x');
-      await backups.setSecondFolder(owner, second);
+      await backups.setSecondFolder(supervisor, second);
       expect(await backups.secondFolder(), second);
 
       final done = await backups.backUp(reason: BackupReason.daily);
@@ -250,7 +250,7 @@ void main() {
 
     test('a missing folder (USB drive unplugged) is skipped; the main '
         'backup still counts', () async {
-      await backups.setSecondFolder(owner, second); // never created
+      await backups.setSecondFolder(supervisor, second); // never created
       final done = await backups.backUp(reason: BackupReason.daily);
       expect(done.second, isA<SecondSkipped>());
       expect(File(inFolder(done.file.name)).existsSync(), isTrue);
@@ -263,7 +263,7 @@ void main() {
 
     test('a copy that fails there is reported, the main backup kept', () async {
       Directory(second).createSync();
-      await backups.setSecondFolder(owner, second);
+      await backups.setSecondFolder(supervisor, second);
       final name = backupFileName(env.clock.now());
       Directory(inFolder('$name.partial', second)).createSync();
 
@@ -273,8 +273,8 @@ void main() {
     });
 
     test('removing it clears the setting', () async {
-      await backups.setSecondFolder(owner, second);
-      await backups.setSecondFolder(owner, null);
+      await backups.setSecondFolder(supervisor, second);
+      await backups.setSecondFolder(supervisor, null);
       expect(await backups.secondFolder(), isNull);
       final done = await backups.backUp(reason: BackupReason.daily);
       expect(done.second, isNull);
@@ -291,7 +291,7 @@ void main() {
       backups.setSecondFolder(desk, temp.path),
       throwsA(isA<NotPermitted>()),
     );
-    await backups.backUp(reason: BackupReason.manual, by: owner);
+    await backups.backUp(reason: BackupReason.manual, by: supervisor);
     env.clock.set(nairobiInstant(2026, 10, 21, 7));
     await backups.backUp(reason: BackupReason.daily, by: desk);
     env.clock.set(nairobiInstant(2026, 10, 22, 7));

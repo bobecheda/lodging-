@@ -18,7 +18,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 20, 9)); // Tue 09:00
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     temp = Directory.systemTemp.createTempSync('lodging_backup_card');
     env.backupFolder = temp.path;
   });
@@ -58,7 +58,7 @@ void main() {
       'folder, and Back up now adds another', (tester) async {
     final app = await pumpDeskApp(tester, env);
     await settleRealIo(tester, () => status(app).newest != null);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'nav.${Routes.adminPrices}');
 
     expect(richText('backups.last', 'Last backup Today 09:00 · '), findsOne);
@@ -115,12 +115,12 @@ void main() {
     expect(find.byKey(ValueKey('nav.${Routes.adminPrices}')), findsNothing);
   });
 
-  testWidgets('a failed backup: the owner’s chip opens the card with the '
+  testWidgets('a failed backup: the supervisor’s chip opens the card with the '
       'reason; Back up now that works clears both', (tester) async {
     blockTodaysBackup();
     final app = await pumpDeskApp(tester, env);
     await settleRealIo(tester, () => status(app).lastFailure != null);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
 
     expect(find.text('Backup failed · none yet'), findsOne);
     await tapKey(tester, 'shell.backupPill');
@@ -142,7 +142,7 @@ void main() {
     addTearDown(() => usb.deleteSync(recursive: true));
     final app = await pumpDeskApp(tester, env);
     await settleRealIo(tester, () => status(app).newest != null);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'nav.${Routes.adminPrices}');
     expect(text(tester, 'backups.second.none'), 'Not set.');
 
@@ -187,7 +187,7 @@ void main() {
   ) async {
     env.backupFolder = null;
     await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'nav.${Routes.adminPrices}');
     expect(find.byKey(const ValueKey('backups.card')), findsNothing);
     expect(find.byKey(const ValueKey('shell.backupPill')), findsNothing);

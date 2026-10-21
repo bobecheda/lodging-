@@ -14,7 +14,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv();
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
@@ -22,7 +22,7 @@ void main() {
 
   Future<ProviderContainer> openStaff(WidgetTester tester) async {
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'nav.${Routes.adminStaff}');
     expect(locationOf(app), Routes.adminStaff);
     return app;
@@ -36,9 +36,9 @@ void main() {
   testWidgets('your own row is marked and has no actions', (tester) async {
     await openStaff(tester);
     expect(find.text('Users and staff'), findsOneWidget);
-    expect(inRow('owner', find.textContaining('(you)')), findsOneWidget);
-    expect(inRow('owner', find.text('ACTIVE')), findsOneWidget);
-    expect(inRow('owner', find.byType(OutlinedButton)), findsNothing);
+    expect(inRow('supervisor', find.textContaining('(you)')), findsOneWidget);
+    expect(inRow('supervisor', find.text('ACTIVE')), findsOneWidget);
+    expect(inRow('supervisor', find.byType(OutlinedButton)), findsNothing);
     expect(find.byKey(const ValueKey('users.disable.owner')), findsNothing);
     expect(find.text('No housekeepers yet.'), findsOneWidget);
   });

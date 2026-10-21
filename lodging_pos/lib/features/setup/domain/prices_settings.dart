@@ -25,7 +25,7 @@ String? priceError(int? price) {
   return null;
 }
 
-/// One price the owner is about to change.
+/// One price the supervisor is about to change.
 final class PriceChange {
   const PriceChange({
     required this.categoryId,

@@ -16,19 +16,19 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late RoomsRepository rooms;
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     rooms = RoomsRepository(env.db, env.audit);
   });
   tearDown(() => env.close());
 
   Future<RoomSummary> room(String number, {bool twoBeds = false}) =>
       rooms.createRoom(
-        owner,
+        supervisor,
         NewRoom(
           number: number,
           floor: null,
@@ -45,7 +45,7 @@ void main() {
     )..where((s) => s.id.equals(stayId))).getSingle();
     await env.audit.writeWithAudit(
       action: 'guest.update',
-      userId: owner.id,
+      userId: supervisor.id,
       body: (w) => w.update(
         env.db.guests,
         stay.guestId,
@@ -60,7 +60,7 @@ void main() {
   }) async {
     env.boardTick = tick;
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     expect(locationOf(app), Routes.home);
     return app;
   }
@@ -99,13 +99,17 @@ void main() {
     final r5 = await room('5'); // Overstay
     // Peter checked in yesterday for 1 night: paid to Thu 10:00.
     env.clock.set(nairobiInstant(2026, 10, 14, 13));
-    final peter = await env.checkIn(r5.beds.single.id, by: owner);
+    final peter = await env.checkIn(r5.beds.single.id, by: supervisor);
     await nameGuest(peter, 'Peter Kamau', '0722418905');
     env.clock.set(nairobiInstant(2026, 10, 15, 11, 30)); // Thu 11:30
-    final grace = await env.checkIn(r2.beds.single.id, by: owner, nights: 2);
+    final grace = await env.checkIn(
+      r2.beds.single.id,
+      by: supervisor,
+      nights: 2,
+    );
     await nameGuest(grace, 'Grace Achieng', '0711000111');
-    final gone = await env.checkIn(r3.beds.single.id, by: owner);
-    await env.checkOut(gone, by: owner);
+    final gone = await env.checkIn(r3.beds.single.id, by: supervisor);
+    await env.checkOut(gone, by: supervisor);
     expect(r1.beds, hasLength(1));
 
     await openBoard(tester);
@@ -147,9 +151,9 @@ void main() {
     final r1 = await room('1');
     final r2 = await room('2');
     final r3 = await room('3');
-    await env.checkIn(r2.beds.single.id, by: owner);
-    final gone = await env.checkIn(r3.beds.single.id, by: owner);
-    await env.checkOut(gone, by: owner); // 3A needs cleaning
+    await env.checkIn(r2.beds.single.id, by: supervisor);
+    final gone = await env.checkIn(r3.beds.single.id, by: supervisor);
+    await env.checkOut(gone, by: supervisor); // 3A needs cleaning
     final app = await openBoard(tester);
 
     await tapKey(tester, 'board.bed.3A');
@@ -178,7 +182,7 @@ void main() {
   testWidgets('chips, category and search filter the board', (tester) async {
     await room('1', twoBeds: true); // A Deluxe, B Normal
     final r2 = await room('2');
-    final stay = await env.checkIn(r2.beds.single.id, by: owner);
+    final stay = await env.checkIn(r2.beds.single.id, by: supervisor);
     await nameGuest(stay, 'Grace Achieng', '0722418905');
     await room('10');
     await openBoard(tester);
@@ -227,11 +231,11 @@ void main() {
     await ShiftRepository(
       env.db,
       env.audit,
-    ).openShift(user: owner, openingFloat: 0);
+    ).openShift(user: supervisor, openingFloat: 0);
     await openBoard(tester);
     expect(tileText('4A', 'READY'), findsOneWidget);
 
-    await tester.runAsync(() => env.checkIn(r4.beds.single.id, by: owner));
+    await tester.runAsync(() => env.checkIn(r4.beds.single.id, by: supervisor));
     await tester.pumpAndSettle();
     expect(tileText('4A', 'IN USE'), findsOneWidget);
   });
@@ -241,7 +245,7 @@ void main() {
   ) async {
     final r5 = await room('5');
     // Wed 22:00 check-in, 1 night: paid to Thu 10:00, grace to 11:00.
-    await env.checkIn(r5.beds.single.id, by: owner);
+    await env.checkIn(r5.beds.single.id, by: supervisor);
     env.clock.set(nairobiInstant(2026, 10, 15, 10, 59, 45));
     await openBoard(tester, tick: const Duration(seconds: 30));
     expect(tileText('5A', 'IN USE'), findsOneWidget);

@@ -35,7 +35,9 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
     } on BackupFailed {
       // The card shows the failure from the status.
     } on NotPermitted {
-      if (mounted) setState(() => _problem = 'Only the owner can back up.');
+      if (mounted) {
+        setState(() => _problem = 'Only the supervisor can back up.');
+      }
     }
   }
 
@@ -55,7 +57,9 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
       await _backups.setSecondFolder(user, path);
     } on NotPermitted {
       if (mounted) {
-        setState(() => _problem = 'Only the owner can change the folders.');
+        setState(
+          () => _problem = 'Only the supervisor can change the folders.',
+        );
       }
     }
   }

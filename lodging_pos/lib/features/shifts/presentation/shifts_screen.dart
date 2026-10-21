@@ -13,8 +13,8 @@ import '../data/shift_repository.dart';
 import '../domain/shift_close.dart';
 import 'shift_providers.dart';
 
-/// FD-11, owner only: every shift on this computer, newest first, with its
-/// cash variance ("shown to the admin"). A variance over 1% of the shift's
+/// FD-11, supervisor (and later the owner): every shift on this computer, newest first, with its
+/// cash variance ("shown to the supervisor"). A variance over 1% of the shift's
 /// takings is highlighted; a recount and a close by someone else are
 /// spelled out. Open shifts can be closed from here.
 class ShiftsScreen extends ConsumerWidget {

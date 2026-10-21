@@ -15,19 +15,19 @@ void main() {
   late TestEnv env;
   late BedBoardRepository board;
   late RoomsRepository rooms;
-  late UserAccount owner;
+  late UserAccount supervisor;
 
   setUp(() async {
     env = TestEnv();
     board = BedBoardRepository(env.db);
     rooms = RoomsRepository(env.db, env.audit);
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
   Future<RoomSummary> room(String number, {bool twoBeds = true}) =>
       rooms.createRoom(
-        owner,
+        supervisor,
         NewRoom(
           number: number,
           floor: null,
@@ -41,9 +41,9 @@ void main() {
     final three = await room('3');
     await room('4', twoBeds: false);
     final closed = await room('9');
-    await rooms.deactivateRoom(owner, closed.id);
-    await rooms.deactivateBed(owner, three.beds.last.id);
-    await env.checkIn(three.beds.first.id, by: owner, nights: 2);
+    await rooms.deactivateRoom(supervisor, closed.id);
+    await rooms.deactivateBed(supervisor, three.beds.last.id);
+    await env.checkIn(three.beds.first.id, by: supervisor, nights: 2);
 
     final list = await board.watchBoard().first;
     expect({for (final r in list) r.number}, {'3', '4'});
@@ -63,11 +63,11 @@ void main() {
     await pumpEventQueue();
     expect(emissions.last.single.beds.single.stay, isNull);
 
-    final stayId = await env.checkIn(four.beds.single.id, by: owner);
+    final stayId = await env.checkIn(four.beds.single.id, by: supervisor);
     await pumpEventQueue();
     expect(emissions.last.single.beds.single.stay, isNotNull);
 
-    await env.checkOut(stayId, by: owner);
+    await env.checkOut(stayId, by: supervisor);
     await pumpEventQueue();
     final bed = emissions.last.single.beds.single;
     expect(bed.stay, isNull);
@@ -83,7 +83,7 @@ void main() {
     final prices = PricesRepository(env.db, env.audit);
     final s = await prices.settings();
     await prices.saveSettings(
-      owner,
+      supervisor,
       SettingsInput(
         lodgingName: s.lodgingName,
         checkoutTime: const ClockTime(10, 0),

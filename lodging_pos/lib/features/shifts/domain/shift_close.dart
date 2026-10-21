@@ -3,7 +3,7 @@
 ///
 /// The count is blind: the receptionist enters it before seeing what's
 /// expected. A recount is allowed; the first count is kept beside the final
-/// one, so the owner sees both.
+/// one, so the supervisor sees both.
 library;
 
 import '../../../core/auth/permissions.dart';
@@ -77,7 +77,7 @@ String? closeNoteError(String note, int variance) {
   return null;
 }
 
-/// Whether the owner's Shifts screen highlights [variance]: more than 1% of
+/// Whether the Shifts screen highlights [variance]: more than 1% of
 /// the shift's takings (the PRD's target), or any variance with no takings.
 bool highVariance(int variance, {required int takings}) =>
     variance != 0 && variance.abs() * 100 > takings;
@@ -88,14 +88,14 @@ String? recountLine(int firstCount, int counted) => firstCount == counted
     ? null
     : 'first count ${formatKes(firstCount)} → recounted ${formatKes(counted)}';
 
-/// `closed by Grace Owner for Mary Wanjiku’s shift`, or null when the
+/// `closed by Grace Supervisor for Mary Wanjiku’s shift`, or null when the
 /// shift's own user closed it.
 String? closedByLine({required String closer, required String owner}) =>
     closer == owner ? null : 'closed by $closer for $owner’s shift';
 
 /// Whether [user] may close the shift of [shiftUserId]: their own with
 /// [Permission.closeShift], anyone else's with
-/// [Permission.closeOtherShifts] (the owner today; a receptionist's
+/// [Permission.closeOtherShifts] (the supervisor today; a receptionist's
 /// "handover close" later, by editing only the permission map).
 bool mayCloseShift(UserAccount user, {required String shiftUserId}) =>
     user.id == shiftUserId
