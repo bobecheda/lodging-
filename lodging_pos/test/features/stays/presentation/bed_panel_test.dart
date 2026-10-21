@@ -13,17 +13,17 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late RoomSummary r5;
 
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 15, 19)); // Thu 19:00
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     r5 = await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '5',
         floor: null,
@@ -178,66 +178,72 @@ void main() {
     expect((await env.checkOuts.stay(stayId)).isActive, isTrue);
   });
 
-  testWidgets('an admin without a shift: the note, then Open shift and back '
-      'to the same panel, ready to check out', (tester) async {
-    final stayId = await env.checkIn(r5.beds.single.id, by: desk);
-    // Desk closes her shift (FD-11), so the device has no open shift.
-    final shifts = ShiftRepository(env.db, env.audit);
-    final shift = (await shifts.openShiftOnThisDevice())!;
-    await shifts.closeShift(
-      desk,
-      shift.id,
-      firstCount: 700,
-      counted: 700,
-      note: '',
-      shown: await shifts.takings(shift.id),
-    );
-    env.clock.set(nairobiInstant(2026, 10, 16, 9));
-    final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
-    expect(locationOf(app), Routes.home); // never forced to the shift screen
+  testWidgets(
+    'a supervisor without a shift: the note, then Open shift and back '
+    'to the same panel, ready to check out',
+    (tester) async {
+      final stayId = await env.checkIn(r5.beds.single.id, by: desk);
+      // Desk closes her shift (FD-11), so the device has no open shift.
+      final shifts = ShiftRepository(env.db, env.audit);
+      final shift = (await shifts.openShiftOnThisDevice())!;
+      await shifts.closeShift(
+        desk,
+        shift.id,
+        firstCount: 700,
+        counted: 700,
+        note: '',
+        shown: await shifts.takings(shift.id),
+      );
+      env.clock.set(nairobiInstant(2026, 10, 16, 9));
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'supervisor', 'super-pass');
+      expect(locationOf(app), Routes.home); // never forced to the shift screen
 
-    await tapKey(tester, 'board.bed.5A');
-    expect(find.byKey(const ValueKey('panel.noShift')), findsOneWidget);
-    await tapKey(tester, 'panel.openShift');
-    expect(locationOf(app), Routes.shift);
-    await enterKey(tester, 'shift.float', '0');
-    await tapKey(tester, 'shift.submit');
+      await tapKey(tester, 'board.bed.5A');
+      expect(find.byKey(const ValueKey('panel.noShift')), findsOneWidget);
+      await tapKey(tester, 'panel.openShift');
+      expect(locationOf(app), Routes.shift);
+      await enterKey(tester, 'shift.float', '0');
+      await tapKey(tester, 'shift.submit');
 
-    // Back on the board with the same panel open, now without the note.
-    expect(text(tester, 'panel.title'), 'Room 5 · Bed A');
-    expect(find.byKey(const ValueKey('panel.noShift')), findsNothing);
-    await tapKey(tester, 'panel.checkOut');
-    await tapKey(tester, 'panel.confirm.ok');
-    expect((await env.checkOuts.stay(stayId)).isActive, isFalse);
-  });
+      // Back on the board with the same panel open, now without the note.
+      expect(text(tester, 'panel.title'), 'Room 5 · Bed A');
+      expect(find.byKey(const ValueKey('panel.noShift')), findsNothing);
+      await tapKey(tester, 'panel.checkOut');
+      await tapKey(tester, 'panel.confirm.ok');
+      expect((await env.checkOuts.stay(stayId)).isActive, isFalse);
+    },
+  );
 
-  testWidgets('a receptionist’s shift on the device: an admin sees the note, '
-      'opens nothing, Back returns to the panel', (tester) async {
-    await env.checkIn(r5.beds.single.id, by: desk); // desk's shift is open
-    final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
-    await tapKey(tester, 'board.bed.5A');
-    expect(
-      find.text('Checkout records money. Open a shift first.'),
-      findsOneWidget,
-    );
-    final button = tester.widget<TextButton>(
-      find.descendant(
-        of: find.byKey(const ValueKey('panel.checkOut')),
-        matching: find.byType(TextButton),
-      ),
-    );
-    expect(button.onPressed, isNull);
+  testWidgets(
+    'a receptionist’s shift on the device: a supervisor sees the note, '
+    'opens nothing, Back returns to the panel',
+    (tester) async {
+      await env.checkIn(r5.beds.single.id, by: desk); // desk's shift is open
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'supervisor', 'super-pass');
+      await tapKey(tester, 'board.bed.5A');
+      expect(
+        find.text('Checkout records money. Open a shift first.'),
+        findsOneWidget,
+      );
+      final button = tester.widget<TextButton>(
+        find.descendant(
+          of: find.byKey(const ValueKey('panel.checkOut')),
+          matching: find.byType(TextButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
 
-    await tapKey(tester, 'panel.openShift');
-    expect(locationOf(app), Routes.shift);
-    // Desk's shift blocks a second one; Back goes back to the panel.
-    expect(find.textContaining("shift must be closed first"), findsOneWidget);
-    await tapKey(tester, 'shift.back');
-    expect(locationOf(app), Routes.home);
-    expect(text(tester, 'panel.title'), 'Room 5 · Bed A');
-  });
+      await tapKey(tester, 'panel.openShift');
+      expect(locationOf(app), Routes.shift);
+      // Desk's shift blocks a second one; Back goes back to the panel.
+      expect(find.textContaining("shift must be closed first"), findsOneWidget);
+      await tapKey(tester, 'shift.back');
+      expect(locationOf(app), Routes.home);
+      expect(text(tester, 'panel.title'), 'Room 5 · Bed A');
+    },
+  );
 
   group('Extend (FD-7)', () {
     Finder extendButton() => find.descendant(
@@ -338,11 +344,11 @@ void main() {
       expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
     });
 
-    testWidgets('an admin without a shift of their own: the note, and '
+    testWidgets('a supervisor without a shift of their own: the note, and '
         'Extend is disabled', (tester) async {
       await env.checkIn(r5.beds.single.id, by: desk); // desk's shift is open
       await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'board.bed.5A');
       expect(find.byKey(const ValueKey('panel.noShift')), findsOneWidget);
       expect(find.byKey(const ValueKey('extend.card')), findsOneWidget);

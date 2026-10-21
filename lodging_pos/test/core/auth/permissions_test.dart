@@ -12,12 +12,14 @@ UserAccount user(Role role, {bool isActive = true}) => UserAccount(
 );
 
 void main() {
-  final admin = user(Role.admin);
+  final owner = user(Role.owner);
+  final supervisor = user(Role.supervisor);
   final desk = user(Role.receptionist);
 
   group('required test case 18: the permission map (BR-13)', () {
     test('a receptionist cannot edit prices, void, manage users or approve '
-        'refunds; the admin can', () {
+        'refunds; the supervisor can do the first three, only the owner '
+        'approves refunds', () {
       for (final p in [
         Permission.editPrices,
         Permission.voidRecords,
@@ -26,9 +28,17 @@ void main() {
       ]) {
         expect(can(desk, p), isFalse, reason: '$p');
         expect(() => requirePermission(desk, p), throwsA(isA<NotPermitted>()));
-        expect(can(admin, p), isTrue, reason: '$p');
-        requirePermission(admin, p);
       }
+      for (final p in [
+        Permission.editPrices,
+        Permission.voidRecords,
+        Permission.manageUsers,
+      ]) {
+        expect(can(supervisor, p), isTrue, reason: '$p');
+        requirePermission(supervisor, p);
+      }
+      expect(can(supervisor, Permission.approveRefund), isFalse);
+      expect(can(owner, Permission.approveRefund), isTrue);
     });
 
     test('every Permission is assigned to at least one role', () {
@@ -44,24 +54,34 @@ void main() {
     });
   });
 
-  test('the map as agreed with the owner', () {
-    const adminOnly = {
+  test('the map as agreed with the owner (21 Oct 2026)', () {
+    const ownerOnly = {
+      Permission.approveRefund,
+      Permission.decidePriceChange,
+      Permission.viewBusinessDashboard,
+      Permission.manageSupervisors,
+    };
+    const ownerAndSupervisor = {
+      Permission.viewAllReports,
+      Permission.viewAuditTrail,
+    };
+    const supervisorOnly = {
+      // TEMPORARY: editPrices moves to the owner in the sprint 2 owner
+      // sign-in story.
+      Permission.editPrices,
+      Permission.requestPriceChange,
       Permission.closeOtherShifts,
       Permission.manageBackups,
       Permission.manageRooms,
-      Permission.editPrices,
       Permission.editSettings,
       Permission.manageUsers,
       Permission.manageHousekeepers,
       Permission.voidRecords,
       Permission.workWithoutShift,
-      Permission.approveRefund,
-      Permission.viewAllReports,
-      Permission.viewAuditTrail,
       Permission.manageInventoryItems,
       Permission.recordExpenses,
     };
-    const everyone = {
+    const desk = {
       Permission.openShift,
       Permission.closeShift,
       Permission.checkIn,
@@ -76,17 +96,42 @@ void main() {
       Permission.registerGuests,
       Permission.printReceipts,
     };
-    expect({...adminOnly, ...everyone}, Permission.values.toSet());
-    for (final p in adminOnly) {
-      expect(permissionMap[p], {Role.admin}, reason: '$p');
+    expect({
+      ...ownerOnly,
+      ...ownerAndSupervisor,
+      ...supervisorOnly,
+      ...desk,
+    }, Permission.values.toSet());
+    for (final p in ownerOnly) {
+      expect(permissionMap[p], {Role.owner}, reason: '$p');
     }
-    for (final p in everyone) {
-      expect(permissionMap[p], {Role.admin, Role.receptionist}, reason: '$p');
+    for (final p in ownerAndSupervisor) {
+      expect(permissionMap[p], {Role.owner, Role.supervisor}, reason: '$p');
+    }
+    for (final p in supervisorOnly) {
+      expect(permissionMap[p], {Role.supervisor}, reason: '$p');
+    }
+    for (final p in desk) {
+      expect(permissionMap[p], {
+        Role.supervisor,
+        Role.receptionist,
+      }, reason: '$p');
+    }
+  });
+
+  test('the owner works from the business view, never the desk', () {
+    for (final p in [
+      Permission.checkIn,
+      Permission.openShift,
+      Permission.payRefund,
+      Permission.workWithoutShift,
+    ]) {
+      expect(can(owner, p), isFalse, reason: '$p');
     }
   });
 
   test('a disabled user can do nothing', () {
-    final disabled = user(Role.admin, isActive: false);
+    final disabled = user(Role.supervisor, isActive: false);
     for (final p in Permission.values) {
       expect(can(disabled, p), isFalse, reason: '$p');
     }

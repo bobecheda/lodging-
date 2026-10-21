@@ -1,5 +1,13 @@
+/// Who a user is (BR-13). What each may do is only in the permission map
+/// (`permissions.dart`).
 enum Role {
-  admin,
+  /// The business view (sprint 2, on the phone). Not offered in any screen
+  /// yet.
+  owner,
+
+  /// Runs the desk: setup, staff, settings, shift oversight. Was `admin`
+  /// before schema v6.
+  supervisor,
   receptionist;
 
   static Role parse(String value) => values.firstWhere((r) => r.name == value);

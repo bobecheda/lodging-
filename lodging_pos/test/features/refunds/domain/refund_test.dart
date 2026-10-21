@@ -14,9 +14,18 @@ DateTime oct(int day, int hour, [int minute = 0]) =>
 
 const owner = UserAccount(
   id: 'owner',
-  fullName: 'Grace Owner',
+  fullName: 'Amina Owner',
   username: 'owner',
-  role: Role.admin,
+  role: Role.owner,
+  isActive: true,
+  mustChangePassword: false,
+);
+
+const supervisor = UserAccount(
+  id: 'supervisor',
+  fullName: 'Grace Supervisor',
+  username: 'supervisor',
+  role: Role.supervisor,
   isActive: true,
   mustChangePassword: false,
 );
@@ -81,24 +90,29 @@ void main() {
       expect(r.payout, isNull);
     });
 
-    test('a receptionist cannot approve or reject', () {
-      expect(
-        () => approveRefund(requested(), by: desk, at: oct(21, 16)),
-        throwsA(
-          isA<NotPermitted>().having(
-            (e) => e.permission,
-            'permission',
-            Permission.approveRefund,
+    test('a receptionist or a supervisor cannot approve or reject', () {
+      for (final user in [desk, supervisor]) {
+        expect(
+          () => approveRefund(requested(), by: user, at: oct(21, 16)),
+          throwsA(
+            isA<NotPermitted>().having(
+              (e) => e.permission,
+              'permission',
+              Permission.approveRefund,
+            ),
           ),
-        ),
-      );
-      expect(
-        () => rejectRefund(requested(), by: desk, note: 'No', at: oct(21, 16)),
-        throwsA(isA<NotPermitted>()),
-      );
+          reason: user.username,
+        );
+        expect(
+          () =>
+              rejectRefund(requested(), by: user, note: 'No', at: oct(21, 16)),
+          throwsA(isA<NotPermitted>()),
+          reason: user.username,
+        );
+      }
     });
 
-    test('the admin approves → "approved"', () {
+    test('the owner approves → "approved"', () {
       final r = approved();
       expect(r.status, RefundStatus.approved);
       expect(r.decision!.kind, RefundDecisionKind.approved);
@@ -106,7 +120,7 @@ void main() {
       expect(r.decision!.decidedAt, oct(21, 16));
     });
 
-    test('the admin rejects only with a reason', () {
+    test('the owner rejects only with a reason', () {
       for (final note in [null, '', '   ']) {
         expect(
           () =>
@@ -123,6 +137,31 @@ void main() {
       );
       expect(r.status, RefundStatus.rejected);
       expect(r.decision!.note, 'Guest damaged the bed');
+    });
+
+    test('nobody approves a refund they requested; rejecting it is '
+        'allowed', () {
+      // The owner can't request today; this guards the map changing later.
+      final own = Refund(
+        id: 'refund-2',
+        stayId: 'stay-2',
+        nights: 1,
+        pricePerNight: 700,
+        amount: 700,
+        requestedBy: owner.id,
+        requestedAt: oct(21, 15),
+      );
+      expect(
+        () => approveRefund(own, by: owner, at: oct(21, 16)),
+        violates('You requested this refund, so someone else must approve it.'),
+      );
+      final rejected = rejectRefund(
+        own,
+        by: owner,
+        note: 'Entered by mistake',
+        at: oct(21, 16),
+      );
+      expect(rejected.status, RefundStatus.rejected);
     });
 
     test('a refund is decided once', () {
@@ -180,7 +219,12 @@ void main() {
       expect(RefundTerms(nights: 3, pricePerNight: 700).amount, 2100);
     });
 
-    test('an admin can pay too; a Paybill payout needs an unused code', () {
+    test('a supervisor can pay too, the owner can\'t (not at the desk); a '
+        'Paybill payout needs an unused code', () {
+      expect(
+        () => pay(approved(), by: owner, shift: shift),
+        throwsA(isA<NotPermitted>()),
+      );
       expect(
         () => pay(approved(), shift: shift, method: PaymentMethod.paybill),
         throwsA(isA<InvalidMpesaCode>()),
@@ -197,13 +241,13 @@ void main() {
       );
       final r = pay(
         approved(),
-        by: owner,
+        by: supervisor,
         shift: shift,
         method: PaymentMethod.paybill,
         mpesaCode: ' sjk4h7xq2p ',
       );
       expect(r.payout!.mpesaCode, 'SJK4H7XQ2P');
-      expect(r.payout!.paidBy, 'owner');
+      expect(r.payout!.paidBy, 'supervisor');
     });
 
     test('requesting needs the requestRefund permission and nights to '

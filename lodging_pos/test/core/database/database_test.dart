@@ -36,7 +36,10 @@ void main() {
   // Direct inserts to test constraints, so they pass the stamped columns
   // explicitly. App code writes through writeWithAudit.
 
-  Future<String> user({String username = 'jane', String role = 'admin'}) async {
+  Future<String> user({
+    String username = 'jane',
+    String role = 'supervisor',
+  }) async {
     final id = newId();
     await db
         .into(db.users)
@@ -394,9 +397,15 @@ void main() {
       await expectLater(user(username: ' jane2'), _violates('CHECK'));
     });
 
-    test('role must be admin or receptionist', () async {
-      await expectLater(user(role: 'owner'), _violates('CHECK'));
-    });
+    test(
+      'role must be owner, supervisor or receptionist (v6: no admin)',
+      () async {
+        await expectLater(user(role: 'admin'), _violates('CHECK'));
+        await expectLater(user(role: 'manager'), _violates('CHECK'));
+        await user(username: 'amina', role: 'owner');
+        await user(username: 'mary', role: 'receptionist');
+      },
+    );
   });
 
   group('beds', () {

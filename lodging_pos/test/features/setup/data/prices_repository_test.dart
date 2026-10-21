@@ -16,13 +16,13 @@ import '../../../helpers/fixtures.dart';
 void main() {
   late TestEnv env;
   late PricesRepository prices;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
 
   setUp(() async {
     env = TestEnv();
     prices = PricesRepository(env.db, env.audit);
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
   });
   tearDown(() => env.close());
@@ -38,7 +38,7 @@ void main() {
   group('prices', () {
     test('saves only changed prices, one price.update row each with old and '
         'new', () async {
-      final changed = await prices.savePrices(owner, {
+      final changed = await prices.savePrices(supervisor, {
         SeedIds.deluxe: 750,
         SeedIds.vip: 1000, // unchanged
         SeedIds.normal: 550,
@@ -59,18 +59,18 @@ void main() {
       final deluxe = audit.firstWhere((a) => a.entityId == SeedIds.deluxe);
       expect(json(deluxe.beforeJson!)['price_per_night'], 700);
       expect(json(deluxe.afterJson)['price_per_night'], 750);
-      expect(deluxe.userId, owner.id);
+      expect(deluxe.userId, supervisor.id);
       expect(audit.map((a) => a.operationId).toSet(), hasLength(1));
     });
 
     test('nothing changed, nothing written', () async {
-      expect(await prices.savePrices(owner, {SeedIds.vip: 1000}), 0);
+      expect(await prices.savePrices(supervisor, {SeedIds.vip: 1000}), 0);
       expect(await env.auditFor('price.update'), isEmpty);
     });
 
     test('prices outside 1–100,000 are refused per category', () async {
       await expectLater(
-        prices.savePrices(owner, {SeedIds.vip: 0, SeedIds.deluxe: 100001}),
+        prices.savePrices(supervisor, {SeedIds.vip: 0, SeedIds.deluxe: 100001}),
         throwsA(
           isA<InvalidPrices>().having((e) => e.errors, 'errors', {
             SeedIds.vip: 'The price must be at least KES 1.',
@@ -103,7 +103,7 @@ void main() {
 
     test('a stay keeps its check-in price after a change (BR-3)', () async {
       final room = await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '3',
           floor: null,
@@ -112,8 +112,8 @@ void main() {
           bedBCategoryId: null,
         ),
       );
-      await env.checkIn(room.beds.single.id, by: owner);
-      await prices.savePrices(owner, {SeedIds.deluxe: 750});
+      await env.checkIn(room.beds.single.id, by: supervisor);
+      await prices.savePrices(supervisor, {SeedIds.deluxe: 750});
       final charge = await env.db.select(env.db.stayCharges).getSingle();
       expect(charge.pricePerNight, 700);
     });
@@ -122,7 +122,7 @@ void main() {
   group('categories', () {
     test('adds a category at the end, trimmed (category.create)', () async {
       final added = await prices.addCategory(
-        owner,
+        supervisor,
         name: '  Family ',
         pricePerNight: 900,
       );
@@ -138,7 +138,7 @@ void main() {
 
     test('a name in use (any case) or a bad price is refused', () async {
       await expectLater(
-        prices.addCategory(owner, name: 'deluxe', pricePerNight: 900),
+        prices.addCategory(supervisor, name: 'deluxe', pricePerNight: 900),
         throwsA(
           isA<CategoryRuleViolation>().having(
             (e) => e.message,
@@ -148,7 +148,7 @@ void main() {
         ),
       );
       await expectLater(
-        prices.addCategory(owner, name: 'Family', pricePerNight: 0),
+        prices.addCategory(supervisor, name: 'Family', pricePerNight: 0),
         throwsA(isA<CategoryRuleViolation>()),
       );
     });
@@ -157,7 +157,7 @@ void main() {
         'category they use', () async {
       final rooms = RoomsRepository(env.db, env.audit);
       final room = await rooms.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '3',
           floor: null,
@@ -166,14 +166,14 @@ void main() {
           bedBCategoryId: SeedIds.deluxe,
         ),
       );
-      await rooms.deactivateRoom(owner, room.id);
+      await rooms.deactivateRoom(supervisor, room.id);
 
       final deluxe = (await prices.categories()).firstWhere(
         (u) => u.category.id == SeedIds.deluxe,
       );
       expect(deluxe.activeBeds, 2);
       await expectLater(
-        prices.closeCategory(owner, SeedIds.deluxe),
+        prices.closeCategory(supervisor, SeedIds.deluxe),
         throwsA(
           isA<CategoryRuleViolation>().having(
             (e) => e.message,
@@ -185,10 +185,10 @@ void main() {
     });
 
     test('close and reopen an unused category (category.update)', () async {
-      await prices.closeCategory(owner, SeedIds.vip);
+      await prices.closeCategory(supervisor, SeedIds.vip);
       var vip = (await prices.categories()).first.category;
       expect(vip.isActive, isFalse);
-      await prices.reopenCategory(owner, SeedIds.vip);
+      await prices.reopenCategory(supervisor, SeedIds.vip);
       vip = (await prices.categories()).first.category;
       expect(vip.isActive, isTrue);
 
@@ -216,7 +216,7 @@ void main() {
         'new', () async {
       final current = await prices.settings();
       final changed = await prices.saveSettings(
-        owner,
+        supervisor,
         SettingsInput(
           lodgingName: current.lodgingName,
           checkoutTime: const ClockTime(9, 30),
@@ -231,19 +231,21 @@ void main() {
       expect((s.graceMinutes, s.receiptPrefix), ('45', 'SUN'));
 
       final audit = (await env.auditFor('settings.update'))
-          .where((a) => a.userId == owner.id && a.entityId != 'lodging_name')
+          .where(
+            (a) => a.userId == supervisor.id && a.entityId != 'lodging_name',
+          )
           .toList();
       expect(audit, hasLength(3));
       final grace = audit.firstWhere((a) => a.entityId == 'grace_minutes');
       expect(json(grace.beforeJson!)['value'], '60');
       expect(json(grace.afterJson)['value'], '45');
-      expect(json(grace.afterJson)['updated_by'], owner.id);
+      expect(json(grace.afterJson)['updated_by'], supervisor.id);
     });
 
     test('an invalid form is refused with every field error', () async {
       await expectLater(
         prices.saveSettings(
-          owner,
+          supervisor,
           const SettingsInput(
             lodgingName: ' ',
             checkoutTime: ClockTime(15, 0),

@@ -31,7 +31,7 @@ void main() {
   });
 
   test('a stored value wins over the default', () async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     expect(await settings.value('lodging_name'), 'Sunrise Lodge');
   });
 

@@ -96,25 +96,25 @@ void main() {
         isNull,
       );
       expect(
-        closedByLine(closer: 'Grace Owner', owner: 'Mary Wanjiku'),
-        'closed by Grace Owner for Mary Wanjiku’s shift',
+        closedByLine(closer: 'Grace Supervisor', owner: 'Mary Wanjiku'),
+        'closed by Grace Supervisor for Mary Wanjiku’s shift',
       );
     });
   });
 
   group('who may close a shift (BR-13)', () {
     final desk = user('mary', Role.receptionist);
-    final owner = user('grace', Role.admin);
+    final supervisor = user('grace', Role.supervisor);
 
     test('your own: anyone with closeShift', () {
       expect(mayCloseShift(desk, shiftUserId: 'mary'), isTrue);
-      expect(mayCloseShift(owner, shiftUserId: 'grace'), isTrue);
+      expect(mayCloseShift(supervisor, shiftUserId: 'grace'), isTrue);
     });
 
-    test('someone else’s: closeOtherShifts (admin for now)', () {
-      expect(mayCloseShift(owner, shiftUserId: 'mary'), isTrue);
+    test('someone else’s: closeOtherShifts (supervisor for now)', () {
+      expect(mayCloseShift(supervisor, shiftUserId: 'mary'), isTrue);
       expect(mayCloseShift(desk, shiftUserId: 'tom'), isFalse);
-      expect(can(owner, Permission.closeOtherShifts), isTrue);
+      expect(can(supervisor, Permission.closeOtherShifts), isTrue);
       expect(can(desk, Permission.closeOtherShifts), isFalse);
     });
   });

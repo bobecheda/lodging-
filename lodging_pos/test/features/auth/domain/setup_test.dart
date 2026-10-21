@@ -3,8 +3,8 @@ import 'package:lodging_pos/features/auth/domain/setup.dart';
 
 void main() {
   const valid = SetupInput(
-    fullName: 'Grace Owner',
-    username: 'Owner',
+    fullName: 'Grace Supervisor',
+    username: 'Supervisor',
     password: 'longenough',
     confirmPassword: 'longenough',
     lodgingName: 'Sunrise Lodge',
@@ -58,13 +58,13 @@ void main() {
   test('normalizes what gets saved', () {
     final saved = valid
         .copyWith(
-          fullName: '  Grace Owner ',
-          username: '  Owner ',
+          fullName: '  Grace Supervisor ',
+          username: '  Supervisor ',
           lodgingName: ' Sunrise Lodge  ',
         )
         .normalized();
-    expect(saved.fullName, 'Grace Owner');
-    expect(saved.username, 'owner');
+    expect(saved.fullName, 'Grace Supervisor');
+    expect(saved.username, 'supervisor');
     expect(saved.lodgingName, 'Sunrise Lodge');
     expect(saved.password, 'longenough');
   });

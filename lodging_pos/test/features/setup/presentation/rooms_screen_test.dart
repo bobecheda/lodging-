@@ -13,11 +13,11 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
 
   setUp(() async {
     env = TestEnv();
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
@@ -25,7 +25,7 @@ void main() {
 
   Future<RoomSummary> seedRoom(String number, {bool twoBeds = true}) =>
       rooms().createRoom(
-        owner,
+        supervisor,
         NewRoom(
           number: number,
           floor: 'Ground',
@@ -38,8 +38,8 @@ void main() {
   /// Signs in as the owner and opens Rooms & beds from the sidebar.
   Future<ProviderContainer> openRooms(WidgetTester tester) async {
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
-    expect(find.text('SETUP · OWNER ONLY'), findsOneWidget);
+    await signInAs(tester, 'supervisor', 'super-pass');
+    expect(find.text('SETUP · SUPERVISOR'), findsOneWidget);
     await tapKey(tester, 'nav.${Routes.adminRooms}');
     expect(locationOf(app), Routes.adminRooms);
     return app;
@@ -116,7 +116,7 @@ void main() {
     tester,
   ) async {
     final room = await seedRoom('5');
-    await env.checkIn(room.beds.last.id, by: owner);
+    await env.checkIn(room.beds.last.id, by: supervisor);
     await openRooms(tester);
     await tapKey(tester, 'rooms.edit.5');
 

@@ -34,7 +34,7 @@ enum Permission {
   viewOwnReport,
 
   /// Find, register and correct guests (FD-3). Exporting guest data will be
-  /// a separate admin-only permission.
+  /// a separate permission.
   registerGuests,
 
   /// Find receipts and print or save them; after the first, they print as
@@ -42,47 +42,77 @@ enum Permission {
   printReceipts,
 
   /// Close someone else's shift with a cash count (FD-11), e.g. one left
-  /// open by a receptionist who went home. Admin only for now; a
+  /// open by a receptionist who went home. Supervisor only for now; a
   /// receptionist "handover close" later only needs this map changed.
   closeOtherShifts,
 
   /// "Back up now" and the backup folders on the Backups card. The daily
   /// backups themselves run for everyone, signed in or not.
   manageBackups,
+
+  // The owner's business view (sprint 2). Mapped now; their screens and
+  // flows are separate stories.
+
+  /// Ask the owner to change a category's price (BR-2).
+  requestPriceChange,
+
+  /// Approve or reject a requested price change (BR-2).
+  decidePriceChange,
+
+  /// The owner's dashboard: takings, beds, alerts, profit.
+  viewBusinessDashboard,
+
+  /// Create, reset and disable supervisors.
+  manageSupervisors,
 }
 
-const _adminOnly = {Role.admin};
-const _everyone = {Role.admin, Role.receptionist};
+const _ownerOnly = {Role.owner};
+const _supervisorOnly = {Role.supervisor};
+const _ownerAndSupervisor = {Role.owner, Role.supervisor};
+
+/// The front desk: supervisors and receptionists. The owner works from the
+/// business view, not the desk.
+const _desk = {Role.supervisor, Role.receptionist};
 
 /// Who may do what. The only place roles are named for access.
 const permissionMap = <Permission, Set<Role>>{
-  Permission.manageRooms: _adminOnly,
-  Permission.editPrices: _adminOnly,
-  Permission.editSettings: _adminOnly,
-  Permission.manageUsers: _adminOnly,
-  Permission.manageHousekeepers: _adminOnly,
-  Permission.voidRecords: _adminOnly,
-  Permission.approveRefund: _adminOnly,
-  Permission.viewAllReports: _adminOnly,
-  Permission.viewAuditTrail: _adminOnly,
-  Permission.manageInventoryItems: _adminOnly,
-  Permission.recordExpenses: _adminOnly,
-  Permission.workWithoutShift: _adminOnly,
-  Permission.closeOtherShifts: _adminOnly,
-  Permission.manageBackups: _adminOnly,
-  Permission.openShift: _everyone,
-  Permission.closeShift: _everyone,
-  Permission.checkIn: _everyone,
-  Permission.extendStay: _everyone,
-  Permission.checkOut: _everyone,
-  Permission.requestRefund: _everyone,
-  Permission.payRefund: _everyone,
-  Permission.assignHousekeeping: _everyone,
-  Permission.markClean: _everyone,
-  Permission.recordStock: _everyone,
-  Permission.viewOwnReport: _everyone,
-  Permission.registerGuests: _everyone,
-  Permission.printReceipts: _everyone,
+  // The owner: money decisions and the business view.
+  Permission.approveRefund: _ownerOnly,
+  Permission.decidePriceChange: _ownerOnly,
+  Permission.viewBusinessDashboard: _ownerOnly,
+  Permission.manageSupervisors: _ownerOnly,
+  Permission.viewAllReports: _ownerAndSupervisor,
+  Permission.viewAuditTrail: _ownerAndSupervisor,
+  // TEMPORARY: moves to owner + requestPriceChange in the sprint 2 owner
+  // sign-in story (prd.md, BR-2). Until the owner can sign in, the
+  // supervisor sets prices and adds or closes categories.
+  Permission.editPrices: _supervisorOnly,
+  // The supervisor: setup, staff, settings, shift oversight.
+  Permission.requestPriceChange: _supervisorOnly,
+  Permission.manageRooms: _supervisorOnly,
+  Permission.editSettings: _supervisorOnly,
+  Permission.manageUsers: _supervisorOnly,
+  Permission.manageHousekeepers: _supervisorOnly,
+  Permission.voidRecords: _supervisorOnly,
+  Permission.manageInventoryItems: _supervisorOnly,
+  Permission.recordExpenses: _supervisorOnly,
+  Permission.workWithoutShift: _supervisorOnly,
+  Permission.closeOtherShifts: _supervisorOnly,
+  Permission.manageBackups: _supervisorOnly,
+  // The front desk.
+  Permission.openShift: _desk,
+  Permission.closeShift: _desk,
+  Permission.checkIn: _desk,
+  Permission.extendStay: _desk,
+  Permission.checkOut: _desk,
+  Permission.requestRefund: _desk,
+  Permission.payRefund: _desk,
+  Permission.assignHousekeeping: _desk,
+  Permission.markClean: _desk,
+  Permission.recordStock: _desk,
+  Permission.viewOwnReport: _desk,
+  Permission.registerGuests: _desk,
+  Permission.printReceipts: _desk,
 };
 
 /// Whether [user] may do [permission]. A disabled user may do nothing.

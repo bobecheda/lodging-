@@ -52,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       setState(() {
         _error = switch (result.outcome) {
           LoginOutcome.disabled =>
-            'This account is disabled. Ask the owner to enable it.',
+            'This account is disabled. Ask the supervisor to enable it.',
           _ => 'Wrong username or password. Try again.',
         };
       });
@@ -71,12 +71,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return SplitGateLayout(
       title: notice == null ? 'Sign in' : 'Screen locked',
       subtitle: notice == null
-          ? 'Use the username and password the owner gave you.'
+          ? 'Use the username and password the supervisor gave you.'
           : shiftOpen
           ? 'The open shift is kept. Sign in to carry on.'
           : 'Sign in to carry on.',
       above: notice == null ? null : _LockChip(notice),
-      footer: 'Forgot your password? Ask the owner to reset it.',
+      footer: 'Forgot your password? Ask the supervisor to reset it.',
       children: [
         LabeledField(
           label: 'Username',

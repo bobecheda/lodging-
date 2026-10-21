@@ -22,7 +22,7 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late RoomsRepository rooms;
   late ShiftRepository shifts;
@@ -31,7 +31,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     rooms = RoomsRepository(env.db, env.audit);
     shifts = ShiftRepository(env.db, env.audit);
@@ -43,7 +43,7 @@ void main() {
   /// Room [number]: Bed A Deluxe (700), Bed B Comfort (600) if [twoBeds].
   Future<RoomSummary> room(String number, {bool twoBeds = true}) =>
       rooms.createRoom(
-        owner,
+        supervisor,
         NewRoom(
           number: number,
           floor: null,
@@ -186,7 +186,7 @@ void main() {
       await PricesRepository(
         env.db,
         env.audit,
-      ).savePrices(owner, {SeedIds.deluxe: 750});
+      ).savePrices(supervisor, {SeedIds.deluxe: 750});
       final charge = await env.db.select(env.db.stayCharges).getSingle();
       expect((charge.pricePerNight, charge.categoryName), (700, 'Deluxe'));
     });
@@ -297,8 +297,8 @@ void main() {
       await openDeskShift();
       final r7 = await room('7');
       final r8 = await room('8', twoBeds: false);
-      await rooms.deactivateBed(owner, r7.beds.last.id);
-      await rooms.deactivateRoom(owner, r8.id);
+      await rooms.deactivateBed(supervisor, r7.beds.last.id);
+      await rooms.deactivateRoom(supervisor, r8.id);
       final guest = await grace();
       for (final bed in [r7.beds.last, r8.beds.single]) {
         await expectLater(
@@ -320,18 +320,26 @@ void main() {
       final r7 = await room('7');
       final guest = await grace();
       await expectLater(
-        checkIn([r7.beds.first], guest: ReturningGuest(guest.id), by: owner),
+        checkIn(
+          [r7.beds.first],
+          guest: ReturningGuest(guest.id),
+          by: supervisor,
+        ),
         throwsA(isA<NoOpenShift>()),
       );
       expect(await count(env.db.payments), 0);
     });
 
-    test('an admin can’t take money into a receptionist’s shift', () async {
+    test('a supervisor can’t take money into a receptionist’s shift', () async {
       await openDeskShift();
       final r7 = await room('7');
       final guest = await grace();
       await expectLater(
-        checkIn([r7.beds.first], guest: ReturningGuest(guest.id), by: owner),
+        checkIn(
+          [r7.beds.first],
+          guest: ReturningGuest(guest.id),
+          by: supervisor,
+        ),
         throwsA(isA<NoOpenShift>()),
       );
     });
@@ -449,7 +457,7 @@ void main() {
       final r7 = await room('7');
       // Registered with Ann's passport after the form was filled in.
       await guests.register(
-        owner,
+        supervisor,
         const GuestForm(
           fullName: 'Someone Else',
           phone: '0733000000',
@@ -475,7 +483,7 @@ void main() {
       await openDeskShift();
       final r7 = await room('7');
       final family = await guests.register(
-        owner,
+        supervisor,
         const GuestForm(
           fullName: 'Peter Wambui',
           phone: '0711000111',
@@ -523,7 +531,7 @@ void main() {
       await PricesRepository(
         env.db,
         env.audit,
-      ).savePrices(owner, {SeedIds.deluxe: 750});
+      ).savePrices(supervisor, {SeedIds.deluxe: 750});
       await expectLater(
         repo.checkIn(desk, request),
         throwsA(
@@ -577,8 +585,8 @@ void main() {
       final r7 = await room('7');
       final r8 = await room('8', twoBeds: false);
       final r9 = await room('9', twoBeds: false);
-      await rooms.deactivateBed(owner, r7.beds.last.id);
-      await rooms.deactivateRoom(owner, r9.id);
+      await rooms.deactivateBed(supervisor, r7.beds.last.id);
+      await rooms.deactivateRoom(supervisor, r9.id);
       await env.checkIn(r8.beds.single.id, by: desk);
 
       final list = await repo.watchRooms().first;
@@ -614,7 +622,7 @@ void main() {
       expect(await repo.watchCheckoutTime().first, const ClockTime(10, 0));
       await env.audit.writeWithAudit(
         action: 'settings.update',
-        userId: owner.id,
+        userId: supervisor.id,
         body: (w) => w.update(
           env.db.settings,
           'checkout_time',

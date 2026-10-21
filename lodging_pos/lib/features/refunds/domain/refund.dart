@@ -1,7 +1,7 @@
 /// Refunds of unused prepaid nights (BR-8, BR-8a, BR-8b). Pure Dart.
 ///
-/// requested ──(admin approves)──► approved ──(payout)──► paid
-///     └──────(admin rejects + reason)──► rejected
+/// requested ──(owner approves)──► approved ──(payout)──► paid
+///     └──────(owner rejects + reason)──► rejected
 ///
 /// The status is derived from the decision and payout, never stored. The
 /// amount is set from the stay rules at checkout and nothing here can change
@@ -147,7 +147,9 @@ void _requireUndecided(Refund refund) {
   }
 }
 
-/// BR-8a: approves [refund] as requested; the amount can't be changed.
+/// BR-8a: approves [refund] as requested; the amount can't be changed. The
+/// user who requested it can't approve it (rejecting it is allowed: no
+/// money goes out).
 Refund approveRefund(
   Refund refund, {
   required UserAccount by,
@@ -155,6 +157,11 @@ Refund approveRefund(
 }) {
   requirePermission(by, Permission.approveRefund);
   _requireUndecided(refund);
+  if (refund.requestedBy == by.id) {
+    throw const RefundRuleViolation(
+      'You requested this refund, so someone else must approve it.',
+    );
+  }
   return refund._with(
     decision: RefundDecision(
       kind: RefundDecisionKind.approved,

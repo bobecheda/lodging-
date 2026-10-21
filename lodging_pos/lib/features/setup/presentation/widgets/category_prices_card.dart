@@ -85,7 +85,7 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
       if (mounted) setState(() => _errors = e.errors);
     } on NotPermitted {
       if (mounted) {
-        setState(() => _error = 'Only the owner can change prices.');
+        setState(() => _error = 'Only the supervisor can change prices.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

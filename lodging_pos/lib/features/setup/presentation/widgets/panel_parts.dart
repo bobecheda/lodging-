@@ -55,7 +55,7 @@ List<DropdownOption<String>> categoryOptions(
 String? panelError(Object error) => switch (error) {
   InvalidRoom() => null,
   RoomRuleViolation(:final message) => message,
-  NotPermitted() => 'Only the owner can change rooms and beds.',
+  NotPermitted() => 'Only the supervisor can change rooms and beds.',
   _ => 'Could not save: $error',
 };
 

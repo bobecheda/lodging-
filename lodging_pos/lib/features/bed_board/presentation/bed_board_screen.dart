@@ -219,7 +219,7 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
               ? const Align(
                   alignment: Alignment.topCenter,
                   child: Note.info(
-                    'No rooms yet. The owner adds them in Setup → Rooms & '
+                    'No rooms yet. The supervisor adds them in Setup → Rooms & '
                     'beds.',
                   ),
                 )

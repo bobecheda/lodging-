@@ -19,7 +19,11 @@ UserAccount account(
 );
 
 void main() {
-  final owner = account('owner', 'Grace Owner', role: Role.admin);
+  final supervisor = account(
+    'supervisor',
+    'Grace Supervisor',
+    role: Role.supervisor,
+  );
   final mary = account('mary', 'Mary Wanjiku');
 
   group('validateNewReceptionist', () {
@@ -77,16 +81,21 @@ void main() {
   group('account actions', () {
     test('nobody disables or resets their own account here', () {
       expect(
-        accountActionBlocker(actor: owner, target: owner),
+        accountActionBlocker(actor: supervisor, target: supervisor),
         "You can't change your own account here.",
       );
-      expect(accountActionBlocker(actor: owner, target: mary), isNull);
+      expect(accountActionBlocker(actor: supervisor, target: mary), isNull);
     });
 
-    test('the owner account is not managed from this list', () {
-      final other = account('o2', 'Other Admin', role: Role.admin);
+    test('a supervisor or the owner is not managed from this list', () {
+      final other = account('s2', 'Other Supervisor', role: Role.supervisor);
       expect(
-        accountActionBlocker(actor: owner, target: other),
+        accountActionBlocker(actor: supervisor, target: other),
+        "A supervisor's account can't be changed here.",
+      );
+      final owner = account('o1', 'Amina Owner', role: Role.owner);
+      expect(
+        accountActionBlocker(actor: supervisor, target: owner),
         "The owner's account can't be changed here.",
       );
     });

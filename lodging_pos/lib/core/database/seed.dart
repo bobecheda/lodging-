@@ -50,7 +50,7 @@ Future<void> insertMissingSettings(
 ///
 /// Seed rows bypass writeWithAudit, so they pass the stamped columns
 /// explicitly and have no audit_log or outbox rows. No user is seeded: the
-/// first-run setup screen creates the admin.
+/// first-run setup screen creates the supervisor.
 Future<void> seedV1(
   AppDatabase db, {
   required String deviceId,

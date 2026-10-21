@@ -20,6 +20,7 @@ import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
+import 'generated/schema_v6.dart' as v6;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -107,7 +108,7 @@ void main() {
         createdAt: t,
         updatedAt: t,
         deviceId: dev,
-        fullName: 'Grace Owner',
+        fullName: 'Grace Supervisor',
         username: 'owner',
         passwordHash: 'not-a-real-hash',
         role: 'admin',
@@ -121,7 +122,7 @@ void main() {
         createdAt: t,
         updatedAt: t,
         deviceId: dev,
-        fullName: 'Grace Owner',
+        fullName: 'Grace Supervisor',
         username: 'owner',
         passwordHash: 'not-a-real-hash',
         role: 'admin',
@@ -546,7 +547,7 @@ void main() {
       createdAt: t,
       updatedAt: t,
       deviceId: dev,
-      fullName: 'Grace Owner',
+      fullName: 'Grace Supervisor',
       username: 'owner',
       passwordHash: 'not-a-real-hash',
       role: 'admin',
@@ -771,8 +772,83 @@ void main() {
     );
   });
 
+  test(
+    'migration from v5 to v6: the admin becomes the supervisor, nothing '
+    'else about the users changes; owner is allowed, admin no longer',
+    () async {
+      const deskUser = 'user-desk';
+      final users = [
+        for (final (id, name, role) in const [
+          (admin, 'grace', 'admin'),
+          (deskUser, 'mary', 'receptionist'),
+        ])
+          v5.UsersData(
+            id: id,
+            createdAt: t,
+            updatedAt: later,
+            deviceId: dev,
+            fullName: name,
+            username: name,
+            passwordHash: 'not-a-real-hash',
+            role: role,
+            isActive: 1,
+            mustChangePassword: 0,
+          ),
+      ];
+
+      await verifier.testWithDataIntegrity(
+        oldVersion: 5,
+        newVersion: 6,
+        createOld: v5.DatabaseAtV5.new,
+        createNew: v6.DatabaseAtV6.new,
+        openTestedDatabase: open,
+        createItems: (batch, oldDb) => batch.insertAll(oldDb.users, users),
+        validateItems: (newDb) async {
+          final rows = await (newDb.select(
+            newDb.users,
+          )..orderBy([(x) => OrderingTerm.asc(x.id)])).get();
+          // Same timestamps: the rebuild copies rows, no UPDATE runs.
+          expect(rows, [
+            for (final (id, name, role) in const [
+              (admin, 'grace', 'supervisor'),
+              (deskUser, 'mary', 'receptionist'),
+            ])
+              v6.UsersData(
+                id: id,
+                createdAt: t,
+                updatedAt: later,
+                deviceId: dev,
+                fullName: name,
+                username: name,
+                passwordHash: 'not-a-real-hash',
+                role: role,
+                isActive: 1,
+                mustChangePassword: 0,
+              ),
+          ]);
+          Future<void> insert(String id, String role) => newDb.customStatement(
+            'INSERT INTO users (id, created_at, updated_at, device_id, '
+            'full_name, username, password_hash, role, is_active, '
+            'must_change_password) '
+            "VALUES ('$id', '$t', '$t', '$dev', '$id', '$id', 'x', '$role', "
+            '1, 0)',
+          );
+          await insert('amina', 'owner');
+          await expectLater(insert('old', 'admin'), throwsA(anything));
+          // The users' trigger is back after the rebuild.
+          await expectLater(
+            newDb.customStatement(
+              "UPDATE users SET full_name = 'x' WHERE id = '$deskUser'",
+            ),
+            throwsA(anything),
+          );
+        },
+      );
+    },
+  );
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4]) {
+    for (final from in [1, 2, 3, 4, 5]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -797,18 +873,19 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          5,
+          6,
         );
         final objects = await db
             .customSelect(
               'SELECT name FROM sqlite_master '
-              "WHERE tbl_name IN ('stay_charges', 'stays') "
+              "WHERE tbl_name IN ('stay_charges', 'stays', 'users') "
               "AND type IN ('trigger', 'index') AND sql IS NOT NULL",
             )
             .get();
         expect(
           {for (final r in objects) r.read<String>('name')},
           {
+            'users_stamped_update',
             'stay_charges_stamped_update',
             'stay_charges_no_delete',
             'stay_charges_stay',

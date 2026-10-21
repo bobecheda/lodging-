@@ -59,7 +59,7 @@ class _HousekeepersCardState extends ConsumerState<HousekeepersCard> {
       if (mounted) setState(() => _error = e.message);
     } on NotPermitted {
       if (mounted) {
-        setState(() => _error = 'Only the owner can manage housekeepers.');
+        setState(() => _error = 'Only the supervisor can manage housekeepers.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

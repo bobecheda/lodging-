@@ -18,8 +18,8 @@ String? _nameError(String name, String empty) {
 
 // ── Users ────────────────────────────────────────────────────────────────
 
-/// The "Add a receptionist" form. The admin can add receptionists only: the
-/// lodging has one admin, made at first-run setup.
+/// The "Add a receptionist" form. The supervisor can add receptionists
+/// only: the lodging has one supervisor, made at first-run setup.
 final class NewReceptionist {
   const NewReceptionist({
     required this.fullName,
@@ -74,15 +74,18 @@ final class UserSummary {
 
 /// Why [actor] can't reset, disable or enable [target], or null. Nobody
 /// changes their own account here, and an account that can itself manage
-/// users (the owner today) isn't managed from this list (BR-13: decided by
-/// permission, not role).
+/// users or supervisors (a supervisor, the owner) isn't managed from this
+/// list (BR-13: decided by permission, not role).
 String? accountActionBlocker({
   required UserAccount actor,
   required UserAccount target,
 }) {
   if (actor.id == target.id) return "You can't change your own account here.";
-  if (can(target, Permission.manageUsers)) {
+  if (can(target, Permission.manageSupervisors)) {
     return "The owner's account can't be changed here.";
+  }
+  if (can(target, Permission.manageUsers)) {
+    return "A supervisor's account can't be changed here.";
   }
   return null;
 }

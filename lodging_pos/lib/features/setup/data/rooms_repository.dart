@@ -9,7 +9,7 @@ import '../domain/bed_category.dart';
 import '../domain/rooms.dart';
 
 /// Rooms and beds (AD-2). Every write takes the acting user and throws
-/// [NotPermitted] without [Permission.manageRooms] (the owner today). Rooms
+/// [NotPermitted] without [Permission.manageRooms] (the supervisor). Rooms
 /// and beds are deactivated, never deleted; every rule check runs inside the
 /// write's transaction.
 class RoomsRepository {
@@ -43,11 +43,11 @@ class RoomsRepository {
 
   /// Creates a room with bed A and optionally bed B, both clean:
   /// `room.create` + `bed.create` per bed, one operation.
-  Future<RoomSummary> createRoom(UserAccount admin, NewRoom input) async {
-    requirePermission(admin, Permission.manageRooms);
+  Future<RoomSummary> createRoom(UserAccount supervisor, NewRoom input) async {
+    requirePermission(supervisor, Permission.manageRooms);
     final roomId = await _audit.writeWithAudit(
       action: 'room.create',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         final errors = validateNewRoom(
           input,
@@ -85,11 +85,11 @@ class RoomsRepository {
   /// `bed.update` per bed whose category changed, one operation. A category
   /// change affects new check-ins only: stays keep the price they locked.
   Future<RoomSummary> updateRoom(
-    UserAccount admin,
+    UserAccount supervisor,
     String roomId,
     RoomEdit edit,
   ) async {
-    requirePermission(admin, Permission.manageRooms);
+    requirePermission(supervisor, Permission.manageRooms);
     final numberProblem = roomNumberError(edit.number);
     if (numberProblem != null) {
       throw InvalidRoom({RoomField.number: numberProblem});
@@ -113,7 +113,7 @@ class RoomsRepository {
 
     await _audit.writeWithAudit(
       action: 'room.update',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         if (roomChanged) {
           if (number != before.number) await _requireFreeNumber(number);
@@ -150,14 +150,14 @@ class RoomsRepository {
 
   /// Adds bed B (clean) to a room that has only bed A (`bed.create`).
   Future<RoomSummary> addBed(
-    UserAccount admin,
+    UserAccount supervisor,
     String roomId,
     String categoryId,
   ) async {
-    requirePermission(admin, Permission.manageRooms);
+    requirePermission(supervisor, Permission.manageRooms);
     await _audit.writeWithAudit(
       action: 'bed.create',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         _block(addBedBlocker(await room(roomId)));
         if (!(await _activeCategoryIds()).contains(categoryId)) {
@@ -173,12 +173,15 @@ class RoomsRepository {
 
   /// Closes a bed for repairs (`bed.deactivate`). Blocked while it has a
   /// guest, or when it is an open room's last active bed.
-  Future<RoomSummary> deactivateBed(UserAccount admin, String bedId) async {
-    requirePermission(admin, Permission.manageRooms);
+  Future<RoomSummary> deactivateBed(
+    UserAccount supervisor,
+    String bedId,
+  ) async {
+    requirePermission(supervisor, Permission.manageRooms);
     final roomId = await _roomIdOf(bedId);
     await _audit.writeWithAudit(
       action: 'bed.deactivate',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         final current = await room(roomId);
         final bed = current.beds.firstWhere((b) => b.id == bedId);
@@ -189,7 +192,7 @@ class RoomsRepository {
           const BedsCompanion(isActive: Value(false)),
         );
         // FD-9: closing cancels its cleaning; the bed stays not cleaned.
-        await cancelOpenCleaning(_db, w, [bedId], admin.id);
+        await cancelOpenCleaning(_db, w, [bedId], supervisor.id);
       },
     );
     return room(roomId);
@@ -197,12 +200,15 @@ class RoomsRepository {
 
   /// Reopens a bed after repairs (`bed.reactivate`). It comes back
   /// `not_cleaned`, so cleaning is assigned before the first guest.
-  Future<RoomSummary> reactivateBed(UserAccount admin, String bedId) async {
-    requirePermission(admin, Permission.manageRooms);
+  Future<RoomSummary> reactivateBed(
+    UserAccount supervisor,
+    String bedId,
+  ) async {
+    requirePermission(supervisor, Permission.manageRooms);
     final roomId = await _roomIdOf(bedId);
     await _audit.writeWithAudit(
       action: 'bed.reactivate',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         final bed = (await room(roomId)).beds.firstWhere((b) => b.id == bedId);
         if (bed.isActive) {
@@ -223,11 +229,14 @@ class RoomsRepository {
 
   /// Closes a room for repairs (`room.deactivate`); it leaves the bed board.
   /// Blocked while any of its beds has a guest.
-  Future<RoomSummary> deactivateRoom(UserAccount admin, String roomId) async {
-    requirePermission(admin, Permission.manageRooms);
+  Future<RoomSummary> deactivateRoom(
+    UserAccount supervisor,
+    String roomId,
+  ) async {
+    requirePermission(supervisor, Permission.manageRooms);
     await _audit.writeWithAudit(
       action: 'room.deactivate',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         final current = await room(roomId);
         _block(deactivateRoomBlocker(current));
@@ -239,7 +248,7 @@ class RoomsRepository {
         // FD-9: closing cancels its beds' cleaning; they stay not cleaned.
         await cancelOpenCleaning(_db, w, [
           for (final b in current.beds) b.id,
-        ], admin.id);
+        ], supervisor.id);
       },
     );
     return room(roomId);
@@ -247,11 +256,14 @@ class RoomsRepository {
 
   /// Reopens a room after repairs (`room.reactivate`). Its active beds come
   /// back `not_cleaned`, recorded in the same operation.
-  Future<RoomSummary> reactivateRoom(UserAccount admin, String roomId) async {
-    requirePermission(admin, Permission.manageRooms);
+  Future<RoomSummary> reactivateRoom(
+    UserAccount supervisor,
+    String roomId,
+  ) async {
+    requirePermission(supervisor, Permission.manageRooms);
     await _audit.writeWithAudit(
       action: 'room.reactivate',
-      userId: admin.id,
+      userId: supervisor.id,
       body: (w) async {
         final current = await room(roomId);
         _block(reactivateRoomBlocker(current));

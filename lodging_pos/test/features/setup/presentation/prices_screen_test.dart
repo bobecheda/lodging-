@@ -14,11 +14,11 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
 
   setUp(() async {
     env = TestEnv();
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
@@ -27,7 +27,7 @@ void main() {
   /// Signs in as the owner and opens Prices & settings from the sidebar.
   Future<ProviderContainer> openPrices(WidgetTester tester) async {
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'nav.${Routes.adminPrices}');
     expect(locationOf(app), Routes.adminPrices);
     return app;
@@ -45,7 +45,7 @@ void main() {
     tester,
   ) async {
     await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '3',
         floor: null,
@@ -132,7 +132,7 @@ void main() {
   testWidgets('Close is disabled with the reason while beds use a category; '
       'an unused one closes and reopens', (tester) async {
     await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '3',
         floor: null,

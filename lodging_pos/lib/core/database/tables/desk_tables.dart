@@ -35,7 +35,7 @@ class Guests extends Table with SyncedColumns {
 
 /// Close fields (expected_*, counted_cash, variance) are set on close
 /// (FD-11). Since v5 also the blind first count, a note, and who closed it
-/// (the owner may close someone else's). A closed shift never changes
+/// (a supervisor may close someone else's). A closed shift never changes
 /// again (trigger `shifts_closed_final`).
 @DataClassName('ShiftRow')
 @TableIndex.sql(
@@ -96,7 +96,7 @@ class Stays extends Table with SyncedColumns {
   TextColumn get checkedOutBy => text().nullable().references(Users, #id)();
 
   // v3: the room number and bed label at check-in, so a receipt still says
-  // what was let after the owner renumbers a room (AD-2).
+  // what was let after the supervisor renumbers a room (AD-2).
   TextColumn get roomNumber => text()();
   TextColumn get bedLabel => text().check(bedLabel.isIn(['A', 'B']))();
 

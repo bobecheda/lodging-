@@ -17,7 +17,7 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late ExtendRepository repo;
   late String stayId;
@@ -25,7 +25,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 15, 19)); // Thu 19:00
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     await ShiftRepository(
       env.db,
@@ -33,7 +33,7 @@ void main() {
     ).openShift(user: desk, openingFloat: 0);
     repo = ExtendRepository(env.db, env.audit);
     final room = await RoomsRepository(env.db, env.audit).createRoom(
-      owner,
+      supervisor,
       const NewRoom(
         number: '5',
         floor: null,
@@ -157,7 +157,7 @@ void main() {
   });
 
   test('BR-12: your own open shift; a closed stay can’t be extended', () async {
-    await expectLater(extend(1, by: owner), throwsA(isA<NoOpenShift>()));
+    await expectLater(extend(1, by: supervisor), throwsA(isA<NoOpenShift>()));
     await env.checkOut(stayId, by: desk);
     await expectLater(
       extend(1),

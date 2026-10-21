@@ -10,7 +10,9 @@ import '../data/user_repository.dart';
 import '../domain/setup.dart';
 import 'auth_providers.dart';
 
-/// First run only: creates the owner's account and names the lodging.
+/// First run only: creates the supervisor's account and names the
+/// lodging. (Sprint 2: first run creates the owner, who then creates the
+/// supervisor; prd.md, open items.)
 /// Unreachable once any user exists (see the router).
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
@@ -53,7 +55,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
     setState(() => _busy = true);
     try {
-      await ref.read(userRepositoryProvider).createFirstAdmin(_input);
+      await ref.read(userRepositoryProvider).createFirstSupervisor(_input);
       _done();
     } on SetupAlreadyDone {
       _done();
@@ -93,8 +95,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   Widget build(BuildContext context) => SplitGateLayout(
     title: 'Set up this lodging',
-    subtitle:
-        "Create the owner's account. You can add receptionists afterwards.",
+    subtitle: "Create the supervisor's account. You can add receptionists afterwards.",
     children: [
       _field(
         SetupField.lodgingName,
@@ -118,7 +119,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       if (_formError != null) ...[Note.error(_formError!), formGap],
       AppButton.primary(
         key: const ValueKey('setup.submit'),
-        label: 'Create owner account',
+        label: 'Create supervisor account',
         large: true,
         busy: _busy,
         onPressed: _submit,

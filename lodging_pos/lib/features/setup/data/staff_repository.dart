@@ -22,7 +22,7 @@ class InvalidHousekeeper implements Exception {
   final Map<HousekeeperField, String> errors;
 }
 
-/// A staff rule refused the change; [message] is shown to the owner.
+/// A staff rule refused the change; [message] is shown to the supervisor.
 class StaffRuleViolation implements Exception {
   const StaffRuleViolation(this.message);
   final String message;
@@ -44,7 +44,7 @@ class StaffRepository {
 
   // ── Users ──────────────────────────────────────────────────────────────
 
-  /// Everyone who signs in: the owner first, then active users by name, then
+  /// Everyone who signs in: the supervisor first, then active users by name, then
   /// disabled ones; each with the time their open shift began, if any.
   Future<List<UserSummary>> users() async {
     final rows = await _db.select(_db.users).get();

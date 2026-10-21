@@ -14,17 +14,17 @@ import '../../../helpers/fixtures.dart';
 void main() {
   late TestEnv env;
   late StaffRepository staff;
-  late UserAccount owner;
+  late UserAccount supervisor;
 
   setUp(() async {
     env = TestEnv();
     staff = StaffRepository(env.db, env.audit, env.hasher);
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
   Future<UserAccount> addMary() => staff.addReceptionist(
-    owner,
+    supervisor,
     const NewReceptionist(
       fullName: ' Mary Wanjiku ',
       username: 'Mary',
@@ -52,7 +52,7 @@ void main() {
         expect(mary.mustChangePassword, isTrue);
         expect(userStatus(mary), UserStatus.mustSetPassword);
         final entry = (await env.auditFor('user.create')).last;
-        expect(entry.userId, owner.id);
+        expect(entry.userId, supervisor.id);
         expect(json(entry.afterJson)['password_hash'], '[redacted]');
 
         final result = await login().login('mary', 'temp-pass-1');
@@ -64,7 +64,7 @@ void main() {
       await addMary();
       await expectLater(
         staff.addReceptionist(
-          owner,
+          supervisor,
           const NewReceptionist(
             fullName: 'Another Mary',
             username: 'MARY',
@@ -79,7 +79,7 @@ void main() {
       );
       await expectLater(
         staff.addReceptionist(
-          owner,
+          supervisor,
           const NewReceptionist(
             fullName: '',
             username: 'ok',
@@ -90,38 +90,41 @@ void main() {
       );
     });
 
-    test('lists the owner first, active users by name, disabled last; shows '
-        'an open shift', () async {
-      final mary = await addMary();
-      final james = await staff.addReceptionist(
-        owner,
-        const NewReceptionist(
-          fullName: 'Aaron James',
-          username: 'james',
-          temporaryPassword: 'temp-pass-1',
-        ),
-      );
-      await staff.disableUser(owner, james.id);
-      await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: mary, openingFloat: 500);
+    test(
+      'lists the supervisor first, active users by name, disabled last; shows '
+      'an open shift',
+      () async {
+        final mary = await addMary();
+        final james = await staff.addReceptionist(
+          supervisor,
+          const NewReceptionist(
+            fullName: 'Aaron James',
+            username: 'james',
+            temporaryPassword: 'temp-pass-1',
+          ),
+        );
+        await staff.disableUser(supervisor, james.id);
+        await ShiftRepository(
+          env.db,
+          env.audit,
+        ).openShift(user: mary, openingFloat: 500);
 
-      final list = await staff.users();
-      expect(
-        [for (final u in list) u.account.username],
-        ['owner', 'mary', 'james'],
-      );
-      expect(list[1].shiftOpenSince, env.clock.now());
-      expect(list[0].shiftOpenSince, isNull);
-    });
+        final list = await staff.users();
+        expect(
+          [for (final u in list) u.account.username],
+          ['supervisor', 'mary', 'james'],
+        );
+        expect(list[1].shiftOpenSince, env.clock.now());
+        expect(list[0].shiftOpenSince, isNull);
+      },
+    );
 
     test('reset password sets a temporary one to change at sign-in', () async {
       final mary = await addMary();
       await env.users.changePassword(mary.id, 'marys-own-pass');
       expect((await reload(mary.id)).mustChangePassword, isFalse);
 
-      await staff.resetPassword(owner, mary.id, 'new-temp-pass');
+      await staff.resetPassword(supervisor, mary.id, 'new-temp-pass');
       expect((await reload(mary.id)).mustChangePassword, isTrue);
       expect(await env.auditFor('user.reset_password'), hasLength(1));
       expect(
@@ -133,7 +136,7 @@ void main() {
         LoginOutcome.invalidCredentials,
       );
       await expectLater(
-        staff.resetPassword(owner, mary.id, 'short'),
+        staff.resetPassword(supervisor, mary.id, 'short'),
         throwsA(isA<StaffRuleViolation>()),
       );
     });
@@ -141,14 +144,14 @@ void main() {
     test('disable stops sign-in; enable restores it and keeps '
         'must_change_password', () async {
       final mary = await addMary();
-      await staff.disableUser(owner, mary.id);
+      await staff.disableUser(supervisor, mary.id);
       expect(userStatus(await reload(mary.id)), UserStatus.disabled);
       expect(
         (await login().login('mary', 'temp-pass-1')).outcome,
         LoginOutcome.disabled,
       );
 
-      await staff.enableUser(owner, mary.id);
+      await staff.enableUser(supervisor, mary.id);
       final back = await reload(mary.id);
       expect(back.isActive, isTrue);
       expect(back.mustChangePassword, isTrue);
@@ -162,14 +165,14 @@ void main() {
         env.db,
         env.audit,
       ).openShift(user: mary, openingFloat: 500);
-      await staff.disableUser(owner, mary.id);
+      await staff.disableUser(supervisor, mary.id);
       expect((await reload(mary.id)).isActive, isFalse);
     });
 
     test('the owner cannot disable or reset their own account', () async {
       for (final attempt in [
-        () => staff.disableUser(owner, owner.id),
-        () => staff.resetPassword(owner, owner.id, 'new-temp-pass'),
+        () => staff.disableUser(supervisor, supervisor.id),
+        () => staff.resetPassword(supervisor, supervisor.id, 'new-temp-pass'),
       ]) {
         await expectLater(
           attempt(),
@@ -182,7 +185,7 @@ void main() {
           ),
         );
       }
-      expect((await reload(owner.id)).isActive, isTrue);
+      expect((await reload(supervisor.id)).isActive, isTrue);
     });
 
     test('a receptionist cannot manage users', () async {
@@ -217,18 +220,18 @@ void main() {
   group('housekeepers', () {
     test('added with a normalized phone, listed active first', () async {
       final rose = await staff.addHousekeeper(
-        owner,
+        supervisor,
         name: ' Rose Akinyi ',
         phone: '+254 722 123 310',
       );
       expect((rose.fullName, rose.phone), ('Rose Akinyi', '0722123310'));
       final john = await staff.addHousekeeper(
-        owner,
+        supervisor,
         name: 'John Mutua',
         phone: '',
       );
       expect(john.phone, isNull);
-      await staff.deactivateHousekeeper(owner, rose.id);
+      await staff.deactivateHousekeeper(supervisor, rose.id);
 
       final list = await staff.housekeepers();
       expect(
@@ -240,10 +243,14 @@ void main() {
     });
 
     test('edit, deactivate and reactivate are each audited', () async {
-      final rose = await staff.addHousekeeper(owner, name: 'Rose', phone: '');
+      final rose = await staff.addHousekeeper(
+        supervisor,
+        name: 'Rose',
+        phone: '',
+      );
       expect(
         await staff.updateHousekeeper(
-          owner,
+          supervisor,
           rose.id,
           name: 'Rose Akinyi',
           phone: '0110 234 567',
@@ -252,15 +259,15 @@ void main() {
       );
       expect(
         await staff.updateHousekeeper(
-          owner,
+          supervisor,
           rose.id,
           name: 'Rose Akinyi',
           phone: '0110234567',
         ),
         isFalse,
       );
-      await staff.deactivateHousekeeper(owner, rose.id);
-      await staff.reactivateHousekeeper(owner, rose.id);
+      await staff.deactivateHousekeeper(supervisor, rose.id);
+      await staff.reactivateHousekeeper(supervisor, rose.id);
       final h = (await staff.housekeepers()).single;
       expect(
         (h.fullName, h.phone, h.isActive),
@@ -277,7 +284,7 @@ void main() {
 
     test('a bad phone or blank name is refused', () async {
       await expectLater(
-        staff.addHousekeeper(owner, name: '', phone: '0822123310'),
+        staff.addHousekeeper(supervisor, name: '', phone: '0822123310'),
         throwsA(
           isA<InvalidHousekeeper>().having(
             (e) => e.errors.keys.toSet(),

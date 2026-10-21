@@ -17,14 +17,14 @@ import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
-  late UserAccount owner;
+  late UserAccount supervisor;
   late UserAccount desk;
   late RoomsRepository rooms;
   late ReceiptsRepository receipts;
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    owner = await env.users.createFirstAdmin(testSetup);
+    supervisor = await env.users.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     rooms = RoomsRepository(env.db, env.audit);
     receipts = ReceiptsRepository(env.db, env.audit);
@@ -36,7 +36,7 @@ void main() {
   tearDown(() => env.close());
 
   Future<RoomSummary> room(String number) => rooms.createRoom(
-    owner,
+    supervisor,
     NewRoom(
       number: number,
       floor: null,
@@ -126,7 +126,7 @@ void main() {
     final grace = await guest('Grace Achieng', '0722418905');
     final saved = await checkIn([r7.beds.first], grace);
     await rooms.updateRoom(
-      owner,
+      supervisor,
       r7.id,
       const RoomEdit(number: '70', floor: null, notes: null),
     );

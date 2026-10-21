@@ -95,7 +95,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, UserRow> {
     'role',
     aliasedName,
     false,
-    check: () => role.isIn(['admin', 'receptionist']),
+    check: () => role.isIn(['owner', 'supervisor', 'receptionist']),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -294,6 +294,8 @@ class UserRow extends DataClass implements Insertable<UserRow> {
   /// Stored trimmed and lowercase, so UNIQUE is case-insensitive.
   final String username;
   final String passwordHash;
+
+  /// v6: `admin` became `supervisor`, and `owner` was added.
   final String role;
   final bool isActive;
   final bool mustChangePassword;

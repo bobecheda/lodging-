@@ -26,7 +26,7 @@ import 'shift_providers.dart';
 class OpenShiftScreen extends ConsumerWidget {
   const OpenShiftScreen({super.key, this.returnTo});
 
-  /// Where a user who works without a shift (an admin) came from, e.g.
+  /// Where a user who works without a shift (a supervisor) came from, e.g.
   /// check-in. They come back there once the shift is open, or on "Back".
   final String? returnTo;
 
@@ -57,7 +57,7 @@ class OpenShiftScreen extends ConsumerWidget {
                 child: switch (start) {
                   ShiftBlocked(:final openShift) => _Blocked(openShift),
                   ResumeShift(:final shift) => _Resume(user!, shift),
-                  // An admin came here by choice: they can go back, and
+                  // A supervisor came here by choice: they can go back, and
                   // someone else's open shift blocks them too.
                   ShiftReady() when open != null && open.userId != user!.id =>
                     _Blocked(open, onBack: back),
@@ -345,7 +345,7 @@ class _Blocked extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final first = openShift.userName.split(' ').first;
     final user = ref.watch(sessionProvider);
-    // FD-11: the owner can close it here; anyone else is told who can.
+    // FD-11: a supervisor can close it here; anyone else is told who can.
     final canClose =
         user != null && mayCloseShift(user, shiftUserId: openShift.userId);
     return Column(
@@ -367,7 +367,7 @@ class _Blocked extends ConsumerWidget {
           )
         else
           Text(
-            'Ask $first to sign in and close it, or ask the owner to close '
+            'Ask $first to sign in and close it, or ask the supervisor to close '
             "$first's shift.",
             key: const ValueKey('shift.askToClose'),
             style: LodgingType.of(context).body,

@@ -36,7 +36,7 @@ void main() {
           fullName: 'Owner',
           username: 'owner',
           passwordHash: 'hash',
-          role: 'admin',
+          role: 'supervisor',
           mustChangePassword: false,
         ),
       ),
@@ -635,7 +635,7 @@ void main() {
                 fullName: 'Second',
                 username: 'second',
                 passwordHash: 'hash',
-                role: 'admin',
+                role: 'supervisor',
                 mustChangePassword: false,
               ),
             );

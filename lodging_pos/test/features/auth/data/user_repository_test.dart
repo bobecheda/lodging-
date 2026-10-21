@@ -18,55 +18,52 @@ void main() {
     });
 
     test(
-      'creates the admin with a normalized username and hashed password',
+      'creates the supervisor with a normalized username and hashed password',
       () async {
-        final admin = await env.users.createFirstAdmin(testSetup);
-        expect(admin.username, 'owner');
-        expect(admin.fullName, 'Grace Owner');
-        expect(admin.role, Role.admin);
-        expect(admin.mustChangePassword, isFalse);
+        final supervisor = await env.users.createFirstSupervisor(testSetup);
+        expect(supervisor.username, 'supervisor');
+        expect(supervisor.fullName, 'Grace Supervisor');
+        expect(supervisor.role, Role.supervisor);
+        expect(supervisor.mustChangePassword, isFalse);
         expect(await env.users.hasAnyUser(), isTrue);
 
-        final stored = (await env.users.findByUsername('owner'))!;
-        expect(stored.passwordHash, isNot('owner-pass'));
+        final stored = (await env.users.findByUsername('supervisor'))!;
+        expect(stored.passwordHash, isNot('super-pass'));
         expect(
-          await env.hasher.verify('owner-pass', stored.passwordHash),
+          await env.hasher.verify('super-pass', stored.passwordHash),
           isTrue,
         );
       },
     );
 
-    test('sets the lodging name, updated by the new admin', () async {
-      final admin = await env.users.createFirstAdmin(testSetup);
+    test('sets the lodging name, updated by the new supervisor', () async {
+      final supervisor = await env.users.createFirstSupervisor(testSetup);
       final row = await (env.db.select(
         env.db.settings,
       )..where((s) => s.key.equals('lodging_name'))).getSingle();
       expect(row.value, 'Sunrise Lodge');
-      expect(row.updatedBy, admin.id);
+      expect(row.updatedBy, supervisor.id);
     });
 
-    test(
-      'audits user.create and settings.update as one operation by the admin',
-      () async {
-        final admin = await env.users.createFirstAdmin(testSetup);
-        final entries = await env.db.select(env.db.auditLog).get();
-        expect(
-          [for (final e in entries) (e.action, e.entity)],
-          [('user.create', 'users'), ('settings.update', 'settings')],
-        );
-        expect(entries.map((e) => e.operationId).toSet(), hasLength(1));
-        expect(entries.map((e) => e.userId).toSet(), {admin.id});
-        expect(
-          jsonDecode(entries.first.afterJson)['password_hash'],
-          '[redacted]',
-        );
-      },
-    );
+    test('audits user.create and settings.update as one operation by the supervisor', () async {
+      final supervisor = await env.users.createFirstSupervisor(testSetup);
+      final entries = await env.db.select(env.db.auditLog).get();
+      expect(
+        [for (final e in entries) (e.action, e.entity)],
+        [('user.create', 'users'), ('settings.update', 'settings')],
+      );
+      expect(entries.map((e) => e.operationId).toSet(), hasLength(1));
+      expect(entries.map((e) => e.userId).toSet(), {supervisor.id});
+      expect(
+        jsonDecode(entries.first.afterJson)['password_hash'],
+        '[redacted]',
+      );
+    });
 
     test('cannot run once any user exists', () async {
-      await env.users.createFirstAdmin(testSetup);
+      await env.users.createFirstSupervisor(testSetup);
       await expectLater(
-        env.users.createFirstAdmin(testSetup.copyWith(username: 'second')),
+        env.users.createFirstSupervisor(testSetup.copyWith(username: 'second')),
         throwsA(isA<SetupAlreadyDone>()),
       );
       expect(await env.db.select(env.db.users).get(), hasLength(1));
@@ -75,7 +72,9 @@ void main() {
 
     test('rejects an invalid form without writing', () async {
       await expectLater(
-        env.users.createFirstAdmin(testSetup.copyWith(confirmPassword: 'nope')),
+        env.users.createFirstSupervisor(
+          testSetup.copyWith(confirmPassword: 'nope'),
+        ),
         throwsArgumentError,
       );
       expect(await env.users.hasAnyUser(), isFalse);
@@ -84,10 +83,10 @@ void main() {
 
   group('findByUsername', () {
     test('ignores case and surrounding spaces', () async {
-      await env.users.createFirstAdmin(testSetup);
+      await env.users.createFirstSupervisor(testSetup);
       expect(
-        (await env.users.findByUsername('  OWNER '))?.account.username,
-        'owner',
+        (await env.users.findByUsername('  SUPERVISOR '))?.account.username,
+        'supervisor',
       );
       expect(await env.users.findByUsername('nobody'), isNull);
     });

@@ -29,7 +29,7 @@ class ShiftCloseRefused implements Exception {
   String toString() => message;
 }
 
-/// A shift as the owner's Shifts screen lists it.
+/// A shift as the supervisor's Shifts screen lists it.
 final class ShiftSummary {
   const ShiftSummary({
     required this.id,
@@ -229,7 +229,7 @@ class ShiftRepository {
   }
 
   /// The newest [limit] shifts on this device, open ones included, for the
-  /// owner's Shifts screen. Watched, so a close shows at once.
+  /// supervisor's Shifts screen. Watched, so a close shows at once.
   Stream<List<ShiftSummary>> watchShifts({int limit = 50}) =>
       (_db.select(_db.shifts)
             ..orderBy([(s) => OrderingTerm.desc(s.openedAt)])

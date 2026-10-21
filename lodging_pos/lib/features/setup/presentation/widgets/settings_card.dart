@@ -93,7 +93,7 @@ class _SettingsCardState extends ConsumerState<SettingsCard> {
       if (mounted) setState(() => _errors = e.errors);
     } on NotPermitted {
       if (mounted) {
-        setState(() => _error = 'Only the owner can change settings.');
+        setState(() => _error = 'Only the supervisor can change settings.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

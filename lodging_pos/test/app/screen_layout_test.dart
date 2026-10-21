@@ -50,7 +50,7 @@ void main() {
   }
 
   Future<void> withOwner() async =>
-      env.users.createFirstAdmin(testSetup).then((_) {});
+      env.users.createFirstSupervisor(testSetup).then((_) {});
 
   testWidgets('first-run setup', (tester) async {
     final app = await pumpDeskApp(tester, env);
@@ -77,7 +77,7 @@ void main() {
   testWidgets('sign in with a wrong password', (tester) async {
     await withOwner();
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'wrong-pass');
+    await signInAs(tester, 'supervisor', 'wrong-pass');
     await expectCleanLayout(
       tester,
       app,
@@ -109,7 +109,7 @@ void main() {
   testWidgets('lock screen after Lock screen', (tester) async {
     await withOwner();
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
+    await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'shell.lock');
     await expectCleanLayout(tester, app, Routes.login, 'Screen locked');
   });
@@ -171,11 +171,11 @@ void main() {
     );
   });
 
-  testWidgets('desk shell: owner', (tester) async {
+  testWidgets('desk shell: supervisor', (tester) async {
     await withOwner();
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'owner', 'owner-pass');
-    await expectCleanLayout(tester, app, Routes.home, 'Owner · admin');
+    await signInAs(tester, 'supervisor', 'super-pass');
+    await expectCleanLayout(tester, app, Routes.home, 'Supervisor');
   });
 
   group('Wordmark (branding)', () {
@@ -184,12 +184,12 @@ void main() {
         'Sunrise Lodge and Guest House, Kakamega Road, Nairobi West';
     Future<void> withLongName() async {
       expect(longName.length, lessThanOrEqualTo(60));
-      await env.users.createFirstAdmin(
+      await env.users.createFirstSupervisor(
         const SetupInput(
-          fullName: 'Grace Owner',
-          username: 'Owner',
-          password: 'owner-pass',
-          confirmPassword: 'owner-pass',
+          fullName: 'Grace Supervisor',
+          username: 'Supervisor',
+          password: 'super-pass',
+          confirmPassword: 'super-pass',
           lodgingName: longName,
         ),
       );
@@ -209,8 +209,8 @@ void main() {
     testWidgets('the sidebar', (tester) async {
       await withLongName();
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
-      await expectCleanLayout(tester, app, Routes.home, 'Owner · admin');
+      await signInAs(tester, 'supervisor', 'super-pass');
+      await expectCleanLayout(tester, app, Routes.home, 'Supervisor');
       expect(
         find.descendant(of: wordmark(), matching: find.text(longName)),
         findsOne,
@@ -251,11 +251,12 @@ void main() {
   group('Rooms & beds (AD-2)', () {
     /// 12 rooms as on the artboard, a guest in Room 5 bed B, Room 13 closed.
     Future<void> seedTwelveRooms() async {
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final repo = RoomsRepository(env.db, env.audit);
       for (var n = 1; n <= 12; n++) {
         final room = await repo.createRoom(
-          owner,
+          supervisor,
           NewRoom(
             number: '$n',
             floor: n <= 5 ? 'Ground' : 'First',
@@ -264,10 +265,10 @@ void main() {
             bedBCategoryId: n.isEven || n == 5 ? SeedIds.deluxe : null,
           ),
         );
-        if (n == 5) await env.checkIn(room.beds.last.id, by: owner);
+        if (n == 5) await env.checkIn(room.beds.last.id, by: supervisor);
       }
       final closed = await repo.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '13',
           floor: 'First',
@@ -276,15 +277,15 @@ void main() {
           bedBCategoryId: SeedIds.comfort,
         ),
       );
-      await repo.deactivateBed(owner, closed.beds.last.id);
-      await repo.deactivateRoom(owner, closed.id);
+      await repo.deactivateBed(supervisor, closed.beds.last.id);
+      await repo.deactivateRoom(supervisor, closed.id);
     }
 
     Future<ProviderContainer> openRooms(WidgetTester tester) async {
       await withOwner();
       await seedTwelveRooms();
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'nav.${Routes.adminRooms}');
       return app;
     }
@@ -341,10 +342,11 @@ void main() {
     /// [before] runs once the data is in, before the app starts.
     Future<ProviderContainer> openPrices(
       WidgetTester tester, {
-      Future<void> Function(UserAccount owner)? before,
+      Future<void> Function(UserAccount supervisor)? before,
     }) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final prices = PricesRepository(env.db, env.audit);
       // Eight categories, one closed, some in use: a fuller table than seed.
       for (final (name, price) in [
@@ -353,14 +355,14 @@ void main() {
         ('Executive suite', 2500),
         ('Budget', 400),
       ]) {
-        await prices.addCategory(owner, name: name, pricePerNight: price);
+        await prices.addCategory(supervisor, name: name, pricePerNight: price);
       }
       await prices.closeCategory(
-        owner,
+        supervisor,
         (await prices.categories()).last.category.id,
       );
       await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '3',
           floor: null,
@@ -369,9 +371,9 @@ void main() {
           bedBCategoryId: SeedIds.vip,
         ),
       );
-      await before?.call(owner);
+      await before?.call(supervisor);
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'nav.${Routes.adminPrices}');
       return app;
     }
@@ -409,7 +411,7 @@ void main() {
       tearDown(() => temp.deleteSync(recursive: true));
 
       /// A long second-folder path that isn't there (the USB drive out).
-      Future<void> unpluggedSecondFolder(UserAccount owner) async {
+      Future<void> unpluggedSecondFolder(UserAccount supervisor) async {
         await BackupService(
           env.db,
           env.audit,
@@ -417,7 +419,7 @@ void main() {
           SettingsRepository(env.db),
           folder: temp.path,
         ).setSecondFolder(
-          owner,
+          supervisor,
           r'E:\Sunrise Lodge backups\Front desk PC\Daily copies 2026',
         );
       }
@@ -476,7 +478,8 @@ void main() {
   group('Users & staff (AD-4)', () {
     Future<(ProviderContainer, String)> openStaff(WidgetTester tester) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final staff = StaffRepository(env.db, env.audit, env.hasher);
       final mary = await env.addReceptionist('mary');
       await ShiftRepository(
@@ -485,21 +488,21 @@ void main() {
       ).openShift(user: mary, openingFloat: 500);
       await env.addReceptionist('james', mustChangePassword: true);
       final kevin = await env.addReceptionist('kevin');
-      await staff.disableUser(owner, kevin.id);
+      await staff.disableUser(supervisor, kevin.id);
       final rose = await staff.addHousekeeper(
-        owner,
+        supervisor,
         name: 'Rose Akinyi Wanjiru',
         phone: '0722123310',
       );
-      await staff.addHousekeeper(owner, name: 'John Mutua', phone: '');
+      await staff.addHousekeeper(supervisor, name: 'John Mutua', phone: '');
       final old = await staff.addHousekeeper(
-        owner,
+        supervisor,
         name: 'Esther Njeri',
         phone: '0110234567',
       );
-      await staff.deactivateHousekeeper(owner, old.id);
+      await staff.deactivateHousekeeper(supervisor, old.id);
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'nav.${Routes.adminStaff}');
       return (app, rose.id);
     }
@@ -540,11 +543,12 @@ void main() {
   group('Guests (FD-3)', () {
     Future<ProviderContainer> openGuests(WidgetTester tester) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final guests = GuestsRepository(env.db, env.audit);
       for (var i = 0; i < 9; i++) {
         await guests.register(
-          owner,
+          supervisor,
           GuestForm(
             fullName: 'Guest With A Rather Long Full Name $i',
             phone: '07224189${i.toString().padLeft(2, '0')}',
@@ -554,7 +558,7 @@ void main() {
         );
       }
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'nav.${Routes.guests}');
       return app;
     }
@@ -604,13 +608,14 @@ void main() {
       required bool overstay,
     }) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final repo = RoomsRepository(env.db, env.audit);
       final created = <String, RoomSummary>{};
       for (var n = 1; n <= 12; n++) {
         final twoBeds = const {2, 3, 5, 7, 8, 11}.contains(n);
         created['$n'] = await repo.createRoom(
-          owner,
+          supervisor,
           NewRoom(
             number: '$n',
             floor: null,
@@ -623,16 +628,19 @@ void main() {
       if (overstay) {
         // Yesterday's 1-night stay: paid to 10:00 today, long past grace.
         env.clock.set(env.clock.now().subtract(const Duration(days: 2)));
-        await env.checkIn(created['5']!.beds.last.id, by: owner);
+        await env.checkIn(created['5']!.beds.last.id, by: supervisor);
         env.clock.set(env.clock.now().add(const Duration(days: 2)));
       }
       for (final n in ['2', '3', '6', '8', '9']) {
-        await env.checkIn(created[n]!.beds.first.id, by: owner, nights: 3);
+        await env.checkIn(created[n]!.beds.first.id, by: supervisor, nights: 3);
       }
-      final gone = await env.checkIn(created['4']!.beds.first.id, by: owner);
-      await env.checkOut(gone, by: owner);
+      final gone = await env.checkIn(
+        created['4']!.beds.first.id,
+        by: supervisor,
+      );
+      await env.checkOut(gone, by: supervisor);
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       return app;
     }
 
@@ -666,7 +674,7 @@ void main() {
   });
 
   group('Check-in (FD-4)', () {
-    /// The owner with a shift of their own, room 7 (A Deluxe, B Comfort)
+    /// The supervisor with a shift of their own, room 7 (A Deluxe, B Comfort)
     /// and a returning guest with a long name.
     Future<ProviderContainer> openCheckIn(
       WidgetTester tester, {
@@ -675,16 +683,17 @@ void main() {
       int extraRooms = 0,
     }) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final repo = RoomsRepository(env.db, env.audit);
       if (shift) {
         await ShiftRepository(
           env.db,
           env.audit,
-        ).openShift(user: owner, openingFloat: 0);
+        ).openShift(user: supervisor, openingFloat: 0);
       }
       final r7 = await repo.createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '7',
           floor: null,
@@ -695,7 +704,7 @@ void main() {
       );
       for (var n = 10; n < 10 + extraRooms; n++) {
         await repo.createRoom(
-          owner,
+          supervisor,
           NewRoom(
             number: '$n',
             floor: null,
@@ -709,7 +718,7 @@ void main() {
         // Straight to not_cleaned, so no shift is opened on the way.
         await env.audit.writeWithAudit(
           action: 'bed.update',
-          userId: owner.id,
+          userId: supervisor.id,
           body: (w) => w.update(
             env.db.beds,
             r7.beds.last.id,
@@ -718,7 +727,7 @@ void main() {
         );
       }
       await GuestsRepository(env.db, env.audit).register(
-        owner,
+        supervisor,
         const GuestForm(
           fullName: 'Grace Wanjiru Achieng-Odhiambo',
           phone: '0722418905',
@@ -727,7 +736,7 @@ void main() {
         ),
       );
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       return app;
     }
 
@@ -800,15 +809,16 @@ void main() {
       tester,
     ) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       await ShiftRepository(
         env.db,
         env.audit,
-      ).openShift(user: owner, openingFloat: 0);
+      ).openShift(user: supervisor, openingFloat: 0);
       final repo = RoomsRepository(env.db, env.audit);
       for (var n = 1; n <= 12; n++) {
         final room = await repo.createRoom(
-          owner,
+          supervisor,
           NewRoom(
             number: '$n',
             floor: null,
@@ -817,10 +827,10 @@ void main() {
             bedBCategoryId: SeedIds.comfort,
           ),
         );
-        await env.checkIn(room.beds.first.id, by: owner, nights: n);
+        await env.checkIn(room.beds.first.id, by: supervisor, nights: n);
       }
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'nav.${Routes.receipts}');
       await tapKey(tester, 'receipts.item.R-000012');
       await tapKey(tester, 'receipt.save');
@@ -830,7 +840,7 @@ void main() {
   });
 
   group('Bed panel (FD-7, FD-8)', () {
-    /// The owner with a shift, room 5 let for [nights] from Thu 19:00, the
+    /// The supervisor with a shift, room 5 let for [nights] from Thu 19:00, the
     /// clock then set to [now]; the panel open.
     Future<ProviderContainer> openPanel(
       WidgetTester tester, {
@@ -840,10 +850,11 @@ void main() {
       bool viaExtend = false,
     }) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       env.clock.set(nairobiInstant(2026, 10, 15, 19));
       final room = await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '5',
           floor: null,
@@ -852,10 +863,10 @@ void main() {
           bedBCategoryId: SeedIds.comfort,
         ),
       );
-      await env.checkIn(room.beds.first.id, by: owner, nights: nights);
+      await env.checkIn(room.beds.first.id, by: supervisor, nights: nights);
       env.clock.set(now);
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(
         tester,
         viaExtend
@@ -944,9 +955,10 @@ void main() {
       tester,
     ) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final room = await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '7',
           floor: null,
@@ -956,12 +968,12 @@ void main() {
         ),
       );
       final staff = StaffRepository(env.db, env.audit, env.hasher);
-      await staff.addHousekeeper(owner, name: 'Rose Akinyi', phone: '');
-      await staff.addHousekeeper(owner, name: 'Rose Mutua', phone: '');
-      final stay = await env.checkIn(room.beds.first.id, by: owner);
-      await env.checkOut(stay, by: owner);
+      await staff.addHousekeeper(supervisor, name: 'Rose Akinyi', phone: '');
+      await staff.addHousekeeper(supervisor, name: 'Rose Mutua', phone: '');
+      final stay = await env.checkIn(room.beds.first.id, by: supervisor);
+      await env.checkOut(stay, by: supervisor);
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'owner', 'owner-pass');
+      await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'board.bed.7A');
       await tapKey(tester, 'cleaning.housekeeper');
       await tester.tap(find.text('Rose Akinyi').last);
@@ -982,14 +994,15 @@ void main() {
       required String signIn,
     }) async {
       await withOwner();
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final mary = await env.addReceptionist('mary');
       final shift = await ShiftRepository(
         env.db,
         env.audit,
       ).openShift(user: mary, openingFloat: 1000);
       final room = await RoomsRepository(env.db, env.audit).createRoom(
-        owner,
+        supervisor,
         const NewRoom(
           number: '7',
           floor: null,
@@ -1003,7 +1016,7 @@ void main() {
       await signInAs(
         tester,
         signIn,
-        signIn == 'owner' ? 'owner-pass' : 'desk-pass',
+        signIn == 'supervisor' ? 'super-pass' : 'desk-pass',
       );
       return (app, shift.id);
     }
@@ -1024,14 +1037,15 @@ void main() {
       expect(find.text('Say why the cash is short.'), findsOneWidget);
     });
 
-    testWidgets('the owner’s Shifts: a closed shift with a high variance, '
+    testWidgets('the supervisor’s Shifts: a closed shift with a high variance, '
         'a recount and who closed it', (tester) async {
-      final (app, shiftId) = await withMaryShift(tester, signIn: 'owner');
-      final owner = (await env.users.findByUsername('owner'))!.account;
+      final (app, shiftId) = await withMaryShift(tester, signIn: 'supervisor');
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
       final shifts = ShiftRepository(env.db, env.audit);
       await tester.runAsync(
         () async => shifts.closeShift(
-          owner,
+          supervisor,
           shiftId,
           firstCount: 2600,
           counted: 2800,

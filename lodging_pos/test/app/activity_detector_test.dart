@@ -17,7 +17,7 @@ void main() {
 
   /// The receptionist signed in on the desk, working in their open shift.
   Future<ProviderContainer> signedInApp(WidgetTester tester) async {
-    await env.users.createFirstAdmin(testSetup);
+    await env.users.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
     await ShiftRepository(
       env.db,
