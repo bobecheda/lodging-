@@ -24,7 +24,7 @@ There is **no** early-arrival cut-off: the owner confirmed that every arrival, w
 |---|---|
 | BR-1 | Price is per bed, **per night**. Every night ends at `checkout_time` (10:00). Arrival time never changes the price. |
 | BR-1a | **First checkout** = 10:00 on the calendar day **after** the arrival date, for any arrival time (03:00 Thu → Fri 10:00; 23:59 Thu → Fri 10:00; 00:30 Fri → Sat 10:00). |
-| BR-2 | Category prices are per night (seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500). Only users with `editPrices` change them directly, at any time: the **owner**. A supervisor asks for a change (`requestPriceChange`) and the owner approves or rejects it (`decidePriceChange`). **Temporary:** until the owner can sign in (sprint 2 owner sign-in story), `editPrices` (and adding or closing categories) stays with the supervisor. |
+| BR-2 | Category prices are per night (seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500). Only users with `editPrices` change them directly, at any time: the **owner**. A supervisor asks for a change (`requestPriceChange`, a later story; until then the supervisor's prices are read-only) and the owner approves or rejects it (`decidePriceChange`). Adding and closing categories is the owner's too. |
 | BR-3 | `price_per_night` is copied from the category at check-in and reused for every extension, late-checkout charge and refund of that stay. Price changes affect new check-ins only. |
 | BR-4 | One guest per bed. Strangers may share a 2-bed room. One guest may pay for both beds: two stays, one payment. |
 | BR-5 | A bed can be let only if it is active, Available and `clean`. It becomes Occupied only when the check-in transaction (stay + payment + charges) commits. |
@@ -38,7 +38,7 @@ There is **no** early-arrival cut-off: the owner confirmed that every arrival, w
 | BR-10 | An M-Pesa code can be used once across all payments and refund payouts. Required for `paybill`, null for `cash`. Methods are `cash` and `paybill` everywhere; screens label `paybill` as "M-Pesa". |
 | BR-11 | Stays, payments, charges, refunds, refund decisions and audit entries are never edited or deleted by users. Corrections are `voids` rows with a reason, by users with `voidRecords` permission. Voided payments and refund payouts are excluded from totals. |
 | BR-12 | Every payment and refund payout belongs to an open shift. No open shift → no check-in, extension, late-checkout charge, payment or refund payout. (Requesting a refund at checkout also requires the open shift, because checkout does.) |
-| BR-13 | **Permissions are checked by action**, through one permission map (`Permission` enum → allowed roles). Never compare roles in features. Roles: `owner` (business view, phone, sprint 2: approves refunds, decides price changes, the dashboard, manages supervisors, sees all reports and the audit trail), `supervisor` (runs the desk: setup, staff, settings, voids, shift oversight, backups, all front-desk work; was `admin` before schema v6) and `receptionist` (front-desk work). A new role is added by editing only the map. |
+| BR-13 | **Permissions are checked by action**, through one permission map (`Permission` enum → allowed roles). Never compare roles in features. Roles: `owner` (signs in on the desk to Today, Prices and Staff, and later on the phone: sets prices and categories, approves refunds, decides price changes, manages supervisors, sees all reports and the audit trail; works without a shift; first run creates the owner), `supervisor` (runs the desk: setup, staff, settings, voids, shift oversight, backups, all front-desk work; was `admin` before schema v6) and `receptionist` (front-desk work). A new role is added by editing only the map. |
 
 ## Refund lifecycle
 
@@ -133,7 +133,7 @@ Every one of these must exist as a unit test in the matching `domain/` test file
 15. Bed not_cleaned → cannot let. Bed inactive → cannot let. Bed with active stay → cannot let.
 16. Paybill without code → rejected. Reused code (in payments or refund payouts) → rejected. Cash with code → rejected.
 17. Payment or refund payout without an open shift → rejected.
-18. Permission map: receptionist cannot edit prices, void, manage users or approve refunds; the supervisor can do the first three (edit prices only until the owner can sign in); only the owner approves refunds; the owner has no front-desk permissions. Every `Permission` is assigned to at least one role. Features call the map, never compare roles.
+18. Permission map: receptionist cannot edit prices, void, manage users or approve refunds; the supervisor voids and manages users; only the owner edits prices and approves refunds; the owner has no front-desk permissions. Every `Permission` is assigned to at least one role. Features call the map, never compare roles.
 
 ## Receipts
 

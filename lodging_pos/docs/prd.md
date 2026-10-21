@@ -166,7 +166,15 @@ Each story lists the conditions that must all hold before it counts as done.
 
 ## Admin stories
 
-AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner's own sign-in and screens (phone, online; every change reaches the desk on its next sync) are sprint 2 stories; "admin app" still names that app.
+AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner signs in on the desk too (sprint 2, OS-1 below); the owner's phone app (online; every change reaches the desk on its next sync) comes later; "admin app" still names that app.
+
+**OS-1 Owner sign-in on the desk.** As the owner, I want my own sign-in at the desk so that I see the business, set prices and manage supervisors.
+
+- A fresh install's first run creates the **owner's** account (and names the lodging); the owner then adds supervisors (several allowed) in Staff, and supervisors add receptionists. Only the owner creates, resets or disables supervisors (`manageSupervisors`); nobody changes the owner's account in the app.
+- A database from before the owner role shows a one-time "Create the owner's account" screen at start, before sign-in; nobody can sign in until it's done. No screen inside the app creates an owner. Audited as `user.create` with role `owner`.
+- The owner needs no shift and sees no bed-board operations: Today, Shifts (read-only), Prices (edits prices directly; adds and closes categories) and Staff (supervisors).
+- Today's four cards (as the phone design, Figma "01 Today"): Needs your attention (refunds awaiting approval, with a count; approving comes with AD-7), Today's money (net received today, cash and M-Pesa, against the same weekday last week up to the same time), Beds right now (in use of total with %, plus Occupied, Overstay, To clean, Ready), This month (net revenue so far and occupancy against the same point last month).
+- Net revenue = payments − refunds paid − anything voided, by Nairobi day (midnight to midnight). Occupancy = bed-nights sold ÷ active bed-nights: sold nights exclude voided stays and the nights of refunds not rejected; active bed-nights are today's active beds × nights so far (bed history comes later). Pure domain functions (`features/dashboard/domain/dashboard.dart`) the phone reuses.
 
 **AD-1 Log in as admin.** As the owner, I want my own login so that only I can change prices and see the full business.
 
@@ -228,7 +236,7 @@ These rules are enforced by the system and override anything a user enters.
 | ID | Rule |
 | --- | --- |
 | BR-1 | Price is per bed, per night. Checkout is always 10:00. Every arrival, at any time, checks out at 10:00 the following day. Arrival time does not change the price. |
-| BR-2 | Starting prices per night: VIP KES 1,000, Deluxe 700, Comfort 600, Normal 500. Only the owner changes them; a supervisor asks for a change and the owner approves or rejects it. **Temporary:** until the owner can sign in (sprint 2 owner sign-in story), the supervisor changes prices and adds or closes categories directly. |
+| BR-2 | Starting prices per night: VIP KES 1,000, Deluxe 700, Comfort 600, Normal 500. Only the owner changes them; a supervisor asks for a change and the owner approves or rejects it. The supervisor's Prices card is read-only ("Price changes need the owner. Requests come in a later update.") until the price-request story. |
 | BR-3 | The price is locked at check-in and also applies to extensions and refunds of that stay; a price change affects new check-ins only. |
 | BR-4 | One guest per bed. Strangers may share a 2-bed room; one guest may pay for both beds. |
 | BR-5 | A bed can be let only when Available and Clean, and becomes Occupied only once payment is saved. |
@@ -335,8 +343,8 @@ The main risks are people bypassing the system and the desk PC failing; both hav
 
 **Open items (sprint 2 owner stories)**
 
-- **First run creates the owner.** On a fresh install, first-run setup should create the owner's account, and the owner then creates the supervisor (`manageSupervisors`). Today first run creates the supervisor; not built yet.
-- **Prices move to the owner.** `editPrices` (and adding or closing categories) is the supervisor's only until the owner can sign in; then it moves to the owner, the supervisor gets "request a price change" (`requestPriceChange`) and the owner decides (`decidePriceChange`). Marked `// TEMPORARY` in the permission map.
+- ~~First run creates the owner~~ and ~~prices move to the owner~~: done in OS-1 (21 Oct 2026).
+- **Price requests.** The supervisor's "request a price change" (`requestPriceChange`) and the owner's decision (`decidePriceChange`); until then the supervisor's Prices card is read-only.
 - **Refund approval from the owner's phone** needs sync; until then requested refunds wait. Payouts stay at the desk.
 
 ## Approval

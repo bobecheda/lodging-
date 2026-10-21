@@ -10,10 +10,11 @@ import '../data/user_repository.dart';
 import '../domain/setup.dart';
 import 'auth_providers.dart';
 
-/// First run only: creates the supervisor's account and names the
-/// lodging. (Sprint 2: first run creates the owner, who then creates the
-/// supervisor; prd.md, open items.)
-/// Unreachable once any user exists (see the router).
+/// First run: creates the owner's account and names the lodging; the owner
+/// then adds the supervisor. On a database from before the owner role, the
+/// same screen asks only for the owner's account, before anyone may sign in
+/// ([SetupState.needsOwner]). Unreachable once the owner exists (see the
+/// router).
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
 
@@ -45,8 +46,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     lodgingName: _fields[SetupField.lodgingName]!.text,
   );
 
+  /// Only the owner's account is missing: the lodging is already named.
+  bool get _ownerOnly =>
+      ref.read(setupStatusProvider).value == SetupState.needsOwner;
+
   Future<void> _submit() async {
-    final errors = validateSetup(_input);
+    final ownerOnly = _ownerOnly;
+    final errors = validateSetup(_input, withLodgingName: !ownerOnly);
     setState(() {
       _errors = errors;
       _formError = null;
@@ -55,10 +61,19 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
     setState(() => _busy = true);
     try {
-      await ref.read(userRepositoryProvider).createFirstSupervisor(_input);
+      final users = ref.read(userRepositoryProvider);
+      if (ownerOnly) {
+        await users.createMissingOwner(_input);
+      } else {
+        await users.createFirstOwner(_input);
+      }
       _done();
     } on SetupAlreadyDone {
       _done();
+    } on UsernameTaken catch (e) {
+      if (mounted) {
+        setState(() => _errors = {SetupField.username: e.toString()});
+      }
     } catch (e) {
       if (mounted) setState(() => _formError = 'Could not save: $e');
     } finally {
@@ -93,37 +108,47 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   );
 
   @override
-  Widget build(BuildContext context) => SplitGateLayout(
-    title: 'Set up this lodging',
-    subtitle: "Create the supervisor's account. You can add receptionists afterwards.",
-    children: [
-      _field(
-        SetupField.lodgingName,
-        'Lodging name',
-        helper: 'Printed at the top of every receipt',
-      ),
-      _field(SetupField.fullName, 'Your full name'),
-      _field(SetupField.username, 'Username'),
-      _field(
-        SetupField.password,
-        'Password',
-        obscure: true,
-        helper: 'At least 8 characters',
-      ),
-      _field(
-        SetupField.confirmPassword,
-        'Confirm password',
-        obscure: true,
-        last: true,
-      ),
-      if (_formError != null) ...[Note.error(_formError!), formGap],
-      AppButton.primary(
-        key: const ValueKey('setup.submit'),
-        label: 'Create supervisor account',
-        large: true,
-        busy: _busy,
-        onPressed: _submit,
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final ownerOnly =
+        ref.watch(setupStatusProvider).value == SetupState.needsOwner;
+    return SplitGateLayout(
+      title: ownerOnly ? "Create the owner's account" : 'Set up this lodging',
+      subtitle: ownerOnly
+          ? 'This lodging now has an owner above the supervisor. The owner '
+                'sets prices, approves refunds and adds supervisors. Nobody '
+                'can sign in until the owner\'s account exists.'
+          : "Create the owner's account. You then add the supervisor, who "
+                'adds receptionists.',
+      children: [
+        if (!ownerOnly)
+          _field(
+            SetupField.lodgingName,
+            'Lodging name',
+            helper: 'Printed at the top of every receipt',
+          ),
+        _field(SetupField.fullName, "Owner's full name"),
+        _field(SetupField.username, 'Username'),
+        _field(
+          SetupField.password,
+          'Password',
+          obscure: true,
+          helper: 'At least 8 characters',
+        ),
+        _field(
+          SetupField.confirmPassword,
+          'Confirm password',
+          obscure: true,
+          last: true,
+        ),
+        if (_formError != null) ...[Note.error(_formError!), formGap],
+        AppButton.primary(
+          key: const ValueKey('setup.submit'),
+          label: 'Create owner account',
+          large: true,
+          busy: _busy,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
 }

@@ -33,6 +33,16 @@ import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
 /// 22:00 Nairobi, 14 Oct 2026.
 final testT0 = DateTime.utc(2026, 10, 14, 19);
 
+/// The owner every test lodging has: made by the real first run.
+const testOwner = SetupInput(
+  fullName: 'Amina Owner',
+  username: 'Owner',
+  password: 'owner-pass',
+  confirmPassword: 'owner-pass',
+  lodgingName: 'Sunrise Lodge',
+);
+
+/// The supervisor the tests mostly sign in as.
 const testSetup = SetupInput(
   fullName: 'Grace Supervisor',
   username: 'Supervisor',
@@ -56,6 +66,42 @@ class TestEnv {
   late final UserRepository users;
 
   Future<void> close() => db.close();
+
+  /// A lodging set up as on a fresh install: the owner by the real first
+  /// run (lodging name from [setup]), then the supervisor described by
+  /// [setup] (no password change needed). Returns the supervisor.
+  Future<UserAccount> createFirstSupervisor(SetupInput setup) async {
+    owner = await users.createFirstOwner(
+      testOwner.copyWith(lodgingName: setup.lodgingName),
+    );
+    final form = setup.normalized();
+    final hash = await hasher.hash(form.password);
+    final row = await audit.writeWithAudit(
+      action: 'user.create',
+      userId: owner!.id,
+      body: (w) => w.insert(
+        db.users,
+        UsersCompanion.insert(
+          fullName: form.fullName,
+          username: form.username,
+          passwordHash: hash,
+          role: Role.supervisor.name,
+          mustChangePassword: false,
+        ),
+      ),
+    );
+    return UserAccount(
+      id: row.id,
+      fullName: row.fullName,
+      username: row.username,
+      role: Role.supervisor,
+      isActive: row.isActive,
+      mustChangePassword: row.mustChangePassword,
+    );
+  }
+
+  /// The owner, once [createFirstSupervisor] ran.
+  UserAccount? owner;
 
   /// The bed board's clock tick; null (no timer) unless a test sets it.
   Duration? boardTick;

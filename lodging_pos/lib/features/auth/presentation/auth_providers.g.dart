@@ -91,18 +91,18 @@ final class LoginServiceProvider
 
 String _$loginServiceHash() => r'adba22c33a822798cdee6c72a72ed1636d5a375b';
 
-/// Whether any user exists. False → only the first-run setup screen is
-/// reachable; true → the setup screen is unreachable.
+/// Where first-run setup stands ([SetupState]). Until it is ready, only the
+/// setup screen is reachable; once ready, it is unreachable.
 
 @ProviderFor(SetupStatus)
 final setupStatusProvider = SetupStatusProvider._();
 
-/// Whether any user exists. False → only the first-run setup screen is
-/// reachable; true → the setup screen is unreachable.
+/// Where first-run setup stands ([SetupState]). Until it is ready, only the
+/// setup screen is reachable; once ready, it is unreachable.
 final class SetupStatusProvider
-    extends $AsyncNotifierProvider<SetupStatus, bool> {
-  /// Whether any user exists. False → only the first-run setup screen is
-  /// reachable; true → the setup screen is unreachable.
+    extends $AsyncNotifierProvider<SetupStatus, SetupState> {
+  /// Where first-run setup stands ([SetupState]). Until it is ready, only the
+  /// setup screen is reachable; once ready, it is unreachable.
   SetupStatusProvider._()
     : super(
         from: null,
@@ -122,22 +122,22 @@ final class SetupStatusProvider
   SetupStatus create() => SetupStatus();
 }
 
-String _$setupStatusHash() => r'208e7d5eb523386129437d1a383628dff0f33e5b';
+String _$setupStatusHash() => r'8072b972fa4aefde95c8f5a7a9bd667f723fd043';
 
-/// Whether any user exists. False → only the first-run setup screen is
-/// reachable; true → the setup screen is unreachable.
+/// Where first-run setup stands ([SetupState]). Until it is ready, only the
+/// setup screen is reachable; once ready, it is unreachable.
 
-abstract class _$SetupStatus extends $AsyncNotifier<bool> {
-  FutureOr<bool> build();
+abstract class _$SetupStatus extends $AsyncNotifier<SetupState> {
+  FutureOr<SetupState> build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
+    final ref = this.ref as $Ref<AsyncValue<SetupState>, SetupState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<bool>, bool>,
-              AsyncValue<bool>,
+              AnyNotifier<AsyncValue<SetupState>, SetupState>,
+              AsyncValue<SetupState>,
               Object?,
               Object?
             >;

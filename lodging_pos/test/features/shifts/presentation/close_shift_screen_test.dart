@@ -18,7 +18,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv();
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     mary = await env.addReceptionist('mary');
     await env.addReceptionist('tom');
     // Mary: float KES 1,000, then KES 700 in cash → expected KES 1,700.

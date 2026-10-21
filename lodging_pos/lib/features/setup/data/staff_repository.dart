@@ -31,8 +31,9 @@ class StaffRuleViolation implements Exception {
   String toString() => message;
 }
 
-/// Users and housekeepers (AD-4). User writes need
-/// [Permission.manageUsers], housekeeper writes
+/// Users and housekeepers (AD-4). A supervisor manages receptionists
+/// ([Permission.manageUsers]), the owner supervisors
+/// ([Permission.manageSupervisors]); housekeeper writes need
 /// [Permission.manageHousekeepers]. Every write goes through writeWithAudit,
 /// and every rule check runs inside its transaction.
 class StaffRepository {
@@ -44,8 +45,9 @@ class StaffRepository {
 
   // ── Users ──────────────────────────────────────────────────────────────
 
-  /// Everyone who signs in: the supervisor first, then active users by name, then
-  /// disabled ones; each with the time their open shift began, if any.
+  /// Everyone who signs in: the owner, then supervisors, then active users
+  /// by name, then disabled ones; each with the time their open shift
+  /// began, if any.
   Future<List<UserSummary>> users() async {
     final rows = await _db.select(_db.users).get();
     final open = await (_db.select(
@@ -56,11 +58,13 @@ class StaffRepository {
       for (final r in rows)
         UserSummary(_toAccount(r), shiftOpenSince: since[r.id]),
     ];
-    int rank(UserAccount u) => can(u, Permission.manageUsers)
+    int rank(UserAccount u) => roleAllows(u, Permission.manageSupervisors)
         ? 0
-        : u.isActive
+        : roleAllows(u, Permission.manageUsers)
         ? 1
-        : 2;
+        : u.isActive
+        ? 2
+        : 3;
     list.sort((a, b) {
       final byRank = rank(a.account) - rank(b.account);
       if (byRank != 0) return byRank;
@@ -72,12 +76,30 @@ class StaffRepository {
   }
 
   /// Adds a receptionist who must set their own password at first sign-in
-  /// (`user.create`).
+  /// (`user.create`). A supervisor's job ([Permission.manageUsers]).
   Future<UserAccount> addReceptionist(
     UserAccount actor,
     NewReceptionist input,
   ) async {
     requirePermission(actor, Permission.manageUsers);
+    return _addUser(actor, input, Role.receptionist);
+  }
+
+  /// Adds a supervisor who must set their own password at first sign-in
+  /// (`user.create`). The owner's job ([Permission.manageSupervisors]).
+  Future<UserAccount> addSupervisor(
+    UserAccount actor,
+    NewSupervisor input,
+  ) async {
+    requirePermission(actor, Permission.manageSupervisors);
+    return _addUser(actor, input, Role.supervisor);
+  }
+
+  Future<UserAccount> _addUser(
+    UserAccount actor,
+    NewReceptionist input,
+    Role role,
+  ) async {
     final errors = validateNewReceptionist(input);
     if (errors.isNotEmpty) throw InvalidReceptionist(errors);
     final form = input.normalized();
@@ -100,7 +122,7 @@ class StaffRepository {
             fullName: form.fullName,
             username: form.username,
             passwordHash: hash,
-            role: Role.receptionist.name,
+            role: role.name,
             mustChangePassword: true,
           ),
         );
@@ -116,7 +138,7 @@ class StaffRepository {
     String userId,
     String temporaryPassword,
   ) async {
-    requirePermission(actor, Permission.manageUsers);
+    _requireStaffManager(actor);
     final problem = passwordError(temporaryPassword);
     if (problem != null) throw StaffRuleViolation(problem);
     final hash = await _hasher.hash(temporaryPassword);
@@ -152,7 +174,7 @@ class StaffRepository {
     String userId, {
     required bool active,
   }) async {
-    requirePermission(actor, Permission.manageUsers);
+    _requireStaffManager(actor);
     final current = await _user(userId);
     if (current.isActive == active) return;
     await _audit.writeWithAudit(
@@ -167,6 +189,14 @@ class StaffRepository {
         );
       },
     );
+  }
+
+  /// A supervisor (receptionists) or the owner (supervisors); which
+  /// accounts exactly is [accountActionBlocker]'s to say.
+  static void _requireStaffManager(UserAccount actor) {
+    if (!can(actor, Permission.manageSupervisors)) {
+      requirePermission(actor, Permission.manageUsers);
+    }
   }
 
   Future<UserRow> _user(String id) =>

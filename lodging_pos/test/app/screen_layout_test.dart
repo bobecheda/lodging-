@@ -50,7 +50,7 @@ void main() {
   }
 
   Future<void> withOwner() async =>
-      env.users.createFirstSupervisor(testSetup).then((_) {});
+      env.createFirstSupervisor(testSetup).then((_) {});
 
   testWidgets('first-run setup', (tester) async {
     final app = await pumpDeskApp(tester, env);
@@ -184,7 +184,7 @@ void main() {
         'Sunrise Lodge and Guest House, Kakamega Road, Nairobi West';
     Future<void> withLongName() async {
       expect(longName.length, lessThanOrEqualTo(60));
-      await env.users.createFirstSupervisor(
+      await env.createFirstSupervisor(
         const SetupInput(
           fullName: 'Grace Supervisor',
           username: 'Supervisor',
@@ -339,14 +339,18 @@ void main() {
   });
 
   group('Prices & settings (AD-3)', () {
-    /// [before] runs once the data is in, before the app starts.
+    /// [before] runs once the data is in, before the app starts. The
+    /// supervisor sees settings and read-only prices; [asOwner], the
+    /// owner's Prices (editable, no settings).
     Future<ProviderContainer> openPrices(
       WidgetTester tester, {
       Future<void> Function(UserAccount supervisor)? before,
+      bool asOwner = false,
     }) async {
       await withOwner();
       final supervisor = (await env.users.findByUsername('supervisor'))!
           .account;
+      final owner = env.owner!;
       final prices = PricesRepository(env.db, env.audit);
       // Eight categories, one closed, some in use: a fuller table than seed.
       for (final (name, price) in [
@@ -355,10 +359,10 @@ void main() {
         ('Executive suite', 2500),
         ('Budget', 400),
       ]) {
-        await prices.addCategory(supervisor, name: name, pricePerNight: price);
+        await prices.addCategory(owner, name: name, pricePerNight: price);
       }
       await prices.closeCategory(
-        supervisor,
+        owner,
         (await prices.categories()).last.category.id,
       );
       await RoomsRepository(env.db, env.audit).createRoom(
@@ -373,22 +377,25 @@ void main() {
       );
       await before?.call(supervisor);
       final app = await pumpDeskApp(tester, env);
-      await signInAs(tester, 'supervisor', 'super-pass');
+      if (asOwner) {
+        await signInAs(tester, 'owner', 'owner-pass');
+      } else {
+        await signInAs(tester, 'supervisor', 'super-pass');
+      }
       await tapKey(tester, 'nav.${Routes.adminPrices}');
       return app;
     }
 
-    testWidgets('prices and settings', (tester) async {
+    testWidgets("the supervisor's prices (read-only) and settings", (
+      tester,
+    ) async {
       final app = await openPrices(tester);
-      await expectCleanLayout(tester, app, Routes.adminPrices, 'Save prices');
+      await expectCleanLayout(tester, app, Routes.adminPrices, 'Save settings');
+      expect(find.byKey(const ValueKey('prices.readOnly')), findsOneWidget);
     });
 
-    testWidgets('edits, errors and the add row', (tester) async {
+    testWidgets('settings with every error', (tester) async {
       final app = await openPrices(tester);
-      await enterKey(tester, 'price.${SeedIds.deluxe}', '750');
-      await enterKey(tester, 'price.${SeedIds.vip}', '250000');
-      await tapKey(tester, 'prices.save');
-      await tapKey(tester, 'categories.add');
       await enterKey(tester, 'settings.grace', '999');
       await enterKey(tester, 'settings.idleLock', '0');
       await enterKey(tester, 'settings.lodgingName', '');
@@ -397,8 +404,25 @@ void main() {
         tester,
         app,
         Routes.adminPrices,
+        'Enter the lodging name.',
+      );
+    });
+
+    testWidgets("the owner's Prices: edits, errors and the add row", (
+      tester,
+    ) async {
+      final app = await openPrices(tester, asOwner: true);
+      await enterKey(tester, 'price.${SeedIds.deluxe}', '750');
+      await enterKey(tester, 'price.${SeedIds.vip}', '250000');
+      await tapKey(tester, 'prices.save');
+      await tapKey(tester, 'categories.add');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.adminPrices,
         'The price can be at most KES 100,000.',
       );
+      expect(find.byKey(const ValueKey('settings.save')), findsNothing);
     });
 
     group('with the Backups card', () {
@@ -466,12 +490,94 @@ void main() {
     });
 
     testWidgets('the confirmation dialog', (tester) async {
-      final app = await openPrices(tester);
+      final app = await openPrices(tester, asOwner: true);
       for (final id in [SeedIds.vip, SeedIds.deluxe, SeedIds.comfort]) {
         await enterKey(tester, 'price.$id', '12500');
       }
       await tapKey(tester, 'prices.save');
       await expectCleanLayout(tester, app, Routes.adminPrices, 'Confirm');
+    });
+  });
+
+  group('The owner (sign-in, Today, Staff)', () {
+    testWidgets("the one-time owner's account screen", (tester) async {
+      await env.audit.writeWithAudit(
+        action: 'user.create',
+        userId: null,
+        body: (w) => w.insert(
+          env.db.users,
+          UsersCompanion.insert(
+            fullName: 'Grace Supervisor',
+            username: 'supervisor',
+            passwordHash: 'x',
+            role: Role.supervisor.name,
+            mustChangePassword: false,
+          ),
+        ),
+      );
+      final app = await pumpDeskApp(tester, env);
+      await tapKey(tester, 'setup.submit'); // every error
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.setup,
+        "Create the owner's account",
+      );
+    });
+
+    testWidgets('Today, a new lodging: nothing yet', (tester) async {
+      await withOwner();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await expectCleanLayout(tester, app, Routes.today, 'TODAY’S MONEY');
+      expect(
+        find.byKey(const ValueKey('today.attention.empty')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Today, busy: 12 rooms, six refunds waiting, long names', (
+      tester,
+    ) async {
+      env.clock.set(nairobiInstant(2026, 10, 20, 19));
+      final supervisor = await env.createFirstSupervisor(testSetup);
+      final repo = RoomsRepository(env.db, env.audit);
+      final early = <String>[];
+      for (var n = 1; n <= 12; n++) {
+        final room = await repo.createRoom(
+          supervisor,
+          NewRoom(
+            number: '$n',
+            floor: null,
+            notes: null,
+            bedACategoryId: SeedIds.vip,
+            bedBCategoryId: SeedIds.comfort,
+          ),
+        );
+        final stay = await env.checkIn(
+          room.beds.first.id,
+          by: supervisor,
+          nights: 30,
+        );
+        if (n <= 6) early.add(stay);
+      }
+      env.clock.set(nairobiInstant(2026, 10, 21, 14));
+      for (final stay in early) {
+        await env.checkOut(stay, by: supervisor);
+      }
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await expectCleanLayout(tester, app, Routes.today, 'Refund to approve');
+      expect(find.text('And 2 more.'), findsOneWidget);
+    });
+
+    testWidgets("the owner's Staff with an error", (tester) async {
+      await withOwner();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'nav.${Routes.adminStaff}');
+      await tapKey(tester, 'addUser.save');
+      await expectCleanLayout(tester, app, Routes.adminStaff, 'Add supervisor');
     });
   });
 

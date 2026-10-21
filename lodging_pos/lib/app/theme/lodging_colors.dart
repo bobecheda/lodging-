@@ -37,6 +37,7 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     required this.brandCream,
     required this.brandGoldOnDark,
     required this.brandGoldOnLight,
+    required this.gold,
   });
 
   static const light = LodgingColors(
@@ -74,6 +75,8 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     brandCream: Color(0xFFF5EDD8),
     brandGoldOnDark: Color(0xFFC9962E),
     brandGoldOnLight: Color(0xFFE9B53F),
+    // The brand gold: M-Pesa in the owner's money bars (Figma "01 Today").
+    gold: Color(0xFFC9962E),
   );
 
   final Color marine;
@@ -110,6 +113,9 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
   /// The wordmark's offset shadow on marine, and on a light ground.
   final Color brandGoldOnDark;
   final Color brandGoldOnLight;
+
+  /// The brand gold, for M-Pesa in money bars (cash is marine).
+  final Color gold;
 
   static LodgingColors of(BuildContext context) {
     final colors = Theme.of(context).extension<LodgingColors>();

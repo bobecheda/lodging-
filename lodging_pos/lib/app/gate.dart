@@ -9,7 +9,13 @@ abstract final class Routes {
   static const login = '/login';
   static const changePassword = '/change-password';
   static const shift = '/shift';
+
+  /// The bed board: the desk's home.
   static const home = '/home';
+
+  /// The owner's Today: their home on the desk (and the phone's first
+  /// screen, sprint 2).
+  static const today = '/owner';
   static const guests = '/guests';
 
   /// FD-4; `?bed=<id>` starts with that bed chosen.
@@ -45,6 +51,9 @@ abstract final class Routes {
   /// (BR-13). A screen with two parts may show the part a user can't change
   /// read-only.
   static const permissions = {
+    // The bed board is the front desk's; the owner's home is Today.
+    home: {Permission.checkIn},
+    today: {Permission.viewBusinessDashboard},
     guests: {Permission.registerGuests},
     checkIn: {Permission.checkIn},
     receipts: {Permission.printReceipts},
@@ -56,8 +65,16 @@ abstract final class Routes {
       Permission.editSettings,
       Permission.manageBackups,
     },
-    adminStaff: {Permission.manageUsers, Permission.manageHousekeepers},
+    adminStaff: {
+      Permission.manageUsers,
+      Permission.manageHousekeepers,
+      Permission.manageSupervisors,
+    },
   };
+
+  /// Where [user] starts once ready: the bed board, or the owner's Today.
+  static String homeFor(UserAccount? user) =>
+      user != null && !allows(home, user) && allows(today, user) ? today : home;
 
   /// Whether [user] may open [location]. A setup route missing from
   /// [permissions] is closed to everyone, so a new screen fails safe.
@@ -84,7 +101,9 @@ abstract final class Routes {
 /// exactly one screen, so e.g. a user who must change password can reach
 /// nothing else.
 ///
-/// [hasUsers] is null while loading. [shiftStart] is null while the open
+/// [hasUsers] is null while loading; [hasOwner] is false for a database
+/// from before the owner role, which must create the owner's account before
+/// anyone signs in (null while loading). [shiftStart] is null while the open
 /// shift is loading (only meaningful once signed in). [schemaMatches] is
 /// false when the database file was made by an older build (debug builds
 /// only; null while checking), which comes before everything else.
@@ -93,11 +112,15 @@ String routeFor({
   required UserAccount? user,
   required ShiftStart? shiftStart,
   bool? schemaMatches = true,
+  bool? hasOwner = true,
 }) {
   if (schemaMatches == null) return Routes.splash;
   if (!schemaMatches) return Routes.oldDatabase;
   if (hasUsers == null) return Routes.splash;
   if (!hasUsers) return Routes.setup;
+  if (hasOwner == null) return Routes.splash;
+  // Sign-in waits until the owner's account exists (decision 21 Oct 2026).
+  if (!hasOwner) return Routes.setup;
   if (user == null) return Routes.login;
   if (user.mustChangePassword) return Routes.changePassword;
   return switch (shiftStart) {
@@ -118,17 +141,20 @@ String? redirectFor(
   required UserAccount? user,
   required ShiftStart? shiftStart,
   bool? schemaMatches = true,
+  bool? hasOwner = true,
   String? returnTo,
 }) {
   final target = routeFor(
     hasUsers: hasUsers,
+    hasOwner: hasOwner,
     user: user,
     shiftStart: shiftStart,
     schemaMatches: schemaMatches,
   );
   if (target == Routes.home) {
+    final home = Routes.homeFor(user);
     // AD-1: a screen needs its permission, not just a hidden menu item.
-    if (!Routes.allows(location, user)) return Routes.home;
+    if (!Routes.allows(location, user)) return home;
     // A supervisor works without a shift, so signing in never sends them to
     // the shift screen; but one with no shift of their own may go there to
     // open one (check-in takes a payment, BR-12).
@@ -140,7 +166,7 @@ String? redirectFor(
     }
     // Once ready, any working screen is fine; only the gates send you on.
     if (!Routes.gates.contains(location)) return null;
-    return _workingScreen(returnTo, user) ?? Routes.home;
+    return _workingScreen(returnTo, user) ?? home;
   }
   return target == location ? null : target;
 }

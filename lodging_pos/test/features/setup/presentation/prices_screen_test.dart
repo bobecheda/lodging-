@@ -18,16 +18,24 @@ void main() {
 
   setUp(() async {
     env = TestEnv();
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
   PricesRepository prices() => PricesRepository(env.db, env.audit);
 
-  /// Signs in as the owner and opens Prices & settings from the sidebar.
-  Future<ProviderContainer> openPrices(WidgetTester tester) async {
+  /// Signs in as the supervisor (or [asOwner], the owner, who edits prices)
+  /// and opens Prices & settings from the sidebar.
+  Future<ProviderContainer> openPrices(
+    WidgetTester tester, {
+    bool asOwner = false,
+  }) async {
     final app = await pumpDeskApp(tester, env);
-    await signInAs(tester, 'supervisor', 'super-pass');
+    if (asOwner) {
+      await signInAs(tester, 'owner', 'owner-pass');
+    } else {
+      await signInAs(tester, 'supervisor', 'super-pass');
+    }
     await tapKey(tester, 'nav.${Routes.adminPrices}');
     expect(locationOf(app), Routes.adminPrices);
     return app;
@@ -72,7 +80,7 @@ void main() {
   testWidgets('a changed price shows "was", and saves only after confirming', (
     tester,
   ) async {
-    await openPrices(tester);
+    await openPrices(tester, asOwner: true);
     await enterKey(tester, 'price.${SeedIds.deluxe}', '750');
     await tester.pump();
     expect(textOf(tester, 'price.was.${SeedIds.deluxe}'), 'was 700');
@@ -106,7 +114,7 @@ void main() {
   testWidgets('a price over 100,000 is refused before any dialog', (
     tester,
   ) async {
-    await openPrices(tester);
+    await openPrices(tester, asOwner: true);
     await enterKey(tester, 'price.${SeedIds.vip}', '100001');
     await tapKey(tester, 'prices.save');
     expect(find.text('The price can be at most KES 100,000.'), findsOneWidget);
@@ -115,7 +123,7 @@ void main() {
   });
 
   testWidgets('adds a category; a name in use is refused', (tester) async {
-    await openPrices(tester);
+    await openPrices(tester, asOwner: true);
     await tapKey(tester, 'categories.add');
     await enterKey(tester, 'categories.newName', 'deluxe');
     await enterKey(tester, 'categories.newPrice', '900');
@@ -141,7 +149,7 @@ void main() {
         bedBCategoryId: null,
       ),
     );
-    await openPrices(tester);
+    await openPrices(tester, asOwner: true);
 
     final close = tester.widget<TextButton>(
       find.byKey(ValueKey('categories.close.${SeedIds.deluxe}')),
@@ -197,6 +205,27 @@ void main() {
     expect(find.text('Enter whole minutes from 0 to 180.'), findsOneWidget);
     expect(find.text('Enter whole minutes from 1 to 60.'), findsOneWidget);
     expect((await prices().settings()).graceMinutes, '60');
+  });
+
+  testWidgets("the supervisor's prices are read-only, with why; the owner's "
+      'Prices has no settings', (tester) async {
+    await openPrices(tester);
+    expect(
+      find.text(
+        'Price changes need the owner. Requests come in a later update.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('prices.save')), findsNothing);
+    expect(find.byKey(const ValueKey('categories.add')), findsNothing);
+  });
+
+  testWidgets("the owner's Prices: no settings, no backups", (tester) async {
+    await openPrices(tester, asOwner: true);
+    expect(find.text('Prices'), findsWidgets);
+    expect(find.text('Prices and settings'), findsNothing);
+    expect(find.byKey(const ValueKey('settings.save')), findsNothing);
+    expect(find.byKey(const ValueKey('prices.readOnly')), findsNothing);
   });
 
   testWidgets('a receptionist cannot open Prices & settings', (tester) async {

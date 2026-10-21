@@ -27,17 +27,32 @@ class NavItem {
     required this.icon,
     this.permissions = const {},
     this.setup = false,
+    this.shortLabel,
+    this.fullLabelNeeds = const {},
   });
 
   final String route;
   final String label;
   final IconData icon;
 
+  /// The label for a user with none of [fullLabelNeeds], e.g. the owner's
+  /// "Prices" (no settings) for "Prices & settings".
+  final String? shortLabel;
+  final Set<Permission> fullLabelNeeds;
+
+  String labelFor(UserAccount? user) =>
+      shortLabel != null &&
+          user != null &&
+          !fullLabelNeeds.any((p) => can(user, p))
+      ? shortLabel!
+      : label;
+
   /// Shown to users with any of these (none: everyone). The router enforces
   /// the same through `Routes.permissions`.
   final Set<Permission> permissions;
 
-  /// Listed under "SETUP · SUPERVISOR".
+  /// Listed under "SETUP · SUPERVISOR" for the supervisor; the owner's few
+  /// setup screens (Prices, Staff) are listed with the rest.
   final bool setup;
 
   bool visibleTo(UserAccount? user) =>
@@ -50,9 +65,16 @@ class NavItem {
 @Riverpod(keepAlive: true)
 List<NavItem> deskNavItems(Ref ref) => const [
   NavItem(
+    route: Routes.today,
+    label: 'Today',
+    icon: Icons.today_outlined,
+    permissions: {Permission.viewBusinessDashboard},
+  ),
+  NavItem(
     route: Routes.home,
     label: 'Bed board',
     icon: Icons.grid_view_rounded,
+    permissions: {Permission.checkIn},
   ),
   NavItem(
     route: Routes.guests,
@@ -89,13 +111,21 @@ List<NavItem> deskNavItems(Ref ref) => const [
       Permission.manageBackups,
     },
     setup: true,
+    shortLabel: 'Prices',
+    fullLabelNeeds: {Permission.editSettings},
   ),
   NavItem(
     route: Routes.adminStaff,
     label: 'Users & staff',
     icon: Icons.people_outline_rounded,
-    permissions: {Permission.manageUsers, Permission.manageHousekeepers},
+    permissions: {
+      Permission.manageUsers,
+      Permission.manageHousekeepers,
+      Permission.manageSupervisors,
+    },
     setup: true,
+    shortLabel: 'Staff',
+    fullLabelNeeds: {Permission.manageHousekeepers},
   ),
 ];
 
@@ -116,8 +146,11 @@ class DeskShell extends ConsumerWidget {
     final items = ref
         .watch(deskNavItemsProvider)
         .where((i) => i.visibleTo(user));
-    final desk = items.where((i) => !i.setup).toList();
-    final setup = items.where((i) => i.setup).toList();
+    // The setup group is the supervisor's; the owner's setup screens sit
+    // with the rest.
+    final grouped = user != null && can(user, Permission.manageRooms);
+    final desk = items.where((i) => !grouped || !i.setup).toList();
+    final setup = items.where((i) => grouped && i.setup).toList();
 
     final sidebar = Container(
       width: Sizes.sidebarWidth,
@@ -138,7 +171,7 @@ class DeskShell extends ConsumerWidget {
           Expanded(
             child: ListView(
               children: [
-                for (final item in desk) _NavTile(item, location),
+                for (final item in desk) _NavTile(item, location, user),
                 if (setup.isNotEmpty) ...[
                   const SizedBox(height: Space.x20),
                   Padding(
@@ -152,7 +185,7 @@ class DeskShell extends ConsumerWidget {
                       style: t.capsLabel.copyWith(color: c.navMuted),
                     ),
                   ),
-                  for (final item in setup) _NavTile(item, location),
+                  for (final item in setup) _NavTile(item, location, user),
                 ],
               ],
             ),
@@ -189,10 +222,11 @@ class DeskShell extends ConsumerWidget {
 }
 
 class _NavTile extends StatelessWidget {
-  const _NavTile(this.item, this.location);
+  const _NavTile(this.item, this.location, this.user);
 
   final NavItem item;
   final String location;
+  final UserAccount? user;
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +265,7 @@ class _NavTile extends StatelessWidget {
                     const SizedBox(width: Space.x8 + Space.x10),
                   Expanded(
                     child: Text(
-                      item.label,
+                      item.labelFor(user),
                       style: isActive
                           ? t.nav.copyWith(
                               color: c.white,

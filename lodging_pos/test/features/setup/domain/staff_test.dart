@@ -101,6 +101,34 @@ void main() {
     });
   });
 
+  group('the owner and supervisors', () {
+    final owner = account('o1', 'Amina Owner', role: Role.owner);
+    final joseph = account('s2', 'Joseph Otieno', role: Role.supervisor);
+
+    test('the owner manages supervisors, not receptionists', () {
+      expect(accountActionBlocker(actor: owner, target: joseph), isNull);
+      expect(
+        accountActionBlocker(actor: owner, target: mary),
+        'Receptionists are managed by a supervisor.',
+      );
+    });
+
+    test('the owner sees themselves and the supervisors; a supervisor sees '
+        'everyone', () {
+      final all = [
+        UserSummary(owner),
+        UserSummary(supervisor),
+        UserSummary(joseph),
+        UserSummary(mary),
+      ];
+      List<String> ids(List<UserSummary> list) => [
+        for (final u in list) u.account.id,
+      ];
+      expect(ids(usersShownTo(owner, all)), [owner.id, supervisor.id, 's2']);
+      expect(ids(usersShownTo(supervisor, all)), ids(all));
+    });
+  });
+
   group('disableWarning', () {
     test("warns when the user's shift is still open", () {
       expect(

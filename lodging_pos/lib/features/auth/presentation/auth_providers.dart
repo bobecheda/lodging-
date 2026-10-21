@@ -5,6 +5,7 @@ import '../../../core/auth/password_hasher.dart';
 import '../../../core/database/database_provider.dart';
 import '../data/login_service.dart';
 import '../data/user_repository.dart';
+import '../domain/setup.dart';
 
 part 'auth_providers.g.dart';
 
@@ -22,12 +23,12 @@ LoginService loginService(Ref ref) => LoginService(
   ref.watch(auditWriterProvider),
 );
 
-/// Whether any user exists. False → only the first-run setup screen is
-/// reachable; true → the setup screen is unreachable.
+/// Where first-run setup stands ([SetupState]). Until it is ready, only the
+/// setup screen is reachable; once ready, it is unreachable.
 @Riverpod(keepAlive: true)
 class SetupStatus extends _$SetupStatus {
   @override
-  Future<bool> build() => ref.watch(userRepositoryProvider).hasAnyUser();
+  Future<SetupState> build() => ref.watch(userRepositoryProvider).setupState();
 
-  void markDone() => state = const AsyncData(true);
+  void markDone() => state = const AsyncData(SetupState.ready);
 }

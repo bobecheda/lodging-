@@ -31,7 +31,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     rooms = RoomsRepository(env.db, env.audit);
     shifts = ShiftRepository(env.db, env.audit);
@@ -186,7 +186,7 @@ void main() {
       await PricesRepository(
         env.db,
         env.audit,
-      ).savePrices(supervisor, {SeedIds.deluxe: 750});
+      ).savePrices(env.owner!, {SeedIds.deluxe: 750});
       final charge = await env.db.select(env.db.stayCharges).getSingle();
       expect((charge.pricePerNight, charge.categoryName), (700, 'Deluxe'));
     });
@@ -531,7 +531,7 @@ void main() {
       await PricesRepository(
         env.db,
         env.audit,
-      ).savePrices(supervisor, {SeedIds.deluxe: 750});
+      ).savePrices(env.owner!, {SeedIds.deluxe: 750});
       await expectLater(
         repo.checkIn(desk, request),
         throwsA(

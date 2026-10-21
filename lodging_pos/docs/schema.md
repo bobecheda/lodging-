@@ -83,7 +83,7 @@ A category can't be closed while active beds use it, counting beds in rooms clos
 
 Seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500, with fixed UUIDs so the cloud can seed the same rows.
 
-Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No user is seeded: when `users` is empty the desk shows a first-run setup screen that creates the supervisor (FD-1; sprint 2: the owner first).
+Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No user is seeded: when `users` is empty the desk shows a first-run setup screen that creates the **owner** and names the lodging (OS-1); the owner adds supervisors, who add receptionists. A database with users but no owner (from before the owner role) shows a one-time "Create the owner's account" screen before sign-in. Either way the owner is `user.create` with role `owner`.
 
 ### rooms
 | Column | Type | Notes |

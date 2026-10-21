@@ -37,7 +37,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 20, 7, 2)); // Tue 07:02
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     temp = Directory.systemTemp.createTempSync('lodging_backup_test');
     folder = '${temp.path}${Platform.pathSeparator}backups';
@@ -106,7 +106,7 @@ void main() {
         await db.select(t).get().then((rows) => rows.length),
     ];
     expect(await counts(copy), await counts(env.db));
-    expect(await counts(copy), [1, 1, 1, 2]);
+    expect(await counts(copy), [1, 1, 1, 3]); // owner, supervisor, desk
     final receipt = await copy.select(copy.receiptCounter).getSingle();
     expect(receipt.nextNumber, 2);
     // Everything audited before the backup is in it.

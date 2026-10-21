@@ -80,7 +80,7 @@ void main() {
     late String shiftId;
 
     setUp(() async {
-      supervisor = await env.users.createFirstSupervisor(testSetup);
+      supervisor = await env.createFirstSupervisor(testSetup);
       desk = await env.addReceptionist('mary');
       shiftId = (await shifts.openShift(user: desk, openingFloat: 1000)).id;
       // KES 700 in cash, taken on Mary's shift.

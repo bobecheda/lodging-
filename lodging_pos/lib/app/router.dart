@@ -4,11 +4,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/auth/session.dart';
 import '../core/database/schema_check.dart';
+import '../features/auth/domain/setup.dart';
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/setup_screen.dart';
 import '../features/bed_board/presentation/bed_board_screen.dart';
+import '../features/dashboard/presentation/today_screen.dart';
 import '../features/guests/presentation/guests_screen.dart';
 import '../features/receipts/presentation/receipts_screen.dart';
 import '../features/stays/presentation/check_in_screen.dart';
@@ -52,7 +54,14 @@ GoRouter router(Ref ref) {
         AsyncError() => true,
         _ => null,
       },
-      hasUsers: ref.read(setupStatusProvider).value,
+      hasUsers: switch (ref.read(setupStatusProvider).value) {
+        null => null,
+        final setup => setup != SetupState.fresh,
+      },
+      hasOwner: switch (ref.read(setupStatusProvider).value) {
+        null => null,
+        final setup => setup != SetupState.needsOwner,
+      },
       user: user,
       shiftStart: user == null || !shift.hasValue
           ? null
@@ -95,6 +104,7 @@ GoRouter router(Ref ref) {
             builder: (_, state) =>
                 BedBoardScreen(openStayId: state.uri.queryParameters['stay']),
           ),
+          GoRoute(path: Routes.today, builder: (_, _) => const TodayScreen()),
           GoRoute(path: Routes.guests, builder: (_, _) => const GuestsScreen()),
           GoRoute(
             path: Routes.checkIn,

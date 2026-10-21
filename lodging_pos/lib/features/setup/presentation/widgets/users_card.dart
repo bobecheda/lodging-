@@ -15,8 +15,10 @@ import '../staff_providers.dart';
 import 'staff_dialogs.dart';
 
 /// "People who sign in" (AD-4): status, reset password, disable or enable,
-/// and the add-a-receptionist form. Read-only without
-/// [Permission.manageUsers].
+/// and the add form: a supervisor adds receptionists
+/// ([Permission.manageUsers]), the owner supervisors
+/// ([Permission.manageSupervisors]; the owner sees only themselves and the
+/// supervisors). Read-only for anyone else.
 class UsersCard extends ConsumerStatefulWidget {
   const UsersCard({super.key});
 
@@ -67,6 +69,10 @@ class _UsersCardState extends ConsumerState<UsersCard> {
     }
   }
 
+  bool get _addsSupervisors =>
+      !can(_me, Permission.manageUsers) &&
+      can(_me, Permission.manageSupervisors);
+
   Future<void> _add() async {
     final input = NewReceptionist(
       fullName: _fullName.text,
@@ -76,7 +82,11 @@ class _UsersCardState extends ConsumerState<UsersCard> {
     setState(() => _errors = validateNewReceptionist(input));
     if (_errors.isNotEmpty) return;
     await _run(() async {
-      await _repo.addReceptionist(_me, input);
+      if (_addsSupervisors) {
+        await _repo.addSupervisor(_me, input);
+      } else {
+        await _repo.addReceptionist(_me, input);
+      }
       _fullName.clear();
       _username.clear();
       _password.clear();
@@ -118,8 +128,14 @@ class _UsersCardState extends ConsumerState<UsersCard> {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final me = ref.watch(sessionProvider);
-    final canManage = me != null && can(me, Permission.manageUsers);
+    final canManage =
+        me != null &&
+        (can(me, Permission.manageUsers) ||
+            can(me, Permission.manageSupervisors));
     final users = ref.watch(staffUsersProvider);
+    final shown = me == null
+        ? const <UserSummary>[]
+        : usersShownTo(me, users.value ?? const []);
 
     return Card(
       child: Padding(
@@ -135,7 +151,7 @@ class _UsersCardState extends ConsumerState<UsersCard> {
             if (users case AsyncError(:final error))
               Note.error('$error', title: 'Users could not be loaded.')
             else
-              for (final (i, u) in (users.value ?? const []).indexed) ...[
+              for (final (i, u) in shown.indexed) ...[
                 if (i > 0) Divider(height: 1, color: c.lineSoft),
                 _UserRow(
                   user: u,
@@ -161,6 +177,7 @@ class _UsersCardState extends ConsumerState<UsersCard> {
             const SizedBox(height: Space.x20),
             if (canManage)
               _AddReceptionist(
+                supervisor: _addsSupervisors,
                 fullName: _fullName,
                 username: _username,
                 password: _password,
@@ -304,6 +321,7 @@ class _UserRow extends StatelessWidget {
 
 class _AddReceptionist extends StatelessWidget {
   const _AddReceptionist({
+    required this.supervisor,
     required this.fullName,
     required this.username,
     required this.password,
@@ -312,6 +330,8 @@ class _AddReceptionist extends StatelessWidget {
     required this.onAdd,
   });
 
+  /// The owner's form: adds a supervisor.
+  final bool supervisor;
   final TextEditingController fullName;
   final TextEditingController username;
   final TextEditingController password;
@@ -332,7 +352,10 @@ class _AddReceptionist extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Add a receptionist', style: t.bodyStrong),
+          Text(
+            supervisor ? 'Add a supervisor' : 'Add a receptionist',
+            style: t.bodyStrong,
+          ),
           const SizedBox(height: Space.x12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,7 +396,7 @@ class _AddReceptionist extends StatelessWidget {
             children: [
               AppButton.primary(
                 key: const ValueKey('addUser.save'),
-                label: 'Add receptionist',
+                label: supervisor ? 'Add supervisor' : 'Add receptionist',
                 busy: busy,
                 onPressed: onAdd,
               ),

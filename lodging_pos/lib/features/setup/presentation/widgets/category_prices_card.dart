@@ -17,7 +17,7 @@ import 'confirm_prices_dialog.dart';
 
 /// "Bed categories" (AD-3): a price per night for each category, saved after
 /// a confirmation listing every change; add, close and reopen categories.
-/// Read-only without [Permission.editPrices].
+/// Read-only without [Permission.editPrices] (the owner's, BR-2).
 class CategoryPricesCard extends ConsumerStatefulWidget {
   const CategoryPricesCard({super.key});
 
@@ -279,8 +279,12 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                 ],
               )
             else
+              // The supervisor (BR-2): the owner sets prices; requesting a
+              // change is a later story.
               Text(
-                'Only users who can edit prices can change these.',
+                'Price changes need the owner. Requests come in a later '
+                'update.',
+                key: const ValueKey('prices.readOnly'),
                 style: t.small,
               ),
           ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
+import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
@@ -17,24 +18,23 @@ void main() {
   setUp(() => env = TestEnv());
   tearDown(() => env.close());
 
-  testWidgets('first run: setup creates the supervisor, then goes to sign in', (
+  testWidgets('first run: setup creates the owner, then goes to sign in', (
     tester,
   ) async {
     final app = await pumpDeskApp(tester, env);
     expect(find.text('Set up this lodging'), findsOneWidget);
+    expect(find.text('Create owner account'), findsOneWidget);
 
     await enterKey(tester, 'setup.lodgingName', 'Sunrise Lodge');
-    await enterKey(tester, 'setup.fullName', 'Grace Supervisor');
-    await enterKey(tester, 'setup.username', 'Supervisor');
-    await enterKey(tester, 'setup.password', 'super-pass');
-    await enterKey(tester, 'setup.confirmPassword', 'super-pass');
+    await enterKey(tester, 'setup.fullName', 'Amina Owner');
+    await enterKey(tester, 'setup.username', 'Owner');
+    await enterKey(tester, 'setup.password', 'owner-pass');
+    await enterKey(tester, 'setup.confirmPassword', 'owner-pass');
     await tapKey(tester, 'setup.submit');
 
     expect(locationOf(app), Routes.login);
-    expect(
-      (await env.users.findByUsername('supervisor'))?.account.fullName,
-      'Grace Supervisor',
-    );
+    final owner = (await env.users.findByUsername('owner'))!.account;
+    expect((owner.fullName, owner.role), ('Amina Owner', Role.owner));
     // The brand panel now shows the lodging name.
     expect(find.text('Sunrise Lodge'), findsOneWidget);
   });
@@ -49,7 +49,7 @@ void main() {
   testWidgets('once any user exists, the setup screen is unreachable', (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
     expect(locationOf(app), Routes.login);
 
@@ -70,7 +70,7 @@ void main() {
   testWidgets('the supervisor signs in straight to home without a shift', (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'SUPERVISOR', 'super-pass');
     expect(locationOf(app), Routes.home);
@@ -83,7 +83,7 @@ void main() {
   testWidgets('a wrong password stays on sign in with a message', (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'wrong-pass');
     expect(locationOf(app), Routes.login);
@@ -93,7 +93,7 @@ void main() {
   testWidgets('must change password, then open a shift, then home (FD-1)', (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk', mustChangePassword: true);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -128,7 +128,7 @@ void main() {
   });
 
   testWidgets('an empty float is rejected on screen', (tester) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk');
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -140,7 +140,7 @@ void main() {
   testWidgets("another receptionist is blocked by an open shift", (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
     await env.addReceptionist('tom');
     await ShiftRepository(
@@ -160,7 +160,7 @@ void main() {
   testWidgets(
     'the shift owner sees the resume card with takings, then continues',
     (tester) async {
-      final supervisor = await env.users.createFirstSupervisor(testSetup);
+      final supervisor = await env.createFirstSupervisor(testSetup);
       final desk = await env.addReceptionist('desk');
       await ShiftRepository(
         env.db,
@@ -188,7 +188,7 @@ void main() {
 
   testWidgets('the resume card shows a paid refund as received, refunded and '
       'net', (tester) async {
-    final supervisor = await env.users.createFirstSupervisor(testSetup);
+    final supervisor = await env.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
     await ShiftRepository(
       env.db,
