@@ -70,6 +70,11 @@ Future<Uint8List> buildReceiptPdf(Receipt r, ReceiptFonts fonts) {
             textAlign: pw.TextAlign.center,
             style: s.lodgingName,
           ),
+          pw.Text(
+            'LODGING',
+            textAlign: pw.TextAlign.center,
+            style: s.lodgingWord,
+          ),
           pw.SizedBox(height: ReceiptPrintStyle.gap),
           solid(),
           pw.SizedBox(height: ReceiptPrintStyle.gap),

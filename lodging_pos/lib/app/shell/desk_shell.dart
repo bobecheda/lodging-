@@ -8,7 +8,6 @@ import '../../core/auth/session.dart';
 import '../../core/auth/user_account.dart';
 import '../../core/clock/clock.dart';
 import '../../core/clock/nairobi.dart';
-import '../../core/settings/settings_repository.dart';
 import '../../core/sync/outbox_status.dart';
 import '../../features/auth/presentation/idle_lock.dart';
 import '../../features/backup/domain/backup.dart';
@@ -16,7 +15,7 @@ import '../../features/backup/presentation/backup_providers.dart';
 import '../../features/shifts/presentation/shift_providers.dart';
 import '../gate.dart';
 import '../theme/theme.dart';
-import '../widgets/brand.dart';
+import '../widgets/wordmark.dart';
 
 part 'desk_shell.g.dart';
 
@@ -132,10 +131,9 @@ class DeskShell extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BrandHeader(
-            lodgingName: ref.watch(lodgingNameProvider).value,
-            subtitle: 'Front desk',
-          ),
+          const LodgingWordmark(),
+          const SizedBox(height: Space.x6),
+          Text('Front desk', style: t.small.copyWith(color: c.navMuted)),
           const SizedBox(height: Space.x28),
           Expanded(
             child: ListView(

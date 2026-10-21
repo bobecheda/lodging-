@@ -7,6 +7,7 @@ import 'spacing.dart';
 export 'lodging_colors.dart';
 export 'lodging_type.dart';
 export 'spacing.dart';
+export 'wordmark_style.dart';
 
 /// The app theme: light only, hand-written ColorScheme (no fromSeed), no
 /// shadows or gradients (docs/design.md).
