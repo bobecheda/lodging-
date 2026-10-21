@@ -22,7 +22,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 20, 7, 2));
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     temp = Directory.systemTemp.createTempSync('lodging_backup_ui');
     env.backupFolder = temp.path;

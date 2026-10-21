@@ -23,12 +23,18 @@ class PricesScreen extends ConsumerWidget {
         user != null &&
         can(user, Permission.manageBackups) &&
         ref.watch(backupsProvider.select((s) => s.enabled));
+    // The owner's "Prices": the prices only; rules and backups are the
+    // supervisor's.
+    final settings = user != null && can(user, Permission.editSettings);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Semantics(
           header: true,
-          child: Text('Prices and settings', style: t.pageTitle),
+          child: Text(
+            settings ? 'Prices and settings' : 'Prices',
+            style: t.pageTitle,
+          ),
         ),
         const SizedBox(height: Space.x20),
         Expanded(
@@ -43,7 +49,7 @@ class PricesScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SettingsCard(),
+                      if (settings) const SettingsCard(),
                       if (backups) ...[
                         const SizedBox(height: Space.x24),
                         const BackupsCard(),

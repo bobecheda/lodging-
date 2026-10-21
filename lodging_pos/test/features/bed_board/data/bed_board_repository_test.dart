@@ -21,7 +21,7 @@ void main() {
     env = TestEnv();
     board = BedBoardRepository(env.db);
     rooms = RoomsRepository(env.db, env.audit);
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 

@@ -18,8 +18,8 @@ void main() {
 
   group('required test case 18: the permission map (BR-13)', () {
     test('a receptionist cannot edit prices, void, manage users or approve '
-        'refunds; the supervisor can do the first three, only the owner '
-        'approves refunds', () {
+        'refunds; the supervisor voids and manages users; only the owner '
+        'edits prices and approves refunds', () {
       for (final p in [
         Permission.editPrices,
         Permission.voidRecords,
@@ -29,16 +29,14 @@ void main() {
         expect(can(desk, p), isFalse, reason: '$p');
         expect(() => requirePermission(desk, p), throwsA(isA<NotPermitted>()));
       }
-      for (final p in [
-        Permission.editPrices,
-        Permission.voidRecords,
-        Permission.manageUsers,
-      ]) {
+      for (final p in [Permission.voidRecords, Permission.manageUsers]) {
         expect(can(supervisor, p), isTrue, reason: '$p');
         requirePermission(supervisor, p);
       }
-      expect(can(supervisor, Permission.approveRefund), isFalse);
-      expect(can(owner, Permission.approveRefund), isTrue);
+      for (final p in [Permission.editPrices, Permission.approveRefund]) {
+        expect(can(supervisor, p), isFalse, reason: '$p');
+        expect(can(owner, p), isTrue, reason: '$p');
+      }
     });
 
     test('every Permission is assigned to at least one role', () {
@@ -54,8 +52,9 @@ void main() {
     });
   });
 
-  test('the map as agreed with the owner (21 Oct 2026)', () {
+  test('the map as agreed with the owner (21 Oct 2026; owner sign-in)', () {
     const ownerOnly = {
+      Permission.editPrices,
       Permission.approveRefund,
       Permission.decidePriceChange,
       Permission.viewBusinessDashboard,
@@ -64,11 +63,9 @@ void main() {
     const ownerAndSupervisor = {
       Permission.viewAllReports,
       Permission.viewAuditTrail,
+      Permission.workWithoutShift,
     };
     const supervisorOnly = {
-      // TEMPORARY: editPrices moves to the owner in the sprint 2 owner
-      // sign-in story.
-      Permission.editPrices,
       Permission.requestPriceChange,
       Permission.closeOtherShifts,
       Permission.manageBackups,
@@ -77,7 +74,6 @@ void main() {
       Permission.manageUsers,
       Permission.manageHousekeepers,
       Permission.voidRecords,
-      Permission.workWithoutShift,
       Permission.manageInventoryItems,
       Permission.recordExpenses,
     };
@@ -119,15 +115,16 @@ void main() {
     }
   });
 
-  test('the owner works from the business view, never the desk', () {
+  test('the owner works from the business view, never the desk, and is '
+      'never asked to open a shift', () {
     for (final p in [
       Permission.checkIn,
       Permission.openShift,
       Permission.payRefund,
-      Permission.workWithoutShift,
     ]) {
       expect(can(owner, p), isFalse, reason: '$p');
     }
+    expect(can(owner, Permission.workWithoutShift), isTrue);
   });
 
   test('a disabled user can do nothing', () {

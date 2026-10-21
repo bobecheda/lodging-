@@ -47,7 +47,7 @@ void main() {
   }
 
   testWidgets('the supervisor sees SETUP · SUPERVISOR', (tester) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     await pumpWithSetupItem(tester);
     await signInAs(tester, 'supervisor', 'super-pass');
     expect(find.text('SETUP · SUPERVISOR'), findsOneWidget);
@@ -57,7 +57,7 @@ void main() {
   testWidgets('a receptionist never sees the supervisor’s setup group', (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk');
     await pumpWithSetupItem(tester);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -69,10 +69,11 @@ void main() {
   });
 
   testWidgets('only screens that exist are listed', (tester) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
     expect(app.read(deskNavItemsProvider).map((i) => i.route), [
+      Routes.today,
       Routes.home,
       Routes.guests,
       Routes.receipts,
@@ -87,7 +88,7 @@ void main() {
   testWidgets('sync pill: not set up yet, counting changes waiting', (
     tester,
   ) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
     final unsent = await env.db.select(env.db.outbox).get();
@@ -99,7 +100,7 @@ void main() {
   });
 
   testWidgets('the sidebar shows the lodging name', (tester) async {
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
     expect(find.text('Sunrise Lodge'), findsOneWidget);

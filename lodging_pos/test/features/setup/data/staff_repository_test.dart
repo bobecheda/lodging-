@@ -19,7 +19,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     staff = StaffRepository(env.db, env.audit, env.hasher);
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 
@@ -90,34 +90,31 @@ void main() {
       );
     });
 
-    test(
-      'lists the supervisor first, active users by name, disabled last; shows '
-      'an open shift',
-      () async {
-        final mary = await addMary();
-        final james = await staff.addReceptionist(
-          supervisor,
-          const NewReceptionist(
-            fullName: 'Aaron James',
-            username: 'james',
-            temporaryPassword: 'temp-pass-1',
-          ),
-        );
-        await staff.disableUser(supervisor, james.id);
-        await ShiftRepository(
-          env.db,
-          env.audit,
-        ).openShift(user: mary, openingFloat: 500);
+    test('lists the owner, then supervisors, active users by name, disabled last; shows '
+        'an open shift', () async {
+      final mary = await addMary();
+      final james = await staff.addReceptionist(
+        supervisor,
+        const NewReceptionist(
+          fullName: 'Aaron James',
+          username: 'james',
+          temporaryPassword: 'temp-pass-1',
+        ),
+      );
+      await staff.disableUser(supervisor, james.id);
+      await ShiftRepository(
+        env.db,
+        env.audit,
+      ).openShift(user: mary, openingFloat: 500);
 
-        final list = await staff.users();
-        expect(
-          [for (final u in list) u.account.username],
-          ['supervisor', 'mary', 'james'],
-        );
-        expect(list[1].shiftOpenSince, env.clock.now());
-        expect(list[0].shiftOpenSince, isNull);
-      },
-    );
+      final list = await staff.users();
+      expect(
+        [for (final u in list) u.account.username],
+        ['owner', 'supervisor', 'mary', 'james'],
+      );
+      expect(list[2].shiftOpenSince, env.clock.now()); // mary
+      expect(list[0].shiftOpenSince, isNull);
+    });
 
     test('reset password sets a temporary one to change at sign-in', () async {
       final mary = await addMary();
@@ -304,6 +301,101 @@ void main() {
             (e) => e.permission,
             'permission',
             Permission.manageHousekeepers,
+          ),
+        ),
+      );
+    });
+  });
+
+  group('supervisors (the owner)', () {
+    late UserAccount owner;
+    setUp(() => owner = env.owner!);
+
+    Future<UserAccount> addJoseph() => staff.addSupervisor(
+      owner,
+      const NewSupervisor(
+        fullName: 'Joseph Otieno',
+        username: 'joseph',
+        temporaryPassword: 'temp-pass-2',
+      ),
+    );
+
+    test('the owner adds a supervisor who must set a password, and can add '
+        'more than one (user.create)', () async {
+      final joseph = await addJoseph();
+      expect((joseph.role, joseph.mustChangePassword), (Role.supervisor, true));
+      expect((await env.auditFor('user.create')).last.userId, owner.id);
+      final result = await login().login('joseph', 'temp-pass-2');
+      expect(result.outcome, LoginOutcome.mustChangePassword);
+      expect(
+        [
+          for (final u in await staff.users())
+            if (u.account.role == Role.supervisor) u.account.username,
+        ],
+        ['supervisor', 'joseph'], // by name
+      );
+    });
+
+    test('the owner resets, disables and enables a supervisor', () async {
+      final joseph = await addJoseph();
+      await staff.resetPassword(owner, joseph.id, 'another-pass');
+      await staff.disableUser(owner, joseph.id);
+      expect((await reload(joseph.id)).isActive, isFalse);
+      await staff.enableUser(owner, joseph.id);
+      expect((await reload(joseph.id)).isActive, isTrue);
+      expect(
+        [for (final a in await env.auditFor('user.disable')) a.userId],
+        [owner.id],
+      );
+    });
+
+    test("receptionists aren't the owner's; supervisors aren't a "
+        "supervisor's; nobody touches the owner here", () async {
+      final mary = await addMary();
+      await expectLater(
+        staff.disableUser(owner, mary.id),
+        throwsA(isA<StaffRuleViolation>()),
+      );
+      await expectLater(
+        staff.addReceptionist(
+          owner,
+          const NewReceptionist(
+            fullName: 'X Y',
+            username: 'xy',
+            temporaryPassword: 'temp-pass-1',
+          ),
+        ),
+        throwsA(isA<NotPermitted>()),
+      );
+      final joseph = await addJoseph();
+      await expectLater(
+        staff.disableUser(supervisor, joseph.id),
+        throwsA(
+          isA<StaffRuleViolation>().having(
+            (e) => e.message,
+            'message',
+            "A supervisor's account can't be changed here.",
+          ),
+        ),
+      );
+      await expectLater(
+        staff.addSupervisor(
+          supervisor,
+          const NewSupervisor(
+            fullName: 'X Y',
+            username: 'xy',
+            temporaryPassword: 'temp-pass-1',
+          ),
+        ),
+        throwsA(isA<NotPermitted>()),
+      );
+      await expectLater(
+        staff.resetPassword(supervisor, owner.id, 'another-pass'),
+        throwsA(
+          isA<StaffRuleViolation>().having(
+            (e) => e.message,
+            'message',
+            "The owner's account can't be changed here.",
           ),
         ),
       );

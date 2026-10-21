@@ -71,7 +71,7 @@ const _supervisorOnly = {Role.supervisor};
 const _ownerAndSupervisor = {Role.owner, Role.supervisor};
 
 /// The front desk: supervisors and receptionists. The owner works from the
-/// business view, not the desk.
+/// business view (Today, Prices, Staff), not the bed board.
 const _desk = {Role.supervisor, Role.receptionist};
 
 /// Who may do what. The only place roles are named for access.
@@ -81,12 +81,12 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.decidePriceChange: _ownerOnly,
   Permission.viewBusinessDashboard: _ownerOnly,
   Permission.manageSupervisors: _ownerOnly,
+  // Prices and adding or closing categories (BR-2); the supervisor asks.
+  Permission.editPrices: _ownerOnly,
   Permission.viewAllReports: _ownerAndSupervisor,
   Permission.viewAuditTrail: _ownerAndSupervisor,
-  // TEMPORARY: moves to owner + requestPriceChange in the sprint 2 owner
-  // sign-in story (prd.md, BR-2). Until the owner can sign in, the
-  // supervisor sets prices and adds or closes categories.
-  Permission.editPrices: _supervisorOnly,
+  // Neither works shifts: the owner never takes money at the desk.
+  Permission.workWithoutShift: _ownerAndSupervisor,
   // The supervisor: setup, staff, settings, shift oversight.
   Permission.requestPriceChange: _supervisorOnly,
   Permission.manageRooms: _supervisorOnly,
@@ -96,7 +96,6 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.voidRecords: _supervisorOnly,
   Permission.manageInventoryItems: _supervisorOnly,
   Permission.recordExpenses: _supervisorOnly,
-  Permission.workWithoutShift: _supervisorOnly,
   Permission.closeOtherShifts: _supervisorOnly,
   Permission.manageBackups: _supervisorOnly,
   // The front desk.

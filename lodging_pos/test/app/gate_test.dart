@@ -182,4 +182,67 @@ void main() {
       expect(Routes.permissions[Routes.checkIn], isNotEmpty);
     });
   });
+
+  group('the owner', () {
+    const owner = UserAccount(
+      id: 'o1',
+      fullName: 'Amina Owner',
+      username: 'owner',
+      role: Role.owner,
+      isActive: true,
+      mustChangePassword: false,
+    );
+
+    test('a database without an owner: only the setup screen, nobody signs '
+        'in until the owner exists', () {
+      for (final location in [Routes.login, Routes.home, Routes.today]) {
+        expect(
+          redirectFor(
+            location,
+            hasUsers: true,
+            hasOwner: false,
+            user: null,
+            shiftStart: null,
+          ),
+          Routes.setup,
+          reason: location,
+        );
+      }
+      expect(
+        redirectFor(
+          Routes.setup,
+          hasUsers: true,
+          hasOwner: true,
+          user: null,
+          shiftStart: null,
+        ),
+        Routes.login,
+      );
+    });
+
+    test('signs in to Today, never the bed board or the shift screen', () {
+      final ready = shiftStartFor(
+        openShift: null,
+        user: owner,
+        resumeConfirmed: false,
+      );
+      expect(ready, isA<ShiftReady>());
+      String? ownerGo(String location) =>
+          go(location, user: owner, shiftStart: ready);
+      expect(ownerGo(Routes.login), Routes.today);
+      expect(ownerGo(Routes.home), Routes.today);
+      expect(ownerGo(Routes.checkIn), Routes.today);
+      expect(ownerGo(Routes.today), isNull);
+      expect(ownerGo(Routes.adminPrices), isNull);
+      expect(ownerGo(Routes.adminStaff), isNull);
+      expect(ownerGo(Routes.shifts), isNull);
+      expect(ownerGo(Routes.adminRooms), Routes.today);
+    });
+
+    test('the desk never lands on Today', () {
+      expect(go(Routes.today), Routes.home);
+      expect(Routes.homeFor(desk), Routes.home);
+      expect(Routes.homeFor(owner), Routes.today);
+    });
+  });
 }

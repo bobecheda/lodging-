@@ -19,7 +19,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     rooms = RoomsRepository(env.db, env.audit);
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 

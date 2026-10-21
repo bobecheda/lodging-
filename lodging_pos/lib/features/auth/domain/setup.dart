@@ -1,7 +1,22 @@
 import 'credentials.dart';
 
-/// The first-run "Set up this lodging" form: the first supervisor plus the
-/// lodging name that receipts print.
+/// The first-run "Set up this lodging" form: the owner's account plus the
+/// lodging name that receipts print. A database from before the owner role
+/// uses it without the lodging name ("Create the owner's account").
+
+/// Where first-run setup stands.
+enum SetupState {
+  /// No users: first run creates the owner and names the lodging.
+  fresh,
+
+  /// Users, but no owner (a database from before the owner role): the
+  /// owner's account must be created before anyone signs in.
+  needsOwner,
+
+  /// Done: sign-in.
+  ready,
+}
+
 class SetupInput {
   const SetupInput({
     required this.fullName,
@@ -42,8 +57,13 @@ class SetupInput {
 
 enum SetupField { fullName, username, password, confirmPassword, lodgingName }
 
-/// Errors per field; empty if the form can be saved.
-Map<SetupField, String> validateSetup(SetupInput input) {
+/// Errors per field; empty if the form can be saved. Without
+/// [withLodgingName] (creating the owner on a database that has one), the
+/// lodging name isn't asked for.
+Map<SetupField, String> validateSetup(
+  SetupInput input, {
+  bool withLodgingName = true,
+}) {
   final errors = <SetupField, String>{};
   if (input.fullName.trim().isEmpty) {
     errors[SetupField.fullName] = 'Enter your full name';
@@ -60,7 +80,7 @@ Map<SetupField, String> validateSetup(SetupInput input) {
         }] =
         value;
   }
-  if (input.lodgingName.trim().isEmpty) {
+  if (withLodgingName && input.lodgingName.trim().isEmpty) {
     errors[SetupField.lodgingName] = 'Enter the lodging name';
   }
   return errors;

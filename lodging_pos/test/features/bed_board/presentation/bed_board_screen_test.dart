@@ -21,7 +21,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv(); // Wed 14 Oct 22:00 Nairobi
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     rooms = RoomsRepository(env.db, env.audit);
   });
   tearDown(() => env.close());

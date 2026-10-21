@@ -14,7 +14,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv();
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
   });
   tearDown(() => env.close());

@@ -17,7 +17,7 @@ void main() {
 
   setUp(() async {
     env = TestEnv();
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
   });
   tearDown(() => env.close());
 

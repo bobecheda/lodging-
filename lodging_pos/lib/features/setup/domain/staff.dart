@@ -18,8 +18,9 @@ String? _nameError(String name, String empty) {
 
 // ── Users ────────────────────────────────────────────────────────────────
 
-/// The "Add a receptionist" form. The supervisor can add receptionists
-/// only: the lodging has one supervisor, made at first-run setup.
+/// The "Add a receptionist" form, which is also the owner's "Add a
+/// supervisor" ([NewSupervisor]). A supervisor adds receptionists; the
+/// owner adds supervisors (any number); nobody adds an owner.
 final class NewReceptionist {
   const NewReceptionist({
     required this.fullName,
@@ -40,6 +41,9 @@ final class NewReceptionist {
     temporaryPassword: temporaryPassword,
   );
 }
+
+/// The owner's "Add a supervisor": the same fields.
+typedef NewSupervisor = NewReceptionist;
 
 enum ReceptionistField { fullName, username, temporaryPassword }
 
@@ -73,22 +77,48 @@ final class UserSummary {
 }
 
 /// Why [actor] can't reset, disable or enable [target], or null. Nobody
-/// changes their own account here, and an account that can itself manage
-/// users or supervisors (a supervisor, the owner) isn't managed from this
-/// list (BR-13: decided by permission, not role).
+/// changes their own account here; the owner's account is never changed
+/// here; supervisors are the owner's to manage ([Permission.manageSupervisors])
+/// and receptionists a supervisor's ([Permission.manageUsers]). Decided by
+/// permission, not role (BR-13).
 String? accountActionBlocker({
   required UserAccount actor,
   required UserAccount target,
 }) {
   if (actor.id == target.id) return "You can't change your own account here.";
-  if (can(target, Permission.manageSupervisors)) {
+  if (roleAllows(target, Permission.manageSupervisors)) {
     return "The owner's account can't be changed here.";
   }
-  if (can(target, Permission.manageUsers)) {
-    return "A supervisor's account can't be changed here.";
+  if (roleAllows(target, Permission.manageUsers)) {
+    return can(actor, Permission.manageSupervisors)
+        ? null
+        : "A supervisor's account can't be changed here.";
   }
-  return null;
+  return can(actor, Permission.manageUsers)
+      ? null
+      : 'Receptionists are managed by a supervisor.';
 }
+
+/// Who [viewer] sees in "People who sign in": the owner sees themselves and
+/// the supervisors (receptionists are the supervisor's); a supervisor sees
+/// everyone.
+List<UserSummary> usersShownTo(UserAccount viewer, List<UserSummary> all) {
+  if (can(viewer, Permission.manageUsers) ||
+      !can(viewer, Permission.manageSupervisors)) {
+    return all;
+  }
+  return [
+    for (final u in all)
+      if (u.account.id == viewer.id ||
+          roleAllows(u.account, Permission.manageUsers))
+        u,
+  ];
+}
+
+/// What [account]'s role allows, even while it is disabled: a disabled
+/// supervisor is still a supervisor to manage (and to list as one).
+bool roleAllows(UserAccount account, Permission permission) =>
+    can(account.copyWith(isActive: true), permission);
 
 /// Shown before disabling [user] while their shift is open. Disabling is
 /// still allowed (AD-4), but in sprint 1 nobody can close that shift, so it

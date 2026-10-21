@@ -29,7 +29,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     repo = HousekeepingRepository(env.db, env.audit);
     rooms = RoomsRepository(env.db, env.audit);

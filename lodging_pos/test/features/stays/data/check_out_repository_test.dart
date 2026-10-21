@@ -27,7 +27,7 @@ void main() {
     env = TestEnv();
     // Thu 15 Oct 19:00 Nairobi.
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
     await ShiftRepository(
       env.db,
@@ -116,7 +116,7 @@ void main() {
     await PricesRepository(
       env.db,
       env.audit,
-    ).savePrices(supervisor, {SeedIds.deluxe: 750});
+    ).savePrices(env.owner!, {SeedIds.deluxe: 750});
     env.clock.set(nairobiInstant(2026, 10, 21, 15)); // Wed 15:00
     final result = await checkOutNow(stayId);
 

@@ -17,12 +17,14 @@ void main() {
   late TestEnv env;
   late PricesRepository prices;
   late UserAccount supervisor;
+  late UserAccount owner;
   late UserAccount desk;
 
   setUp(() async {
     env = TestEnv();
     prices = PricesRepository(env.db, env.audit);
-    supervisor = await env.users.createFirstSupervisor(testSetup);
+    supervisor = await env.createFirstSupervisor(testSetup);
+    owner = env.owner!;
     desk = await env.addReceptionist('desk');
   });
   tearDown(() => env.close());
@@ -38,7 +40,7 @@ void main() {
   group('prices', () {
     test('saves only changed prices, one price.update row each with old and '
         'new', () async {
-      final changed = await prices.savePrices(supervisor, {
+      final changed = await prices.savePrices(owner, {
         SeedIds.deluxe: 750,
         SeedIds.vip: 1000, // unchanged
         SeedIds.normal: 550,
@@ -59,18 +61,18 @@ void main() {
       final deluxe = audit.firstWhere((a) => a.entityId == SeedIds.deluxe);
       expect(json(deluxe.beforeJson!)['price_per_night'], 700);
       expect(json(deluxe.afterJson)['price_per_night'], 750);
-      expect(deluxe.userId, supervisor.id);
+      expect(deluxe.userId, owner.id);
       expect(audit.map((a) => a.operationId).toSet(), hasLength(1));
     });
 
     test('nothing changed, nothing written', () async {
-      expect(await prices.savePrices(supervisor, {SeedIds.vip: 1000}), 0);
+      expect(await prices.savePrices(owner, {SeedIds.vip: 1000}), 0);
       expect(await env.auditFor('price.update'), isEmpty);
     });
 
     test('prices outside 1–100,000 are refused per category', () async {
       await expectLater(
-        prices.savePrices(supervisor, {SeedIds.vip: 0, SeedIds.deluxe: 100001}),
+        prices.savePrices(owner, {SeedIds.vip: 0, SeedIds.deluxe: 100001}),
         throwsA(
           isA<InvalidPrices>().having((e) => e.errors, 'errors', {
             SeedIds.vip: 'The price must be at least KES 1.',
@@ -113,7 +115,7 @@ void main() {
         ),
       );
       await env.checkIn(room.beds.single.id, by: supervisor);
-      await prices.savePrices(supervisor, {SeedIds.deluxe: 750});
+      await prices.savePrices(owner, {SeedIds.deluxe: 750});
       final charge = await env.db.select(env.db.stayCharges).getSingle();
       expect(charge.pricePerNight, 700);
     });
@@ -122,7 +124,7 @@ void main() {
   group('categories', () {
     test('adds a category at the end, trimmed (category.create)', () async {
       final added = await prices.addCategory(
-        supervisor,
+        owner,
         name: '  Family ',
         pricePerNight: 900,
       );
@@ -138,7 +140,7 @@ void main() {
 
     test('a name in use (any case) or a bad price is refused', () async {
       await expectLater(
-        prices.addCategory(supervisor, name: 'deluxe', pricePerNight: 900),
+        prices.addCategory(owner, name: 'deluxe', pricePerNight: 900),
         throwsA(
           isA<CategoryRuleViolation>().having(
             (e) => e.message,
@@ -148,7 +150,7 @@ void main() {
         ),
       );
       await expectLater(
-        prices.addCategory(supervisor, name: 'Family', pricePerNight: 0),
+        prices.addCategory(owner, name: 'Family', pricePerNight: 0),
         throwsA(isA<CategoryRuleViolation>()),
       );
     });
@@ -173,7 +175,7 @@ void main() {
       );
       expect(deluxe.activeBeds, 2);
       await expectLater(
-        prices.closeCategory(supervisor, SeedIds.deluxe),
+        prices.closeCategory(owner, SeedIds.deluxe),
         throwsA(
           isA<CategoryRuleViolation>().having(
             (e) => e.message,
@@ -185,10 +187,10 @@ void main() {
     });
 
     test('close and reopen an unused category (category.update)', () async {
-      await prices.closeCategory(supervisor, SeedIds.vip);
+      await prices.closeCategory(owner, SeedIds.vip);
       var vip = (await prices.categories()).first.category;
       expect(vip.isActive, isFalse);
-      await prices.reopenCategory(supervisor, SeedIds.vip);
+      await prices.reopenCategory(owner, SeedIds.vip);
       vip = (await prices.categories()).first.category;
       expect(vip.isActive, isTrue);
 

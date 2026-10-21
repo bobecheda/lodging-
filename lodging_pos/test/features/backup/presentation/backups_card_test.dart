@@ -18,7 +18,7 @@ void main() {
   setUp(() async {
     env = TestEnv();
     env.clock.set(nairobiInstant(2026, 10, 20, 9)); // Tue 09:00
-    await env.users.createFirstSupervisor(testSetup);
+    await env.createFirstSupervisor(testSetup);
     temp = Directory.systemTemp.createTempSync('lodging_backup_card');
     env.backupFolder = temp.path;
   });
