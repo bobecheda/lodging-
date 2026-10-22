@@ -65,6 +65,7 @@ Refund pay(
   PaymentMethod method = PaymentMethod.cash,
   String? mpesaCode,
   bool codeInUse = false,
+  String? sendTo,
 }) => payRefund(
   refund,
   by: by,
@@ -73,6 +74,7 @@ Refund pay(
   mpesaCode: mpesaCode,
   codeInUse: codeInUse,
   at: oct(21, 17),
+  sendTo: sendTo,
 );
 
 Matcher violates(String message) => throwsA(
@@ -245,9 +247,38 @@ void main() {
         shift: shift,
         method: PaymentMethod.paybill,
         mpesaCode: ' sjk4h7xq2p ',
+        sendTo: '+254 711 000 482',
       );
       expect(r.payout!.mpesaCode, 'SJK4H7XQ2P');
       expect(r.payout!.paidBy, 'supervisor');
+      expect(r.payout!.phone, '0711000482'); // the guest phone rule
+    });
+
+    test('an M-Pesa payout needs the phone it was sent to (the guest phone '
+        'rule); cash keeps none', () {
+      for (final sendTo in [null, '', '0722']) {
+        expect(
+          () => pay(
+            approved(),
+            shift: shift,
+            method: PaymentMethod.paybill,
+            mpesaCode: 'SJK4H7XQ2P',
+            sendTo: sendTo,
+          ),
+          throwsA(isA<InvalidPayoutPhone>()),
+          reason: '$sendTo',
+        );
+      }
+      final abroad = pay(
+        approved(),
+        shift: shift,
+        method: PaymentMethod.paybill,
+        mpesaCode: 'SJK4H7XQ2P',
+        sendTo: '+256 712 345 678',
+      );
+      expect(abroad.payout!.phone, '+256712345678');
+      final cash = pay(approved(), shift: shift, sendTo: '0711000482');
+      expect(cash.payout!.phone, isNull);
     });
 
     test('requesting needs the requestRefund permission and nights to '

@@ -64,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -232,6 +232,29 @@ class AppDatabase extends _$AppDatabase {
           },
         ),
       );
+    },
+    // v7 (AD-7): an M-Pesa refund payout keeps the phone it was sent to,
+    // required for M-Pesa and null for cash (CHECK). A payout made before
+    // v7 (none through the app) gets its guest's phone. The rebuild puts
+    // back the old "paid once" trigger, so it's replaced with the one that
+    // also guards the phone.
+    from6To7: (m, schema) async {
+      final refunds = schema.refunds;
+      await m.alterTable(
+        TableMigration(
+          refunds,
+          newColumns: [refunds.payoutPhone],
+          columnTransformer: {
+            refunds.payoutPhone: const CustomExpression<String>(
+              "CASE WHEN method = 'paybill' THEN (SELECT guests.phone "
+              'FROM stays JOIN guests ON guests.id = stays.guest_id '
+              'WHERE stays.id = refunds.stay_id) END',
+            ),
+          },
+        ),
+      );
+      await m.drop(schema.refundsPaidOnce);
+      await m.createTrigger(schema.refundsPaidOnce);
     },
   );
 

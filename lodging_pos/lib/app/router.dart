@@ -13,6 +13,8 @@ import '../features/bed_board/presentation/bed_board_screen.dart';
 import '../features/dashboard/presentation/today_screen.dart';
 import '../features/guests/presentation/guests_screen.dart';
 import '../features/receipts/presentation/receipts_screen.dart';
+import '../features/refunds/presentation/refund_detail_screen.dart';
+import '../features/refunds/presentation/refunds_screen.dart';
 import '../features/stays/presentation/check_in_screen.dart';
 import '../features/shifts/domain/shift_rules.dart';
 import '../features/shifts/presentation/close_shift_screen.dart';
@@ -105,6 +107,18 @@ GoRouter router(Ref ref) {
                 BedBoardScreen(openStayId: state.uri.queryParameters['stay']),
           ),
           GoRoute(path: Routes.today, builder: (_, _) => const TodayScreen()),
+          GoRoute(
+            path: Routes.refundDetail,
+            builder: (_, state) => RefundDetailScreen(
+              key: ValueKey(state.uri.toString()),
+              refundId: state.uri.queryParameters['id'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: Routes.refunds,
+            builder: (_, state) =>
+                RefundsScreen(openRefundId: state.uri.queryParameters['pay']),
+          ),
           GoRoute(path: Routes.guests, builder: (_, _) => const GuestsScreen()),
           GoRoute(
             path: Routes.checkIn,

@@ -16,6 +16,15 @@ abstract final class Routes {
   /// The owner's Today: their home on the desk (and the phone's first
   /// screen, sprint 2).
   static const today = '/owner';
+
+  /// AD-7: the owner's decision on one refund (`?id=<refund id>`).
+  static const refundDetail = '/owner/refund';
+
+  static String refundDetailFor(String refundId) =>
+      Uri(path: refundDetail, queryParameters: {'id': refundId}).toString();
+
+  /// AD-7: the desk's refunds to pay; `?pay=<id>` reopens a pay panel.
+  static const refunds = '/refunds';
   static const guests = '/guests';
 
   /// FD-4; `?bed=<id>` starts with that bed chosen.
@@ -54,6 +63,8 @@ abstract final class Routes {
     // The bed board is the front desk's; the owner's home is Today.
     home: {Permission.checkIn},
     today: {Permission.viewBusinessDashboard},
+    refundDetail: {Permission.approveRefund},
+    refunds: {Permission.payRefund},
     guests: {Permission.registerGuests},
     checkIn: {Permission.checkIn},
     receipts: {Permission.printReceipts},

@@ -131,7 +131,7 @@ Each story lists the conditions that must all hold before it counts as done.
 - Checking out after paid-until + grace first charges each night started (normally 1) at the stay's price, with its own payment (Cash or M-Pesa) and a late-checkout receipt.
 - What a checkout costs or refunds is worked out again when it's confirmed; if a night or the grace time started meanwhile, nothing is saved and the panel says what changed.
 - Checkout needs the user's own open shift (BR-12).
-- *Sprint 2, with AD-7:* once the owner approves a refund, the receptionist pays it from the cash drawer or the Paybill account (with the M-Pesa code) and a refund receipt is printed; the payout reduces that shift's cash or Paybill total.
+- *AD-7 (done 22 Oct 2026):* once the owner approves a refund, the receptionist or supervisor pays it in Refunds from the cash drawer or the Paybill account (with the phone it was sent to and the M-Pesa code) and a REFUND receipt is printed; the payout reduces that shift's cash or Paybill total.
 
 **FD-9 Assign housekeeping.** As a receptionist, I want to assign a dirty bed to a housekeeper so that it gets cleaned.
 
@@ -173,7 +173,7 @@ AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner sig
 - A fresh install's first run creates the **owner's** account (and names the lodging); the owner then adds supervisors (several allowed) in Staff, and supervisors add receptionists. Only the owner creates, resets or disables supervisors (`manageSupervisors`); nobody changes the owner's account in the app.
 - A database from before the owner role shows a one-time "Create the owner's account" screen at start, before sign-in; nobody can sign in until it's done. No screen inside the app creates an owner. Audited as `user.create` with role `owner`.
 - The owner needs no shift and sees no bed-board operations: Today, Shifts (read-only), Prices (edits prices directly; adds and closes categories) and Staff (supervisors).
-- Today's four cards (as the phone design, Figma "01 Today"): Needs your attention (refunds awaiting approval, with a count; approving comes with AD-7), Today's money (net received today, cash and M-Pesa, against the same weekday last week up to the same time), Beds right now (in use of total with %, plus Occupied, Overstay, To clean, Ready), This month (net revenue so far and occupancy against the same point last month).
+- Today's four cards (as the phone design, Figma "01 Today"): Needs your attention (refunds awaiting approval, with a count; each opens the refund's detail to approve or reject, AD-7), Today's money (net received today, cash and M-Pesa, against the same weekday last week up to the same time), Beds right now (in use of total with %, plus Occupied, Overstay, To clean, Ready), This month (net revenue so far and occupancy against the same point last month).
 - Net revenue = payments − refunds paid − anything voided, by Nairobi day (midnight to midnight). Occupancy = bed-nights sold ÷ active bed-nights: sold nights exclude voided stays and the nights of refunds not rejected; active bed-nights are today's active beds × nights so far (bed history comes later). Pure domain functions (`features/dashboard/domain/dashboard.dart`) the phone reuses.
 
 **AD-1 Log in as admin.** As the owner, I want my own login so that only I can change prices and see the full business.
@@ -210,10 +210,13 @@ AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner sig
 
 - Category (laundry, utilities, wages, supplies, repairs, other), amount, date, note.
 
-**AD-7 Void a wrong entry.** As the owner, I want to correct mistakes without hiding them.
+**AD-7 Approve and pay refunds; void a wrong entry.** As the owner, I want to decide every refund and correct mistakes without hiding them.
 
-- Only a supervisor can void a stay or payment, and a reason is required. Only the owner can approve or reject a refund request (a rejection needs a reason); nobody can approve a refund they requested themselves; the amount cannot be changed.
-- The original stays visible, marked void; totals exclude it.
+- *Deciding (done 22 Oct 2026, on the desk; the phone comes with sync):* from Today, a refund opens its detail (Figma "03 Refund request"): guest, room and bed, check-in, nights paid × price with the original receipt number(s), when they left, nights used and not used, and the calculated amount (marine-tint box, unchangeable), "Requested by X · time". Approve, or Reject with a required reason that the desk sees. Only `approveRefund` (the owner) decides; nobody approves a refund they requested; a refund is decided once (`refund_decisions.refund_id` UNIQUE). With sync, the first decision to reach the cloud wins; the other device shows "Already decided".
+- *Paying (done):* the desk's **Refunds** screen (`payRefund`, receptionist and supervisor; a sidebar badge counts refunds to pay): To pay (approved, unpaid), Waiting for owner approval (butter chip), Rejected in the last 14 days (with the owner's reason). Paying needs your own open shift; Cash drawer or M-Pesa (Paybill): M-Pesa needs the phone it was sent to ("Send to", pre-filled with the guest's full number, editable, the guest phone rule; stored as `refunds.payout_phone`, shown masked everywhere else) and the transaction code, unique across payments and payouts. The amount is fixed; no partial payouts. One transaction, audited `refund.pay`.
+- *REFUND receipt (done):* the next number from the same counter, titled REFUND: nights refunded × price as a negative total, original receipt number(s), approved by, paid by, method, code and "Sent to 0711 ••• 482" for M-Pesa, the usual footer. Print / Save PDF and COPY as for other receipts (`refund.print`); listed and searchable in Receipts.
+- *Money:* a cash payout reduces the paying shift's expected cash, an M-Pesa payout its M-Pesa total; requested or approved-unpaid refunds change no totals; the owner's dashboard subtracts refunds on the payout day; a voided payout is excluded.
+- Only a supervisor can void a stay or payment, and a reason is required (voids screen: later). The original stays visible, marked void; totals exclude it.
 
 **AD-8 Review the audit trail.** As the owner, I want to see who did what so that I can investigate problems.
 
@@ -345,7 +348,7 @@ The main risks are people bypassing the system and the desk PC failing; both hav
 
 - ~~First run creates the owner~~ and ~~prices move to the owner~~: done in OS-1 (21 Oct 2026).
 - **Price requests.** The supervisor's "request a price change" (`requestPriceChange`) and the owner's decision (`decidePriceChange`); until then the supervisor's Prices card is read-only.
-- **Refund approval from the owner's phone** needs sync; until then requested refunds wait. Payouts stay at the desk.
+- **Refund approval from the owner's phone** needs sync; the owner approves on the desk until then (AD-7). Payouts stay at the desk.
 
 ## Approval
 

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../app/gate.dart';
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/notes.dart';
 import '../../../core/money/kes.dart';
@@ -261,11 +264,6 @@ class _AttentionCard extends StatelessWidget {
                       style: t.small.copyWith(color: c.muted),
                     ),
                   ),
-                const SizedBox(height: Space.x8),
-                Text(
-                  'Approving refunds comes in the next update.',
-                  style: t.small.copyWith(color: c.muted),
-                ),
               ],
             ),
     );
@@ -281,38 +279,45 @@ class _RefundRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    return Padding(
+    // Opens the owner's decision (AD-7).
+    return InkWell(
       key: ValueKey('today.attention.refund.${refund.refundId}'),
-      padding: const EdgeInsets.symmetric(vertical: Space.x8),
-      child: Row(
-        children: [
-          Container(
-            width: Sizes.target - 4,
-            height: Sizes.target - 4,
-            decoration: BoxDecoration(
-              color: c.redTint,
-              borderRadius: BorderRadius.circular(Radii.control),
+      borderRadius: BorderRadius.circular(Radii.control),
+      onTap: () => context.go(Routes.refundDetailFor(refund.refundId)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Space.x8),
+        child: Row(
+          children: [
+            Container(
+              width: Sizes.target - 4,
+              height: Sizes.target - 4,
+              decoration: BoxDecoration(
+                color: c.redTint,
+                borderRadius: BorderRadius.circular(Radii.control),
+              ),
+              child: Icon(Icons.replay_rounded, color: c.redText, size: 20),
             ),
-            child: Icon(Icons.replay_rounded, color: c.redText, size: 20),
-          ),
-          const SizedBox(width: Space.x12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Refund to approve', style: t.bodyStrong),
-                Text(
-                  refund.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.small.copyWith(color: c.muted),
-                ),
-              ],
+            const SizedBox(width: Space.x12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Refund to approve', style: t.bodyStrong),
+                  Text(
+                    refund.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.small.copyWith(color: c.muted),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: Space.x12),
-          Text(formatKes(refund.amount), style: t.monoStrong),
-        ],
+            const SizedBox(width: Space.x12),
+            Text(formatKes(refund.amount), style: t.monoStrong),
+            const SizedBox(width: Space.x8),
+            Icon(Icons.chevron_right_rounded, color: c.muted),
+          ],
+        ),
       ),
     );
   }

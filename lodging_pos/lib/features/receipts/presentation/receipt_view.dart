@@ -258,7 +258,8 @@ class ReceiptView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'RECEIPT',
+                        r.title,
+                        key: const ValueKey('receipt.title'),
                         style: t.capsLabel.copyWith(color: c.muted),
                       ),
                       Text(
@@ -302,7 +303,7 @@ class ReceiptView extends StatelessWidget {
             const SizedBox(height: Space.x6),
             Row(
               children: [
-                Expanded(child: Text('Total paid', style: t.bodyStrong)),
+                Expanded(child: Text(r.totalLabel, style: t.bodyStrong)),
                 Text(
                   r.totalText,
                   key: const ValueKey('receipt.total'),
@@ -311,10 +312,8 @@ class ReceiptView extends StatelessWidget {
               ],
             ),
             soft(),
-            row('Paid by', r.paidBy),
-            if (r.mpesaCode case final code?)
-              row('M-Pesa code', code, mono: true),
-            row('Served by', r.servedBy),
+            for (final (label, value, mono) in r.paymentRows)
+              row(label, value, mono: mono),
             const SizedBox(height: Space.x20),
             rule(),
             const SizedBox(height: Space.x12),

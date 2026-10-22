@@ -40,6 +40,7 @@ const _redacted = '[redacted]';
 const _maskedColumns = <String, Map<String, String Function(String)>>{
   'guests': {'phone': _maskPhoneCompact, 'id_number': maskIdNumber},
   'housekeepers': {'phone': _maskPhoneCompact},
+  'refunds': {'payout_phone': _maskPhoneCompact},
 };
 
 String _maskPhoneCompact(String phone) => maskPhone(phone, compact: true);

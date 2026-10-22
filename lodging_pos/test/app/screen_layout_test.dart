@@ -13,6 +13,7 @@ import 'package:lodging_pos/features/backup/domain/backup.dart';
 import 'package:lodging_pos/features/backup/presentation/backup_providers.dart';
 import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
+import 'package:lodging_pos/features/refunds/data/refunds_repository.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import 'package:lodging_pos/core/clock/nairobi.dart';
@@ -578,6 +579,113 @@ void main() {
       await tapKey(tester, 'nav.${Routes.adminStaff}');
       await tapKey(tester, 'addUser.save');
       await expectCleanLayout(tester, app, Routes.adminStaff, 'Add supervisor');
+    });
+  });
+
+  group('Refunds (AD-7)', () {
+    late UserAccount desk;
+    late RefundsRepository refunds;
+
+    /// Three early checkouts with long names: one waiting, one approved,
+    /// one rejected. Returns the refund ids in that order.
+    Future<List<String>> threeRefunds() async {
+      env.clock.set(nairobiInstant(2026, 10, 15, 19));
+      final supervisor = await env.createFirstSupervisor(testSetup);
+      desk = await env.addReceptionist('desk');
+      refunds = RefundsRepository(env.db, env.audit);
+      final ids = <String>[];
+      for (final n in ['5', '6', '7']) {
+        final room = await RoomsRepository(env.db, env.audit).createRoom(
+          supervisor,
+          NewRoom(
+            number: n,
+            floor: null,
+            notes: null,
+            bedACategoryId: SeedIds.vip,
+            bedBCategoryId: null,
+          ),
+        );
+        env.clock.set(nairobiInstant(2026, 10, 15, 19));
+        final stay = await env.checkIn(
+          room.beds.single.id,
+          by: desk,
+          nights: 20,
+        );
+        env.clock.set(nairobiInstant(2026, 10, 16, 10, 30));
+        await env.checkOut(stay, by: desk);
+      }
+      for (final r in await env.db.select(env.db.refunds).get()) {
+        ids.add(r.id);
+      }
+      await refunds.decide(env.owner!, ids[1], approve: true);
+      await refunds.decide(
+        env.owner!,
+        ids[2],
+        approve: false,
+        note:
+            'The guest agreed to keep the nights for next month instead '
+            'of a refund',
+      );
+      env.clock.set(nairobiInstant(2026, 10, 16, 12));
+      return ids;
+    }
+
+    testWidgets("the owner's refund detail and the reject dialog", (
+      tester,
+    ) async {
+      final ids = await threeRefunds();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'today.attention.refund.${ids[0]}');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.refundDetail,
+        'Refund request',
+      );
+      await tapKey(tester, 'refund.reject');
+      await tapKey(tester, 'refund.reason.reject'); // the reason's error
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.refundDetail,
+        'Reject this refund?',
+      );
+    });
+
+    testWidgets('the desk: to pay, waiting and rejected', (tester) async {
+      await threeRefunds();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'desk', 'desk-pass');
+      await tapKey(tester, 'shift.continue');
+      await tapKey(tester, 'nav.${Routes.refunds}');
+      await expectCleanLayout(tester, app, Routes.refunds, 'TO PAY · 1');
+      expect(find.text('WAITING FOR OWNER APPROVAL · 1'), findsOneWidget);
+    });
+
+    testWidgets('the pay panel with every error, then the REFUND receipt', (
+      tester,
+    ) async {
+      final ids = await threeRefunds();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'desk', 'desk-pass');
+      await tapKey(tester, 'shift.continue');
+      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapKey(tester, 'refunds.pay.${ids[1]}');
+      await tapKeyIn(tester, 'pay.method', 'choice.PaymentMethod.paybill');
+      await enterKey(tester, 'pay.sendTo', '0722');
+      await tapKey(tester, 'pay.save');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.refunds,
+        'Enter the M-Pesa code.',
+      );
+      await enterKey(tester, 'pay.sendTo', '0711000482');
+      await enterKey(tester, 'pay.mpesaCode', 'QJK7H2LM4P');
+      await tapKey(tester, 'pay.save');
+      await expectCleanLayout(tester, app, Routes.refunds, 'Refund paid');
+      expect(find.text('REFUND'), findsWidgets);
     });
   });
 

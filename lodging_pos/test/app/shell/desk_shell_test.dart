@@ -77,6 +77,7 @@ void main() {
       Routes.home,
       Routes.guests,
       Routes.receipts,
+      Routes.refunds,
       Routes.shifts,
       Routes.adminRooms,
       Routes.adminPrices,

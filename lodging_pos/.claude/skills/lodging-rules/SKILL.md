@@ -33,7 +33,7 @@ There is **no** early-arrival cut-off: the owner confirmed that every arrival, w
 | BR-7a | **Late checkout:** checking out after `paid_until` + grace first charges the nights that have started (normally 1), at the stay's price, as a `late_checkout` charge with its own payment and receipt. Between 10:00 and 11:00 checkout is free. The charge moves `paid_until` forward (invariant: `paid_until` = latest charge `period_end`). |
 | BR-8 | **Early checkout refund:** nights not yet started are refunded at the stay's price. The night in progress is never refunded. The amount is calculated by the system and cannot be typed or changed by anyone. |
 | BR-8a | **Refunds need the owner's approval.** At early checkout the stay closes at once (bed → Available, not_cleaned) and a refund **request** is created for the calculated amount. Only users with `approveRefund` (the owner) can approve or reject it; a rejection needs a reason. The approver cannot change the amount, and nobody can approve a refund they requested themselves (rejecting it is allowed). |
-| BR-8b | **Paying an approved refund:** a user with `payRefund` records the payout from the **cash drawer** or the **Paybill account** (method `cash` or `paybill`; `paybill` requires the M-Pesa transaction code of the money sent). The payout needs an open shift, gets a receipt number from the same counter, and is counted in that shift: cash payouts reduce expected cash, Paybill payouts reduce the Paybill total. Requested and approved-but-unpaid refunds appear in the alerts. |
+| BR-8b | **Paying an approved refund:** a user with `payRefund` records the payout from the **cash drawer** or the **Paybill account** (method `cash` or `paybill`; `paybill` requires the M-Pesa transaction code of the money sent and the phone it was sent to, `refunds.payout_phone`, the guest phone rule). The payout needs an open shift, gets a receipt number from the same counter, and is counted in that shift: cash payouts reduce expected cash, Paybill payouts reduce the Paybill total. Requested and approved-but-unpaid refunds appear in the alerts. |
 | BR-9 | Checkout → bed `not_cleaned`. Only completing a housekeeping task sets `clean`. A reactivated bed or room starts `not_cleaned`; a new bed starts `clean`. |
 | BR-10 | An M-Pesa code can be used once across all payments and refund payouts. Required for `paybill`, null for `cash`. Methods are `cash` and `paybill` everywhere; screens label `paybill` as "M-Pesa". |
 | BR-11 | Stays, payments, charges, refunds, refund decisions and audit entries are never edited or deleted by users. Corrections are `voids` rows with a reason, by users with `voidRecords` permission. Voided payments and refund payouts are excluded from totals. |
@@ -48,7 +48,7 @@ early checkout ──► requested ──(owner approves)──► approved ─�
 ```
 
 - Status is derived, never stored as free text: no decision row → `requested`; decision `rejected` → `rejected`; decision `approved` and no payout → `approved`; payout recorded → `paid`.
-- The owner decides from the business view (phone, sprint 2, needs sync); the payout is recorded at the desk by a supervisor or receptionist with an open shift.
+- The owner decides on the desk (Today → the refund's detail; the phone comes with sync; the first decision to reach the cloud wins); the payout is recorded at the desk (Refunds) by a supervisor or receptionist with their own open shift, and prints a REFUND receipt.
 - Totals count a refund only when it is **paid**, in the shift that paid it.
 
 ## Calculations

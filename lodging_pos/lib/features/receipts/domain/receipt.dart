@@ -1,8 +1,9 @@
-/// A payment's receipt (FD-6), as the screen and the PDF print it. Pure
-/// Dart. A REFUND receipt (refund payouts) will reuse this shape.
+/// A payment's receipt (FD-6), as the screen and the PDF print it, and a
+/// refund payout's REFUND receipt (AD-7) in the same shape. Pure Dart.
 library;
 
 import '../../../core/clock/nairobi.dart';
+import '../../../core/contacts/phone.dart';
 import '../../../core/money/kes.dart';
 import '../../payments/domain/payment_rules.dart';
 
@@ -27,6 +28,32 @@ final class ReceiptLine {
   int get amount => nights * pricePerNight;
 }
 
+/// A REFUND receipt's own facts (AD-7).
+final class RefundFacts {
+  const RefundFacts({
+    required this.originalReceipts,
+    required this.approvedBy,
+    this.sentTo,
+  });
+
+  /// The stay's payment receipt numbers (check-in, extensions).
+  final List<String> originalReceipts;
+
+  /// The owner who approved it.
+  final String approvedBy;
+
+  /// The phone an M-Pesa payout went to (stored form); null for cash.
+  final String? sentTo;
+}
+
+/// The receipt key of [refundId]'s REFUND receipt: receipts are opened by a
+/// payment's id, or this.
+String refundReceiptKey(String refundId) => 'refund:$refundId';
+
+/// The refund id in a [refundReceiptKey], or null for a payment's id.
+String? refundIdOfKey(String key) =>
+    key.startsWith('refund:') ? key.substring('refund:'.length) : null;
+
 final class Receipt {
   const Receipt({
     required this.lodgingName,
@@ -44,6 +71,7 @@ final class Receipt {
     required this.graceMinutes,
     this.checkedOutAt,
     this.isExtension = false,
+    this.refund,
   });
 
   final String lodgingName;
@@ -85,6 +113,16 @@ final class Receipt {
   /// An extension's receipt (FD-7): from the old checkout to the new one.
   final bool isExtension;
 
+  /// Set on a REFUND receipt (AD-7): money paid back, as a negative total.
+  /// [lines] are the nights refunded at the stay's price; [checkedOutAt]
+  /// when the guest left; [servedBy] who paid it out.
+  final RefundFacts? refund;
+
+  bool get isRefund => refund != null;
+
+  /// "RECEIPT", or "REFUND" for a refund payout.
+  String get title => isRefund ? 'REFUND' : 'RECEIPT';
+
   /// The first print or save is the original; every later one says COPY.
   /// Viewing on screen doesn't count.
   bool get isCopy => printCount > 0;
@@ -109,6 +147,15 @@ final class Receipt {
   /// The rows about the stay after room and category: From / Check out by,
   /// or for a late checkout, Charge / Checked out.
   List<(String, String)> get stayRows => switch (checkedOutAt) {
+    final DateTime out when refund != null => [
+      (
+        refund!.originalReceipts.length == 1
+            ? 'Original receipt'
+            : 'Original receipts',
+        refund!.originalReceipts.join(', '),
+      ),
+      ('Checked out', formatDayDateComma(out)),
+    ],
     final DateTime out => [
       ('Charge', 'Late checkout'),
       ('Checked out', formatDayDateComma(out)),
@@ -132,15 +179,35 @@ final class Receipt {
       (
         lines.length == 1
             ? '${l.nights} ${l.nights == 1 ? 'night' : 'nights'}'
+                  '${isRefund ? ' refunded' : ''}'
             : 'Bed ${l.bedLabel} · ${l.categoryName}',
         '${l.nights} × ${_grouped(l.pricePerNight)}',
       ),
   ];
 
-  /// Whole KES.
-  int get total => lines.fold(0, (sum, l) => sum + l.amount);
-  String get totalText => formatKes(total);
+  /// Whole KES; negative on a REFUND receipt (money paid back).
+  int get total {
+    final sum = lines.fold(0, (sum, l) => sum + l.amount);
+    return isRefund ? -sum : sum;
+  }
+
+  /// `KES 2,100`, or `− KES 2,100` on a REFUND receipt.
+  String get totalText =>
+      total < 0 ? '− ${formatKes(-total)}' : formatKes(total);
+
+  String get totalLabel => isRefund ? 'Total refunded' : 'Total paid';
   String get paidBy => method.label;
+
+  /// (label, value, mono) under the total: how it was paid and by whom; a
+  /// REFUND receipt also says where an M-Pesa payout went and who approved
+  /// it.
+  List<(String, String, bool)> get paymentRows => [
+    (isRefund ? 'Paid back in' : 'Paid by', method.label, false),
+    if (mpesaCode case final code?) ('M-Pesa code', code, true),
+    if (refund?.sentTo case final phone?) ('Sent to', maskPhone(phone), false),
+    if (refund case final r?) ('Approved by', r.approvedBy, false),
+    (isRefund ? 'Paid by' : 'Served by', servedBy, false),
+  ];
 
   /// The stay's checkout time, and when one more night is charged (its
   /// checkout + the grace setting, BR-7a).

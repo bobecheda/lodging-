@@ -22,6 +22,7 @@ Receipt receipt({
   int graceMinutes = 60,
   DateTime? checkedOutAt,
   bool isExtension = false,
+  RefundFacts? refund,
 }) => Receipt(
   lodgingName: 'Sunrise Lodge',
   receiptNumber: 'R-000041',
@@ -38,6 +39,7 @@ Receipt receipt({
   graceMinutes: graceMinutes,
   checkedOutAt: checkedOutAt,
   isExtension: isExtension,
+  refund: refund,
 );
 
 void main() {
@@ -185,4 +187,89 @@ void main() {
       expect(r.footer.last, startsWith('Checkout is at 10:00.'));
     },
   );
+
+  group('a REFUND receipt (AD-7)', () {
+    Receipt refund({PaymentMethod method = PaymentMethod.paybill}) => receipt(
+      lines: const [
+        ReceiptLine(
+          bedLabel: 'A',
+          categoryName: 'Deluxe',
+          nights: 3,
+          pricePerNight: 700,
+        ),
+      ],
+      method: method,
+      mpesaCode: method == PaymentMethod.paybill ? 'SJK4H7XQ2P' : null,
+      checkedOutAt: oct(17, 9, 40),
+      refund: RefundFacts(
+        originalReceipts: const ['R-000041', 'R-000043'],
+        approvedBy: 'Amina Owner',
+        sentTo: method == PaymentMethod.paybill ? '0711000482' : null,
+      ),
+    );
+
+    test('titled REFUND, the nights refunded at the stay’s price, a '
+        'negative total', () {
+      final r = refund();
+      expect((r.title, r.isRefund), ('REFUND', true));
+      expect(r.chargeRows, [('3 nights refunded', '3 × 700')]);
+      expect(
+        (r.total, r.totalText, r.totalLabel),
+        (-2100, '− KES 2,100', 'Total refunded'),
+      );
+    });
+
+    test('the original receipts, when they left, and who approved and paid '
+        'it; an M-Pesa payout says where it went, masked', () {
+      expect(refund().stayRows, [
+        ('Original receipts', 'R-000041, R-000043'),
+        ('Checked out', 'Sat 17 Oct, 09:40'),
+      ]);
+      expect(refund().paymentRows, [
+        ('Paid back in', 'M-Pesa', false),
+        ('M-Pesa code', 'SJK4H7XQ2P', true),
+        ('Sent to', '0711 ••• 482', false),
+        ('Approved by', 'Amina Owner', false),
+        ('Paid by', 'Mary Wanjiku', false),
+      ]);
+      expect(refund(method: PaymentMethod.cash).paymentRows, [
+        ('Paid back in', 'Cash', false),
+        ('Approved by', 'Amina Owner', false),
+        ('Paid by', 'Mary Wanjiku', false),
+      ]);
+    });
+
+    test('the usual footer (the guest has left: no checkout reminder); COPY '
+        'and file names as for any receipt', () {
+      expect(refund().footer, ['Thank you for staying with us.']);
+      final copy = receipt(
+        printCount: 1,
+        checkedOutAt: oct(17, 9, 40),
+        refund: const RefundFacts(
+          originalReceipts: ['R-000041'],
+          approvedBy: 'Amina Owner',
+        ),
+      );
+      expect(
+        (copy.isCopy, receiptFileName(copy)),
+        (true, 'R-000041 COPY 1.pdf'),
+      );
+      expect(copy.stayRows.first, ('Original receipt', 'R-000041'));
+    });
+
+    test('receipt keys: a payment id, or refund:<id>', () {
+      expect(refundReceiptKey('abc'), 'refund:abc');
+      expect(refundIdOfKey('refund:abc'), 'abc');
+      expect(refundIdOfKey('a-payment-id'), isNull);
+    });
+
+    test('a payment receipt keeps its rows', () {
+      expect(receipt().paymentRows, [
+        ('Paid by', 'M-Pesa', false),
+        ('M-Pesa code', 'QJK7H2LM4P', true),
+        ('Served by', 'Mary Wanjiku', false),
+      ]);
+      expect(receipt().totalLabel, 'Total paid');
+    });
+  });
 }

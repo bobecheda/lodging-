@@ -725,16 +725,22 @@ void main() {
           values.copyWith(updatedAt: Value(t0.add(Duration(seconds: ++tick)))),
         );
 
+    /// An M-Pesa payout gets a "Send to" phone unless [withPhone] is false.
     Future<int> payout(
       String refundId, {
       String method = 'cash',
       String? code,
       String receipt = 'R-000101',
+      bool withPhone = true,
+      String? phone,
     }) => change(
       refundId,
       RefundsCompanion(
         method: Value(method),
         mpesaCode: Value(code),
+        payoutPhone: Value(
+          phone ?? (method == 'paybill' && withPhone ? '0711000482' : null),
+        ),
         shiftId: Value(s),
         paidBy: Value(u),
         paidAt: Value(t0),
@@ -815,6 +821,12 @@ void main() {
         await expectLater(payout(r, method: 'paybill'), _violates('CHECK'));
         await expectLater(payout(r, code: 'SJK4H7XQ2P'), _violates('CHECK'));
         await expectLater(payout(r, method: 'mpesa'), _violates('CHECK'));
+        // v7: M-Pesa needs the phone it went to; cash none.
+        await expectLater(
+          payout(r, method: 'paybill', code: 'SJK4H7XQ2P', withPhone: false),
+          _violates('CHECK'),
+        );
+        await expectLater(payout(r, phone: '0711000482'), _violates('CHECK'));
         await payout(r, method: 'paybill', code: 'SJK4H7XQ2P');
       },
     );
