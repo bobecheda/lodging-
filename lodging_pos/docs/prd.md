@@ -173,7 +173,7 @@ AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner sig
 - A fresh install's first run creates the **owner's** account (and names the lodging); the owner then adds supervisors (several allowed) in Staff, and supervisors add receptionists. Only the owner creates, resets or disables supervisors (`manageSupervisors`); nobody changes the owner's account in the app.
 - A database from before the owner role shows a one-time "Create the owner's account" screen at start, before sign-in; nobody can sign in until it's done. No screen inside the app creates an owner. Audited as `user.create` with role `owner`.
 - The owner needs no shift and sees no bed-board operations: Today, Shifts (read-only), Prices (edits prices directly; adds and closes categories) and Staff (supervisors).
-- Today's four cards (as the phone design, Figma "01 Today"): Needs your attention (refunds awaiting approval, with a count; each opens the refund's detail to approve or reject, AD-7), Today's money (net received today, cash and M-Pesa, against the same weekday last week up to the same time), Beds right now (in use of total with %, plus Occupied, Overstay, To clean, Ready), This month (net revenue so far and occupancy against the same point last month).
+- Today's four cards (as the phone design, Figma "01 Today"): Needs your attention (refunds awaiting approval, then price requests, with a count; a refund opens its detail to approve or reject, AD-7; a price request opens Prices), Today's money (net received today, cash and M-Pesa, against the same weekday last week up to the same time), Beds right now (in use of total with %, plus Occupied, Overstay, To clean, Ready), This month (net revenue so far and occupancy against the same point last month).
 - Net revenue = payments − refunds paid − anything voided, by Nairobi day (midnight to midnight). Occupancy = bed-nights sold ÷ active bed-nights: sold nights exclude voided stays and the nights of refunds not rejected; active bed-nights are today's active beds × nights so far (bed history comes later). Pure domain functions (`features/dashboard/domain/dashboard.dart`) the phone reuses.
 
 **AD-1 Log in as admin.** As the owner, I want my own login so that only I can change prices and see the full business.
@@ -193,6 +193,8 @@ AD-1 to AD-4 run on the desk app as the **supervisor** (sprint 1). The owner sig
 - Set the checkout time (10:00) and the grace period (1 hour).
 - New prices apply to check-ins after the desk syncs; existing stays keep their price.
 - Every change is in the audit trail with old and new values.
+- *Price requests (done 22 Oct 2026):* the supervisor's Prices card is read-only; each open category has "Request a change": a new price (KES 1–100,000, the owner's rule, and not today's price) and an optional reason (up to 200 characters), audited `price.request`. One open request per category; the request keeps the price it was made against. The supervisor withdraws their own waiting request (`price.request_withdraw`) and sees, in a "Price requests" card, each one waiting (butter chip; the row shows "Waiting · KES 750"), approved, or rejected with the owner's reason, for 14 days. Closing a category withdraws its waiting request in the same transaction (`price.request_withdraw` by the owner, reason "Category closed"; the supervisor sees "Withdrawn · category closed"); a reopened category starts with none. Requests can't be made for a closed category.
+- The owner sees waiting requests in Today's Needs your attention (a Price row: "Deluxe: 700 → 750", "From Grace (supervisor) · today 09:15", "+50") and on Prices as marine-tint cards (Figma "06 Prices") in the right column, with a count badge on the Prices sidebar item. Approve applies the new price at once in the same transaction (`price.approve` + `price.update`, one operation); Reject needs a reason the supervisor sees (`price.reject`). If the price changed since the request (the owner edited it directly), the card says "Deluxe is now KES 720, not 700. Reject this request or ask for a new one." and Approve is off; the database refuses it too. A request is decided once (`price_decisions.request_id` UNIQUE). With sync, requests and withdrawals are written by the desk and decisions by the owner; the first decision to reach the cloud wins, and a decision beats a withdrawal made at the same time. BR-3 holds: a new price applies to new check-ins only.
 
 **AD-4 Manage users and housekeepers.** As the owner, I want to control who uses the system.
 
@@ -347,7 +349,7 @@ The main risks are people bypassing the system and the desk PC failing; both hav
 **Open items (sprint 2 owner stories)**
 
 - ~~First run creates the owner~~ and ~~prices move to the owner~~: done in OS-1 (21 Oct 2026).
-- **Price requests.** The supervisor's "request a price change" (`requestPriceChange`) and the owner's decision (`decidePriceChange`); until then the supervisor's Prices card is read-only.
+- ~~Price requests~~: done (22 Oct 2026, schema v8; see AD-3).
 - **Refund approval from the owner's phone** needs sync; the owner approves on the desk until then (AD-7). Payouts stay at the desk.
 
 ## Approval

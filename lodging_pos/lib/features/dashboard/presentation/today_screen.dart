@@ -68,7 +68,7 @@ class TodayScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             row(
-              _AttentionCard(d.awaiting),
+              _AttentionCard(d.awaiting, d.prices, now: now),
               _MoneyCard(money, vsLine: vsLastWeekLine(money, now)),
             ),
             const SizedBox(height: Space.x20),
@@ -215,10 +215,14 @@ class _SegmentBar extends StatelessWidget {
   }
 }
 
+/// Refunds to approve, then price requests (each oldest first), at most
+/// [_shown] rows.
 class _AttentionCard extends StatelessWidget {
-  const _AttentionCard(this.refunds);
+  const _AttentionCard(this.refunds, this.prices, {required this.now});
 
   final List<RefundAwaiting> refunds;
+  final List<PriceAwaiting> prices;
+  final DateTime now;
 
   static const _shown = 4;
 
@@ -226,10 +230,14 @@ class _AttentionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
+    final rows = <Widget>[
+      for (final r in refunds) _RefundRow(r),
+      for (final p in prices) _PriceRow(p, now: now),
+    ];
     return _TodayCard(
       key: const ValueKey('today.attention'),
       title: 'NEEDS YOUR ATTENTION',
-      badge: refunds.isEmpty
+      badge: rows.isEmpty
           ? null
           : Container(
               key: const ValueKey('today.attention.count'),
@@ -242,11 +250,11 @@ class _AttentionCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(Radii.pill),
               ),
               child: Text(
-                '${refunds.length}',
+                '${rows.length}',
                 style: t.smallStrong.copyWith(color: c.white),
               ),
             ),
-      child: refunds.isEmpty
+      child: rows.isEmpty
           ? Text(
               'Nothing needs you right now.',
               key: const ValueKey('today.attention.empty'),
@@ -255,12 +263,12 @@ class _AttentionCard extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final r in refunds.take(_shown)) _RefundRow(r),
-                if (refunds.length > _shown)
+                ...rows.take(_shown),
+                if (rows.length > _shown)
                   Padding(
                     padding: const EdgeInsets.only(top: Space.x8),
                     child: Text(
-                      'And ${refunds.length - _shown} more.',
+                      'And ${rows.length - _shown} more.',
                       style: t.small.copyWith(color: c.muted),
                     ),
                   ),
@@ -314,6 +322,61 @@ class _RefundRow extends StatelessWidget {
             ),
             const SizedBox(width: Space.x12),
             Text(formatKes(refund.amount), style: t.monoStrong),
+            const SizedBox(width: Space.x8),
+            Icon(Icons.chevron_right_rounded, color: c.muted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Figma "Attention row / Kind=Price": opens the owner's Prices, where the
+/// request is decided.
+class _PriceRow extends StatelessWidget {
+  const _PriceRow(this.price, {required this.now});
+
+  final PriceAwaiting price;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    return InkWell(
+      key: ValueKey('today.attention.price.${price.requestId}'),
+      borderRadius: BorderRadius.circular(Radii.control),
+      onTap: () => context.go(Routes.adminPrices),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Space.x8),
+        child: Row(
+          children: [
+            Container(
+              width: Sizes.target - 4,
+              height: Sizes.target - 4,
+              decoration: BoxDecoration(
+                color: c.marineTint,
+                borderRadius: BorderRadius.circular(Radii.control),
+              ),
+              child: Icon(Icons.sell_outlined, color: c.marine, size: 20),
+            ),
+            const SizedBox(width: Space.x12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(price.title, style: t.bodyStrong),
+                  Text(
+                    price.subtitle(now),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.small.copyWith(color: c.muted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: Space.x12),
+            Text(price.change, style: t.monoStrong),
             const SizedBox(width: Space.x8),
             Icon(Icons.chevron_right_rounded, color: c.muted),
           ],

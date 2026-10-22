@@ -6,12 +6,15 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../backup/presentation/backup_providers.dart';
 import '../../backup/presentation/backups_card.dart';
+import '../../price_requests/presentation/price_request_widgets.dart';
 import 'widgets/category_prices_card.dart';
 import 'widgets/settings_card.dart';
 
 /// AD-3 "Prices and settings": bed category prices beside the lodging's
 /// rules and receipt settings (artboard "Setup — prices and settings"), and
-/// under them the desk's Backups card.
+/// under them the desk's Backups card. Price requests (BR-2) sit at the top
+/// of the right column: the supervisor's card, or the owner's request cards
+/// (Figma "06 Prices").
 class PricesScreen extends ConsumerWidget {
   const PricesScreen({super.key});
 
@@ -26,6 +29,8 @@ class PricesScreen extends ConsumerWidget {
     // The owner's "Prices": the prices only; rules and backups are the
     // supervisor's.
     final settings = user != null && can(user, Permission.editSettings);
+    final asks = user != null && can(user, Permission.requestPriceChange);
+    final decides = user != null && can(user, Permission.decidePriceChange);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -49,6 +54,11 @@ class PricesScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (decides) const OwnerPriceRequests(),
+                      if (asks) ...[
+                        const SupervisorPriceRequestsCard(),
+                        const SizedBox(height: Space.x24),
+                      ],
                       if (settings) const SettingsCard(),
                       if (backups) ...[
                         const SizedBox(height: Space.x24),

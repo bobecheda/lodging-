@@ -932,6 +932,176 @@ void main() {
     });
   });
 
+  group('price_requests (BR-2, v8)', () {
+    late String u;
+    var tick = 0;
+    setUp(() async => u = await user());
+
+    Future<String> ask({
+      String category = SeedIds.deluxe,
+      int oldPrice = 700,
+      int newPrice = 750,
+      String? reason,
+      DateTime? withdrawnAt,
+    }) async {
+      final id = newId();
+      await db
+          .into(db.priceRequests)
+          .insert(
+            PriceRequestsCompanion.insert(
+              id: Value(id),
+              createdAt: Value(t0),
+              updatedAt: Value(t0),
+              deviceId: Value(deviceId),
+              categoryId: category,
+              oldPrice: oldPrice,
+              newPrice: newPrice,
+              reason: Value(reason),
+              requestedBy: u,
+              requestedAt: t0,
+              withdrawnAt: Value(withdrawnAt),
+              withdrawnBy: Value(withdrawnAt == null ? null : u),
+            ),
+          );
+      return id;
+    }
+
+    Future<int> decide(String requestId, String decision, {String? note}) => db
+        .into(db.priceDecisions)
+        .insert(
+          PriceDecisionsCompanion.insert(
+            id: Value(newId()),
+            createdAt: Value(t0),
+            updatedAt: Value(t0),
+            deviceId: Value(deviceId),
+            requestId: requestId,
+            decision: decision,
+            note: Value(note),
+            decidedBy: u,
+            decidedAt: t0,
+          ),
+        );
+
+    /// A direct update that moves updated_at, as the writer would.
+    Future<int> change(String id, PriceRequestsCompanion values) =>
+        (db.update(db.priceRequests)..where((r) => r.id.equals(id))).write(
+          values.copyWith(updatedAt: Value(t0.add(Duration(seconds: ++tick)))),
+        );
+
+    Future<int> withdraw(String id, {String? reason}) => change(
+      id,
+      PriceRequestsCompanion(
+        withdrawnAt: Value(t0),
+        withdrawnBy: Value(u),
+        withdrawReason: Value(reason),
+      ),
+    );
+
+    Matcher aborts(String message) =>
+        throwsA(predicate((e) => '$e'.contains(message), message));
+
+    test('prices 1–100,000, a change from the old price, a trimmed reason of '
+        '1–200 characters', () async {
+      await expectLater(ask(newPrice: 0), _violates('CHECK'));
+      await expectLater(ask(newPrice: 100001), _violates('CHECK'));
+      await expectLater(ask(newPrice: 700), _violates('CHECK'));
+      await expectLater(ask(reason: ' padded'), _violates('CHECK'));
+      await expectLater(ask(reason: ''), _violates('CHECK'));
+      await expectLater(ask(reason: 'x' * 201), _violates('CHECK'));
+    });
+
+    test('starts open; one open request per category', () async {
+      await expectLater(
+        ask(withdrawnAt: t0),
+        aborts('a price request starts open'),
+      );
+      final first = await ask();
+      await expectLater(
+        ask(newPrice: 800),
+        aborts('the category already has an open price request'),
+      );
+      await ask(category: SeedIds.vip, oldPrice: 1000, newPrice: 1100);
+      await decide(first, 'rejected', note: 'No');
+      final second = await ask(newPrice: 800);
+      await withdraw(second);
+      await ask(newPrice: 850);
+    });
+
+    test('the terms never change; withdrawn once, with who; a reason only '
+        'when withdrawn', () async {
+      final r = await ask();
+      await expectLater(
+        change(r, const PriceRequestsCompanion(newPrice: Value(800))),
+        aborts('price request terms cannot change'),
+      );
+      await expectLater(
+        change(r, PriceRequestsCompanion(withdrawnAt: Value(t0))),
+        _violates('CHECK'),
+      );
+      await expectLater(
+        change(
+          r,
+          const PriceRequestsCompanion(
+            withdrawReason: Value('Category closed'),
+          ),
+        ),
+        _violates('CHECK'),
+      );
+      await withdraw(r, reason: 'Category closed');
+      await expectLater(
+        withdraw(r),
+        aborts('price request is already withdrawn'),
+      );
+    });
+
+    test('decided once, never edited; not withdrawn once decided, not '
+        'decided once withdrawn; a rejection needs a note', () async {
+      final r = await ask();
+      await expectLater(decide(r, 'rejected'), _violates('CHECK'));
+      await decide(r, 'approved');
+      await expectLater(decide(r, 'rejected', note: 'No'), _violates('UNIQUE'));
+      await expectLater(
+        withdraw(r),
+        aborts('price request is already decided'),
+      );
+      await expectLater(
+        (db.update(
+          db.priceDecisions,
+        )..where((d) => d.requestId.equals(r))).write(
+          PriceDecisionsCompanion(
+            note: const Value('changed'),
+            updatedAt: Value(t0.add(const Duration(days: 1))),
+          ),
+        ),
+        aborts('price_decisions rows are never edited'),
+      );
+
+      final gone = await ask(
+        category: SeedIds.vip,
+        oldPrice: 1000,
+        newPrice: 900,
+      );
+      await withdraw(gone);
+      await expectLater(
+        decide(gone, 'approved'),
+        aborts('price request was withdrawn'),
+      );
+    });
+
+    test('never deleted', () async {
+      final r = await ask();
+      await decide(r, 'approved');
+      await expectLater(
+        db.delete(db.priceDecisions).go(),
+        aborts('price_decisions rows are never deleted'),
+      );
+      await expectLater(
+        db.delete(db.priceRequests).go(),
+        aborts('price_requests rows are never deleted'),
+      );
+    });
+  });
+
   group('admin records', () {
     test('a void needs a non-blank reason', () async {
       final u = await user();

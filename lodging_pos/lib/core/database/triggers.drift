@@ -172,3 +172,64 @@ CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON r
   WHEN NEW.mpesa_code IS NOT NULL
     AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code)
   BEGIN SELECT RAISE(ABORT, 'M-Pesa code already used'); END;
+
+-- v8: price requests (BR-2). Never deleted; a decision is final; a request
+-- keeps its terms, is withdrawn at most once and never once decided; a
+-- category has at most one open request (not withdrawn, not decided).
+CREATE TRIGGER price_requests_stamped_update BEFORE UPDATE ON price_requests
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER price_decisions_stamped_update BEFORE UPDATE ON price_decisions
+  WHEN NEW.updated_at IS OLD.updated_at
+  BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
+
+CREATE TRIGGER price_requests_no_delete BEFORE DELETE ON price_requests
+  BEGIN SELECT RAISE(ABORT, 'price_requests rows are never deleted'); END;
+
+CREATE TRIGGER price_decisions_no_delete BEFORE DELETE ON price_decisions
+  BEGIN SELECT RAISE(ABORT, 'price_decisions rows are never deleted'); END;
+
+CREATE TRIGGER price_decisions_no_update BEFORE UPDATE ON price_decisions
+  BEGIN SELECT RAISE(ABORT, 'price_decisions rows are never edited'); END;
+
+CREATE TRIGGER price_requests_open_on_insert BEFORE INSERT ON price_requests
+  WHEN NEW.withdrawn_at IS NOT NULL
+  BEGIN SELECT RAISE(ABORT, 'a price request starts open'); END;
+
+CREATE TRIGGER price_requests_one_open BEFORE INSERT ON price_requests
+  WHEN EXISTS (
+    SELECT 1 FROM price_requests p
+    WHERE p.category_id = NEW.category_id AND p.withdrawn_at IS NULL
+      AND NOT EXISTS (SELECT 1 FROM price_decisions d WHERE d.request_id = p.id)
+  )
+  BEGIN SELECT RAISE(ABORT, 'the category already has an open price request'); END;
+
+CREATE TRIGGER price_requests_fixed_terms BEFORE UPDATE ON price_requests
+  WHEN NEW.category_id IS NOT OLD.category_id
+    OR NEW.old_price IS NOT OLD.old_price
+    OR NEW.new_price IS NOT OLD.new_price
+    OR NEW.reason IS NOT OLD.reason
+    OR NEW.requested_by IS NOT OLD.requested_by
+    OR NEW.requested_at IS NOT OLD.requested_at
+  BEGIN SELECT RAISE(ABORT, 'price request terms cannot change'); END;
+
+CREATE TRIGGER price_requests_withdrawn_once BEFORE UPDATE ON price_requests
+  WHEN OLD.withdrawn_at IS NOT NULL AND (
+    NEW.withdrawn_at IS NOT OLD.withdrawn_at
+    OR NEW.withdrawn_by IS NOT OLD.withdrawn_by
+    OR NEW.withdraw_reason IS NOT OLD.withdraw_reason
+  )
+  BEGIN SELECT RAISE(ABORT, 'price request is already withdrawn'); END;
+
+CREATE TRIGGER price_requests_withdraw_undecided BEFORE UPDATE ON price_requests
+  WHEN OLD.withdrawn_at IS NULL AND NEW.withdrawn_at IS NOT NULL
+    AND EXISTS (SELECT 1 FROM price_decisions WHERE request_id = NEW.id)
+  BEGIN SELECT RAISE(ABORT, 'price request is already decided'); END;
+
+CREATE TRIGGER price_decisions_not_withdrawn BEFORE INSERT ON price_decisions
+  WHEN EXISTS (
+    SELECT 1 FROM price_requests
+    WHERE id = NEW.request_id AND withdrawn_at IS NOT NULL
+  )
+  BEGIN SELECT RAISE(ABORT, 'price request was withdrawn'); END;

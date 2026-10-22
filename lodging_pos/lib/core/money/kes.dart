@@ -9,6 +9,9 @@ String formatKes(int amount) {
   return 'KES ${amount < 0 ? '-' : ''}$grouped';
 }
 
+/// `1,000`: [formatKes] without the KES prefix.
+String formatKesPlain(int amount) => formatKes(amount).substring('KES '.length);
+
 final _kesInput = RegExp(
   r'^(?:kes\s*)?(\d{1,3}(?:,\d{3})+|\d+)$',
   caseSensitive: false,

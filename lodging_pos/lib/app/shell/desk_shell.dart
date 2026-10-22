@@ -12,6 +12,7 @@ import '../../core/sync/outbox_status.dart';
 import '../../features/auth/presentation/idle_lock.dart';
 import '../../features/backup/domain/backup.dart';
 import '../../features/backup/presentation/backup_providers.dart';
+import '../../features/price_requests/presentation/price_requests_providers.dart';
 import '../../features/refunds/presentation/refunds_providers.dart';
 import '../../features/shifts/presentation/shift_providers.dart';
 import '../gate.dart';
@@ -69,6 +70,9 @@ class NavItem {
 enum NavBadge {
   /// Approved refunds not yet paid (AD-7).
   refundsToPay,
+
+  /// Price requests waiting for the owner; shown to the owner only.
+  priceRequests,
 }
 
 /// Sidebar destinations. Only screens that exist are listed; each story
@@ -131,6 +135,7 @@ List<NavItem> deskNavItems(Ref ref) => const [
     setup: true,
     shortLabel: 'Prices',
     fullLabelNeeds: {Permission.editSettings},
+    badge: NavBadge.priceRequests,
   ),
   NavItem(
     route: Routes.adminStaff,
@@ -300,6 +305,14 @@ class _NavTile extends ConsumerWidget {
                   if (item.badge == NavBadge.refundsToPay)
                     _CountBadge(
                       ref.watch(refundsToPayProvider).value ?? 0,
+                      key: ValueKey('nav.badge.${item.route}'),
+                    )
+                  else if (item.badge == NavBadge.priceRequests &&
+                      user != null &&
+                      can(user!, Permission.decidePriceChange))
+                    _CountBadge(
+                      ref.watch(waitingPriceRequestsProvider).value?.length ??
+                          0,
                       key: ValueKey('nav.badge.${item.route}'),
                     ),
                 ],

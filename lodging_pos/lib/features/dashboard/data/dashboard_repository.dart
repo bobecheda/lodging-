@@ -21,6 +21,8 @@ class DashboardRepository {
           _db.voids,
           _db.stays,
           _db.stayCharges,
+          _db.priceRequests,
+          _db.priceDecisions,
         ]),
       )
       .map((_) {});
@@ -133,6 +135,42 @@ class DashboardRepository {
           amount: row.readTable(_db.refunds).amount,
           requestedBy: row.readTable(requester).fullName,
           requestedAt: row.readTable(_db.refunds).requestedAt,
+        ),
+    ];
+  }
+
+  /// Price requests waiting for the owner (BR-2): not withdrawn, not
+  /// decided; oldest first.
+  Future<List<PriceAwaiting>> pricesAwaiting() async {
+    final decided = _db.selectOnly(_db.priceDecisions)
+      ..addColumns([_db.priceDecisions.requestId]);
+    final rows =
+        await (_db.select(_db.priceRequests).join([
+                innerJoin(
+                  _db.bedCategories,
+                  _db.bedCategories.id.equalsExp(_db.priceRequests.categoryId),
+                ),
+                innerJoin(
+                  _db.users,
+                  _db.users.id.equalsExp(_db.priceRequests.requestedBy),
+                ),
+              ])
+              ..where(
+                _db.priceRequests.withdrawnAt.isNull() &
+                    _db.priceRequests.id.isNotInQuery(decided),
+              )
+              ..orderBy([OrderingTerm.asc(_db.priceRequests.requestedAt)]))
+            .get();
+    return [
+      for (final row in rows)
+        PriceAwaiting(
+          requestId: row.readTable(_db.priceRequests).id,
+          categoryName: row.readTable(_db.bedCategories).name,
+          oldPrice: row.readTable(_db.priceRequests).oldPrice,
+          newPrice: row.readTable(_db.priceRequests).newPrice,
+          requestedBy: row.readTable(_db.users).fullName,
+          requestedByRole: row.readTable(_db.users).role,
+          requestedAt: row.readTable(_db.priceRequests).requestedAt,
         ),
     ];
   }

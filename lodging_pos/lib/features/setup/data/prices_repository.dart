@@ -4,6 +4,7 @@ import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../price_requests/data/price_requests_repository.dart';
 import '../domain/bed_category.dart';
 import '../domain/prices_settings.dart';
 
@@ -136,7 +137,8 @@ class PricesRepository {
   }
 
   /// Closes a category so new beds can't use it (`category.update`). Refused
-  /// while active beds use it.
+  /// while active beds use it. Its waiting price request is withdrawn in the
+  /// same transaction (`price.request_withdraw`, "Category closed").
   Future<void> closeCategory(UserAccount user, String categoryId) =>
       _setActive(user, categoryId, active: false);
 
@@ -174,6 +176,16 @@ class PricesRepository {
           categoryId,
           BedCategoriesCompanion(isActive: Value(active)),
         );
+        // Its waiting price request goes with it: a reopened category
+        // starts with none.
+        if (!active) {
+          await PriceRequestsRepository.withdrawOnClose(
+            w,
+            _db,
+            user,
+            categoryId,
+          );
+        }
       },
     );
   }

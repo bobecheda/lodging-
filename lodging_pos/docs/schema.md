@@ -11,6 +11,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
 | v5 | 19 Oct 2026 (FD-11) | `shifts.first_count`, `close_note` (≤ 200) and `closed_by`; shifts already closed get `first_count = counted_cash` and `closed_by = user_id`; trigger `shifts_closed_final` refuses any change to a closed shift |
+| v8 | 22 Oct 2026 (price requests) | New `price_requests` (desk) and `price_decisions` (owner) with their triggers: one open request per category, fixed terms, withdrawn once and never once decided, decisions final; both start empty |
 | v7 | 22 Oct 2026 (AD-7) | `refunds.payout_phone`: the phone an M-Pesa payout went to, `CHECK ((method IS 'paybill') = (payout_phone IS NOT NULL))`; a payout made before v7 gets its guest's phone; trigger `refunds_paid_once` also guards it |
 | v6 | 21 Oct 2026 (roles) | `users.role` CHECK becomes `owner` \| `supervisor` \| `receptionist`; the rebuild copies `admin` users as `supervisor` (no UPDATE, timestamps unchanged). Old audit rows keep `"role":"admin"`; sync (sprint 2) must read an unsent outbox payload's `admin` as `supervisor` |
 | v4 | 19 Oct 2026 (FD-9) | `housekeeping_tasks.cancelled_at` and `cancelled_by` (empty for existing tasks); the one-open-task index leaves out cancelled tasks; a task can't be both completed and cancelled |
@@ -27,10 +28,10 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 
 - Every synced table has: `id` TEXT (UUID v4, primary key), `created_at`, `updated_at`, `device_id` TEXT. The one exception is `settings`, whose primary key is `key` (see below).
 - `id` defaults to a new UUID. `created_at`, `updated_at` and `device_id` are stamped by `writeWithAudit` (on update: `updated_at` and `device_id`, never `created_at`). Their drift client defaults throw, so a row inserted any other way fails (the seed passes them explicitly).
-- Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges`, `refunds`, `refund_decisions` and `voids` rows cannot be deleted, and `audit_log` and `refund_decisions` cannot be updated. Triggers also enforce the refund lifecycle and M-Pesa codes across tables (see `refunds`).
+- Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges`, `refunds`, `refund_decisions`, `price_requests`, `price_decisions` and `voids` rows cannot be deleted, and `audit_log`, `refund_decisions` and `price_decisions` cannot be updated. Triggers also enforce the refund lifecycle, M-Pesa codes across tables (see `refunds`) and the price request rules (see `price_requests`).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
-- Ownership for sync: the **desk** owns operational tables (including `refunds`), the **admin side** owns setup tables, `voids`, `refund_decisions`, `expenses` and `inventory_items` (the supervisor's and the owner's records). Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
+- Ownership for sync: the **desk** owns operational tables (including `refunds` and `price_requests`), the **admin side** owns setup tables, `voids`, `refund_decisions`, `price_decisions`, `expenses` and `inventory_items` (the supervisor's and the owner's records). Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
 - Payment and refund methods are `cash` | `paybill` everywhere; screens and reports label `paybill` as "M-Pesa".
 
 ## Relationships
@@ -40,6 +41,7 @@ bed_categories 1──* beds *──1 rooms
                     beds 1──* stays *──1 guests
                    stays 1──* stay_charges *──1 payments *──1 shifts *──1 users
                    stays 1──0..1 refunds 1──0..1 refund_decisions
+          bed_categories 1──* price_requests 1──0..1 price_decisions
                  refunds *──0..1 shifts   (the shift that paid it out)
                    voids ──► payments | stays | refunds
                     beds 1──* housekeeping_tasks *──1 housekeepers
@@ -228,6 +230,21 @@ The payout columns are null together until paid, then set together. Triggers: a 
 
 Partial UNIQUE(bed_id) WHERE completed_at IS NULL AND cancelled_at IS NULL: at most one open task per bed. `completed_at` and `completed_by` are set together, and so are `cancelled_at` and `cancelled_by` (v4); a task is never both. Completing a task (`bed.mark_clean`) is the only way a bed becomes clean (BR-9). Closing a bed or room cancels its open task (`housekeeping.cancel`) and leaves the bed not cleaned. Reassigning changes `housekeeper_id` on the open task (`housekeeping.reassign`). "Already cleaned" creates and completes a task in one operation (`housekeeping.assign` + `bed.mark_clean`).
 
+### price_requests (v8)
+| Column | Type | Notes |
+|---|---|---|
+| category_id | TEXT → bed_categories | |
+| old_price | INT | the category's price when asked, 1–100,000 |
+| new_price | INT | 1–100,000, `CHECK (new_price <> old_price)` |
+| reason | TEXT | optional; trimmed, 1–200 characters |
+| requested_by | TEXT → users | needs `requestPriceChange` (supervisor) |
+| requested_at | DATETIME | |
+| withdrawn_at | DATETIME | set once; with `withdrawn_by` |
+| withdrawn_by | TEXT → users | the requester, or the owner who closed the category |
+| withdraw_reason | TEXT | null, or "Category closed" |
+
+The supervisor's request to the owner (BR-2); the answer is a `price_decisions` row, so this row keeps one writer. Status is derived: withdrawn, else the decision, else waiting. Triggers: a request starts open; one open request (not withdrawn, not decided) per category; the terms never change; withdrawn at most once and never once decided; never deleted. Approving refuses a request whose `old_price` is no longer the category's price.
+
 ## Supervisor and owner records
 
 ### voids
@@ -251,6 +268,17 @@ Voided payments and refund payouts are excluded from shift totals and revenue.
 | decided_at | DATETIME | |
 
 Written once, never updated or deleted. It holds no amount, so the approver cannot change it.
+
+### price_decisions (v8)
+| Column | Type | Notes |
+|---|---|---|
+| request_id | TEXT → price_requests | UNIQUE: one decision per request |
+| decision | TEXT | `approved` \| `rejected` |
+| note | TEXT | required (non-blank) when rejected |
+| decided_by | TEXT → users | needs `decidePriceChange` (owner) |
+| decided_at | DATETIME | |
+
+Written once, never updated or deleted; not for a withdrawn request. An approval sets `bed_categories.price_per_night` to `new_price` in the same transaction (`price.approve` + `price.update`).
 
 ### expenses (sprint 3)
 `category` (laundry \| utilities \| wages \| supplies \| repairs \| other), `amount` INT, `spent_on` TEXT `YYYY-MM-DD` (Nairobi date, CHECKed by GLOB), `note`, `recorded_by` → users.

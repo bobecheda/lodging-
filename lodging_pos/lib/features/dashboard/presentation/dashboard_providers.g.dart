@@ -57,12 +57,14 @@ final class DashboardRepositoryProvider
 String _$dashboardRepositoryHash() =>
     r'e06e89b2e8d4669bf60cec2b990bf63940ff723f';
 
-/// Read again whenever a payment, refund, void, stay or charge changes.
+/// Read again whenever a payment, refund, void, stay, charge or price
+/// request changes.
 
 @ProviderFor(todayData)
 final todayDataProvider = TodayDataProvider._();
 
-/// Read again whenever a payment, refund, void, stay or charge changes.
+/// Read again whenever a payment, refund, void, stay, charge or price
+/// request changes.
 
 final class TodayDataProvider
     extends
@@ -72,7 +74,8 @@ final class TodayDataProvider
           FutureOr<TodayData>
         >
     with $FutureModifier<TodayData>, $FutureProvider<TodayData> {
-  /// Read again whenever a payment, refund, void, stay or charge changes.
+  /// Read again whenever a payment, refund, void, stay, charge or price
+  /// request changes.
   TodayDataProvider._()
     : super(
         from: null,
@@ -98,4 +101,4 @@ final class TodayDataProvider
   }
 }
 
-String _$todayDataHash() => r'a1e63ecbf553a11d74dd905f391646a370dce7e5';
+String _$todayDataHash() => r'40bbc4a8571348bc042493e94d56255082fb2a60';

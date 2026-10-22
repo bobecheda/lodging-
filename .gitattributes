@@ -12,3 +12,8 @@ lodging_pos/**/*.drift text eol=crlf
 
 # Fonts are binary; never touch their line endings.
 *.ttf binary
+
+# Flutter regenerates the Windows plugin registrant with LF endings on every
+# build, so a CRLF checkout (core.autocrlf) shows them as changed. Keep them
+# LF on Windows checkouts too.
+lodging_pos/windows/flutter/generated_* text eol=lf

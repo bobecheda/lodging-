@@ -200,6 +200,41 @@ class Refunds extends Table with SyncedColumns {
   ];
 }
 
+/// v8: the supervisor asks the owner for a new price (BR-2). Desk-owned: the
+/// owner's answer is a `price_decisions` row, so this row keeps one writer.
+/// `old_price` is the price the request was made against; an approval is
+/// refused once the price has moved on. Withdrawn once, by the requester or
+/// by closing the category (`withdraw_reason` "Category closed"). Triggers
+/// keep the terms fixed and one request open per category.
+@DataClassName('PriceRequestRow')
+@TableIndex(name: 'price_requests_category', columns: {#categoryId})
+class PriceRequests extends Table with SyncedColumns {
+  TextColumn get categoryId => text().references(BedCategories, #id)();
+  IntColumn get oldPrice =>
+      integer().check(oldPrice.isBetweenValues(1, 100000))();
+  IntColumn get newPrice =>
+      integer().check(newPrice.isBetweenValues(1, 100000))();
+  TextColumn get reason => text().nullable()();
+  @ReferenceName('priceRequestsMade')
+  TextColumn get requestedBy => text().references(Users, #id)();
+  DateTimeColumn get requestedAt => dateTime()();
+
+  // Withdrawal, set together once.
+  DateTimeColumn get withdrawnAt => dateTime().nullable()();
+  @ReferenceName('priceRequestsWithdrawn')
+  TextColumn get withdrawnBy => text().nullable().references(Users, #id)();
+  TextColumn get withdrawReason => text().nullable()();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (new_price <> old_price)',
+    'CHECK (reason IS NULL OR (reason = trim(reason) '
+        'AND length(reason) BETWEEN 1 AND 200))',
+    'CHECK ((withdrawn_at IS NULL) = (withdrawn_by IS NULL))',
+    'CHECK (withdrawn_at IS NOT NULL OR withdraw_reason IS NULL)',
+  ];
+}
+
 /// A bed to clean (FD-9). Open until completed (the bed becomes clean,
 /// BR-9) or, since v4, cancelled when the bed or room is closed (the bed
 /// stays not cleaned). Never both.
