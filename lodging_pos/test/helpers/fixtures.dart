@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lodging_pos/core/sync/desk_secret_store.dart';
+import 'package:lodging_pos/core/sync/sync_providers.dart';
 import 'package:lodging_pos/app/app.dart';
 import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/core/audit/audit_writer.dart';
@@ -29,6 +31,8 @@ import 'package:lodging_pos/features/stays/data/check_out_repository.dart';
 import 'package:lodging_pos/features/stays/domain/check_out.dart';
 import 'package:lodging_pos/features/stays/domain/check_in.dart';
 import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
+
+import 'fake_cloud.dart';
 
 /// 22:00 Nairobi, 14 Oct 2026.
 final testT0 = DateTime.utc(2026, 10, 14, 19);
@@ -119,6 +123,14 @@ class TestEnv {
   /// Stands in for the folder picker and Explorer.
   final backupShell = FakeBackupShell();
 
+  /// The cloud, or null (sync not set up, as in a build without
+  /// secrets.json). Set it before pumping the app. Sync's timers are off;
+  /// tests push with `SyncEngine.pushNow()`.
+  FakeCloud? cloud;
+
+  /// Stands in for the Windows user's protected storage.
+  final deskSecrets = MemoryDeskSecretStore();
+
   /// Provider overrides that run the real app against this environment.
   /// The idle-lock timer, the bed board's clock tick and the hourly backup
   /// check are off; tests call `IdleLock.check()`, set the clock or call
@@ -136,6 +148,9 @@ class TestEnv {
     }),
     backupCheckIntervalProvider.overrideWithValue(backupCheck),
     backupShellProvider.overrideWithValue(backupShell),
+    cloudProvider.overrideWithValue(cloud),
+    deskSecretStoreProvider.overrideWithValue(deskSecrets),
+    syncIntervalProvider.overrideWithValue(null),
   ];
 
   /// Until AD-4 adds user management, tests create receptionists directly

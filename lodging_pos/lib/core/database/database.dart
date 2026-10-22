@@ -42,6 +42,7 @@ part 'database.g.dart';
     Outbox,
     Device,
     ReceiptCounter,
+    SyncState,
   ],
   include: {'triggers.drift'},
 )
@@ -59,7 +60,8 @@ class AppDatabase extends _$AppDatabase {
   /// v1 is frozen as of 16 Oct 2026; v2 (FD-4) adds the category to each
   /// stay charge, v3 (FD-6) the room and bed to each stay, v4 (FD-9) task
   /// cancelling, v5 (FD-11) the shift close details, v6 the roles, v7 the
-  /// refund payout phone, v8 price requests. Snapshots:
+  /// refund payout phone, v8 price requests, v9 the local sync bookkeeping.
+  /// Snapshots:
   /// `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
   /// `dart run drift_dev make-migrations`, add the generated step to
@@ -67,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -280,6 +282,11 @@ class AppDatabase extends _$AppDatabase {
       ]) {
         await m.createTrigger(trigger);
       }
+    },
+    // v9 (sync-1): the desk's sync bookkeeping, local only; starts empty
+    // (not connected).
+    from8To9: (m, schema) async {
+      await m.createTable(schema.syncState);
     },
   );
 

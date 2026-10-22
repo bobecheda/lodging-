@@ -52,6 +52,13 @@ class AuditWriter {
   final AppDatabase _db;
   final Clock _clock;
 
+  /// Now, from the writer's clock: for a time a cloud-first write and its
+  /// local mirror must share (`w.now` comes later, inside the transaction).
+  DateTime now() => _clock.now();
+
+  /// Called after every committed write (sync pushes soon after).
+  void Function()? onCommit;
+
   /// Runs [body] in one transaction. For every synced row [body] inserts or
   /// updates through [AuditedWrites], it writes, at that moment, the outbox
   /// row for the business row, one `audit_log` row (tagged with [action]) and
@@ -64,14 +71,19 @@ class AuditWriter {
   ///
   /// [action] is `entity.verb`, e.g. `stay.check_in`. [userId] is the user
   /// doing it.
+  ///
+  /// [inCloud] names tables whose rows this call mirrors from the cloud,
+  /// where they were written first (owner decisions, prices, withdrawals):
+  /// their outbox rows are stored as already sent. Audit rows are not.
   Future<T> writeWithAudit<T>({
     required String action,
     required String? userId,
     required Future<T> Function(AuditedWrites w) body,
-  }) {
+    Set<String> inCloud = const {},
+  }) async {
     _checkAction(action);
-    return _db.transaction(() async {
-      final w = await _start(action, userId);
+    final result = await _db.transaction(() async {
+      final w = await _start(action, userId, inCloud: inCloud);
       try {
         final result = await body(w);
         await Future.wait(w._pending);
@@ -86,6 +98,8 @@ class AuditWriter {
         w._closed = true;
       }
     });
+    onCommit?.call();
+    return result;
   }
 
   /// Writes an audit entry for an event that changes no business rows, such
@@ -96,9 +110,9 @@ class AuditWriter {
     required String entity,
     required String entityId,
     Map<String, Object?> details = const {},
-  }) {
+  }) async {
     _checkAction(action);
-    return _db.transaction(() async {
+    await _db.transaction(() async {
       final w = await _start(action, userId);
       await w._audit(
         entity: entity,
@@ -107,17 +121,22 @@ class AuditWriter {
         afterJson: jsonEncode(details),
       );
     });
+    onCommit?.call();
   }
 
-  Future<AuditedWrites> _start(String action, String? userId) async =>
-      AuditedWrites._(
-        _db,
-        now: _clock.now(),
-        deviceId: await _db.deviceId(),
-        operationId: const Uuid().v4(),
-        action: action,
-        userId: userId,
-      );
+  Future<AuditedWrites> _start(
+    String action,
+    String? userId, {
+    Set<String> inCloud = const {},
+  }) async => AuditedWrites._(
+    _db,
+    now: _clock.now(),
+    deviceId: await _db.deviceId(),
+    operationId: const Uuid().v4(),
+    action: action,
+    userId: userId,
+    inCloud: inCloud,
+  );
 
   static void _checkAction(String action) {
     if (!_actionPattern.hasMatch(action)) {
@@ -138,7 +157,12 @@ class AuditedWrites {
     required this.operationId,
     required this._action,
     required this._userId,
+    this._inCloud = const {},
   });
+
+  /// Tables whose business rows are already in the cloud (see
+  /// [AuditWriter.writeWithAudit]).
+  final Set<String> _inCloud;
 
   final AppDatabase _db;
   final String _action;
@@ -273,7 +297,12 @@ class AuditedWrites {
     final name = table.actualTableName;
     final afterRow = _json(after);
     final id = afterRow[_primaryKey(table).name]! as String;
-    await _enqueue(name, id, jsonEncode(afterRow));
+    await _enqueue(
+      name,
+      id,
+      jsonEncode(afterRow),
+      sent: _inCloud.contains(name),
+    );
 
     Map<String, Object?>? auditBefore;
     var auditAfter = afterRow;
@@ -326,7 +355,12 @@ class AuditedWrites {
     await _enqueue('audit_log', row.id, jsonEncode(_json(row)));
   }
 
-  Future<void> _enqueue(String table, String rowId, String payloadJson) => _db
+  Future<void> _enqueue(
+    String table,
+    String rowId,
+    String payloadJson, {
+    bool sent = false,
+  }) => _db
       .into(_db.outbox)
       .insert(
         OutboxCompanion.insert(
@@ -334,6 +368,7 @@ class AuditedWrites {
           targetRowId: rowId,
           payloadJson: payloadJson,
           createdAt: now,
+          sentAt: Value(sent ? now : null),
         ),
       );
 

@@ -55,7 +55,7 @@ final class PriceRequestsRepositoryProvider
 }
 
 String _$priceRequestsRepositoryHash() =>
-    r'1de93198846afd76a18a36db54f2c4a76272c888';
+    r'089fed4ad07c9eaa072e189233fb1a6ff783f9de';
 
 /// Requests waiting for the owner, oldest first: the owner's Prices cards
 /// and sidebar badge. Read again whenever a request, decision or price

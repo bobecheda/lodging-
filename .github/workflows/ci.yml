@@ -1,7 +1,8 @@
 # CI for lodging_pos (the Flutter app lives in lodging_pos/).
 #
 # `checks` runs on every pull request and every push to main, and is the
-# required status check for main ("CI / checks"). `windows-build` builds the
+# required status check for main ("CI / checks"). `cloud` runs the Supabase
+# migrations and their pgTAP tests on a local Supabase. `windows-build` builds the
 # desk app on pushes to main (and on demand) and keeps the release folder
 # for 14 days. GitGuardian runs separately as a GitHub app.
 #
@@ -82,6 +83,29 @@ jobs:
         # A per-test cap, so a hanging test fails fast instead of using up
         # the job's time.
         run: flutter test --timeout 120s
+
+  cloud:
+    # The cloud schema (supabase/): applies every migration to a local
+    # Supabase and runs the pgTAP tests (RLS, the sync functions, the
+    # mirrored rules). Docker is on the runner; nothing here needs a key.
+    name: cloud
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.121.0
+
+      - name: Start the database with every migration
+        run: supabase db start
+
+      - name: pgTAP tests
+        run: supabase test db
 
   windows-build:
     name: windows-build

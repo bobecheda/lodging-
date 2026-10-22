@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../../core/sync/cloud_writes.dart';
 import '../../payments/data/payment_writes.dart';
 import '../../payments/domain/payment_rules.dart';
 import '../../setup/domain/prices_settings.dart';
@@ -134,10 +136,13 @@ final class PayoutRefused implements Exception {
 /// in `domain/refund.dart`; every write re-checks them inside its
 /// transaction, and the database's triggers check them again.
 class RefundsRepository {
-  RefundsRepository(this._db, this._audit);
+  RefundsRepository(this._db, this._audit, {this._cloud});
 
   final AppDatabase _db;
   final AuditWriter _audit;
+
+  /// Once this desk is connected, decisions go to the cloud first.
+  final CloudWrites? _cloud;
 
   /// Fires when a refund, decision or payout changes.
   Stream<void> changes() => _db
@@ -302,6 +307,11 @@ class RefundsRepository {
   /// Approves (`refund.approve`) or, with a [note], rejects
   /// (`refund.reject`) [refundId]: once, never by its requester, never with
   /// a different amount. Throws [NotPermitted] or [RefundRuleViolation].
+  ///
+  /// Once this desk is connected the decision is written in the cloud
+  /// first (the first decision anywhere wins), then here with the same id
+  /// and time; offline it is refused. Throws [OwnerCloudSignInNeeded] when
+  /// the owner's cloud sign-in is missing (the screen asks for it).
   Future<void> decide(
     UserAccount owner,
     String refundId, {
@@ -309,19 +319,48 @@ class RefundsRepository {
     String? note,
   }) async {
     requirePermission(owner, Permission.approveRefund);
+    final id = const Uuid().v4();
+    final at = _audit.now();
+    Refund decide(Refund current) => approve
+        ? approveRefund(current, by: owner, at: at)
+        : rejectRefund(current, by: owner, note: note, at: at);
+    final cloud = _cloud;
+    final inCloud = cloud != null && cloud.active;
+    if (inCloud) {
+      // The rules first, so the cloud never gets a decision they refuse.
+      final decision = decide(await _refund(refundId)).decision!;
+      try {
+        await cloud.decideRefund(
+          id: id,
+          refundId: refundId,
+          approve: approve,
+          note: decision.note,
+          at: at,
+        );
+      } on OwnerCloudSignInNeeded {
+        rethrow;
+      } on CloudWriteRefused catch (e) {
+        throw RefundRuleViolation(
+          cloudRefusalMessage(
+            e,
+            needsInternet: approve
+                ? 'Approving needs an internet connection.'
+                : 'Rejecting needs an internet connection.',
+          ),
+        );
+      }
+    }
     try {
       await _audit.writeWithAudit(
         action: approve ? 'refund.approve' : 'refund.reject',
         userId: owner.id,
+        inCloud: {if (inCloud) 'refund_decisions'},
         body: (w) async {
-          final current = await _refund(refundId);
-          final decided = approve
-              ? approveRefund(current, by: owner, at: w.now)
-              : rejectRefund(current, by: owner, note: note, at: w.now);
-          final decision = decided.decision!;
+          final decision = decide(await _refund(refundId)).decision!;
           await w.insert(
             _db.refundDecisions,
             RefundDecisionsCompanion.insert(
+              id: Value(id),
               refundId: refundId,
               decision: decision.kind.code,
               note: Value(decision.note),

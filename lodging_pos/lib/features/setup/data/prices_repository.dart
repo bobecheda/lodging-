@@ -4,6 +4,7 @@ import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../../core/sync/cloud_writes.dart';
 import '../../price_requests/data/price_requests_repository.dart';
 import '../domain/bed_category.dart';
 import '../domain/prices_settings.dart';
@@ -42,10 +43,16 @@ class CategoryRuleViolation implements Exception {
 /// write goes through writeWithAudit with the old and new values, and every
 /// rule check runs inside its transaction.
 class PricesRepository {
-  PricesRepository(this._db, this._audit);
+  PricesRepository(this._db, this._audit, {this._cloud});
 
   final AppDatabase _db;
   final AuditWriter _audit;
+
+  /// Once this desk is connected, prices (the owner's) go to the cloud
+  /// first, and so does the withdrawal a closed category's request gets.
+  final CloudWrites? _cloud;
+
+  bool get _connected => _cloud?.active ?? false;
 
   /// All categories in sort order, with their active beds.
   Future<List<CategoryUsage>> categories() async {
@@ -74,9 +81,26 @@ class PricesRepository {
     ], prices);
     if (pending.isEmpty) return 0;
 
+    if (_connected) {
+      try {
+        await _cloud!.setPrices({
+          for (final c in pending) c.categoryId: c.newPrice,
+        }, _audit.now());
+      } on OwnerCloudSignInNeeded {
+        rethrow;
+      } on CloudWriteRefused catch (e) {
+        throw CategoryRuleViolation(
+          cloudRefusalMessage(
+            e,
+            needsInternet: 'Changing prices needs an internet connection.',
+          ),
+        );
+      }
+    }
     return _audit.writeWithAudit(
       action: 'price.update',
       userId: user.id,
+      inCloud: {if (_connected) 'bed_categories'},
       body: (w) async {
         final current = await _db.select(_db.bedCategories).get();
         final unknown = prices.keys.toSet().difference({
@@ -156,9 +180,29 @@ class PricesRepository {
       _db.bedCategories,
     )..where((c) => c.id.equals(categoryId))).getSingle();
     if (current.isActive == active) return;
+    // Once connected, a waiting price request is withdrawn in the cloud
+    // first; the rules that could still refuse the close run before that.
+    final at = _audit.now();
+    var withdrawnInCloud = false;
+    if (!active && _connected) {
+      final blocker = closeCategoryBlocker(
+        _toCategory(current),
+        activeBeds: (await _activeBedsByCategory())[categoryId] ?? 0,
+      );
+      if (blocker != null) throw CategoryRuleViolation(blocker);
+      withdrawnInCloud =
+          await PriceRequestsRepository.withdrawInCloudBeforeClose(
+            _db,
+            _cloud!,
+            user,
+            categoryId,
+            at,
+          );
+    }
     await _audit.writeWithAudit(
       action: 'category.update',
       userId: user.id,
+      inCloud: {if (withdrawnInCloud) 'price_requests'},
       body: (w) async {
         final row = await (_db.select(
           _db.bedCategories,
@@ -184,6 +228,7 @@ class PricesRepository {
             _db,
             user,
             categoryId,
+            at: withdrawnInCloud ? at : null,
           );
         }
       },

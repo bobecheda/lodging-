@@ -12,6 +12,7 @@ import '../../../../core/money/kes.dart';
 import '../../../price_requests/data/price_requests_repository.dart';
 import '../../../price_requests/presentation/price_request_widgets.dart';
 import '../../../price_requests/presentation/price_requests_providers.dart';
+import '../../../sync/presentation/owner_cloud_prompt.dart';
 import '../../data/prices_repository.dart';
 import '../../domain/bed_category.dart';
 import '../../domain/prices_settings.dart';
@@ -74,14 +75,24 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
       key: parseKes(value.text),
   };
 
-  Future<void> _run(Future<void> Function() write, {String? done}) async {
+  /// [cloudFirst]: prices, which go to the cloud first under the owner's
+  /// sign-in once this desk is connected.
+  Future<void> _run(
+    Future<void> Function() write, {
+    String? done,
+    bool cloudFirst = false,
+  }) async {
+    if (cloudFirst && (!await ensureOwnerCloud(context, ref) || !mounted)) {
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
       _saved = null;
     });
     try {
-      await write();
+      // Prices (and a closed category's request) may go to the cloud first.
+      if (!await withOwnerCloud(context, ref, write)) return;
       ref.invalidate(categoryUsageProvider);
       if (mounted) setState(() => _saved = done);
     } on CategoryRuleViolation catch (e) {
@@ -124,6 +135,7 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
         for (final c in changes) c.categoryId: c.newPrice,
       }),
       done: changes.length == 1 ? 'Price saved.' : 'Prices saved.',
+      cloudFirst: true,
     );
   }
 

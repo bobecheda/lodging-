@@ -1,0 +1,12 @@
+# Supabase CLI settings for lodging_pos. Used by `supabase db start` and
+# `supabase test db` (CI) and by `supabase functions deploy`. Everything not
+# set here keeps the CLI's defaults. See docs/sync.md.
+project_id = "lodging-pos"
+
+[db]
+major_version = 17
+
+# The desk calls connect-desk before it has a cloud sign-in of its own; the
+# function checks the install code or the owner's password itself.
+[functions.connect-desk]
+verify_jwt = false

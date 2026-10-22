@@ -1,9 +1,12 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../../core/sync/cloud_writes.dart';
+import '../../setup/data/prices_repository.dart' show CategoryRuleViolation;
 import '../../setup/domain/bed_category.dart';
 import '../domain/price_request.dart';
 
@@ -65,10 +68,14 @@ final class SupervisorPriceRequests {
 /// are in `domain/price_request.dart`; every write re-checks them inside its
 /// transaction, and the database's triggers check them again.
 class PriceRequestsRepository {
-  PriceRequestsRepository(this._db, this._audit);
+  PriceRequestsRepository(this._db, this._audit, {this._cloud});
 
   final AppDatabase _db;
   final AuditWriter _audit;
+
+  /// Once this desk is connected, decisions and withdrawals go to the
+  /// cloud first.
+  final CloudWrites? _cloud;
 
   /// Fires when a request, decision or price changes.
   Stream<void> changes() => _db
@@ -280,19 +287,35 @@ class PriceRequestsRepository {
     }
   }
 
-  /// Withdraws the user's own waiting request (`price.request_withdraw`).
+  /// Withdraws the user's own waiting request (`price.request_withdraw`);
+  /// once connected, in the cloud first (the owner's decision may win).
   /// Throws [NotPermitted] or [PriceRequestRuleViolation].
   Future<void> withdraw(UserAccount user, String requestId) async {
     requirePermission(user, Permission.requestPriceChange);
+    final at = _audit.now();
+    final cloud = _cloud;
+    final inCloud = cloud != null && cloud.active;
+    if (inCloud) {
+      withdrawPriceRequest(await _request(_db, requestId), by: user, at: at);
+      await _cloudWithdraw(
+        cloud,
+        requestId: requestId,
+        by: user.id,
+        reason: null,
+        at: at,
+        needsInternet: 'Withdrawing a request needs an internet connection.',
+      );
+    }
     try {
       await _audit.writeWithAudit(
         action: 'price.request_withdraw',
         userId: user.id,
+        inCloud: {if (inCloud) 'price_requests'},
         body: (w) async {
           final done = withdrawPriceRequest(
             await _request(_db, requestId),
             by: user,
-            at: w.now,
+            at: at,
           );
           await _writeWithdrawal(w, _db, done);
         },
@@ -312,21 +335,78 @@ class PriceRequestsRepository {
     }
   }
 
+  /// Before the owner closes [categoryId], once connected: its waiting
+  /// request, if any, is withdrawn in the cloud first, at [at] (the owner's
+  /// decision may have won). Returns whether there was one. Throws
+  /// [CategoryRuleViolation] with the reason.
+  static Future<bool> withdrawInCloudBeforeClose(
+    AppDatabase db,
+    CloudWrites cloud,
+    UserAccount owner,
+    String categoryId,
+    DateTime at,
+  ) async {
+    final open = await _waitingFor(db, categoryId);
+    if (open == null) return false;
+    final name = (await _category(db, categoryId)).name;
+    withdrawForClosedCategory(open, by: owner, at: at);
+    try {
+      await _cloudWithdraw(
+        cloud,
+        requestId: open.id,
+        by: owner.id,
+        reason: categoryClosedReason,
+        at: at,
+        needsInternet:
+            'Closing $name withdraws its price request, which needs an '
+            'internet connection.',
+      );
+    } on PriceRequestRuleViolation catch (e) {
+      throw CategoryRuleViolation(e.message);
+    }
+    return true;
+  }
+
+  static Future<void> _cloudWithdraw(
+    CloudWrites cloud, {
+    required String requestId,
+    required String by,
+    required String? reason,
+    required DateTime at,
+    required String needsInternet,
+  }) async {
+    try {
+      await cloud.withdrawPriceRequest(
+        requestId: requestId,
+        by: by,
+        reason: reason,
+        at: at,
+      );
+    } on CloudWriteRefused catch (e) {
+      throw PriceRequestRuleViolation(switch (e) {
+        DecidedElsewhere() => 'The owner has already decided this request.',
+        _ => cloudRefusalMessage(e, needsInternet: needsInternet),
+      });
+    }
+  }
+
   /// Inside the owner's closing of [categoryId] (`category.update`): its
   /// waiting request, if any, is withdrawn too, "Category closed", by
-  /// [owner] (`price.request_withdraw`, same operation).
+  /// [owner] (`price.request_withdraw`, same operation), at [at] when the
+  /// cloud has it already.
   static Future<void> withdrawOnClose(
     AuditedWrites w,
     AppDatabase db,
     UserAccount owner,
-    String categoryId,
-  ) async {
+    String categoryId, {
+    DateTime? at,
+  }) async {
     final open = await _waitingFor(db, categoryId);
     if (open == null) return;
     await _writeWithdrawal(
       w,
       db,
-      withdrawForClosedCategory(open, by: owner, at: w.now),
+      withdrawForClosedCategory(open, by: owner, at: at ?? w.now),
       action: 'price.request_withdraw',
     );
   }
@@ -356,6 +436,11 @@ class PriceRequestsRepository {
   /// same operation) or, with a [note], rejects (`price.reject`)
   /// [requestId]: once; never one the price has moved on from. Throws
   /// [NotPermitted], [StalePriceRequest] or [PriceRequestRuleViolation].
+  ///
+  /// Once this desk is connected the decision (and the new price) is
+  /// written in the cloud first, then here with the same id and time.
+  /// Throws [OwnerCloudSignInNeeded] when the owner's cloud sign-in is
+  /// missing.
   Future<void> decide(
     UserAccount owner,
     String requestId, {
@@ -363,37 +448,87 @@ class PriceRequestsRepository {
     String? note,
   }) async {
     requirePermission(owner, Permission.decidePriceChange);
+    final id = const Uuid().v4();
+    final at = _audit.now();
+    Future<PriceRequest> decided() async {
+      final current = await _request(_db, requestId);
+      return approve
+          ? approvePriceRequest(
+              current,
+              category: await _category(_db, current.categoryId),
+              by: owner,
+              at: at,
+            )
+          : rejectPriceRequest(current, by: owner, note: note, at: at);
+    }
+
+    final cloud = _cloud;
+    final inCloud = cloud != null && cloud.active;
+    if (inCloud) {
+      final decision = (await decided()).decision!;
+      try {
+        await cloud.decidePriceRequest(
+          id: id,
+          requestId: requestId,
+          approve: approve,
+          note: decision.note,
+          at: at,
+        );
+      } on OwnerCloudSignInNeeded {
+        rethrow;
+      } on StaleElsewhere catch (e) {
+        final current = await _request(_db, requestId);
+        final category = await _category(_db, current.categoryId);
+        throw StalePriceRequest(
+          staleError(
+            current,
+            BedCategory(
+              id: category.id,
+              name: category.name,
+              pricePerNight: e.currentPrice,
+              sortOrder: category.sortOrder,
+              isActive: category.isActive,
+            ),
+          )!,
+        );
+      } on CloudWriteRefused catch (e) {
+        throw PriceRequestRuleViolation(
+          cloudRefusalMessage(
+            e,
+            needsInternet: approve
+                ? 'Approving needs an internet connection.'
+                : 'Rejecting needs an internet connection.',
+          ),
+        );
+      }
+    }
     try {
       await _audit.writeWithAudit(
         action: approve ? 'price.approve' : 'price.reject',
         userId: owner.id,
+        inCloud: {
+          if (inCloud) ...{'price_decisions', 'bed_categories'},
+        },
         body: (w) async {
-          final current = await _request(_db, requestId);
-          final decided = approve
-              ? approvePriceRequest(
-                  current,
-                  category: await _category(_db, current.categoryId),
-                  by: owner,
-                  at: w.now,
-                )
-              : rejectPriceRequest(current, by: owner, note: note, at: w.now);
-          final decision = decided.decision!;
+          final decision = await decided();
+          final row = decision.decision!;
           await w.insert(
             _db.priceDecisions,
             PriceDecisionsCompanion.insert(
+              id: Value(id),
               requestId: requestId,
-              decision: decision.kind.code,
-              note: Value(decision.note),
+              decision: row.kind.code,
+              note: Value(row.note),
               decidedBy: owner.id,
-              decidedAt: decision.decidedAt,
+              decidedAt: row.decidedAt,
             ),
           );
           if (approve) {
             // BR-3: new check-ins only; stays keep their charges' price.
             await w.update(
               _db.bedCategories,
-              decided.categoryId,
-              BedCategoriesCompanion(pricePerNight: Value(decided.newPrice)),
+              decision.categoryId,
+              BedCategoriesCompanion(pricePerNight: Value(decision.newPrice)),
               action: 'price.update',
             );
           }

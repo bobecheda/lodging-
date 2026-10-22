@@ -64,6 +64,10 @@ enum Permission {
 
   /// Create, reset and disable supervisors.
   manageSupervisors,
+
+  /// Connect (or reconnect) this desk to the cloud: with the owner's email
+  /// and password and a one-time install code (sync-1, docs/sync.md).
+  connectDesk,
 }
 
 const _ownerOnly = {Role.owner};
@@ -81,6 +85,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.decidePriceChange: _ownerOnly,
   Permission.viewBusinessDashboard: _ownerOnly,
   Permission.manageSupervisors: _ownerOnly,
+  Permission.connectDesk: _ownerOnly,
   // Prices and adding or closing categories (BR-2); the supervisor asks.
   Permission.editPrices: _ownerOnly,
   Permission.viewAllReports: _ownerAndSupervisor,

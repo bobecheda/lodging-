@@ -11,6 +11,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
 | v5 | 19 Oct 2026 (FD-11) | `shifts.first_count`, `close_note` (≤ 200) and `closed_by`; shifts already closed get `first_count = counted_cash` and `closed_by = user_id`; trigger `shifts_closed_final` refuses any change to a closed shift |
+| v9 | 23 Oct 2026 (sync-1) | New local-only `sync_state` (key, value): connected, the first upload's progress per table, the last push and its problem. Nothing else changes; the cloud mirror is `supabase/migrations` (see `docs/sync.md`) |
 | v8 | 22 Oct 2026 (price requests) | New `price_requests` (desk) and `price_decisions` (owner) with their triggers: one open request per category, fixed terms, withdrawn once and never once decided, decisions final; both start empty |
 | v7 | 22 Oct 2026 (AD-7) | `refunds.payout_phone`: the phone an M-Pesa payout went to, `CHECK ((method IS 'paybill') = (payout_phone IS NOT NULL))`; a payout made before v7 gets its guest's phone; trigger `refunds_paid_once` also guards it |
 | v6 | 21 Oct 2026 (roles) | `users.role` CHECK becomes `owner` \| `supervisor` \| `receptionist`; the rebuild copies `admin` users as `supervisor` (no UPDATE, timestamps unchanged). Old audit rows keep `"role":"admin"`; sync (sprint 2) must read an unsent outbox payload's `admin` as `supervisor` |
@@ -314,9 +315,12 @@ Audit JSON redacts `users.password_hash` and guests' `full_name` as `"[redacted]
 | target_row_id | TEXT | its primary key |
 | payload_json | TEXT | full row after the change |
 | created_at | DATETIME | |
-| attempts | INT | |
-| last_error | TEXT | |
-| sent_at | DATETIME | null until synced |
+| attempts | INT | refused pushes of this row |
+| last_error | TEXT | the cloud's reason, while it stops the queue |
+| sent_at | DATETIME | null until synced; set at once for a row the cloud wrote first (an owner decision, a price, a withdrawal); sent rows are dropped after 30 days |
+
+### sync_state (v9, local only)
+`key` primary key, `value` TEXT. `desk_email` (connected), `owner_email`, `upload.max_seq` / `upload.total` / `upload.sent` / `upload.after.<table>` (the first upload, resumable), `upload.done`, `last_push_at`, `problem`. Written only by `SyncStore`, never audited or synced.
 
 ### receipt_counter (local only)
 `device_id` primary key, `next_number` INT. Incremented inside the same transaction as the payment or refund payout; both draw from this one counter.
