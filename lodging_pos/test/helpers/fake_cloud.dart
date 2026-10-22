@@ -1,6 +1,10 @@
 import 'package:lodging_pos/core/sync/cloud.dart';
 import 'package:lodging_pos/core/sync/sync_store.dart';
 
+/// The owner's cloud email in tests (made up; the password is
+/// `testOwner.password` from fixtures.dart).
+const testOwnerEmail = 'owner@lodging.test';
+
 /// The cloud in memory, with the rules of supabase/migrations that the
 /// desk relies on: rows upserted only when newer, audit rows and decisions
 /// insert-if-absent, a category's price never taken from a desk update,

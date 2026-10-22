@@ -14,6 +14,9 @@ import 'package:lodging_pos/features/setup/domain/rooms.dart';
 import '../../../helpers/fake_cloud.dart';
 import '../../../helpers/fixtures.dart';
 
+/// A password changed on the phone (made up).
+const phonePassword = 'changed-elsewhere';
+
 void main() {
   late TestEnv env;
   late UserAccount owner;
@@ -44,8 +47,8 @@ void main() {
     await engine.connect(
       owner: owner,
       installCode: 'ABCD-EFGH-JKLM',
-      ownerEmail: 'amina@example.com',
-      password: 'owner-pass',
+      ownerEmail: testOwnerEmail,
+      password: testOwner.password,
     );
     await engine.ownerLeft();
     cloud.dropDeskSession();
@@ -62,12 +65,12 @@ void main() {
     await tapKey(tester, 'sync.connect');
     expect(find.text('Enter the install code.'), findsOneWidget);
     await enterKey(tester, 'sync.code', 'abcd-efgh-jklm');
-    await enterKey(tester, 'sync.email', 'amina@example.com');
+    await enterKey(tester, 'sync.email', testOwnerEmail);
     await enterKey(tester, 'sync.password', 'not-it');
     await tapKey(tester, 'sync.connect');
     expect(find.text('That isn’t your desk password.'), findsOneWidget);
 
-    await enterKey(tester, 'sync.password', 'owner-pass');
+    await enterKey(tester, 'sync.password', testOwner.password);
     await tapKey(tester, 'sync.connect');
     expect(text(tester, 'sync.state'), 'Online · synced just now');
     expect(cloud.devices.values.single, isTrue);
@@ -82,8 +85,8 @@ void main() {
     await signInAs(tester, 'owner', 'owner-pass');
     await tapKey(tester, 'shell.syncPill');
     await enterKey(tester, 'sync.code', 'NOPE-NOPE-NOPE');
-    await enterKey(tester, 'sync.email', 'amina@example.com');
-    await enterKey(tester, 'sync.password', 'owner-pass');
+    await enterKey(tester, 'sync.email', testOwnerEmail);
+    await enterKey(tester, 'sync.password', testOwner.password);
     await tapKey(tester, 'sync.connect');
     expect(
       find.text('That install code isn’t valid or has been used.'),
@@ -138,8 +141,8 @@ void main() {
     expect(find.text('Sync problem · details'), findsOneWidget);
     await tapKey(tester, 'shell.syncPill');
     expect(find.text('This desk needs reconnecting.'), findsOneWidget);
-    await enterKey(tester, 'sync.email', 'amina@example.com');
-    await enterKey(tester, 'sync.password', 'owner-pass');
+    await enterKey(tester, 'sync.email', testOwnerEmail);
+    await enterKey(tester, 'sync.password', testOwner.password);
     await tapKey(tester, 'sync.connect');
     expect(text(tester, 'sync.state'), 'Online · synced just now');
   });
@@ -168,16 +171,16 @@ void main() {
     await signInAs(tester, 'owner', 'owner-pass');
     // The quiet cloud sign-in at the desk failed (the phone changed it).
     await app.read(syncEngineProvider)!.ownerLeft();
-    cloud.ownerPassword = 'new-on-the-phone';
+    cloud.ownerPassword = phonePassword;
 
     await tapKey(tester, 'today.attention.refund.$refundId');
     expect(locationOf(app), Routes.refundDetail);
     await tapKey(tester, 'refund.approve');
     expect(find.text('Sign in to the cloud'), findsOneWidget);
-    await enterKey(tester, 'ownerCloud.password', 'owner-pass');
+    await enterKey(tester, 'ownerCloud.password', testOwner.password);
     await tapKey(tester, 'ownerCloud.signIn');
     expect(find.text('Wrong password. Try again.'), findsOneWidget);
-    await enterKey(tester, 'ownerCloud.password', 'new-on-the-phone');
+    await enterKey(tester, 'ownerCloud.password', phonePassword);
     await tapKey(tester, 'ownerCloud.signIn');
 
     final status = (await RefundsRepository(env.db, env.audit).view(refundId))

@@ -24,7 +24,7 @@ void main() {
   late MemoryDeskSecretStore secrets;
   late SyncStore store;
   late SyncEngine engine;
-  const ownerEmail = 'amina@example.com';
+  const ownerEmail = testOwnerEmail;
 
   SyncEngine newEngine() => SyncEngine(
     db: env.db,
@@ -75,7 +75,7 @@ void main() {
     owner: owner,
     installCode: 'abcd-efgh-jklm',
     ownerEmail: ownerEmail,
-    password: 'owner-pass',
+    password: testOwner.password,
   );
 
   setUp(() async {
@@ -119,7 +119,7 @@ void main() {
           owner: owner,
           installCode: 'NOPE-NOPE-NOPE',
           ownerEmail: ownerEmail,
-          password: 'owner-pass',
+          password: testOwner.password,
         ),
         throwsA(isA<CloudRefused>()),
       );
@@ -177,7 +177,7 @@ void main() {
       expect(engine.status.phase, SyncPhase.waitingForOwner);
       expect(engine.status.uploadSent, greaterThanOrEqualTo(sentBefore));
 
-      await engine.ownerSignedInOnDesk('owner-pass');
+      await engine.ownerSignedInOnDesk(testOwner.password);
       await engine.continueFirstUpload();
       expect(engine.status.phase, SyncPhase.online);
       await expectCloudMatchesDesk();
@@ -200,7 +200,7 @@ void main() {
 
       final late = await addRoom('12');
       expect(cloud.row('rooms', late), isNull);
-      await engine.ownerSignedInOnDesk('owner-pass');
+      await engine.ownerSignedInOnDesk(testOwner.password);
       await engine.continueFirstUpload();
       expect(engine.status.phase, SyncPhase.online);
       expect(cloud.row('rooms', late), isNotNull);
@@ -225,7 +225,7 @@ void main() {
       await engine.reconnect(
         owner: owner,
         ownerEmail: ownerEmail,
-        password: 'owner-pass',
+        password: testOwner.password,
       );
       expect(engine.status.phase, SyncPhase.online);
       expect(await env.auditFor('sync.reconnect'), hasLength(1));
@@ -342,7 +342,7 @@ void main() {
         await connect();
         await engine.ownerLeft();
         await expectLater(decide(), throwsA(isA<OwnerCloudSignInNeeded>()));
-        await engine.signInOwner('owner-pass');
+        await engine.signInOwner(testOwner.password);
         cloud.offline = true;
         await expectLater(decide(), throwsA(isA<NeedsInternet>()));
       },

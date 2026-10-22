@@ -64,8 +64,8 @@ void main() {
     await engine.connect(
       owner: owner,
       installCode: 'ABCD-EFGH-JKLM',
-      ownerEmail: 'amina@example.com',
-      password: 'owner-pass',
+      ownerEmail: testOwnerEmail,
+      password: testOwner.password,
     );
     refunds = RefundsRepository(env.db, env.audit, cloud: engine);
     requests = PriceRequestsRepository(env.db, env.audit, cloud: engine);
@@ -144,7 +144,7 @@ void main() {
           refunds.decide(owner, refundId, approve: true),
           throwsA(isA<OwnerCloudSignInNeeded>()),
         );
-        await engine.signInOwner('owner-pass');
+        await engine.signInOwner(testOwner.password);
         await refunds.decide(owner, refundId, approve: true);
         expect((await refunds.view(refundId)).status, RefundStatus.approved);
       },
