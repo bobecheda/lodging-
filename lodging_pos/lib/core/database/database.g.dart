@@ -7049,6 +7049,17 @@ class $RefundsTable extends Refunds with TableInfo<$RefundsTable, RefundRow> {
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _payoutPhoneMeta = const VerificationMeta(
+    'payoutPhone',
+  );
+  @override
+  late final GeneratedColumn<String> payoutPhone = GeneratedColumn<String>(
+    'payout_phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _printCountMeta = const VerificationMeta(
     'printCount',
   );
@@ -7079,6 +7090,7 @@ class $RefundsTable extends Refunds with TableInfo<$RefundsTable, RefundRow> {
     paidBy,
     paidAt,
     receiptNumber,
+    payoutPhone,
     printCount,
   ];
   @override
@@ -7210,6 +7222,15 @@ class $RefundsTable extends Refunds with TableInfo<$RefundsTable, RefundRow> {
         ),
       );
     }
+    if (data.containsKey('payout_phone')) {
+      context.handle(
+        _payoutPhoneMeta,
+        payoutPhone.isAcceptableOrUnknown(
+          data['payout_phone']!,
+          _payoutPhoneMeta,
+        ),
+      );
+    }
     if (data.containsKey('print_count')) {
       context.handle(
         _printCountMeta,
@@ -7289,6 +7310,10 @@ class $RefundsTable extends Refunds with TableInfo<$RefundsTable, RefundRow> {
         DriftSqlType.string,
         data['${effectivePrefix}receipt_number'],
       ),
+      payoutPhone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payout_phone'],
+      ),
       printCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}print_count'],
@@ -7320,6 +7345,10 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
   final String? paidBy;
   final DateTime? paidAt;
   final String? receiptNumber;
+
+  /// v7: the phone an M-Pesa payout was sent to (the guest's, editable at
+  /// the desk; stored like a guest phone). Null for cash.
+  final String? payoutPhone;
   final int printCount;
   const RefundRow({
     required this.id,
@@ -7338,6 +7367,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
     this.paidBy,
     this.paidAt,
     this.receiptNumber,
+    this.payoutPhone,
     required this.printCount,
   });
   @override
@@ -7370,6 +7400,9 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
     }
     if (!nullToAbsent || receiptNumber != null) {
       map['receipt_number'] = Variable<String>(receiptNumber);
+    }
+    if (!nullToAbsent || payoutPhone != null) {
+      map['payout_phone'] = Variable<String>(payoutPhone);
     }
     map['print_count'] = Variable<int>(printCount);
     return map;
@@ -7405,6 +7438,9 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
       receiptNumber: receiptNumber == null && nullToAbsent
           ? const Value.absent()
           : Value(receiptNumber),
+      payoutPhone: payoutPhone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(payoutPhone),
       printCount: Value(printCount),
     );
   }
@@ -7431,6 +7467,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
       paidBy: serializer.fromJson<String?>(json['paid_by']),
       paidAt: serializer.fromJson<DateTime?>(json['paid_at']),
       receiptNumber: serializer.fromJson<String?>(json['receipt_number']),
+      payoutPhone: serializer.fromJson<String?>(json['payout_phone']),
       printCount: serializer.fromJson<int>(json['print_count']),
     );
   }
@@ -7454,6 +7491,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
       'paid_by': serializer.toJson<String?>(paidBy),
       'paid_at': serializer.toJson<DateTime?>(paidAt),
       'receipt_number': serializer.toJson<String?>(receiptNumber),
+      'payout_phone': serializer.toJson<String?>(payoutPhone),
       'print_count': serializer.toJson<int>(printCount),
     };
   }
@@ -7475,6 +7513,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
     Value<String?> paidBy = const Value.absent(),
     Value<DateTime?> paidAt = const Value.absent(),
     Value<String?> receiptNumber = const Value.absent(),
+    Value<String?> payoutPhone = const Value.absent(),
     int? printCount,
   }) => RefundRow(
     id: id ?? this.id,
@@ -7495,6 +7534,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
     receiptNumber: receiptNumber.present
         ? receiptNumber.value
         : this.receiptNumber,
+    payoutPhone: payoutPhone.present ? payoutPhone.value : this.payoutPhone,
     printCount: printCount ?? this.printCount,
   );
   RefundRow copyWithCompanion(RefundsCompanion data) {
@@ -7523,6 +7563,9 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
       receiptNumber: data.receiptNumber.present
           ? data.receiptNumber.value
           : this.receiptNumber,
+      payoutPhone: data.payoutPhone.present
+          ? data.payoutPhone.value
+          : this.payoutPhone,
       printCount: data.printCount.present
           ? data.printCount.value
           : this.printCount,
@@ -7548,6 +7591,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
           ..write('paidBy: $paidBy, ')
           ..write('paidAt: $paidAt, ')
           ..write('receiptNumber: $receiptNumber, ')
+          ..write('payoutPhone: $payoutPhone, ')
           ..write('printCount: $printCount')
           ..write(')'))
         .toString();
@@ -7571,6 +7615,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
     paidBy,
     paidAt,
     receiptNumber,
+    payoutPhone,
     printCount,
   );
   @override
@@ -7593,6 +7638,7 @@ class RefundRow extends DataClass implements Insertable<RefundRow> {
           other.paidBy == this.paidBy &&
           other.paidAt == this.paidAt &&
           other.receiptNumber == this.receiptNumber &&
+          other.payoutPhone == this.payoutPhone &&
           other.printCount == this.printCount);
 }
 
@@ -7613,6 +7659,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
   final Value<String?> paidBy;
   final Value<DateTime?> paidAt;
   final Value<String?> receiptNumber;
+  final Value<String?> payoutPhone;
   final Value<int> printCount;
   final Value<int> rowid;
   const RefundsCompanion({
@@ -7632,6 +7679,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
     this.paidBy = const Value.absent(),
     this.paidAt = const Value.absent(),
     this.receiptNumber = const Value.absent(),
+    this.payoutPhone = const Value.absent(),
     this.printCount = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -7652,6 +7700,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
     this.paidBy = const Value.absent(),
     this.paidAt = const Value.absent(),
     this.receiptNumber = const Value.absent(),
+    this.payoutPhone = const Value.absent(),
     this.printCount = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : stayId = Value(stayId),
@@ -7677,6 +7726,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
     Expression<String>? paidBy,
     Expression<DateTime>? paidAt,
     Expression<String>? receiptNumber,
+    Expression<String>? payoutPhone,
     Expression<int>? printCount,
     Expression<int>? rowid,
   }) {
@@ -7697,6 +7747,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
       if (paidBy != null) 'paid_by': paidBy,
       if (paidAt != null) 'paid_at': paidAt,
       if (receiptNumber != null) 'receipt_number': receiptNumber,
+      if (payoutPhone != null) 'payout_phone': payoutPhone,
       if (printCount != null) 'print_count': printCount,
       if (rowid != null) 'rowid': rowid,
     });
@@ -7719,6 +7770,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
     Value<String?>? paidBy,
     Value<DateTime?>? paidAt,
     Value<String?>? receiptNumber,
+    Value<String?>? payoutPhone,
     Value<int>? printCount,
     Value<int>? rowid,
   }) {
@@ -7739,6 +7791,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
       paidBy: paidBy ?? this.paidBy,
       paidAt: paidAt ?? this.paidAt,
       receiptNumber: receiptNumber ?? this.receiptNumber,
+      payoutPhone: payoutPhone ?? this.payoutPhone,
       printCount: printCount ?? this.printCount,
       rowid: rowid ?? this.rowid,
     );
@@ -7795,6 +7848,9 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
     if (receiptNumber.present) {
       map['receipt_number'] = Variable<String>(receiptNumber.value);
     }
+    if (payoutPhone.present) {
+      map['payout_phone'] = Variable<String>(payoutPhone.value);
+    }
     if (printCount.present) {
       map['print_count'] = Variable<int>(printCount.value);
     }
@@ -7823,6 +7879,7 @@ class RefundsCompanion extends UpdateCompanion<RefundRow> {
           ..write('paidBy: $paidBy, ')
           ..write('paidAt: $paidAt, ')
           ..write('receiptNumber: $receiptNumber, ')
+          ..write('payoutPhone: $payoutPhone, ')
           ..write('printCount: $printCount, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -13139,7 +13196,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'refunds_fixed_terms',
   );
   late final Trigger refundsPaidOnce = Trigger(
-    'CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NOT NULL AND(NEW.paid_at IS NOT OLD.paid_at OR NEW.method IS NOT OLD.method OR NEW.mpesa_code IS NOT OLD.mpesa_code OR NEW.shift_id IS NOT OLD.shift_id OR NEW.paid_by IS NOT OLD.paid_by OR NEW.receipt_number IS NOT OLD.receipt_number)BEGIN SELECT RAISE (ABORT, \'refund is already paid\');END',
+    'CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds WHEN OLD.paid_at IS NOT NULL AND(NEW.paid_at IS NOT OLD.paid_at OR NEW.method IS NOT OLD.method OR NEW.mpesa_code IS NOT OLD.mpesa_code OR NEW.shift_id IS NOT OLD.shift_id OR NEW.paid_by IS NOT OLD.paid_by OR NEW.receipt_number IS NOT OLD.receipt_number OR NEW.payout_phone IS NOT OLD.payout_phone)BEGIN SELECT RAISE (ABORT, \'refund is already paid\');END',
     'refunds_paid_once',
   );
   late final Trigger refundsPaidIfApproved = Trigger(
@@ -20977,6 +21034,7 @@ typedef $$RefundsTableCreateCompanionBuilder = RefundsCompanion Function({
   Value<String?> paidBy,
   Value<DateTime?> paidAt,
   Value<String?> receiptNumber,
+  Value<String?> payoutPhone,
   Value<int> printCount,
   Value<int> rowid,
 });
@@ -20997,6 +21055,7 @@ typedef $$RefundsTableUpdateCompanionBuilder = RefundsCompanion Function({
   Value<String?> paidBy,
   Value<DateTime?> paidAt,
   Value<String?> receiptNumber,
+  Value<String?> payoutPhone,
   Value<int> printCount,
   Value<int> rowid,
 });
@@ -21160,6 +21219,11 @@ class $$RefundsTableFilterComposer
 
   ColumnFilters<String> get receiptNumber => $composableBuilder(
     column: $table.receiptNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payoutPhone => $composableBuilder(
+    column: $table.payoutPhone,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21355,6 +21419,11 @@ class $$RefundsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get payoutPhone => $composableBuilder(
+    column: $table.payoutPhone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get printCount => $composableBuilder(
     column: $table.printCount,
     builder: (column) => ColumnOrderings(column),
@@ -21501,6 +21570,11 @@ class $$RefundsTableAnnotationComposer
 
   GeneratedColumn<String> get receiptNumber => $composableBuilder(
     column: $table.receiptNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get payoutPhone => $composableBuilder(
+    column: $table.payoutPhone,
     builder: (column) => column,
   );
 
@@ -21677,6 +21751,7 @@ class $$RefundsTableTableManager
                 Value<String?> paidBy = const Value.absent(),
                 Value<DateTime?> paidAt = const Value.absent(),
                 Value<String?> receiptNumber = const Value.absent(),
+                Value<String?> payoutPhone = const Value.absent(),
                 Value<int> printCount = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RefundsCompanion(
@@ -21696,6 +21771,7 @@ class $$RefundsTableTableManager
                 paidBy: paidBy,
                 paidAt: paidAt,
                 receiptNumber: receiptNumber,
+                payoutPhone: payoutPhone,
                 printCount: printCount,
                 rowid: rowid,
               ),
@@ -21717,6 +21793,7 @@ class $$RefundsTableTableManager
                 Value<String?> paidBy = const Value.absent(),
                 Value<DateTime?> paidAt = const Value.absent(),
                 Value<String?> receiptNumber = const Value.absent(),
+                Value<String?> payoutPhone = const Value.absent(),
                 Value<int> printCount = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RefundsCompanion.insert(
@@ -21736,6 +21813,7 @@ class $$RefundsTableTableManager
                 paidBy: paidBy,
                 paidAt: paidAt,
                 receiptNumber: receiptNumber,
+                payoutPhone: payoutPhone,
                 printCount: printCount,
                 rowid: rowid,
               ),

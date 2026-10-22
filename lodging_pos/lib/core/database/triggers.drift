@@ -138,6 +138,7 @@ CREATE TRIGGER refunds_paid_once BEFORE UPDATE ON refunds
     OR NEW.shift_id IS NOT OLD.shift_id
     OR NEW.paid_by IS NOT OLD.paid_by
     OR NEW.receipt_number IS NOT OLD.receipt_number
+    OR NEW.payout_phone IS NOT OLD.payout_phone
   )
   BEGIN SELECT RAISE(ABORT, 'refund is already paid'); END;
 

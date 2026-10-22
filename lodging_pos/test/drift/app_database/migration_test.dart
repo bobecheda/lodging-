@@ -847,8 +847,157 @@ void main() {
     },
   );
 
+  test('migration from v6 to v7: an M-Pesa payout gets its guest\'s phone, '
+      'a cash one none; afterwards the phone is required for M-Pesa and '
+      'never changes once paid', () async {
+    const t6 = '2026-10-21T06:00:00.000Z';
+    const t7 = '2026-10-21T07:00:00.000Z';
+    String row(String table, Map<String, Object?> values) {
+      final cols = values.keys.join(', ');
+      final vals = [
+        for (final v in values.values)
+          v == null
+              ? 'NULL'
+              : v is int
+              ? '$v'
+              : "'$v'",
+      ].join(', ');
+      return 'INSERT INTO $table ($cols) VALUES ($vals)';
+    }
+
+    Map<String, Object?> synced(String id) => {
+      'id': id,
+      'created_at': t6,
+      'updated_at': t6,
+      'device_id': dev,
+    };
+    final db = open(
+      NativeDatabase.memory(
+        setup: (raw) {
+          appStatements(6).forEach(raw.execute);
+          raw.execute('PRAGMA user_version = 6');
+          for (final sql in [
+            row('users', {
+              ...synced('u1'),
+              'full_name': 'Mary',
+              'username': 'mary',
+              'password_hash': 'x',
+              'role': 'receptionist',
+              'is_active': 1,
+              'must_change_password': 0,
+            }),
+            row('guests', {
+              ...synced('g1'),
+              'full_name': 'Peter Kamau',
+              'phone': '0711000482',
+            }),
+            row('bed_categories', {
+              ...synced('c1'),
+              'name': 'Deluxe',
+              'price_per_night': 700,
+              'sort_order': 1,
+            }),
+            row('rooms', {...synced('r1'), 'room_number': '5'}),
+            for (final (id, label) in [('b1', 'A'), ('b2', 'B')])
+              row('beds', {
+                ...synced(id),
+                'room_id': 'r1',
+                'label': label,
+                'category_id': 'c1',
+                'cleanliness': 'not_cleaned',
+              }),
+            row('shifts', {
+              ...synced('s1'),
+              'user_id': 'u1',
+              'opened_at': t6,
+              'opening_float': 0,
+              'status': 'open',
+            }),
+            for (final (stay, bed, label) in [
+              ('st1', 'b1', 'A'),
+              ('st2', 'b2', 'B'),
+            ])
+              row('stays', {
+                ...synced(stay),
+                'guest_id': 'g1',
+                'bed_id': bed,
+                'check_in_at': t6,
+                'paid_until': t6,
+                'checked_out_at': t6,
+                'status': 'closed',
+                'checked_in_by': 'u1',
+                'checked_out_by': 'u1',
+                'room_number': '5',
+                'bed_label': label,
+              }),
+            for (final (refund, stay) in [('rf1', 'st1'), ('rf2', 'st2')]) ...[
+              row('refunds', {
+                ...synced(refund),
+                'stay_id': stay,
+                'nights': 2,
+                'price_per_night': 700,
+                'amount': 1400,
+                'requested_by': 'u1',
+                'requested_at': t6,
+              }),
+              row('refund_decisions', {
+                ...synced('d-$refund'),
+                'refund_id': refund,
+                'decision': 'approved',
+                'decided_by': 'u1',
+                'decided_at': t6,
+              }),
+            ],
+            // Paid before v7, through the triggers (approved first).
+            "UPDATE refunds SET method = 'paybill', mpesa_code = 'QJK7H2LM4P', "
+                "shift_id = 's1', paid_by = 'u1', paid_at = '$t6', "
+                "receipt_number = 'R-000009', updated_at = '$t7' "
+                "WHERE id = 'rf1'",
+            "UPDATE refunds SET method = 'cash', shift_id = 's1', "
+                "paid_by = 'u1', paid_at = '$t6', receipt_number = 'R-000010', "
+                "updated_at = '$t7' WHERE id = 'rf2'",
+          ]) {
+            raw.execute(sql);
+          }
+        },
+      ),
+    );
+    addTearDown(db.close);
+
+    final refunds = await db
+        .customSelect(
+          'SELECT id, payout_phone, updated_at FROM refunds ORDER BY id',
+        )
+        .get();
+    expect(
+      [
+        for (final r in refunds)
+          (
+            r.read<String>('id'),
+            r.readNullable<String>('payout_phone'),
+            r.read<String>('updated_at'),
+          ),
+      ],
+      [('rf1', '0711000482', t7), ('rf2', null, t7)],
+    );
+    // The new trigger: a paid refund's phone never changes.
+    await expectLater(
+      db.customStatement(
+        "UPDATE refunds SET payout_phone = '0700000000', "
+        "updated_at = '2030-01-01T00:00:00.000Z' WHERE id = 'rf1'",
+      ),
+      throwsA(anything),
+    );
+    expect(
+      (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
+        'user_version',
+      ),
+      7,
+    );
+  });
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4, 5]) {
+    for (final from in [1, 2, 3, 4, 5, 6]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -873,7 +1022,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          6,
+          7,
         );
         final objects = await db
             .customSelect(

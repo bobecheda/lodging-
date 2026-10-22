@@ -129,6 +129,7 @@ void main() {
         mpesaCode: paidBy == paybill ? 'CODE$id' : null,
         codeInUse: false,
         at: at,
+        sendTo: paidBy == paybill ? '0711000482' : null,
       );
     }
 

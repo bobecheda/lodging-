@@ -182,6 +182,10 @@ class Refunds extends Table with SyncedColumns {
   TextColumn get paidBy => text().nullable().references(Users, #id)();
   DateTimeColumn get paidAt => dateTime().nullable()();
   TextColumn get receiptNumber => text().nullable().unique()();
+
+  /// v7: the phone an M-Pesa payout was sent to (the guest's, editable at
+  /// the desk; stored like a guest phone). Null for cash.
+  TextColumn get payoutPhone => text().nullable()();
   IntColumn get printCount => integer().withDefault(const Constant(0))();
 
   @override
@@ -192,6 +196,7 @@ class Refunds extends Table with SyncedColumns {
     'CHECK ((paid_at IS NULL) = (paid_by IS NULL))',
     'CHECK ((paid_at IS NULL) = (receipt_number IS NULL))',
     "CHECK ((method IS 'paybill') = (mpesa_code IS NOT NULL))",
+    "CHECK ((method IS 'paybill') = (payout_phone IS NOT NULL))",
   ];
 }
 

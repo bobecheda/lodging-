@@ -11,6 +11,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 | v1 | 16 Oct 2026 | First frozen schema |
 | v2 | 17 Oct 2026 (FD-4) | `stay_charges.category_id` and `category_name`: the bed's category at check-in, kept with the price. Existing charges are filled from their stay's bed by rebuilding the table (an UPDATE would trip the charge triggers); the rebuild is local, not audited or queued |
 | v5 | 19 Oct 2026 (FD-11) | `shifts.first_count`, `close_note` (≤ 200) and `closed_by`; shifts already closed get `first_count = counted_cash` and `closed_by = user_id`; trigger `shifts_closed_final` refuses any change to a closed shift |
+| v7 | 22 Oct 2026 (AD-7) | `refunds.payout_phone`: the phone an M-Pesa payout went to, `CHECK ((method IS 'paybill') = (payout_phone IS NOT NULL))`; a payout made before v7 gets its guest's phone; trigger `refunds_paid_once` also guards it |
 | v6 | 21 Oct 2026 (roles) | `users.role` CHECK becomes `owner` \| `supervisor` \| `receptionist`; the rebuild copies `admin` users as `supervisor` (no UPDATE, timestamps unchanged). Old audit rows keep `"role":"admin"`; sync (sprint 2) must read an unsent outbox payload's `admin` as `supervisor` |
 | v4 | 19 Oct 2026 (FD-9) | `housekeeping_tasks.cancelled_at` and `cancelled_by` (empty for existing tasks); the one-open-task index leaves out cancelled tasks; a task can't be both completed and cancelled |
 | v3 | 18 Oct 2026 (FD-6) | `stays.room_number` and `bed_label`, as let; existing stays filled from their bed and room by rebuilding the table |
@@ -207,8 +208,9 @@ A refund of prepaid nights not yet started (BR-8), created as a **request** in t
 | shift_id | TEXT → shifts | payout: the open shift that paid it; that shift's totals count the refund |
 | paid_by | TEXT → users | payout |
 | paid_at | DATETIME | payout |
-| receipt_number | TEXT | payout: UNIQUE, from `receipt_counter` |
-| print_count | INT | reprints after the first are marked "Copy" |
+| receipt_number | TEXT | payout: UNIQUE, from `receipt_counter` (the REFUND receipt) |
+| payout_phone | TEXT | v7, payout: the phone an M-Pesa payout was sent to (stored like a guest phone; audit masked); required for `paybill`, null for `cash` |
+| print_count | INT | REFUND receipt reprints after the first are marked "Copy" (`refund.print`) |
 
 The payout columns are null together until paid, then set together. Triggers: a refund is inserted unpaid; `stay_id`, `nights`, `price_per_night`, `amount`, `requested_by` and `requested_at` never change; the payout can be set only once an `approved` decision exists, and only once (reprints still update `print_count`).
 

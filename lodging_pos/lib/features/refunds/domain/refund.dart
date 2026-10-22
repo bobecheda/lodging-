@@ -10,6 +10,7 @@ library;
 
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
+import '../../../core/contacts/phone.dart';
 import '../../payments/domain/payment_rules.dart';
 import '../../shifts/domain/shift.dart';
 import '../../shifts/domain/shift_rules.dart';
@@ -53,12 +54,17 @@ final class RefundPayout {
     required this.shiftId,
     required this.paidBy,
     required this.paidAt,
+    this.phone,
   });
 
   final PaymentMethod method;
 
   /// The M-Pesa code of the money sent back, for a Paybill payout.
   final String? mpesaCode;
+
+  /// The phone an M-Pesa payout was sent to (stored like a guest phone);
+  /// null for cash.
+  final String? phone;
 
   /// The open shift that paid it, whose totals it reduces.
   final String shiftId;
@@ -197,7 +203,9 @@ Refund rejectRefund(
 
 /// BR-8b: records paying out an approved [refund] from the cash drawer or
 /// the Paybill account, in the open [shift]. [codeInUse] says whether
-/// [mpesaCode] is already on a payment or refund payout.
+/// [mpesaCode] is already on a payment or refund payout. An M-Pesa payout
+/// also needs [sendTo], the phone the money goes to (the guest's, editable;
+/// the guest phone rule).
 Refund payRefund(
   Refund refund, {
   required UserAccount by,
@@ -206,6 +214,8 @@ Refund payRefund(
   required String? mpesaCode,
   required bool codeInUse,
   required DateTime at,
+  String? sendTo,
+  MpesaCodeUse? codeUsedOn,
 }) {
   requirePermission(by, Permission.payRefund);
   final open = requireOpenShift(shift);
@@ -219,19 +229,40 @@ Refund payRefund(
     case RefundStatus.paid:
       throw const RefundRuleViolation('This refund has already been paid.');
   }
-  final codeProblem = mpesaCodeError(method, mpesaCode, codeInUse: codeInUse);
+  final codeProblem = mpesaCodeError(
+    method,
+    mpesaCode,
+    codeInUse: codeInUse,
+    usedOn: codeUsedOn,
+  );
   if (codeProblem != null) throw InvalidMpesaCode(codeProblem);
+  final phoneProblem = payoutPhoneError(method, sendTo);
+  if (phoneProblem != null) throw InvalidPayoutPhone(phoneProblem);
+  final paybill = method == PaymentMethod.paybill;
   return refund._with(
     payout: RefundPayout(
       method: method,
-      mpesaCode: method == PaymentMethod.paybill
-          ? normalizeMpesaCode(mpesaCode!)
-          : null,
+      mpesaCode: paybill ? normalizeMpesaCode(mpesaCode!) : null,
       shiftId: open.id,
       paidBy: by.id,
       paidAt: at,
+      phone: paybill ? normalizeGuestPhone(sendTo!) : null,
     ),
   );
+}
+
+/// Why an M-Pesa payout's "Send to" phone can't be used, or null. Cash
+/// needs none.
+String? payoutPhoneError(PaymentMethod method, String? sendTo) =>
+    method == PaymentMethod.paybill ? guestPhoneError(sendTo ?? '') : null;
+
+/// The "Send to" phone was refused ([payoutPhoneError]).
+final class InvalidPayoutPhone implements Exception {
+  const InvalidPayoutPhone(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 /// The payouts [shiftId] made, for its totals. Requested, approved-unpaid

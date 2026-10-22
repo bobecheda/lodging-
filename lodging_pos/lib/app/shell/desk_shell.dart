@@ -12,6 +12,7 @@ import '../../core/sync/outbox_status.dart';
 import '../../features/auth/presentation/idle_lock.dart';
 import '../../features/backup/domain/backup.dart';
 import '../../features/backup/presentation/backup_providers.dart';
+import '../../features/refunds/presentation/refunds_providers.dart';
 import '../../features/shifts/presentation/shift_providers.dart';
 import '../gate.dart';
 import '../theme/theme.dart';
@@ -29,6 +30,7 @@ class NavItem {
     this.setup = false,
     this.shortLabel,
     this.fullLabelNeeds = const {},
+    this.badge,
   });
 
   final String route;
@@ -39,6 +41,9 @@ class NavItem {
   /// "Prices" (no settings) for "Prices & settings".
   final String? shortLabel;
   final Set<Permission> fullLabelNeeds;
+
+  /// A count shown beside the label, e.g. refunds ready to pay.
+  final NavBadge? badge;
 
   String labelFor(UserAccount? user) =>
       shortLabel != null &&
@@ -58,6 +63,12 @@ class NavItem {
   bool visibleTo(UserAccount? user) =>
       permissions.isEmpty ||
       (user != null && permissions.any((p) => can(user, p)));
+}
+
+/// A live count beside a sidebar item.
+enum NavBadge {
+  /// Approved refunds not yet paid (AD-7).
+  refundsToPay,
 }
 
 /// Sidebar destinations. Only screens that exist are listed; each story
@@ -87,6 +98,13 @@ List<NavItem> deskNavItems(Ref ref) => const [
     label: 'Receipts',
     icon: Icons.receipt_long_outlined,
     permissions: {Permission.printReceipts},
+  ),
+  NavItem(
+    route: Routes.refunds,
+    label: 'Refunds',
+    icon: Icons.replay_rounded,
+    permissions: {Permission.payRefund},
+    badge: NavBadge.refundsToPay,
   ),
   NavItem(
     route: Routes.shifts,
@@ -167,32 +185,37 @@ class DeskShell extends ConsumerWidget {
           const LodgingWordmark(),
           const SizedBox(height: Space.x6),
           Text('Front desk', style: t.small.copyWith(color: c.navMuted)),
-          const SizedBox(height: Space.x28),
+          const SizedBox(height: Space.x16),
+          // Every item built (not lazy), scrolling only if the desk's
+          // warnings push it past a 768-high screen.
           Expanded(
-            child: ListView(
-              children: [
-                for (final item in desk) _NavTile(item, location, user),
-                if (setup.isNotEmpty) ...[
-                  const SizedBox(height: Space.x20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Space.x12,
-                      vertical: Space.x8,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final item in desk) _NavTile(item, location, user),
+                  if (setup.isNotEmpty) ...[
+                    const SizedBox(height: Space.x10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Space.x12,
+                        vertical: Space.x6,
+                      ),
+                      child: Text(
+                        'SETUP · SUPERVISOR',
+                        key: const ValueKey('shell.setupGroup'),
+                        style: t.capsLabel.copyWith(color: c.navMuted),
+                      ),
                     ),
-                    child: Text(
-                      'SETUP · SUPERVISOR',
-                      key: const ValueKey('shell.setupGroup'),
-                      style: t.capsLabel.copyWith(color: c.navMuted),
-                    ),
-                  ),
-                  for (final item in setup) _NavTile(item, location, user),
+                    for (final item in setup) _NavTile(item, location, user),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           const _BackupPill(),
           const _SyncPill(),
-          const SizedBox(height: Space.x16),
+          const SizedBox(height: Space.x12),
           if (user != null) _UserBlock(user),
         ],
       ),
@@ -221,7 +244,7 @@ class DeskShell extends ConsumerWidget {
   }
 }
 
-class _NavTile extends StatelessWidget {
+class _NavTile extends ConsumerWidget {
   const _NavTile(this.item, this.location, this.user);
 
   final NavItem item;
@@ -229,13 +252,13 @@ class _NavTile extends StatelessWidget {
   final UserAccount? user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final isActive =
         location == item.route || location.startsWith('${item.route}/');
     return Padding(
-      padding: const EdgeInsets.only(bottom: Space.x4),
+      padding: const EdgeInsets.only(bottom: 2),
       child: Semantics(
         selected: isActive,
         button: true,
@@ -274,12 +297,39 @@ class _NavTile extends StatelessWidget {
                           : t.nav,
                     ),
                   ),
+                  if (item.badge == NavBadge.refundsToPay)
+                    _CountBadge(
+                      ref.watch(refundsToPayProvider).value ?? 0,
+                      key: ValueKey('nav.badge.${item.route}'),
+                    ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A small butter count beside a sidebar label; nothing at zero.
+class _CountBadge extends StatelessWidget {
+  const _CountBadge(this.count, {super.key});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) return const SizedBox.shrink();
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Space.x8, vertical: 1),
+      decoration: BoxDecoration(
+        color: c.butter,
+        borderRadius: BorderRadius.circular(Radii.pill),
+      ),
+      child: Text('$count', style: t.smallStrong.copyWith(color: c.butterText)),
     );
   }
 }

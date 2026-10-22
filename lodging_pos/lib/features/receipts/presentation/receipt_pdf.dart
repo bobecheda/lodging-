@@ -85,7 +85,7 @@ Future<Uint8List> buildReceiptPdf(Receipt r, ReceiptFonts fonts) {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('RECEIPT', style: s.caps),
+                    pw.Text(r.title, style: s.caps),
                     pw.Text(r.receiptNumber, style: s.receiptNumber),
                   ],
                 ),
@@ -122,15 +122,13 @@ Future<Uint8List> buildReceiptPdf(Receipt r, ReceiptFonts fonts) {
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              pw.Expanded(child: pw.Text('Total paid', style: s.totalLabel)),
+              pw.Expanded(child: pw.Text(r.totalLabel, style: s.totalLabel)),
               pw.Text(r.totalText, style: s.total),
             ],
           ),
           dashed(),
-          row('Paid by', r.paidBy),
-          if (r.mpesaCode case final code?)
-            row('M-Pesa code', code, mono: true),
-          row('Served by', r.servedBy),
+          for (final (label, value, mono) in r.paymentRows)
+            row(label, value, mono: mono),
           pw.SizedBox(height: ReceiptPrintStyle.gap * 2),
           solid(),
           pw.SizedBox(height: ReceiptPrintStyle.gap),
