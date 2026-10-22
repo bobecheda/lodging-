@@ -12089,6 +12089,1351 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogRow> {
   }
 }
 
+class $PriceRequestsTable extends PriceRequests
+    with TableInfo<$PriceRequestsTable, PriceRequestRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PriceRequestsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES bed_categories (id)',
+    ),
+  );
+  static const VerificationMeta _oldPriceMeta = const VerificationMeta(
+    'oldPrice',
+  );
+  @override
+  late final GeneratedColumn<int> oldPrice = GeneratedColumn<int>(
+    'old_price',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(oldPrice).isBetweenValues(1, 100000),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _newPriceMeta = const VerificationMeta(
+    'newPrice',
+  );
+  @override
+  late final GeneratedColumn<int> newPrice = GeneratedColumn<int>(
+    'new_price',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(newPrice).isBetweenValues(1, 100000),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _requestedByMeta = const VerificationMeta(
+    'requestedBy',
+  );
+  @override
+  late final GeneratedColumn<String> requestedBy = GeneratedColumn<String>(
+    'requested_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _requestedAtMeta = const VerificationMeta(
+    'requestedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> requestedAt = GeneratedColumn<DateTime>(
+    'requested_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _withdrawnAtMeta = const VerificationMeta(
+    'withdrawnAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> withdrawnAt = GeneratedColumn<DateTime>(
+    'withdrawn_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _withdrawnByMeta = const VerificationMeta(
+    'withdrawnBy',
+  );
+  @override
+  late final GeneratedColumn<String> withdrawnBy = GeneratedColumn<String>(
+    'withdrawn_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _withdrawReasonMeta = const VerificationMeta(
+    'withdrawReason',
+  );
+  @override
+  late final GeneratedColumn<String> withdrawReason = GeneratedColumn<String>(
+    'withdraw_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    categoryId,
+    oldPrice,
+    newPrice,
+    reason,
+    requestedBy,
+    requestedAt,
+    withdrawnAt,
+    withdrawnBy,
+    withdrawReason,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'price_requests';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PriceRequestRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryIdMeta);
+    }
+    if (data.containsKey('old_price')) {
+      context.handle(
+        _oldPriceMeta,
+        oldPrice.isAcceptableOrUnknown(data['old_price']!, _oldPriceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_oldPriceMeta);
+    }
+    if (data.containsKey('new_price')) {
+      context.handle(
+        _newPriceMeta,
+        newPrice.isAcceptableOrUnknown(data['new_price']!, _newPriceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_newPriceMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    }
+    if (data.containsKey('requested_by')) {
+      context.handle(
+        _requestedByMeta,
+        requestedBy.isAcceptableOrUnknown(
+          data['requested_by']!,
+          _requestedByMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedByMeta);
+    }
+    if (data.containsKey('requested_at')) {
+      context.handle(
+        _requestedAtMeta,
+        requestedAt.isAcceptableOrUnknown(
+          data['requested_at']!,
+          _requestedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedAtMeta);
+    }
+    if (data.containsKey('withdrawn_at')) {
+      context.handle(
+        _withdrawnAtMeta,
+        withdrawnAt.isAcceptableOrUnknown(
+          data['withdrawn_at']!,
+          _withdrawnAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('withdrawn_by')) {
+      context.handle(
+        _withdrawnByMeta,
+        withdrawnBy.isAcceptableOrUnknown(
+          data['withdrawn_by']!,
+          _withdrawnByMeta,
+        ),
+      );
+    }
+    if (data.containsKey('withdraw_reason')) {
+      context.handle(
+        _withdrawReasonMeta,
+        withdrawReason.isAcceptableOrUnknown(
+          data['withdraw_reason']!,
+          _withdrawReasonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PriceRequestRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PriceRequestRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      )!,
+      oldPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}old_price'],
+      )!,
+      newPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}new_price'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      ),
+      requestedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by'],
+      )!,
+      requestedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}requested_at'],
+      )!,
+      withdrawnAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}withdrawn_at'],
+      ),
+      withdrawnBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}withdrawn_by'],
+      ),
+      withdrawReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}withdraw_reason'],
+      ),
+    );
+  }
+
+  @override
+  $PriceRequestsTable createAlias(String alias) {
+    return $PriceRequestsTable(attachedDatabase, alias);
+  }
+}
+
+class PriceRequestRow extends DataClass implements Insertable<PriceRequestRow> {
+  /// UUID v4.
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String deviceId;
+  final String categoryId;
+  final int oldPrice;
+  final int newPrice;
+  final String? reason;
+  final String requestedBy;
+  final DateTime requestedAt;
+  final DateTime? withdrawnAt;
+  final String? withdrawnBy;
+  final String? withdrawReason;
+  const PriceRequestRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.categoryId,
+    required this.oldPrice,
+    required this.newPrice,
+    this.reason,
+    required this.requestedBy,
+    required this.requestedAt,
+    this.withdrawnAt,
+    this.withdrawnBy,
+    this.withdrawReason,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['category_id'] = Variable<String>(categoryId);
+    map['old_price'] = Variable<int>(oldPrice);
+    map['new_price'] = Variable<int>(newPrice);
+    if (!nullToAbsent || reason != null) {
+      map['reason'] = Variable<String>(reason);
+    }
+    map['requested_by'] = Variable<String>(requestedBy);
+    map['requested_at'] = Variable<DateTime>(requestedAt);
+    if (!nullToAbsent || withdrawnAt != null) {
+      map['withdrawn_at'] = Variable<DateTime>(withdrawnAt);
+    }
+    if (!nullToAbsent || withdrawnBy != null) {
+      map['withdrawn_by'] = Variable<String>(withdrawnBy);
+    }
+    if (!nullToAbsent || withdrawReason != null) {
+      map['withdraw_reason'] = Variable<String>(withdrawReason);
+    }
+    return map;
+  }
+
+  PriceRequestsCompanion toCompanion(bool nullToAbsent) {
+    return PriceRequestsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      categoryId: Value(categoryId),
+      oldPrice: Value(oldPrice),
+      newPrice: Value(newPrice),
+      reason: reason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reason),
+      requestedBy: Value(requestedBy),
+      requestedAt: Value(requestedAt),
+      withdrawnAt: withdrawnAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(withdrawnAt),
+      withdrawnBy: withdrawnBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(withdrawnBy),
+      withdrawReason: withdrawReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(withdrawReason),
+    );
+  }
+
+  factory PriceRequestRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PriceRequestRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      categoryId: serializer.fromJson<String>(json['category_id']),
+      oldPrice: serializer.fromJson<int>(json['old_price']),
+      newPrice: serializer.fromJson<int>(json['new_price']),
+      reason: serializer.fromJson<String?>(json['reason']),
+      requestedBy: serializer.fromJson<String>(json['requested_by']),
+      requestedAt: serializer.fromJson<DateTime>(json['requested_at']),
+      withdrawnAt: serializer.fromJson<DateTime?>(json['withdrawn_at']),
+      withdrawnBy: serializer.fromJson<String?>(json['withdrawn_by']),
+      withdrawReason: serializer.fromJson<String?>(json['withdraw_reason']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'category_id': serializer.toJson<String>(categoryId),
+      'old_price': serializer.toJson<int>(oldPrice),
+      'new_price': serializer.toJson<int>(newPrice),
+      'reason': serializer.toJson<String?>(reason),
+      'requested_by': serializer.toJson<String>(requestedBy),
+      'requested_at': serializer.toJson<DateTime>(requestedAt),
+      'withdrawn_at': serializer.toJson<DateTime?>(withdrawnAt),
+      'withdrawn_by': serializer.toJson<String?>(withdrawnBy),
+      'withdraw_reason': serializer.toJson<String?>(withdrawReason),
+    };
+  }
+
+  PriceRequestRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? deviceId,
+    String? categoryId,
+    int? oldPrice,
+    int? newPrice,
+    Value<String?> reason = const Value.absent(),
+    String? requestedBy,
+    DateTime? requestedAt,
+    Value<DateTime?> withdrawnAt = const Value.absent(),
+    Value<String?> withdrawnBy = const Value.absent(),
+    Value<String?> withdrawReason = const Value.absent(),
+  }) => PriceRequestRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    categoryId: categoryId ?? this.categoryId,
+    oldPrice: oldPrice ?? this.oldPrice,
+    newPrice: newPrice ?? this.newPrice,
+    reason: reason.present ? reason.value : this.reason,
+    requestedBy: requestedBy ?? this.requestedBy,
+    requestedAt: requestedAt ?? this.requestedAt,
+    withdrawnAt: withdrawnAt.present ? withdrawnAt.value : this.withdrawnAt,
+    withdrawnBy: withdrawnBy.present ? withdrawnBy.value : this.withdrawnBy,
+    withdrawReason: withdrawReason.present
+        ? withdrawReason.value
+        : this.withdrawReason,
+  );
+  PriceRequestRow copyWithCompanion(PriceRequestsCompanion data) {
+    return PriceRequestRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      oldPrice: data.oldPrice.present ? data.oldPrice.value : this.oldPrice,
+      newPrice: data.newPrice.present ? data.newPrice.value : this.newPrice,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      requestedBy: data.requestedBy.present
+          ? data.requestedBy.value
+          : this.requestedBy,
+      requestedAt: data.requestedAt.present
+          ? data.requestedAt.value
+          : this.requestedAt,
+      withdrawnAt: data.withdrawnAt.present
+          ? data.withdrawnAt.value
+          : this.withdrawnAt,
+      withdrawnBy: data.withdrawnBy.present
+          ? data.withdrawnBy.value
+          : this.withdrawnBy,
+      withdrawReason: data.withdrawReason.present
+          ? data.withdrawReason.value
+          : this.withdrawReason,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PriceRequestRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('oldPrice: $oldPrice, ')
+          ..write('newPrice: $newPrice, ')
+          ..write('reason: $reason, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('requestedAt: $requestedAt, ')
+          ..write('withdrawnAt: $withdrawnAt, ')
+          ..write('withdrawnBy: $withdrawnBy, ')
+          ..write('withdrawReason: $withdrawReason')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    categoryId,
+    oldPrice,
+    newPrice,
+    reason,
+    requestedBy,
+    requestedAt,
+    withdrawnAt,
+    withdrawnBy,
+    withdrawReason,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PriceRequestRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.categoryId == this.categoryId &&
+          other.oldPrice == this.oldPrice &&
+          other.newPrice == this.newPrice &&
+          other.reason == this.reason &&
+          other.requestedBy == this.requestedBy &&
+          other.requestedAt == this.requestedAt &&
+          other.withdrawnAt == this.withdrawnAt &&
+          other.withdrawnBy == this.withdrawnBy &&
+          other.withdrawReason == this.withdrawReason);
+}
+
+class PriceRequestsCompanion extends UpdateCompanion<PriceRequestRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> deviceId;
+  final Value<String> categoryId;
+  final Value<int> oldPrice;
+  final Value<int> newPrice;
+  final Value<String?> reason;
+  final Value<String> requestedBy;
+  final Value<DateTime> requestedAt;
+  final Value<DateTime?> withdrawnAt;
+  final Value<String?> withdrawnBy;
+  final Value<String?> withdrawReason;
+  final Value<int> rowid;
+  const PriceRequestsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.oldPrice = const Value.absent(),
+    this.newPrice = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.requestedBy = const Value.absent(),
+    this.requestedAt = const Value.absent(),
+    this.withdrawnAt = const Value.absent(),
+    this.withdrawnBy = const Value.absent(),
+    this.withdrawReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PriceRequestsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required String categoryId,
+    required int oldPrice,
+    required int newPrice,
+    this.reason = const Value.absent(),
+    required String requestedBy,
+    required DateTime requestedAt,
+    this.withdrawnAt = const Value.absent(),
+    this.withdrawnBy = const Value.absent(),
+    this.withdrawReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : categoryId = Value(categoryId),
+       oldPrice = Value(oldPrice),
+       newPrice = Value(newPrice),
+       requestedBy = Value(requestedBy),
+       requestedAt = Value(requestedAt);
+  static Insertable<PriceRequestRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<String>? categoryId,
+    Expression<int>? oldPrice,
+    Expression<int>? newPrice,
+    Expression<String>? reason,
+    Expression<String>? requestedBy,
+    Expression<DateTime>? requestedAt,
+    Expression<DateTime>? withdrawnAt,
+    Expression<String>? withdrawnBy,
+    Expression<String>? withdrawReason,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (oldPrice != null) 'old_price': oldPrice,
+      if (newPrice != null) 'new_price': newPrice,
+      if (reason != null) 'reason': reason,
+      if (requestedBy != null) 'requested_by': requestedBy,
+      if (requestedAt != null) 'requested_at': requestedAt,
+      if (withdrawnAt != null) 'withdrawn_at': withdrawnAt,
+      if (withdrawnBy != null) 'withdrawn_by': withdrawnBy,
+      if (withdrawReason != null) 'withdraw_reason': withdrawReason,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PriceRequestsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? deviceId,
+    Value<String>? categoryId,
+    Value<int>? oldPrice,
+    Value<int>? newPrice,
+    Value<String?>? reason,
+    Value<String>? requestedBy,
+    Value<DateTime>? requestedAt,
+    Value<DateTime?>? withdrawnAt,
+    Value<String?>? withdrawnBy,
+    Value<String?>? withdrawReason,
+    Value<int>? rowid,
+  }) {
+    return PriceRequestsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      categoryId: categoryId ?? this.categoryId,
+      oldPrice: oldPrice ?? this.oldPrice,
+      newPrice: newPrice ?? this.newPrice,
+      reason: reason ?? this.reason,
+      requestedBy: requestedBy ?? this.requestedBy,
+      requestedAt: requestedAt ?? this.requestedAt,
+      withdrawnAt: withdrawnAt ?? this.withdrawnAt,
+      withdrawnBy: withdrawnBy ?? this.withdrawnBy,
+      withdrawReason: withdrawReason ?? this.withdrawReason,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (oldPrice.present) {
+      map['old_price'] = Variable<int>(oldPrice.value);
+    }
+    if (newPrice.present) {
+      map['new_price'] = Variable<int>(newPrice.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (requestedBy.present) {
+      map['requested_by'] = Variable<String>(requestedBy.value);
+    }
+    if (requestedAt.present) {
+      map['requested_at'] = Variable<DateTime>(requestedAt.value);
+    }
+    if (withdrawnAt.present) {
+      map['withdrawn_at'] = Variable<DateTime>(withdrawnAt.value);
+    }
+    if (withdrawnBy.present) {
+      map['withdrawn_by'] = Variable<String>(withdrawnBy.value);
+    }
+    if (withdrawReason.present) {
+      map['withdraw_reason'] = Variable<String>(withdrawReason.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PriceRequestsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('oldPrice: $oldPrice, ')
+          ..write('newPrice: $newPrice, ')
+          ..write('reason: $reason, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('requestedAt: $requestedAt, ')
+          ..write('withdrawnAt: $withdrawnAt, ')
+          ..write('withdrawnBy: $withdrawnBy, ')
+          ..write('withdrawReason: $withdrawReason, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PriceDecisionsTable extends PriceDecisions
+    with TableInfo<$PriceDecisionsTable, PriceDecisionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PriceDecisionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES price_requests (id)',
+    ),
+  );
+  static const VerificationMeta _decisionMeta = const VerificationMeta(
+    'decision',
+  );
+  @override
+  late final GeneratedColumn<String> decision = GeneratedColumn<String>(
+    'decision',
+    aliasedName,
+    false,
+    check: () => decision.isIn(['approved', 'rejected']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decidedByMeta = const VerificationMeta(
+    'decidedBy',
+  );
+  @override
+  late final GeneratedColumn<String> decidedBy = GeneratedColumn<String>(
+    'decided_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> decidedAt = GeneratedColumn<DateTime>(
+    'decided_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    requestId,
+    decision,
+    note,
+    decidedBy,
+    decidedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'price_decisions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PriceDecisionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('decision')) {
+      context.handle(
+        _decisionMeta,
+        decision.isAcceptableOrUnknown(data['decision']!, _decisionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decisionMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('decided_by')) {
+      context.handle(
+        _decidedByMeta,
+        decidedBy.isAcceptableOrUnknown(data['decided_by']!, _decidedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedByMeta);
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PriceDecisionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PriceDecisionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      decision: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decision'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      decidedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decided_by'],
+      )!,
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}decided_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PriceDecisionsTable createAlias(String alias) {
+    return $PriceDecisionsTable(attachedDatabase, alias);
+  }
+}
+
+class PriceDecisionRow extends DataClass
+    implements Insertable<PriceDecisionRow> {
+  /// UUID v4.
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String deviceId;
+  final String requestId;
+  final String decision;
+  final String? note;
+  final String decidedBy;
+  final DateTime decidedAt;
+  const PriceDecisionRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.requestId,
+    required this.decision,
+    this.note,
+    required this.decidedBy,
+    required this.decidedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['request_id'] = Variable<String>(requestId);
+    map['decision'] = Variable<String>(decision);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['decided_by'] = Variable<String>(decidedBy);
+    map['decided_at'] = Variable<DateTime>(decidedAt);
+    return map;
+  }
+
+  PriceDecisionsCompanion toCompanion(bool nullToAbsent) {
+    return PriceDecisionsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      requestId: Value(requestId),
+      decision: Value(decision),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      decidedBy: Value(decidedBy),
+      decidedAt: Value(decidedAt),
+    );
+  }
+
+  factory PriceDecisionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PriceDecisionRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      requestId: serializer.fromJson<String>(json['request_id']),
+      decision: serializer.fromJson<String>(json['decision']),
+      note: serializer.fromJson<String?>(json['note']),
+      decidedBy: serializer.fromJson<String>(json['decided_by']),
+      decidedAt: serializer.fromJson<DateTime>(json['decided_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'request_id': serializer.toJson<String>(requestId),
+      'decision': serializer.toJson<String>(decision),
+      'note': serializer.toJson<String?>(note),
+      'decided_by': serializer.toJson<String>(decidedBy),
+      'decided_at': serializer.toJson<DateTime>(decidedAt),
+    };
+  }
+
+  PriceDecisionRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? deviceId,
+    String? requestId,
+    String? decision,
+    Value<String?> note = const Value.absent(),
+    String? decidedBy,
+    DateTime? decidedAt,
+  }) => PriceDecisionRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    requestId: requestId ?? this.requestId,
+    decision: decision ?? this.decision,
+    note: note.present ? note.value : this.note,
+    decidedBy: decidedBy ?? this.decidedBy,
+    decidedAt: decidedAt ?? this.decidedAt,
+  );
+  PriceDecisionRow copyWithCompanion(PriceDecisionsCompanion data) {
+    return PriceDecisionRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      decision: data.decision.present ? data.decision.value : this.decision,
+      note: data.note.present ? data.note.value : this.note,
+      decidedBy: data.decidedBy.present ? data.decidedBy.value : this.decidedBy,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PriceDecisionRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('requestId: $requestId, ')
+          ..write('decision: $decision, ')
+          ..write('note: $note, ')
+          ..write('decidedBy: $decidedBy, ')
+          ..write('decidedAt: $decidedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    requestId,
+    decision,
+    note,
+    decidedBy,
+    decidedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PriceDecisionRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.requestId == this.requestId &&
+          other.decision == this.decision &&
+          other.note == this.note &&
+          other.decidedBy == this.decidedBy &&
+          other.decidedAt == this.decidedAt);
+}
+
+class PriceDecisionsCompanion extends UpdateCompanion<PriceDecisionRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> deviceId;
+  final Value<String> requestId;
+  final Value<String> decision;
+  final Value<String?> note;
+  final Value<String> decidedBy;
+  final Value<DateTime> decidedAt;
+  final Value<int> rowid;
+  const PriceDecisionsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.decision = const Value.absent(),
+    this.note = const Value.absent(),
+    this.decidedBy = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PriceDecisionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required String requestId,
+    required String decision,
+    this.note = const Value.absent(),
+    required String decidedBy,
+    required DateTime decidedAt,
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       decision = Value(decision),
+       decidedBy = Value(decidedBy),
+       decidedAt = Value(decidedAt);
+  static Insertable<PriceDecisionRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<String>? requestId,
+    Expression<String>? decision,
+    Expression<String>? note,
+    Expression<String>? decidedBy,
+    Expression<DateTime>? decidedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (requestId != null) 'request_id': requestId,
+      if (decision != null) 'decision': decision,
+      if (note != null) 'note': note,
+      if (decidedBy != null) 'decided_by': decidedBy,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PriceDecisionsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? deviceId,
+    Value<String>? requestId,
+    Value<String>? decision,
+    Value<String?>? note,
+    Value<String>? decidedBy,
+    Value<DateTime>? decidedAt,
+    Value<int>? rowid,
+  }) {
+    return PriceDecisionsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      requestId: requestId ?? this.requestId,
+      decision: decision ?? this.decision,
+      note: note ?? this.note,
+      decidedBy: decidedBy ?? this.decidedBy,
+      decidedAt: decidedAt ?? this.decidedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (decision.present) {
+      map['decision'] = Variable<String>(decision.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (decidedBy.present) {
+      map['decided_by'] = Variable<String>(decidedBy.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<DateTime>(decidedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PriceDecisionsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('requestId: $requestId, ')
+          ..write('decision: $decision, ')
+          ..write('note: $note, ')
+          ..write('decidedBy: $decidedBy, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -13219,6 +14564,52 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE TRIGGER refunds_mpesa_code_unused_update BEFORE UPDATE OF mpesa_code ON refunds WHEN NEW.mpesa_code IS NOT NULL AND EXISTS (SELECT 1 FROM payments WHERE mpesa_code = NEW.mpesa_code) BEGIN SELECT RAISE (ABORT, \'M-Pesa code already used\');END',
     'refunds_mpesa_code_unused_update',
   );
+  late final $PriceRequestsTable priceRequests = $PriceRequestsTable(this);
+  late final Trigger priceRequestsStampedUpdate = Trigger(
+    'CREATE TRIGGER price_requests_stamped_update BEFORE UPDATE ON price_requests WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'price_requests_stamped_update',
+  );
+  late final $PriceDecisionsTable priceDecisions = $PriceDecisionsTable(this);
+  late final Trigger priceDecisionsStampedUpdate = Trigger(
+    'CREATE TRIGGER price_decisions_stamped_update BEFORE UPDATE ON price_decisions WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
+    'price_decisions_stamped_update',
+  );
+  late final Trigger priceRequestsNoDelete = Trigger(
+    'CREATE TRIGGER price_requests_no_delete BEFORE DELETE ON price_requests BEGIN SELECT RAISE (ABORT, \'price_requests rows are never deleted\');END',
+    'price_requests_no_delete',
+  );
+  late final Trigger priceDecisionsNoDelete = Trigger(
+    'CREATE TRIGGER price_decisions_no_delete BEFORE DELETE ON price_decisions BEGIN SELECT RAISE (ABORT, \'price_decisions rows are never deleted\');END',
+    'price_decisions_no_delete',
+  );
+  late final Trigger priceDecisionsNoUpdate = Trigger(
+    'CREATE TRIGGER price_decisions_no_update BEFORE UPDATE ON price_decisions BEGIN SELECT RAISE (ABORT, \'price_decisions rows are never edited\');END',
+    'price_decisions_no_update',
+  );
+  late final Trigger priceRequestsOpenOnInsert = Trigger(
+    'CREATE TRIGGER price_requests_open_on_insert BEFORE INSERT ON price_requests WHEN NEW.withdrawn_at IS NOT NULL BEGIN SELECT RAISE (ABORT, \'a price request starts open\');END',
+    'price_requests_open_on_insert',
+  );
+  late final Trigger priceRequestsOneOpen = Trigger(
+    'CREATE TRIGGER price_requests_one_open BEFORE INSERT ON price_requests WHEN EXISTS (SELECT 1 FROM price_requests AS p WHERE p.category_id = NEW.category_id AND p.withdrawn_at IS NULL AND NOT EXISTS (SELECT 1 FROM price_decisions AS d WHERE d.request_id = p.id)) BEGIN SELECT RAISE (ABORT, \'the category already has an open price request\');END',
+    'price_requests_one_open',
+  );
+  late final Trigger priceRequestsFixedTerms = Trigger(
+    'CREATE TRIGGER price_requests_fixed_terms BEFORE UPDATE ON price_requests WHEN NEW.category_id IS NOT OLD.category_id OR NEW.old_price IS NOT OLD.old_price OR NEW.new_price IS NOT OLD.new_price OR NEW.reason IS NOT OLD.reason OR NEW.requested_by IS NOT OLD.requested_by OR NEW.requested_at IS NOT OLD.requested_at BEGIN SELECT RAISE (ABORT, \'price request terms cannot change\');END',
+    'price_requests_fixed_terms',
+  );
+  late final Trigger priceRequestsWithdrawnOnce = Trigger(
+    'CREATE TRIGGER price_requests_withdrawn_once BEFORE UPDATE ON price_requests WHEN OLD.withdrawn_at IS NOT NULL AND(NEW.withdrawn_at IS NOT OLD.withdrawn_at OR NEW.withdrawn_by IS NOT OLD.withdrawn_by OR NEW.withdraw_reason IS NOT OLD.withdraw_reason)BEGIN SELECT RAISE (ABORT, \'price request is already withdrawn\');END',
+    'price_requests_withdrawn_once',
+  );
+  late final Trigger priceRequestsWithdrawUndecided = Trigger(
+    'CREATE TRIGGER price_requests_withdraw_undecided BEFORE UPDATE ON price_requests WHEN OLD.withdrawn_at IS NULL AND NEW.withdrawn_at IS NOT NULL AND EXISTS (SELECT 1 FROM price_decisions WHERE request_id = NEW.id) BEGIN SELECT RAISE (ABORT, \'price request is already decided\');END',
+    'price_requests_withdraw_undecided',
+  );
+  late final Trigger priceDecisionsNotWithdrawn = Trigger(
+    'CREATE TRIGGER price_decisions_not_withdrawn BEFORE INSERT ON price_decisions WHEN EXISTS (SELECT 1 FROM price_requests WHERE id = NEW.request_id AND withdrawn_at IS NOT NULL) BEGIN SELECT RAISE (ABORT, \'price request was withdrawn\');END',
+    'price_decisions_not_withdrawn',
+  );
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $DeviceTable device = $DeviceTable(this);
   late final $ReceiptCounterTable receiptCounter = $ReceiptCounterTable(this);
@@ -13285,6 +14676,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index refundsShift = Index(
     'refunds_shift',
     'CREATE INDEX refunds_shift ON refunds (shift_id)',
+  );
+  late final Index priceRequestsCategory = Index(
+    'price_requests_category',
+    'CREATE INDEX price_requests_category ON price_requests (category_id)',
   );
   late final Index housekeepingTasksBed = Index(
     'housekeeping_tasks_bed',
@@ -13358,6 +14753,19 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     paymentsMpesaCodeUnusedUpdate,
     refundsMpesaCodeUnusedInsert,
     refundsMpesaCodeUnusedUpdate,
+    priceRequests,
+    priceRequestsStampedUpdate,
+    priceDecisions,
+    priceDecisionsStampedUpdate,
+    priceRequestsNoDelete,
+    priceDecisionsNoDelete,
+    priceDecisionsNoUpdate,
+    priceRequestsOpenOnInsert,
+    priceRequestsOneOpen,
+    priceRequestsFixedTerms,
+    priceRequestsWithdrawnOnce,
+    priceRequestsWithdrawUndecided,
+    priceDecisionsNotWithdrawn,
     outbox,
     device,
     receiptCounter,
@@ -13377,6 +14785,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stayChargesStay,
     stayChargesPayment,
     refundsShift,
+    priceRequestsCategory,
     housekeepingTasksBed,
     housekeepingTasksOneOpenPerBed,
     inventoryMovementsItem,
@@ -13632,6 +15041,83 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       on: TableUpdateQuery.onTableName(
         'refunds',
         limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_decisions',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_decisions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_decisions',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_requests',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'price_decisions',
+        limitUpdateKind: UpdateKind.insert,
       ),
       result: [],
     ),
@@ -13978,6 +15464,63 @@ final class $$UsersTableReferences
     ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_auditLogRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PriceRequestsTable, List<PriceRequestRow>>
+  _priceRequestsMadeTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.priceRequests,
+    aliasName: 'users__id__price_requests__requested_by',
+  );
+
+  $$PriceRequestsTableProcessedTableManager get priceRequestsMade {
+    final manager = $$PriceRequestsTableTableManager(
+      $_db,
+      $_db.priceRequests,
+    ).filter((f) => f.requestedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_priceRequestsMadeTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PriceRequestsTable, List<PriceRequestRow>>
+  _priceRequestsWithdrawnTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.priceRequests,
+        aliasName: 'users__id__price_requests__withdrawn_by',
+      );
+
+  $$PriceRequestsTableProcessedTableManager get priceRequestsWithdrawn {
+    final manager = $$PriceRequestsTableTableManager(
+      $_db,
+      $_db.priceRequests,
+    ).filter((f) => f.withdrawnBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _priceRequestsWithdrawnTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PriceDecisionsTable, List<PriceDecisionRow>>
+  _priceDecisionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.priceDecisions,
+    aliasName: 'users__id__price_decisions__decided_by',
+  );
+
+  $$PriceDecisionsTableProcessedTableManager get priceDecisionsRefs {
+    final manager = $$PriceDecisionsTableTableManager(
+      $_db,
+      $_db.priceDecisions,
+    ).filter((f) => f.decidedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_priceDecisionsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -14433,6 +15976,81 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$AuditLogTableFilterComposer(
             $db: $db,
             $table: $db.auditLog,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> priceRequestsMade(
+    Expression<bool> Function($$PriceRequestsTableFilterComposer f) f,
+  ) {
+    final $$PriceRequestsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.requestedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableFilterComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> priceRequestsWithdrawn(
+    Expression<bool> Function($$PriceRequestsTableFilterComposer f) f,
+  ) {
+    final $$PriceRequestsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.withdrawnBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableFilterComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> priceDecisionsRefs(
+    Expression<bool> Function($$PriceDecisionsTableFilterComposer f) f,
+  ) {
+    final $$PriceDecisionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceDecisions,
+      getReferencedColumn: (t) => t.decidedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceDecisionsTableFilterComposer(
+            $db: $db,
+            $table: $db.priceDecisions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -14949,6 +16567,81 @@ class $$UsersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> priceRequestsMade<T extends Object>(
+    Expression<T> Function($$PriceRequestsTableAnnotationComposer a) f,
+  ) {
+    final $$PriceRequestsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.requestedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> priceRequestsWithdrawn<T extends Object>(
+    Expression<T> Function($$PriceRequestsTableAnnotationComposer a) f,
+  ) {
+    final $$PriceRequestsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.withdrawnBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> priceDecisionsRefs<T extends Object>(
+    Expression<T> Function($$PriceDecisionsTableAnnotationComposer a) f,
+  ) {
+    final $$PriceDecisionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceDecisions,
+      getReferencedColumn: (t) => t.decidedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceDecisionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.priceDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$UsersTableTableManager
@@ -14981,6 +16674,9 @@ class $$UsersTableTableManager
             bool expensesRefs,
             bool refundDecisionsRefs,
             bool auditLogRefs,
+            bool priceRequestsMade,
+            bool priceRequestsWithdrawn,
+            bool priceDecisionsRefs,
           })
         > {
   $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
@@ -15072,6 +16768,9 @@ class $$UsersTableTableManager
                 expensesRefs = false,
                 refundDecisionsRefs = false,
                 auditLogRefs = false,
+                priceRequestsMade = false,
+                priceRequestsWithdrawn = false,
+                priceDecisionsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -15092,6 +16791,9 @@ class $$UsersTableTableManager
                     if (expensesRefs) db.expenses,
                     if (refundDecisionsRefs) db.refundDecisions,
                     if (auditLogRefs) db.auditLog,
+                    if (priceRequestsMade) db.priceRequests,
+                    if (priceRequestsWithdrawn) db.priceRequests,
+                    if (priceDecisionsRefs) db.priceDecisions,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -15420,6 +17122,69 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (priceRequestsMade)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          PriceRequestRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._priceRequestsMadeTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).priceRequestsMade,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.requestedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (priceRequestsWithdrawn)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          PriceRequestRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._priceRequestsWithdrawnTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).priceRequestsWithdrawn,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.withdrawnBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (priceDecisionsRefs)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          PriceDecisionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._priceDecisionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).priceDecisionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.decidedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -15457,6 +17222,9 @@ typedef $$UsersTableProcessedTableManager =
         bool expensesRefs,
         bool refundDecisionsRefs,
         bool auditLogRefs,
+        bool priceRequestsMade,
+        bool priceRequestsWithdrawn,
+        bool priceDecisionsRefs,
       })
     >;
 typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
@@ -15860,6 +17628,24 @@ final class $$BedCategoriesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PriceRequestsTable, List<PriceRequestRow>>
+  _priceRequestsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.priceRequests,
+    aliasName: 'bed_categories__id__price_requests__category_id',
+  );
+
+  $$PriceRequestsTableProcessedTableManager get priceRequestsRefs {
+    final manager = $$PriceRequestsTableTableManager(
+      $_db,
+      $_db.priceRequests,
+    ).filter((f) => f.categoryId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_priceRequestsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$BedCategoriesTableFilterComposer
@@ -15952,6 +17738,31 @@ class $$BedCategoriesTableFilterComposer
           }) => $$StayChargesTableFilterComposer(
             $db: $db,
             $table: $db.stayCharges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> priceRequestsRefs(
+    Expression<bool> Function($$PriceRequestsTableFilterComposer f) f,
+  ) {
+    final $$PriceRequestsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.categoryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableFilterComposer(
+            $db: $db,
+            $table: $db.priceRequests,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16096,6 +17907,31 @@ class $$BedCategoriesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> priceRequestsRefs<T extends Object>(
+    Expression<T> Function($$PriceRequestsTableAnnotationComposer a) f,
+  ) {
+    final $$PriceRequestsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.categoryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BedCategoriesTableTableManager
@@ -16111,7 +17947,11 @@ class $$BedCategoriesTableTableManager
           $$BedCategoriesTableUpdateCompanionBuilder,
           (BedCategoryRow, $$BedCategoriesTableReferences),
           BedCategoryRow,
-          PrefetchHooks Function({bool bedsRefs, bool stayChargesRefs})
+          PrefetchHooks Function({
+            bool bedsRefs,
+            bool stayChargesRefs,
+            bool priceRequestsRefs,
+          })
         > {
   $$BedCategoriesTableTableManager(_$AppDatabase db, $BedCategoriesTable table)
     : super(
@@ -16176,58 +18016,89 @@ class $$BedCategoriesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({bedsRefs = false, stayChargesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (bedsRefs) db.beds,
-                if (stayChargesRefs) db.stayCharges,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (bedsRefs)
-                    await $_getPrefetchedData<
-                      BedCategoryRow,
-                      $BedCategoriesTable,
-                      BedRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$BedCategoriesTableReferences
-                          ._bedsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$BedCategoriesTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).bedsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.categoryId == item.id),
-                      typedResults: items,
-                    ),
-                  if (stayChargesRefs)
-                    await $_getPrefetchedData<
-                      BedCategoryRow,
-                      $BedCategoriesTable,
-                      StayChargeRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$BedCategoriesTableReferences
-                          ._stayChargesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$BedCategoriesTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).stayChargesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.categoryId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({
+                bedsRefs = false,
+                stayChargesRefs = false,
+                priceRequestsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bedsRefs) db.beds,
+                    if (stayChargesRefs) db.stayCharges,
+                    if (priceRequestsRefs) db.priceRequests,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bedsRefs)
+                        await $_getPrefetchedData<
+                          BedCategoryRow,
+                          $BedCategoriesTable,
+                          BedRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BedCategoriesTableReferences
+                              ._bedsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BedCategoriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bedsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.categoryId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (stayChargesRefs)
+                        await $_getPrefetchedData<
+                          BedCategoryRow,
+                          $BedCategoriesTable,
+                          StayChargeRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BedCategoriesTableReferences
+                              ._stayChargesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BedCategoriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).stayChargesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.categoryId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (priceRequestsRefs)
+                        await $_getPrefetchedData<
+                          BedCategoryRow,
+                          $BedCategoriesTable,
+                          PriceRequestRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BedCategoriesTableReferences
+                              ._priceRequestsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BedCategoriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).priceRequestsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.categoryId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -16244,7 +18115,11 @@ typedef $$BedCategoriesTableProcessedTableManager =
       $$BedCategoriesTableUpdateCompanionBuilder,
       (BedCategoryRow, $$BedCategoriesTableReferences),
       BedCategoryRow,
-      PrefetchHooks Function({bool bedsRefs, bool stayChargesRefs})
+      PrefetchHooks Function({
+        bool bedsRefs,
+        bool stayChargesRefs,
+        bool priceRequestsRefs,
+      })
     >;
 typedef $$RoomsTableCreateCompanionBuilder = RoomsCompanion Function({
   Value<String> id,
@@ -25363,6 +27238,1244 @@ typedef $$AuditLogTableProcessedTableManager =
       AuditLogRow,
       PrefetchHooks Function({bool userId})
     >;
+typedef $$PriceRequestsTableCreateCompanionBuilder =
+    PriceRequestsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      required String categoryId,
+      required int oldPrice,
+      required int newPrice,
+      Value<String?> reason,
+      required String requestedBy,
+      required DateTime requestedAt,
+      Value<DateTime?> withdrawnAt,
+      Value<String?> withdrawnBy,
+      Value<String?> withdrawReason,
+      Value<int> rowid,
+    });
+typedef $$PriceRequestsTableUpdateCompanionBuilder =
+    PriceRequestsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      Value<String> categoryId,
+      Value<int> oldPrice,
+      Value<int> newPrice,
+      Value<String?> reason,
+      Value<String> requestedBy,
+      Value<DateTime> requestedAt,
+      Value<DateTime?> withdrawnAt,
+      Value<String?> withdrawnBy,
+      Value<String?> withdrawReason,
+      Value<int> rowid,
+    });
+
+final class $$PriceRequestsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $PriceRequestsTable, PriceRequestRow> {
+  $$PriceRequestsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BedCategoriesTable _categoryIdTable(_$AppDatabase db) => db
+      .bedCategories
+      .createAlias('price_requests__category_id__bed_categories__id');
+
+  $$BedCategoriesTableProcessedTableManager get categoryId {
+    final $_column = $_itemColumn<String>('category_id')!;
+
+    final manager = $$BedCategoriesTableTableManager(
+      $_db,
+      $_db.bedCategories,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_categoryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _requestedByTable(_$AppDatabase db) =>
+      db.users.createAlias('price_requests__requested_by__users__id');
+
+  $$UsersTableProcessedTableManager get requestedBy {
+    final $_column = $_itemColumn<String>('requested_by')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_requestedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _withdrawnByTable(_$AppDatabase db) =>
+      db.users.createAlias('price_requests__withdrawn_by__users__id');
+
+  $$UsersTableProcessedTableManager? get withdrawnBy {
+    final $_column = $_itemColumn<String>('withdrawn_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_withdrawnByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$PriceDecisionsTable, List<PriceDecisionRow>>
+  _priceDecisionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.priceDecisions,
+    aliasName: 'price_requests__id__price_decisions__request_id',
+  );
+
+  $$PriceDecisionsTableProcessedTableManager get priceDecisionsRefs {
+    final manager = $$PriceDecisionsTableTableManager(
+      $_db,
+      $_db.priceDecisions,
+    ).filter((f) => f.requestId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_priceDecisionsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PriceRequestsTableFilterComposer
+    extends Composer<_$AppDatabase, $PriceRequestsTable> {
+  $$PriceRequestsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get oldPrice => $composableBuilder(
+    column: $table.oldPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get newPrice => $composableBuilder(
+    column: $table.newPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get withdrawnAt => $composableBuilder(
+    column: $table.withdrawnAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get withdrawReason => $composableBuilder(
+    column: $table.withdrawReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BedCategoriesTableFilterComposer get categoryId {
+    final $$BedCategoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.bedCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BedCategoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.bedCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get requestedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get withdrawnBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.withdrawnBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> priceDecisionsRefs(
+    Expression<bool> Function($$PriceDecisionsTableFilterComposer f) f,
+  ) {
+    final $$PriceDecisionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceDecisions,
+      getReferencedColumn: (t) => t.requestId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceDecisionsTableFilterComposer(
+            $db: $db,
+            $table: $db.priceDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PriceRequestsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PriceRequestsTable> {
+  $$PriceRequestsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get oldPrice => $composableBuilder(
+    column: $table.oldPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get newPrice => $composableBuilder(
+    column: $table.newPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get withdrawnAt => $composableBuilder(
+    column: $table.withdrawnAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get withdrawReason => $composableBuilder(
+    column: $table.withdrawReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BedCategoriesTableOrderingComposer get categoryId {
+    final $$BedCategoriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.bedCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BedCategoriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bedCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get requestedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get withdrawnBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.withdrawnBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PriceRequestsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PriceRequestsTable> {
+  $$PriceRequestsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<int> get oldPrice =>
+      $composableBuilder(column: $table.oldPrice, builder: (column) => column);
+
+  GeneratedColumn<int> get newPrice =>
+      $composableBuilder(column: $table.newPrice, builder: (column) => column);
+
+  GeneratedColumn<String> get reason =>
+      $composableBuilder(column: $table.reason, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get withdrawnAt => $composableBuilder(
+    column: $table.withdrawnAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get withdrawReason => $composableBuilder(
+    column: $table.withdrawReason,
+    builder: (column) => column,
+  );
+
+  $$BedCategoriesTableAnnotationComposer get categoryId {
+    final $$BedCategoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.bedCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BedCategoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bedCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get requestedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get withdrawnBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.withdrawnBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> priceDecisionsRefs<T extends Object>(
+    Expression<T> Function($$PriceDecisionsTableAnnotationComposer a) f,
+  ) {
+    final $$PriceDecisionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.priceDecisions,
+      getReferencedColumn: (t) => t.requestId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceDecisionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.priceDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PriceRequestsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PriceRequestsTable,
+          PriceRequestRow,
+          $$PriceRequestsTableFilterComposer,
+          $$PriceRequestsTableOrderingComposer,
+          $$PriceRequestsTableAnnotationComposer,
+          $$PriceRequestsTableCreateCompanionBuilder,
+          $$PriceRequestsTableUpdateCompanionBuilder,
+          (PriceRequestRow, $$PriceRequestsTableReferences),
+          PriceRequestRow,
+          PrefetchHooks Function({
+            bool categoryId,
+            bool requestedBy,
+            bool withdrawnBy,
+            bool priceDecisionsRefs,
+          })
+        > {
+  $$PriceRequestsTableTableManager(_$AppDatabase db, $PriceRequestsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PriceRequestsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PriceRequestsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PriceRequestsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> categoryId = const Value.absent(),
+                Value<int> oldPrice = const Value.absent(),
+                Value<int> newPrice = const Value.absent(),
+                Value<String?> reason = const Value.absent(),
+                Value<String> requestedBy = const Value.absent(),
+                Value<DateTime> requestedAt = const Value.absent(),
+                Value<DateTime?> withdrawnAt = const Value.absent(),
+                Value<String?> withdrawnBy = const Value.absent(),
+                Value<String?> withdrawReason = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PriceRequestsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                categoryId: categoryId,
+                oldPrice: oldPrice,
+                newPrice: newPrice,
+                reason: reason,
+                requestedBy: requestedBy,
+                requestedAt: requestedAt,
+                withdrawnAt: withdrawnAt,
+                withdrawnBy: withdrawnBy,
+                withdrawReason: withdrawReason,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                required String categoryId,
+                required int oldPrice,
+                required int newPrice,
+                Value<String?> reason = const Value.absent(),
+                required String requestedBy,
+                required DateTime requestedAt,
+                Value<DateTime?> withdrawnAt = const Value.absent(),
+                Value<String?> withdrawnBy = const Value.absent(),
+                Value<String?> withdrawReason = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PriceRequestsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                categoryId: categoryId,
+                oldPrice: oldPrice,
+                newPrice: newPrice,
+                reason: reason,
+                requestedBy: requestedBy,
+                requestedAt: requestedAt,
+                withdrawnAt: withdrawnAt,
+                withdrawnBy: withdrawnBy,
+                withdrawReason: withdrawReason,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PriceRequestsTable, PriceRequestRow>(table),
+                  $$PriceRequestsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                categoryId = false,
+                requestedBy = false,
+                withdrawnBy = false,
+                priceDecisionsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (priceDecisionsRefs) db.priceDecisions,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (categoryId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoryId,
+                            referencedTable: $$PriceRequestsTableReferences
+                                ._categoryIdTable(db),
+                            referencedColumn: $$PriceRequestsTableReferences
+                                ._categoryIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (requestedBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.requestedBy,
+                            referencedTable: $$PriceRequestsTableReferences
+                                ._requestedByTable(db),
+                            referencedColumn: $$PriceRequestsTableReferences
+                                ._requestedByTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (withdrawnBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.withdrawnBy,
+                            referencedTable: $$PriceRequestsTableReferences
+                                ._withdrawnByTable(db),
+                            referencedColumn: $$PriceRequestsTableReferences
+                                ._withdrawnByTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (priceDecisionsRefs)
+                        await $_getPrefetchedData<
+                          PriceRequestRow,
+                          $PriceRequestsTable,
+                          PriceDecisionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PriceRequestsTableReferences
+                              ._priceDecisionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PriceRequestsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).priceDecisionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.requestId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PriceRequestsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PriceRequestsTable,
+      PriceRequestRow,
+      $$PriceRequestsTableFilterComposer,
+      $$PriceRequestsTableOrderingComposer,
+      $$PriceRequestsTableAnnotationComposer,
+      $$PriceRequestsTableCreateCompanionBuilder,
+      $$PriceRequestsTableUpdateCompanionBuilder,
+      (PriceRequestRow, $$PriceRequestsTableReferences),
+      PriceRequestRow,
+      PrefetchHooks Function({
+        bool categoryId,
+        bool requestedBy,
+        bool withdrawnBy,
+        bool priceDecisionsRefs,
+      })
+    >;
+typedef $$PriceDecisionsTableCreateCompanionBuilder =
+    PriceDecisionsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      required String requestId,
+      required String decision,
+      Value<String?> note,
+      required String decidedBy,
+      required DateTime decidedAt,
+      Value<int> rowid,
+    });
+typedef $$PriceDecisionsTableUpdateCompanionBuilder =
+    PriceDecisionsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      Value<String> requestId,
+      Value<String> decision,
+      Value<String?> note,
+      Value<String> decidedBy,
+      Value<DateTime> decidedAt,
+      Value<int> rowid,
+    });
+
+final class $$PriceDecisionsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $PriceDecisionsTable, PriceDecisionRow> {
+  $$PriceDecisionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PriceRequestsTable _requestIdTable(_$AppDatabase db) => db
+      .priceRequests
+      .createAlias('price_decisions__request_id__price_requests__id');
+
+  $$PriceRequestsTableProcessedTableManager get requestId {
+    final $_column = $_itemColumn<String>('request_id')!;
+
+    final manager = $$PriceRequestsTableTableManager(
+      $_db,
+      $_db.priceRequests,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_requestIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _decidedByTable(_$AppDatabase db) =>
+      db.users.createAlias('price_decisions__decided_by__users__id');
+
+  $$UsersTableProcessedTableManager get decidedBy {
+    final $_column = $_itemColumn<String>('decided_by')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_decidedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PriceDecisionsTableFilterComposer
+    extends Composer<_$AppDatabase, $PriceDecisionsTable> {
+  $$PriceDecisionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PriceRequestsTableFilterComposer get requestId {
+    final $$PriceRequestsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestId,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableFilterComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get decidedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PriceDecisionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PriceDecisionsTable> {
+  $$PriceDecisionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PriceRequestsTableOrderingComposer get requestId {
+    final $$PriceRequestsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestId,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableOrderingComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get decidedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PriceDecisionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PriceDecisionsTable> {
+  $$PriceDecisionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get decision =>
+      $composableBuilder(column: $table.decision, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  $$PriceRequestsTableAnnotationComposer get requestId {
+    final $$PriceRequestsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.requestId,
+      referencedTable: $db.priceRequests,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PriceRequestsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.priceRequests,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get decidedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PriceDecisionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PriceDecisionsTable,
+          PriceDecisionRow,
+          $$PriceDecisionsTableFilterComposer,
+          $$PriceDecisionsTableOrderingComposer,
+          $$PriceDecisionsTableAnnotationComposer,
+          $$PriceDecisionsTableCreateCompanionBuilder,
+          $$PriceDecisionsTableUpdateCompanionBuilder,
+          (PriceDecisionRow, $$PriceDecisionsTableReferences),
+          PriceDecisionRow,
+          PrefetchHooks Function({bool requestId, bool decidedBy})
+        > {
+  $$PriceDecisionsTableTableManager(
+    _$AppDatabase db,
+    $PriceDecisionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PriceDecisionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PriceDecisionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PriceDecisionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> requestId = const Value.absent(),
+                Value<String> decision = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> decidedBy = const Value.absent(),
+                Value<DateTime> decidedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PriceDecisionsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                requestId: requestId,
+                decision: decision,
+                note: note,
+                decidedBy: decidedBy,
+                decidedAt: decidedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                required String requestId,
+                required String decision,
+                Value<String?> note = const Value.absent(),
+                required String decidedBy,
+                required DateTime decidedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PriceDecisionsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                requestId: requestId,
+                decision: decision,
+                note: note,
+                decidedBy: decidedBy,
+                decidedAt: decidedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PriceDecisionsTable, PriceDecisionRow>(table),
+                  $$PriceDecisionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({requestId = false, decidedBy = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (requestId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.requestId,
+                        referencedTable: $$PriceDecisionsTableReferences
+                            ._requestIdTable(db),
+                        referencedColumn: $$PriceDecisionsTableReferences
+                            ._requestIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (decidedBy) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.decidedBy,
+                        referencedTable: $$PriceDecisionsTableReferences
+                            ._decidedByTable(db),
+                        referencedColumn: $$PriceDecisionsTableReferences
+                            ._decidedByTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PriceDecisionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PriceDecisionsTable,
+      PriceDecisionRow,
+      $$PriceDecisionsTableFilterComposer,
+      $$PriceDecisionsTableOrderingComposer,
+      $$PriceDecisionsTableAnnotationComposer,
+      $$PriceDecisionsTableCreateCompanionBuilder,
+      $$PriceDecisionsTableUpdateCompanionBuilder,
+      (PriceDecisionRow, $$PriceDecisionsTableReferences),
+      PriceDecisionRow,
+      PrefetchHooks Function({bool requestId, bool decidedBy})
+    >;
 typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   Value<int> seq,
   required String targetTable,
@@ -26175,6 +29288,10 @@ class $AppDatabaseManager {
       $$RefundDecisionsTableTableManager(_db, _db.refundDecisions);
   $$AuditLogTableTableManager get auditLog =>
       $$AuditLogTableTableManager(_db, _db.auditLog);
+  $$PriceRequestsTableTableManager get priceRequests =>
+      $$PriceRequestsTableTableManager(_db, _db.priceRequests);
+  $$PriceDecisionsTableTableManager get priceDecisions =>
+      $$PriceDecisionsTableTableManager(_db, _db.priceDecisions);
   $$OutboxTableTableManager get outbox =>
       $$OutboxTableTableManager(_db, _db.outbox);
   $$DeviceTableTableManager get device =>

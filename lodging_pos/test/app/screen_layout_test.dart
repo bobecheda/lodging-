@@ -13,6 +13,7 @@ import 'package:lodging_pos/features/backup/domain/backup.dart';
 import 'package:lodging_pos/features/backup/presentation/backup_providers.dart';
 import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
+import 'package:lodging_pos/features/price_requests/data/price_requests_repository.dart';
 import 'package:lodging_pos/features/refunds/data/refunds_repository.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
@@ -497,6 +498,132 @@ void main() {
       }
       await tapKey(tester, 'prices.save');
       await expectCleanLayout(tester, app, Routes.adminPrices, 'Confirm');
+    });
+
+    group('price requests', () {
+      late String deluxeRequest;
+
+      /// Waiting (Deluxe, a long reason), stale (VIP: the owner changed it
+      /// since), rejected (Comfort, a long reason), and one ended by
+      /// closing Dormitory.
+      Future<void> fourRequests(UserAccount supervisor) async {
+        final owner = env.owner!;
+        final requests = PriceRequestsRepository(env.db, env.audit);
+        final prices = PricesRepository(env.db, env.audit);
+        deluxeRequest = await requests.request(
+          supervisor,
+          categoryId: SeedIds.deluxe,
+          newPrice: 750,
+          reason:
+              'Other lodgings nearby charge 800 for the same room, and '
+              'ours were repainted last month',
+        );
+        await requests.request(
+          supervisor,
+          categoryId: SeedIds.vip,
+          newPrice: 1250,
+          reason: 'New mattresses',
+        );
+        await prices.savePrices(owner, {SeedIds.vip: 1100});
+        final comfort = await requests.request(
+          supervisor,
+          categoryId: SeedIds.comfort,
+          newPrice: 650,
+        );
+        await requests.decide(
+          owner,
+          comfort,
+          approve: false,
+          note:
+              'Keep Comfort where it is until the second floor is '
+              'finished; we will look at it again in December',
+        );
+        final dormitory = (await prices.categories())
+            .firstWhere((u) => u.category.name == 'Dormitory')
+            .category
+            .id;
+        await requests.request(
+          supervisor,
+          categoryId: dormitory,
+          newPrice: 350,
+        );
+        await prices.closeCategory(owner, dormitory);
+      }
+
+      testWidgets("the supervisor's requests, chips, and the request "
+          'dialog with its error', (tester) async {
+        final app = await openPrices(tester, before: fourRequests);
+        await expectCleanLayout(
+          tester,
+          app,
+          Routes.adminPrices,
+          'WAITING · KES 750',
+        );
+        expect(find.textContaining('Withdrawn · category closed'), findsOne);
+        await tapKey(tester, 'categories.request.${SeedIds.normal}');
+        await enterKey(
+          tester,
+          'priceRequest.reason',
+          'Every other lodging on this street raised Normal beds in '
+              'September',
+        );
+        await tapKey(tester, 'priceRequest.send');
+        await expectCleanLayout(
+          tester,
+          app,
+          Routes.adminPrices,
+          'Enter a price.',
+        );
+      });
+
+      testWidgets("the owner's request cards, one stale, and the reject "
+          'dialog with its error', (tester) async {
+        final app = await openPrices(
+          tester,
+          before: fourRequests,
+          asOwner: true,
+        );
+        await expectCleanLayout(
+          tester,
+          app,
+          Routes.adminPrices,
+          'REQUEST FROM GRACE (SUPERVISOR)',
+        );
+        expect(
+          find.textContaining('VIP is now KES 1,100, not 1,000.'),
+          findsOne,
+        );
+        await tapKey(tester, 'priceRequest.reject.$deluxeRequest');
+        await tapKey(tester, 'priceReject.reject');
+        await expectCleanLayout(
+          tester,
+          app,
+          Routes.adminPrices,
+          'Give a reason for rejecting the price change.',
+        );
+      });
+
+      testWidgets("the owner's Today with price rows", (tester) async {
+        await withOwner();
+        final supervisor = (await env.users.findByUsername('supervisor'))!
+            .account;
+        final requests = PriceRequestsRepository(env.db, env.audit);
+        for (final (category, price) in [
+          (SeedIds.deluxe, 750),
+          (SeedIds.vip, 1250),
+          (SeedIds.normal, 450),
+        ]) {
+          await requests.request(
+            supervisor,
+            categoryId: category,
+            newPrice: price,
+          );
+        }
+        final app = await pumpDeskApp(tester, env);
+        await signInAs(tester, 'owner', 'owner-pass');
+        await expectCleanLayout(tester, app, Routes.today, 'Deluxe: 700 → 750');
+        expect(find.text('−50'), findsOne);
+      });
     });
   });
 

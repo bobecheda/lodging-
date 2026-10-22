@@ -20,14 +20,19 @@ final class TodayData {
     required this.moves,
     required this.stays,
     required this.awaiting,
+    required this.prices,
   });
 
   final List<MoneyMove> moves;
   final List<StayNights> stays;
   final List<RefundAwaiting> awaiting;
+
+  /// Price requests waiting for the owner.
+  final List<PriceAwaiting> prices;
 }
 
-/// Read again whenever a payment, refund, void, stay or charge changes.
+/// Read again whenever a payment, refund, void, stay, charge or price
+/// request changes.
 @riverpod
 Future<TodayData> todayData(Ref ref) async {
   final repo = ref.watch(dashboardRepositoryProvider);
@@ -40,5 +45,6 @@ Future<TodayData> todayData(Ref ref) async {
     moves: await repo.moneyMoves(from),
     stays: await repo.stayNights(from),
     awaiting: await repo.refundsAwaiting(),
+    prices: await repo.pricesAwaiting(),
   );
 }

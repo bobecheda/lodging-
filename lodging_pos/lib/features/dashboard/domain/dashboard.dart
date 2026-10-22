@@ -7,6 +7,7 @@ import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../../bed_board/domain/bed_board.dart';
 import '../../payments/domain/payment_rules.dart';
+import '../../price_requests/domain/price_request.dart';
 
 // ── Days ─────────────────────────────────────────────────────────────────
 
@@ -368,4 +369,44 @@ final class RefundAwaiting {
   String get subtitle =>
       '$guestName · Room $roomNumber $bedLabel · '
       '$nights ${nights == 1 ? 'night' : 'nights'}';
+}
+
+/// A price change the supervisor asked for, waiting for the owner (BR-2).
+final class PriceAwaiting {
+  const PriceAwaiting({
+    required this.requestId,
+    required this.categoryName,
+    required this.oldPrice,
+    required this.newPrice,
+    required this.requestedBy,
+    required this.requestedByRole,
+    required this.requestedAt,
+  });
+
+  final String requestId;
+  final String categoryName;
+  final int oldPrice;
+  final int newPrice;
+
+  /// The requester's full name.
+  final String requestedBy;
+
+  /// As stored: `supervisor`.
+  final String requestedByRole;
+
+  /// UTC.
+  final DateTime requestedAt;
+
+  /// "Deluxe: 700 → 750".
+  String get title =>
+      '$categoryName: ${formatKesPlain(oldPrice)} → '
+      '${formatKesPlain(newPrice)}';
+
+  /// "From Grace (supervisor) · today 09:15", as seen at [now].
+  String subtitle(DateTime now) =>
+      'From ${requestedBy.split(' ').first} ($requestedByRole) · '
+      '${formatWhen(requestedAt, now: now)}';
+
+  /// "+50": the change a night.
+  String get change => formatPriceChange(newPrice - oldPrice);
 }

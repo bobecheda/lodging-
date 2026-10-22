@@ -80,6 +80,20 @@ String formatDayDateTime(DateTime utc) =>
 String formatDayDateComma(DateTime utc) =>
     '${formatDayDate(utc)}, ${formatTime(utc)}';
 
+/// `today 09:15`, `yesterday 18:40`, or `Thu 15 Oct, 09:15`: when something
+/// happened, as seen at [now] (Nairobi calendar days).
+String formatWhen(DateTime utc, {required DateTime now}) {
+  final t = toNairobi(utc);
+  final day = DateTime.utc(t.year, t.month, t.day);
+  final n = toNairobi(now);
+  final today = DateTime.utc(n.year, n.month, n.day);
+  return switch (today.difference(day).inDays) {
+    0 => 'today ${formatTime(utc)}',
+    1 => 'yesterday ${formatTime(utc)}',
+    _ => formatDayDateComma(utc),
+  };
+}
+
 /// "Good morning" before noon, "Good afternoon" until 17:00, then
 /// "Good evening" (Nairobi time).
 String greetingFor(DateTime utc) {

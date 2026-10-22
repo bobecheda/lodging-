@@ -31,6 +31,23 @@ void main() {
     expect(formatDayDateComma(t), 'Thu 15 Oct, 07:02');
   });
 
+  test('when: today, yesterday, then the date, by Nairobi days', () {
+    final now = nairobiInstant(2026, 10, 21, 0, 30); // Wed 00:30
+    expect(
+      formatWhen(nairobiInstant(2026, 10, 21, 0, 5), now: now),
+      'today 00:05',
+    );
+    // 23:50 Nairobi is still 20:50 UTC of the same UTC day: yesterday here.
+    expect(
+      formatWhen(nairobiInstant(2026, 10, 20, 23, 50), now: now),
+      'yesterday 23:50',
+    );
+    expect(
+      formatWhen(nairobiInstant(2026, 10, 19, 9, 15), now: now),
+      'Mon 19 Oct, 09:15',
+    );
+  });
+
   test('greeting follows Nairobi time of day', () {
     String at(int nairobiHour) => greetingFor(
       DateTime.utc(2026, 10, 15).add(Duration(hours: nairobiHour - 3)),

@@ -30,9 +30,11 @@ part 'database.g.dart';
     Refunds,
     HousekeepingTasks,
     InventoryMovements,
+    PriceRequests,
     // Records only the supervisor or owner decides on
     Voids,
     RefundDecisions,
+    PriceDecisions,
     Expenses,
     InventoryItems,
     // System
@@ -56,7 +58,8 @@ class AppDatabase extends _$AppDatabase {
 
   /// v1 is frozen as of 16 Oct 2026; v2 (FD-4) adds the category to each
   /// stay charge, v3 (FD-6) the room and bed to each stay, v4 (FD-9) task
-  /// cancelling, v5 (FD-11) the shift close details. Snapshots:
+  /// cancelling, v5 (FD-11) the shift close details, v6 the roles, v7 the
+  /// refund payout phone, v8 price requests. Snapshots:
   /// `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
   /// `dart run drift_dev make-migrations`, add the generated step to
@@ -64,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -255,6 +258,28 @@ class AppDatabase extends _$AppDatabase {
       );
       await m.drop(schema.refundsPaidOnce);
       await m.createTrigger(schema.refundsPaidOnce);
+    },
+    // v8 (price requests): the supervisor's requests and the owner's
+    // decisions, two new tables that start empty, with their guards.
+    from7To8: (m, schema) async {
+      await m.createTable(schema.priceRequests);
+      await m.createTable(schema.priceDecisions);
+      await m.createIndex(schema.priceRequestsCategory);
+      for (final trigger in [
+        schema.priceRequestsStampedUpdate,
+        schema.priceDecisionsStampedUpdate,
+        schema.priceRequestsNoDelete,
+        schema.priceDecisionsNoDelete,
+        schema.priceDecisionsNoUpdate,
+        schema.priceRequestsOpenOnInsert,
+        schema.priceRequestsOneOpen,
+        schema.priceRequestsFixedTerms,
+        schema.priceRequestsWithdrawnOnce,
+        schema.priceRequestsWithdrawUndecided,
+        schema.priceDecisionsNotWithdrawn,
+      ]) {
+        await m.createTrigger(trigger);
+      }
     },
   );
 

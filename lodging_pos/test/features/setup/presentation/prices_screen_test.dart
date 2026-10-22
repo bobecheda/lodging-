@@ -212,7 +212,8 @@ void main() {
     await openPrices(tester);
     expect(
       find.text(
-        'Price changes need the owner. Requests come in a later update.',
+        'Only the owner changes prices. Use “Request a change” to ask; the '
+        'owner approves or rejects it.',
       ),
       findsOneWidget,
     );

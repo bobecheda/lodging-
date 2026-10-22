@@ -820,7 +820,7 @@ void main() {
       );
     });
 
-    test('stays, payments, charges, refunds, decisions and voids cannot be deleted', () async {
+    test('stays, payments, charges, refunds, requests, decisions and voids cannot be deleted', () async {
       final triggers = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'trigger' "
@@ -837,6 +837,8 @@ void main() {
           'voids_no_delete',
           'refunds_no_delete',
           'refund_decisions_no_delete',
+          'price_requests_no_delete',
+          'price_decisions_no_delete',
           'audit_log_no_delete',
         ]),
       );

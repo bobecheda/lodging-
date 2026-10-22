@@ -992,12 +992,104 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      7,
+      8,
+    );
+  });
+
+  test('migration from v7 to v8: the price request tables start empty, '
+      'the prices are untouched, and one request per category stays '
+      'open', () async {
+    const t7 = '2026-10-22T06:00:00.000Z';
+    const t8 = '2026-10-22T07:00:00.000Z';
+    Map<String, Object?> synced(String id, [String at = t7]) => {
+      'id': id,
+      'created_at': at,
+      'updated_at': at,
+      'device_id': dev,
+    };
+    String insert(String table, Map<String, Object?> values) =>
+        'INSERT INTO $table (${values.keys.join(', ')}) VALUES (${[for (final v in values.values) v == null
+              ? 'NULL'
+              : v is int
+              ? '$v'
+              : "'$v'"].join(', ')})';
+    final db = open(
+      NativeDatabase.memory(
+        setup: (raw) {
+          appStatements(7).forEach(raw.execute);
+          raw.execute('PRAGMA user_version = 7');
+          raw.execute(
+            insert('users', {
+              ...synced('u1'),
+              'full_name': 'Grace Supervisor',
+              'username': 'grace',
+              'password_hash': 'x',
+              'role': 'supervisor',
+              'is_active': 1,
+              'must_change_password': 0,
+            }),
+          );
+          raw.execute(
+            insert('bed_categories', {
+              ...synced('c1'),
+              'name': 'Deluxe',
+              'price_per_night': 700,
+              'sort_order': 1,
+            }),
+          );
+        },
+      ),
+    );
+    addTearDown(db.close);
+
+    expect(
+      (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
+        'user_version',
+      ),
+      8,
+    );
+    final category = await db
+        .customSelect('SELECT price_per_night, updated_at FROM bed_categories')
+        .getSingle();
+    expect(
+      (
+        category.read<int>('price_per_night'),
+        category.read<String>('updated_at'),
+      ),
+      (700, t7),
+    );
+    for (final table in ['price_requests', 'price_decisions']) {
+      final count = await db
+          .customSelect('SELECT count(*) AS n FROM $table')
+          .getSingle();
+      expect(count.read<int>('n'), 0, reason: table);
+    }
+
+    Map<String, Object?> request(String id) => {
+      ...synced(id, t8),
+      'category_id': 'c1',
+      'old_price': 700,
+      'new_price': 750,
+      'requested_by': 'u1',
+      'requested_at': t8,
+    };
+    await db.customStatement(insert('price_requests', request('p1')));
+    // The new trigger: one open request per category.
+    await expectLater(
+      db.customStatement(insert('price_requests', request('p2'))),
+      throwsA(
+        predicate(
+          (e) => '$e'.contains(
+            'the category already has an open price '
+            'request',
+          ),
+        ),
+      ),
     );
   });
 
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4, 5, 6]) {
+    for (final from in [1, 2, 3, 4, 5, 6, 7]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -1022,7 +1114,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          7,
+          8,
         );
         final objects = await db
             .customSelect(

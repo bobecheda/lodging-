@@ -9,6 +9,9 @@ import '../../../../app/widgets/notes.dart';
 import '../../../../core/auth/permissions.dart';
 import '../../../../core/auth/session.dart';
 import '../../../../core/money/kes.dart';
+import '../../../price_requests/data/price_requests_repository.dart';
+import '../../../price_requests/presentation/price_request_widgets.dart';
+import '../../../price_requests/presentation/price_requests_providers.dart';
 import '../../data/prices_repository.dart';
 import '../../domain/bed_category.dart';
 import '../../domain/prices_settings.dart';
@@ -17,7 +20,9 @@ import 'confirm_prices_dialog.dart';
 
 /// "Bed categories" (AD-3): a price per night for each category, saved after
 /// a confirmation listing every change; add, close and reopen categories.
-/// Read-only without [Permission.editPrices] (the owner's, BR-2).
+/// Read-only without [Permission.editPrices] (the owner's, BR-2); the
+/// supervisor gets "Request a change" on each open category instead, or the
+/// butter "Waiting" chip while one is with the owner.
 class CategoryPricesCard extends ConsumerStatefulWidget {
   const CategoryPricesCard({super.key});
 
@@ -149,6 +154,10 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
     final t = LodgingType.of(context);
     final user = ref.watch(sessionProvider);
     final canEdit = user != null && can(user, Permission.editPrices);
+    final canRequest = user != null && can(user, Permission.requestPriceChange);
+    final requests = canRequest
+        ? ref.watch(supervisorPriceRequestsProvider).value
+        : null;
     final usage = ref.watch(categoryUsageProvider);
     final list = usage.value ?? const <CategoryUsage>[];
     _sync(list);
@@ -197,12 +206,12 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                 children: [
                   Expanded(child: head('CATEGORY')),
                   SizedBox(width: _Cols.price, child: head('PRICE PER NIGHT')),
-                  const SizedBox(width: _Cols.was),
+                  if (canEdit) const SizedBox(width: _Cols.was),
                   SizedBox(
                     width: _Cols.beds,
                     child: head('BEDS', align: TextAlign.end),
                   ),
-                  const SizedBox(width: _Cols.action),
+                  SizedBox(width: canEdit ? _Cols.action : _Cols.request),
                 ],
               ),
             ),
@@ -218,8 +227,11 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                   typed: typed[u.category.id],
                   error: _errors[u.category.id],
                   canEdit: canEdit,
+                  canRequest: canRequest,
+                  waiting: requests?.waitingFor(u.category.id),
                   busy: _busy,
                   onChanged: () => setState(() => _saved = null),
+                  onRequest: () => showRequestPriceDialog(context, u),
                   onClose: () => _run(
                     () => ref
                         .read(pricesRepositoryProvider)
@@ -279,11 +291,12 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                 ],
               )
             else
-              // The supervisor (BR-2): the owner sets prices; requesting a
-              // change is a later story.
+              // The supervisor (BR-2): the owner sets prices.
               Text(
-                'Price changes need the owner. Requests come in a later '
-                'update.',
+                canRequest
+                    ? 'Only the owner changes prices. Use “Request a change” '
+                          'to ask; the owner approves or rejects it.'
+                    : 'Only the owner changes prices.',
                 key: const ValueKey('prices.readOnly'),
                 style: t.small,
               ),
@@ -302,6 +315,10 @@ abstract final class _Cols {
   static const was = 96.0;
   static const beds = 48.0;
   static const action = 96.0;
+
+  /// The supervisor's "Request a change" or "Waiting" chip, where the
+  /// owner's "was" and action columns are.
+  static const request = was + action;
 }
 
 class _CategoryRow extends StatelessWidget {
@@ -311,8 +328,11 @@ class _CategoryRow extends StatelessWidget {
     required this.typed,
     required this.error,
     required this.canEdit,
+    required this.canRequest,
+    required this.waiting,
     required this.busy,
     required this.onChanged,
+    required this.onRequest,
     required this.onClose,
     required this.onReopen,
   });
@@ -322,8 +342,15 @@ class _CategoryRow extends StatelessWidget {
   final int? typed;
   final String? error;
   final bool canEdit;
+
+  /// The supervisor: may ask the owner for a new price.
+  final bool canRequest;
+
+  /// This category's request waiting for the owner, if any.
+  final PriceRequestView? waiting;
   final bool busy;
   final VoidCallback onChanged;
+  final VoidCallback onRequest;
   final VoidCallback onClose;
   final VoidCallback onReopen;
 
@@ -341,7 +368,19 @@ class _CategoryRow extends StatelessWidget {
 
     final Widget action;
     if (!canEdit) {
-      action = const SizedBox.shrink();
+      action = switch (waiting) {
+        _ when !canRequest || !category.isActive => const SizedBox.shrink(),
+        final w? => StatusBadge(
+          'WAITING · KES ${_plain(w.request.newPrice)}',
+          key: ValueKey('categories.waiting.$id'),
+          tone: BadgeTone.warning,
+        ),
+        null => TextButton(
+          key: ValueKey('categories.request.$id'),
+          onPressed: onRequest,
+          child: const Text('Request a change'),
+        ),
+      };
     } else if (category.isActive) {
       final button = TextButton(
         key: ValueKey('categories.close.$id'),
@@ -402,19 +441,22 @@ class _CategoryRow extends StatelessWidget {
               onChanged: (_) => onChanged(),
             ),
           ),
-          SizedBox(
-            width: _Cols.was,
-            child: changed
-                ? Padding(
-                    padding: const EdgeInsetsDirectional.only(start: Space.x12),
-                    child: Text(
-                      'was ${_plain(category.pricePerNight)}',
-                      key: ValueKey('price.was.$id'),
-                      style: t.smallStrong.copyWith(color: c.marine),
-                    ),
-                  )
-                : null,
-          ),
+          if (canEdit)
+            SizedBox(
+              width: _Cols.was,
+              child: changed
+                  ? Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: Space.x12,
+                      ),
+                      child: Text(
+                        'was ${_plain(category.pricePerNight)}',
+                        key: ValueKey('price.was.$id'),
+                        style: t.smallStrong.copyWith(color: c.marine),
+                      ),
+                    )
+                  : null,
+            ),
           SizedBox(
             width: _Cols.beds,
             child: Text(
@@ -425,7 +467,7 @@ class _CategoryRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: _Cols.action,
+            width: canEdit ? _Cols.action : _Cols.request,
             child: Align(alignment: Alignment.centerRight, child: action),
           ),
         ],

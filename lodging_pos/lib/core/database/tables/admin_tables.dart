@@ -46,6 +46,24 @@ class RefundDecisions extends Table with SyncedColumns {
   ];
 }
 
+/// v8: the owner's answer to a price request (BR-2): one per request, written
+/// once and never changed. Owner-owned like `refund_decisions`; an approval
+/// changes the category's price in the same transaction.
+@DataClassName('PriceDecisionRow')
+class PriceDecisions extends Table with SyncedColumns {
+  TextColumn get requestId => text().unique().references(PriceRequests, #id)();
+  TextColumn get decision =>
+      text().check(decision.isIn(['approved', 'rejected']))();
+  TextColumn get note => text().nullable()();
+  TextColumn get decidedBy => text().references(Users, #id)();
+  DateTimeColumn get decidedAt => dateTime()();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (decision = 'approved' OR coalesce(length(trim(note)), 0) > 0)",
+  ];
+}
+
 /// Sprint 3. `spent_on` is a Nairobi calendar date, `YYYY-MM-DD`.
 @DataClassName('ExpenseRow')
 class Expenses extends Table with SyncedColumns {
