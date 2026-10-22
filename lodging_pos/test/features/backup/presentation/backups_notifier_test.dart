@@ -77,7 +77,7 @@ void main() {
   test('the hourly check takes the next day’s backup on a desk that stays '
       'on', () async {
     final app = start(interval: const Duration(milliseconds: 20));
-    await until(() => backups().length == 1);
+    await until(() => app.read(backupsProvider).newest != null);
     env.clock.set(nairobiInstant(2026, 10, 21, 0, 5)); // after midnight
     const next = 'lodging_pos-2026-10-21-0005.sqlite';
     await until(() => app.read(backupsProvider).newest?.name == next);
@@ -96,16 +96,19 @@ void main() {
   test('after a shift close, another backup in the background, by that '
       'user', () async {
     final app = start();
-    await until(() => backups().length == 1);
+    await until(() => app.read(backupsProvider).newest != null);
     env.clock.set(nairobiInstant(2026, 10, 20, 18, 30));
     app.read(backupsProvider.notifier).afterShiftClose(desk);
-    await until(() => backups().length == 2);
+    // The file lands before its audit row; wait for the backup to finish.
+    const next = 'lodging_pos-2026-10-20-1830.sqlite';
+    await until(() => app.read(backupsProvider).newest?.name == next);
+    expect(backups(), hasLength(2));
     final audit = await env.auditFor('backup.create');
     final afterClose = audit.singleWhere(
       (a) => a.afterJson.contains('"reason":"shift_close"'),
     );
     expect(afterClose.userId, desk.id);
-    expect(afterClose.entityId, 'lodging_pos-2026-10-20-1830.sqlite');
+    expect(afterClose.entityId, next);
   });
 
   test(
@@ -113,7 +116,7 @@ void main() {
     'waits and takes its own',
     () async {
       final app = start();
-      await until(() => backups().length == 1);
+      await until(() => app.read(backupsProvider).newest != null);
       final notifier = app.read(backupsProvider.notifier);
       expect(() => notifier.backUpNow(desk), throwsA(isA<NotPermitted>()));
 
@@ -149,7 +152,7 @@ void main() {
     final usb = Directory('${temp.path}-usb')..createSync();
     addTearDown(() => usb.deleteSync(recursive: true));
     final app = start();
-    await until(() => backups().length == 1);
+    await until(() => app.read(backupsProvider).newest != null);
     final notifier = app.read(backupsProvider.notifier);
 
     await notifier.setSecondFolder(supervisor, usb.path);
