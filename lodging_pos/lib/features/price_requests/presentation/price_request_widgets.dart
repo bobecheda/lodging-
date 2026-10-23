@@ -14,6 +14,7 @@ import '../../../core/money/kes.dart';
 import '../../setup/data/prices_repository.dart';
 import '../../setup/domain/prices_settings.dart';
 import '../../setup/presentation/prices_providers.dart';
+import '../../sync/presentation/owner_cloud_prompt.dart';
 import '../data/price_requests_repository.dart';
 import '../domain/price_request.dart';
 import 'price_requests_providers.dart';
@@ -434,6 +435,7 @@ class _OwnerPriceRequestsState extends ConsumerState<OwnerPriceRequests> {
   Future<void> _decide(PriceRequestView v, {required bool approve}) async {
     final user = ref.read(sessionProvider);
     if (user == null) return;
+    if (!await ensureOwnerCloud(context, ref) || !mounted) return;
     String? note;
     if (!approve) {
       note = await showDialog<String>(
@@ -448,9 +450,14 @@ class _OwnerPriceRequestsState extends ConsumerState<OwnerPriceRequests> {
       _done = null;
     });
     try {
-      await ref
-          .read(priceRequestsRepositoryProvider)
-          .decide(user, v.id, approve: approve, note: note);
+      final decided = await withOwnerCloud(
+        context,
+        ref,
+        () => ref
+            .read(priceRequestsRepositoryProvider)
+            .decide(user, v.id, approve: approve, note: note),
+      );
+      if (!decided) return;
       ref.invalidate(categoryUsageProvider);
       if (mounted) {
         setState(

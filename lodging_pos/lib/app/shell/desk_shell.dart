@@ -9,12 +9,16 @@ import '../../core/auth/user_account.dart';
 import '../../core/clock/clock.dart';
 import '../../core/clock/nairobi.dart';
 import '../../core/sync/outbox_status.dart';
+import '../../core/sync/sync_engine.dart';
+import '../../core/sync/sync_providers.dart';
+import '../../core/sync/sync_status_text.dart';
 import '../../features/auth/presentation/idle_lock.dart';
 import '../../features/backup/domain/backup.dart';
 import '../../features/backup/presentation/backup_providers.dart';
 import '../../features/price_requests/presentation/price_requests_providers.dart';
 import '../../features/refunds/presentation/refunds_providers.dart';
 import '../../features/shifts/presentation/shift_providers.dart';
+import '../../features/sync/presentation/sync_panel.dart';
 import '../gate.dart';
 import '../theme/theme.dart';
 import '../widgets/wordmark.dart';
@@ -356,30 +360,52 @@ class _SyncPill extends ConsumerWidget {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final waiting = ref.watch(pendingChangesProvider).value;
-    final count = waiting == null
+    final status =
+        ref.watch(syncStatusProvider).value ??
+        const SyncStatus(phase: SyncPhase.notConfigured);
+    final text = waiting == null
         ? '…'
-        : '$waiting ${waiting == 1 ? 'change' : 'changes'} waiting';
-    return Container(
-      key: const ValueKey('shell.syncPill'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Space.x12,
-        vertical: Space.x10,
+        : syncPillText(
+            status,
+            pending: waiting,
+            now: ref.watch(clockProvider).now(),
+          );
+    final (background, foreground, icon) = switch (syncTone(status.phase)) {
+      SyncTone.calm => (
+        c.marineTint,
+        c.marine,
+        status.phase == SyncPhase.uploading
+            ? Icons.cloud_upload_outlined
+            : Icons.cloud_done_outlined,
       ),
-      decoration: BoxDecoration(
-        color: c.butter,
+      SyncTone.waiting => (c.butter, c.butterText, Icons.cloud_off_outlined),
+      SyncTone.problem => (c.redTint, c.redText, Icons.error_outline_rounded),
+    };
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(Radii.control),
+      child: InkWell(
+        key: const ValueKey('shell.syncPill'),
         borderRadius: BorderRadius.circular(Radii.control),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.cloud_off_outlined, size: 18, color: c.butterText),
-          const SizedBox(width: Space.x8),
-          Expanded(
-            child: Text(
-              'Sync not set up · $count',
-              style: t.smallStrong.copyWith(color: c.butterText),
-            ),
+        onTap: () => showSyncPanel(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.x12,
+            vertical: Space.x10,
           ),
-        ],
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: foreground),
+              const SizedBox(width: Space.x8),
+              Expanded(
+                child: Text(
+                  text,
+                  style: t.smallStrong.copyWith(color: foreground),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

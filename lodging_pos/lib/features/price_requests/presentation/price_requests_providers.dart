@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../data/price_requests_repository.dart';
 
 part 'price_requests_providers.g.dart';
@@ -12,6 +13,7 @@ PriceRequestsRepository priceRequestsRepository(Ref ref) =>
     PriceRequestsRepository(
       ref.watch(appDatabaseProvider),
       ref.watch(auditWriterProvider),
+      cloud: ref.watch(cloudWritesProvider),
     );
 
 /// Requests waiting for the owner, oldest first: the owner's Prices cards

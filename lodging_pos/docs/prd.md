@@ -350,7 +350,9 @@ The main risks are people bypassing the system and the desk PC failing; both hav
 
 - ~~First run creates the owner~~ and ~~prices move to the owner~~: done in OS-1 (21 Oct 2026).
 - ~~Price requests~~: done (22 Oct 2026, schema v8; see AD-3).
-- **Refund approval from the owner's phone** needs sync; the owner approves on the desk until then (AD-7). Payouts stay at the desk.
+- **Cloud sync, sync-1 (done 23 Oct 2026, schema v9; `docs/sync.md`):** the owner connects the desk (one-time install code, their email, their desk password, which becomes their cloud password); a resumable first upload; the desk pushes every change in order (idempotent, retried with backoff, a refused row stops the queue); a heartbeat every 5 minutes (`desk_status`); the owner's decisions, price changes and price request withdrawals go to the cloud first (offline: "Approving needs an internet connection."; the first decision anywhere wins). **Sync-2:** the desk's pull of what the phone writes, and the clock check (NFR "Time").
+- **Refund approval from the owner's phone** comes with the admin app, on sync-2. Payouts stay at the desk.
+- **A new or restored desk PC** (later): seed `receipt_counter` from the cloud before the first payment (schema.md, receipt_counter).
 
 ## Approval
 

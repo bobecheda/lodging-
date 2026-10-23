@@ -992,7 +992,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      8,
+      9,
     );
   });
 
@@ -1046,7 +1046,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      8,
+      9,
     );
     final category = await db
         .customSelect('SELECT price_per_night, updated_at FROM bed_categories')
@@ -1088,8 +1088,29 @@ void main() {
     );
   });
 
+  test('migration from v8 to v9: the sync bookkeeping starts empty (not '
+      'connected); the outbox is untouched', () async {
+    final db = open(
+      NativeDatabase.memory(
+        setup: (raw) {
+          appStatements(8).forEach(raw.execute);
+          raw.execute('PRAGMA user_version = 8');
+          raw.execute(
+            "INSERT INTO outbox (target_table, target_row_id, payload_json, "
+            "created_at) VALUES ('rooms', 'r1', '{}', "
+            "'2026-10-22T06:00:00.000Z')",
+          );
+        },
+      ),
+    );
+    addTearDown(db.close);
+    expect(await db.select(db.syncState).get(), isEmpty);
+    final outbox = await db.select(db.outbox).getSingle();
+    expect((outbox.targetRowId, outbox.sentAt), ('r1', null));
+  });
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4, 5, 6, 7]) {
+    for (final from in [1, 2, 3, 4, 5, 6, 7, 8]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -1114,7 +1135,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          8,
+          9,
         );
         final objects = await db
             .customSelect(

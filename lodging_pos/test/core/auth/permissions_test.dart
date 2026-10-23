@@ -59,6 +59,7 @@ void main() {
       Permission.decidePriceChange,
       Permission.viewBusinessDashboard,
       Permission.manageSupervisors,
+      Permission.connectDesk,
     };
     const ownerAndSupervisor = {
       Permission.viewAllReports,

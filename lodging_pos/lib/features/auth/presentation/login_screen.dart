@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +8,9 @@ import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/labeled_field.dart';
 import '../../../app/widgets/notes.dart';
 import '../../../app/widgets/split_gate_layout.dart';
+import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../../shifts/presentation/shift_providers.dart';
 import '../domain/login.dart';
 import 'auth_providers.dart';
@@ -40,12 +44,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _error = null;
     });
     try {
+      final password = _password.text;
       final result = await ref
           .read(loginServiceProvider)
-          .login(_username.text, _password.text);
+          .login(_username.text, password);
       if (result.outcome.signsIn) {
+        final user = result.user!;
+        // The owner's cloud sign-in (same password) for decisions and
+        // prices, quietly; offline, those writes ask again.
+        final engine = ref.read(syncEngineProvider);
+        if (engine != null && can(user, Permission.connectDesk)) {
+          unawaited(engine.ownerSignedInOnDesk(password));
+        }
         // The router takes it from here.
-        ref.read(sessionProvider.notifier).signIn(result.user!);
+        ref.read(sessionProvider.notifier).signIn(user);
         return;
       }
       _password.clear();

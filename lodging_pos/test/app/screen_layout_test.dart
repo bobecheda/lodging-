@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lodging_pos/core/sync/sync_engine.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/features/auth/domain/setup.dart';
@@ -27,6 +28,7 @@ import 'package:lodging_pos/features/setup/data/staff_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
 import 'package:lodging_pos/features/setup/presentation/widgets/room_table.dart';
 
+import '../helpers/fake_cloud.dart';
 import '../helpers/fixtures.dart';
 
 /// Every restyled screen at the front-desk laptop's size (1366×768) with the
@@ -624,6 +626,56 @@ void main() {
         await expectCleanLayout(tester, app, Routes.today, 'Deluxe: 700 → 750');
         expect(find.text('−50'), findsOne);
       });
+    });
+  });
+
+  group('Cloud sync (sync-1)', () {
+    testWidgets("the owner's Connect form with every error", (tester) async {
+      await withOwner();
+      env.cloud = FakeCloud();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'shell.syncPill');
+      await tapKey(tester, 'sync.connect');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.today,
+        'Enter the install code.',
+      );
+    });
+
+    testWidgets('a desk that needs reconnecting, as the owner sees it', (
+      tester,
+    ) async {
+      await withOwner();
+      final cloud = env.cloud = FakeCloud();
+      final engine = SyncEngine(
+        db: env.db,
+        audit: env.audit,
+        cloud: cloud,
+        secrets: env.deskSecrets,
+        clock: env.clock,
+      );
+      await engine.start();
+      await engine.connect(
+        owner: env.owner!,
+        installCode: 'ABCD-EFGH-JKLM',
+        ownerEmail: 'amina.wanjiru.owner@example.com',
+        password: 'owner-pass',
+      );
+      await engine.ownerLeft();
+      cloud.dropDeskSession();
+      env.deskSecrets.credentials = null;
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'owner', 'owner-pass');
+      await tapKey(tester, 'shell.syncPill');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.today,
+        'This desk needs reconnecting.',
+      );
     });
   });
 

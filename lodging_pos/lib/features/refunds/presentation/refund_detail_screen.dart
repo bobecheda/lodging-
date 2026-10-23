@@ -13,6 +13,7 @@ import '../../../core/auth/user_account.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/contacts/phone.dart';
 import '../../../core/money/kes.dart';
+import '../../sync/presentation/owner_cloud_prompt.dart';
 import '../data/refunds_repository.dart';
 import '../domain/refund.dart';
 import 'refunds_providers.dart';
@@ -39,6 +40,7 @@ class _RefundDetailState extends ConsumerState<RefundDetailScreen> {
   Future<void> _decide(RefundDetail d, {required bool approve}) async {
     final user = ref.read(sessionProvider);
     if (user == null) return;
+    if (!await ensureOwnerCloud(context, ref) || !mounted) return;
     String? note;
     if (!approve) {
       note = await showDialog<String>(
@@ -55,9 +57,13 @@ class _RefundDetailState extends ConsumerState<RefundDetailScreen> {
       _problem = null;
     });
     try {
-      await ref
-          .read(refundsRepositoryProvider)
-          .decide(user, widget.refundId, approve: approve, note: note);
+      await withOwnerCloud(
+        context,
+        ref,
+        () => ref
+            .read(refundsRepositoryProvider)
+            .decide(user, widget.refundId, approve: approve, note: note),
+      );
     } on RefundRuleViolation catch (e) {
       if (mounted) setState(() => _problem = e.message);
     } on NotPermitted {

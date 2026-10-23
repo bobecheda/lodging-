@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../data/refunds_repository.dart';
 
 part 'refunds_providers.g.dart';
@@ -11,6 +12,7 @@ part 'refunds_providers.g.dart';
 RefundsRepository refundsRepository(Ref ref) => RefundsRepository(
   ref.watch(appDatabaseProvider),
   ref.watch(auditWriterProvider),
+  cloud: ref.watch(cloudWritesProvider),
 );
 
 /// The desk's Refunds lists, read again whenever a refund, decision or

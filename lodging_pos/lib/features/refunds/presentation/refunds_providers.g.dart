@@ -54,7 +54,7 @@ final class RefundsRepositoryProvider
   }
 }
 
-String _$refundsRepositoryHash() => r'51612d5271b0a02256f584b6a8d02eb08262bf4f';
+String _$refundsRepositoryHash() => r'c2aa84993eaa70e7fe750c23045ee9b6d4eae3d7';
 
 /// The desk's Refunds lists, read again whenever a refund, decision or
 /// payout changes.

@@ -54,6 +54,18 @@ class Outbox extends Table {
   DateTimeColumn get sentAt => dateTime().nullable()();
 }
 
+/// v9, local only, never synced: this desk's sync bookkeeping as keys and
+/// values (connected, the first upload's progress, the last push and its
+/// problem). Written by `SyncStore` only, never through the writer.
+@DataClassName('SyncStateRow')
+class SyncState extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 /// Local only, never synced. Exactly one row, created in `onCreate`.
 @DataClassName('DeviceRow')
 class Device extends Table {

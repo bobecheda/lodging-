@@ -53,7 +53,7 @@ final class PricesRepositoryProvider
   }
 }
 
-String _$pricesRepositoryHash() => r'98062ec013089b5b6d868d5c2e97290981454c92';
+String _$pricesRepositoryHash() => r'9ba49dccd891954e2c61143688faf13bcaacd862';
 
 /// Categories in sort order with their active beds. Invalidate after a write.
 

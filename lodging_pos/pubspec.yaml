@@ -45,6 +45,8 @@ dependencies:
   printing: ^5.15.1
   path_provider: ^2.1.6
   file_selector: ^1.1.0
+  supabase_flutter: ^2.18.3
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
   flutter_test:

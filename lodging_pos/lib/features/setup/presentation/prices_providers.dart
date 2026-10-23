@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../data/prices_repository.dart';
 import '../domain/prices_settings.dart';
 
@@ -11,6 +12,7 @@ part 'prices_providers.g.dart';
 PricesRepository pricesRepository(Ref ref) => PricesRepository(
   ref.watch(appDatabaseProvider),
   ref.watch(auditWriterProvider),
+  cloud: ref.watch(cloudWritesProvider),
 );
 
 /// Categories in sort order with their active beds. Invalidate after a write.
