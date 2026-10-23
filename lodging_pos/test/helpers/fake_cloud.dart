@@ -133,7 +133,7 @@ class FakeCloud implements Cloud {
     }
     if (!r.reconnect && !installCodes.remove(r.installCode)) {
       throw const CloudRefused(
-        'That install code isn’t valid or has been used.',
+        'That install code isn’t valid, has expired or has been used.',
       );
     }
     if (r.reconnect && !devices.containsKey(r.deviceId)) {

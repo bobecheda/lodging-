@@ -5,11 +5,17 @@ The desk works offline and sends everything it writes to Supabase. The owner's d
 ## How it works
 
 - **Direction.** The desk pushes every row it writes (the outbox, oldest first, 200 rows per call, all or nothing per call). Only the owner's path writes `refund_decisions`, `price_decisions` and category prices. Staff logins never leave the desk: the cloud has no password hashes.
-- **Order and retries.** A push is an upsert by id that only applies a newer `updated_at`, so a batch sent twice (the answer was lost) changes nothing. Offline, changes wait; retries back off 5 s, 10 s, 20 s … up to 5 min. A row the cloud refuses **stops the queue** (later rows wait behind it; nothing is skipped) and the pill says "Sync problem · details".
+- **Order and retries.** A push is an upsert by id that only applies a newer `updated_at`, so a batch sent twice (the answer was lost) changes nothing. Rows that never change are insert-only in the cloud: `audit_log`, the decisions, `stay_charges` and `voids`; `payments` too, except `print_count` (reprints say COPY), which only ever goes up. Offline, changes wait; retries back off 5 s, 10 s, 20 s … up to 5 min. A row the cloud refuses **stops the queue** (later rows wait behind it; nothing is skipped) and the pill says "Sync problem · details".
 - **First upload.** When the owner connects the desk, a snapshot of every synced table goes up, parents first, with progress on the pill. Progress is saved per table (`sync_state`), so a power cut or a lost connection resumes, never restarts. The desk's tables go up under the desk's own sign-in; the decisions made before connecting, and the current prices, go up under the owner's sign-in. Then the outbox rows the snapshot covered (up to the highest `seq` when it started) are marked sent; anything written during the upload goes up through the normal push.
 - **Cloud first.** Approving or rejecting a refund or price request, and changing prices, call the cloud first (the first decision anywhere wins), then write the same row here. Offline: "Approving needs an internet connection." A loser is told "Already decided by Amina Owner · Fri 16 Oct, 10:42 (rejected)." Withdrawing a price request (the supervisor's, or closing its category) goes to the cloud first too, so a withdrawal and the owner's decision can't both stand.
 - **Heartbeat.** Every ~5 minutes the desk reports its last push, its queue and any problem to `desk_status`, even while the queue is stopped. The owner can read it ("Desk last synced 3 h ago · sync problem").
 - **Who can do what.** RLS is on for every table with no write policies: every write goes through a function that checks the caller's role. The owner reads everything (guests' phones and IDs included); the desk reads nothing yet; anonymous callers can't read or call anything. The service key is used only inside the `connect-desk` Edge Function.
+
+## Environments
+
+- **This Supabase project ("UB40 Lodging", eu-central-1) is dev/staging.** It holds test data and the test owner account, and is where new migrations and the Edge Function are tried first.
+- **Production will be a fresh project**, created in the hardening week: the same steps below (`db push`, deploy `connect-desk`, sign-ups off), then the desk connected to it with a new install code.
+- **Use the owner's real email there.** The owner's cloud account is created by the first connect, and **can't be changed later**: there is one owner per project (`app_private.owner`), and every later connect must use the same email. A forgotten password is reset by email, so it must be an inbox the owner reads.
 
 ## The desk's identity
 
@@ -56,7 +62,12 @@ You need the Supabase project ("UB40 Lodging", eu-central-1) and Node.js (for `n
    select app_private.new_install_code();
    ```
 
-   It returns a code like `7KQ2-M9XD-4HPA`, shown only once (only its hash is kept). It works once.
+   It returns the code and when it expires, e.g. `7KQ2-M9XD-4HPA · expires Fri 30 Oct 2026, 14:05 (Nairobi)`. Copy the code (the part before the dot) and keep it until you connect the desk:
+
+   - It's shown only once (only its hash is kept) and works once.
+   - It expires **7 days** after it was made. An expired or lost code can't be recovered: run the query again for a new one. Unused codes are simply never used.
+   - Connecting with it: the owner types it in the desk's Sync panel (step 6). A wrong code, a used one and an expired one all get "That install code isn't valid, has expired or has been used."
+   - After **10 failed tries in an hour** for the same owner email (wrong code, wrong password), `connect-desk` refuses with "Too many tries. Wait an hour and try again." Every try is recorded (`app_private.connect_attempts`).
 
 5. **Give the desk its settings.** Create `lodging_pos/secrets.json` (untracked; `.gitignore` blocks `secrets*.json`) with the project URL and the **anon** key (Dashboard → Project Settings → API):
 
