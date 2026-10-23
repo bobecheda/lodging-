@@ -89,7 +89,7 @@ void main() {
     await enterKey(tester, 'sync.password', testOwner.password);
     await tapKey(tester, 'sync.connect');
     expect(
-      find.text('That install code isn’t valid or has been used.'),
+      find.text('That install code isn’t valid, has expired or has been used.'),
       findsOneWidget,
     );
     expect(await env.deskSecrets.read(), isNull);
