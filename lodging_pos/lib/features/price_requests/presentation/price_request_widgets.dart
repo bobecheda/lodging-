@@ -17,6 +17,7 @@ import '../../setup/presentation/prices_providers.dart';
 import '../../sync/presentation/owner_cloud_prompt.dart';
 import '../data/price_requests_repository.dart';
 import '../domain/price_request.dart';
+import 'price_request_card.dart';
 import 'price_requests_providers.dart';
 
 // ── The supervisor ───────────────────────────────────────────────────────
@@ -440,7 +441,12 @@ class _OwnerPriceRequestsState extends ConsumerState<OwnerPriceRequests> {
     if (!approve) {
       note = await showDialog<String>(
         context: context,
-        builder: (_) => RejectPriceDialog(view: v),
+        builder: (_) => RejectPriceDialog(
+          categoryName: v.categoryName,
+          oldPrice: v.request.oldPrice,
+          newPrice: v.request.newPrice,
+          requestedByFirstName: v.requestedByFirstName,
+        ),
       );
       if (note == null || !mounted) return;
     }
@@ -507,8 +513,18 @@ class _OwnerPriceRequestsState extends ConsumerState<OwnerPriceRequests> {
             children: [
               for (final (i, v) in value.indexed) ...[
                 if (i > 0) const SizedBox(height: Space.x16),
-                _RequestCard(
-                  v,
+                PriceRequestCard(
+                  request: v.request,
+                  categoryName: v.categoryName,
+                  requestedByFirstName: v.requestedByFirstName,
+                  requestedByRole: v.requestedByRole?.name,
+                  staleMessage: v.stale
+                      ? staleText(
+                          v.categoryName,
+                          currentPrice: v.currentPrice,
+                          oldPrice: v.request.oldPrice,
+                        )
+                      : null,
                   now: now,
                   busy: _busyId == v.id,
                   locked: _busyId != null,
@@ -524,182 +540,6 @@ class _OwnerPriceRequestsState extends ConsumerState<OwnerPriceRequests> {
           ),
           _ => const SizedBox.shrink(),
         },
-      ],
-    );
-  }
-}
-
-class _RequestCard extends StatelessWidget {
-  const _RequestCard(
-    this.view, {
-    required this.now,
-    required this.busy,
-    required this.locked,
-    required this.onApprove,
-    required this.onReject,
-  });
-
-  final PriceRequestView view;
-  final DateTime now;
-  final bool busy;
-
-  /// Another request is being decided.
-  final bool locked;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final r = view.request;
-    final id = view.id;
-    final role = view.requestedByRole?.name.toUpperCase();
-    final when = formatWhen(r.requestedAt, now: now);
-    return Container(
-      key: ValueKey('priceRequest.card.$id'),
-      padding: const EdgeInsets.all(Space.x20),
-      decoration: BoxDecoration(
-        color: c.marineTint,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: c.marine, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'REQUEST FROM ${view.requestedByFirstName.toUpperCase()}'
-            '${role == null ? '' : ' ($role)'}',
-            style: t.cardHeading.copyWith(color: c.marine),
-          ),
-          const SizedBox(height: Space.x10),
-          Wrap(
-            spacing: Space.x10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(view.categoryName, style: t.sectionTitle),
-              Text(
-                'KES ${formatKesPlain(r.oldPrice)} → '
-                '${formatKesPlain(r.newPrice)}',
-                key: ValueKey('priceRequest.change.$id'),
-                style: t.moneyLarge.copyWith(color: c.marine),
-              ),
-            ],
-          ),
-          const SizedBox(height: Space.x8),
-          Text(
-            r.reason == null ? 'Asked $when' : '“${r.reason}” · $when',
-            key: ValueKey('priceRequest.reason.$id'),
-            style: t.small.copyWith(color: c.inkSoft),
-          ),
-          if (view.stale) ...[
-            const SizedBox(height: Space.x12),
-            Note.warning(
-              '${view.categoryName} is now ${formatKes(view.currentPrice)}, '
-              'not ${formatKesPlain(r.oldPrice)}. Reject this request or ask '
-              'for a new one.',
-              key: ValueKey('priceRequest.stale.$id'),
-            ),
-          ],
-          const SizedBox(height: Space.x16),
-          Row(
-            children: [
-              Expanded(
-                child: AppButton.primary(
-                  key: ValueKey('priceRequest.approve.$id'),
-                  label: 'Approve',
-                  busy: busy,
-                  onPressed: view.stale || locked ? null : onApprove,
-                ),
-              ),
-              const SizedBox(width: Space.x10),
-              Expanded(
-                child: AppButton.destructive(
-                  key: ValueKey('priceRequest.reject.$id'),
-                  label: 'Reject',
-                  onPressed: locked ? null : onReject,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Reject this price change?" (like Figma "03b Reject reason"): a required
-/// reason the supervisor sees. Pops the reason, or null on Cancel.
-class RejectPriceDialog extends StatefulWidget {
-  const RejectPriceDialog({super.key, required this.view});
-
-  final PriceRequestView view;
-
-  @override
-  State<RejectPriceDialog> createState() => _RejectPriceDialogState();
-}
-
-class _RejectPriceDialogState extends State<RejectPriceDialog> {
-  final _reason = TextEditingController();
-  String? _error;
-
-  @override
-  void dispose() {
-    _reason.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final reason = _reason.text.trim();
-    if (reason.isEmpty) {
-      setState(() => _error = 'Give a reason for rejecting the price change.');
-      return;
-    }
-    Navigator.of(context).pop(reason);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = LodgingType.of(context);
-    final v = widget.view;
-    return AlertDialog(
-      key: const ValueKey('priceReject.dialog'),
-      title: Text('Reject this price change?', style: t.sectionTitle),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '${v.categoryName} · KES ${formatKesPlain(v.request.oldPrice)} '
-              '→ ${formatKesPlain(v.request.newPrice)}. '
-              '${v.requestedByFirstName} will see your reason.',
-              style: t.small,
-            ),
-            const SizedBox(height: Space.x12),
-            LabeledField(
-              label: 'Reason',
-              controller: _reason,
-              fieldKey: const ValueKey('priceReject.reason'),
-              errorText: _error,
-              autofocus: true,
-              onSubmitted: (_) => _submit(),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        AppButton.secondary(
-          key: const ValueKey('priceReject.cancel'),
-          label: 'Cancel',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.destructive(
-          key: const ValueKey('priceReject.reject'),
-          label: 'Reject request',
-          onPressed: _submit,
-        ),
       ],
     );
   }

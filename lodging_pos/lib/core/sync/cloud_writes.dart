@@ -7,6 +7,9 @@
 library;
 
 import '../clock/nairobi.dart';
+import 'cloud.dart' show PriceEdit;
+
+export 'cloud.dart' show PriceEdit;
 
 abstract interface class CloudWrites {
   /// Connected: these writes need the cloud.
@@ -28,8 +31,9 @@ abstract interface class CloudWrites {
     required DateTime at,
   });
 
-  /// {category id: new price}.
-  Future<void> setPrices(Map<String, int> prices, DateTime at);
+  /// The owner's new prices, each over the price it started from; refused
+  /// with [PriceChangedElsewhere] when one moved on in the cloud.
+  Future<void> changePrices(List<PriceEdit> edits, DateTime at);
 
   Future<void> withdrawPriceRequest({
     required String requestId,
@@ -98,6 +102,25 @@ final class StaleElsewhere extends CloudWriteRefused {
   final int currentPrice;
 }
 
+/// Another price edit (the phone's, or another desk's) got to the cloud
+/// first; nothing was saved. The caller words it with the category's name
+/// ([priceMovedOnMessage]).
+final class PriceChangedElsewhere extends CloudWriteRefused {
+  const PriceChangedElsewhere({
+    required this.categoryId,
+    required this.currentPrice,
+    required this.at,
+    required this.changedOn,
+  });
+
+  final String categoryId;
+  final int currentPrice;
+  final DateTime at;
+
+  /// `desk`, `phone`, or null.
+  final String? changedOn;
+}
+
 /// The sentence a screen shows for [refusal]; [needsInternet] names the
 /// action ("Approving needs an internet connection."). Not for
 /// [OwnerCloudSignInNeeded] (the screen asks for the password) or
@@ -118,5 +141,8 @@ String cloudRefusalMessage(
   WithdrawnElsewhere() => 'This request was withdrawn.',
   StaleElsewhere(:final currentPrice) =>
     'The price is now KES $currentPrice in the cloud.',
+  PriceChangedElsewhere(:final currentPrice) =>
+    'The price is now KES $currentPrice in the cloud. Check it and save '
+        'again.',
   OwnerCloudSignInNeeded() => 'Sign in to the cloud again to continue.',
 };

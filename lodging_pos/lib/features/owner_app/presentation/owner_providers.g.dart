@@ -57,6 +57,55 @@ final class OwnerCloudProvider
 
 String _$ownerCloudHash() => r'15c8511eeecc5a8b72e284fff545d3806a5c9a35';
 
+/// The phone's clock corrected to the server's on every load: every "now"
+/// on the phone comes from here.
+
+@ProviderFor(ownerClock)
+final ownerClockProvider = OwnerClockProvider._();
+
+/// The phone's clock corrected to the server's on every load: every "now"
+/// on the phone comes from here.
+
+final class OwnerClockProvider
+    extends $FunctionalProvider<ServerClock, ServerClock, ServerClock>
+    with $Provider<ServerClock> {
+  /// The phone's clock corrected to the server's on every load: every "now"
+  /// on the phone comes from here.
+  OwnerClockProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ownerClockProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerClockHash();
+
+  @$internal
+  @override
+  $ProviderElement<ServerClock> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ServerClock create(Ref ref) {
+    return ownerClock(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ServerClock value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ServerClock>(value),
+    );
+  }
+}
+
+String _$ownerClockHash() => r'e5aa7828330f6378de9b852686b1c00cddfe1693';
+
 /// How often Today reloads while open; null turns the timer off (tests).
 
 @ProviderFor(ownerRefreshInterval)
@@ -192,7 +241,7 @@ final class OwnerTodayDataProvider
   OwnerTodayData create() => OwnerTodayData();
 }
 
-String _$ownerTodayDataHash() => r'349f1befe0fbc69c2afd2b11e331f550a9745415';
+String _$ownerTodayDataHash() => r'5d8266ce3e434e1dd9f3df699d932c3c7d33daf9';
 
 /// Today: loaded on open, again on return to the app (the shell), on a
 /// pull and every [ownerRefreshInterval]. Null once signed out: the
@@ -215,6 +264,54 @@ abstract class _$OwnerTodayData extends $AsyncNotifier<OwnerSnapshot?> {
     return element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(ownerPricesRepository)
+final ownerPricesRepositoryProvider = OwnerPricesRepositoryProvider._();
+
+final class OwnerPricesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          OwnerPricesRepository,
+          OwnerPricesRepository,
+          OwnerPricesRepository
+        >
+    with $Provider<OwnerPricesRepository> {
+  OwnerPricesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ownerPricesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerPricesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<OwnerPricesRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OwnerPricesRepository create(Ref ref) {
+    return ownerPricesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OwnerPricesRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OwnerPricesRepository>(value),
+    );
+  }
+}
+
+String _$ownerPricesRepositoryHash() =>
+    r'2d3755562ab28bfd36f9efd98319d9324e02ad1e';
 
 @ProviderFor(ownerRefundsRepository)
 final ownerRefundsRepositoryProvider = OwnerRefundsRepositoryProvider._();

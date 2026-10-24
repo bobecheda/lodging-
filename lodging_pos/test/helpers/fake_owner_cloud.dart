@@ -24,6 +24,24 @@ const forbiddenOwnerColumns = {
 class FakeOwnerCloud implements OwnerCloud {
   FakeOwnerCloud({required this.serverNow});
 
+  /// The cloud as a desk filled it (the rows [desk] holds after a push),
+  /// read by the owner, signed in.
+  factory FakeOwnerCloud.fromDesk(
+    FakeCloud desk, {
+    required DateTime Function() serverNow,
+  }) {
+    final cloud = FakeOwnerCloud(serverNow: serverNow)..stored = owner;
+    for (final MapEntry(:key, :value) in desk.tables.entries) {
+      if (key == 'guests') {
+        cloud.guests.addAll([for (final r in value.values) Map.of(r)]);
+      } else {
+        cloud.tables[key] = [for (final r in value.values) Map.of(r)];
+      }
+    }
+    cloud._session = owner;
+    return cloud;
+  }
+
   /// The cloud's clock, for `server_time`.
   DateTime Function() serverNow;
 
@@ -49,6 +67,22 @@ class FakeOwnerCloud implements OwnerCloud {
   final calls = <(String, Map<String, Object?>)>[];
 
   static const owner = OwnerSignIn(userId: 'u-owner', email: testOwnerEmail);
+
+  /// Where each category's price was last edited: (device id, time). A
+  /// device starting `dev-` is a desk.
+  final priceEdits = <String, (String, String)>{};
+
+  Map<String, Object?>? _row(String table, String id) =>
+      this.table(table).where((r) => r['id'] == id).firstOrNull;
+
+  String? _userName(Object? id) =>
+      _row('users', '$id')?['full_name'] as String?;
+
+  void _audit(Object? rows) {
+    for (final a in (rows as List?) ?? const []) {
+      table('audit_log').add(Map.of(a as Map<String, Object?>));
+    }
+  }
 
   List<Map<String, Object?>> table(String name) =>
       tables.putIfAbsent(name, () => []);
@@ -171,12 +205,99 @@ class FakeOwnerCloud implements OwnerCloud {
           'decided_at': params['p_at'],
           'device_id': params['p_device_id'],
         });
-        for (final a in params['p_audit']! as List) {
-          table('audit_log').add(Map.of(a as Map<String, Object?>));
-        }
+        _audit(params['p_audit']);
         return {'status': 'decided'};
+      case 'decide_price_request':
+        final requestId = params['p_request_id']! as String;
+        final decisions = table('price_decisions');
+        for (final d in decisions) {
+          if (d['request_id'] != requestId) continue;
+          if (d['id'] == params['p_id']) return {'status': 'decided'};
+          return {
+            'status': 'already_decided',
+            'decision': d['decision'],
+            'decided_at': d['decided_at'],
+            'decided_by_name': _userName(d['decided_by']),
+          };
+        }
+        final request = _row('price_requests', requestId);
+        if (request == null) return {'status': 'missing'};
+        if (request['withdrawn_at'] != null) return {'status': 'withdrawn'};
+        final category = _row(
+          'bed_categories',
+          request['category_id']! as String,
+        )!;
+        final approve = params['p_decision'] == 'approved';
+        if (approve && category['price_per_night'] != request['old_price']) {
+          return {
+            'status': 'stale',
+            'current_price': category['price_per_night'],
+          };
+        }
+        decisions.add({
+          'id': params['p_id'],
+          'request_id': requestId,
+          'decision': params['p_decision'],
+          'note': params['p_note'],
+          'decided_by': owner.userId,
+          'decided_at': params['p_at'],
+          'device_id': params['p_device_id'],
+        });
+        if (approve) {
+          category
+            ..['price_per_night'] = request['new_price']
+            ..['price_updated_at'] = params['p_at'];
+        }
+        _audit(params['p_audit']);
+        return {'status': 'decided'};
+      case 'change_prices':
+        final changes = [
+          for (final c in params['p_changes']! as List)
+            (c as Map).cast<String, Object?>(),
+        ];
+        for (final c in changes) {
+          final category = _row('bed_categories', c['category_id']! as String);
+          if (category == null) {
+            return {'status': 'missing', 'category_id': c['category_id']};
+          }
+          if (category['price_per_night'] != c['expected']) {
+            final (device, at) =
+                priceEdits[category['id']] ??
+                ('', category['price_updated_at']! as String);
+            return {
+              'status': 'stale',
+              'category_id': category['id'],
+              'current_price': category['price_per_night'],
+              'changed_at': at,
+              'changed_on': device.isEmpty
+                  ? null
+                  : device.startsWith('dev-')
+                  ? 'desk'
+                  : 'phone',
+            };
+          }
+        }
+        for (final c in changes) {
+          _row('bed_categories', c['category_id']! as String)!
+            ..['price_per_night'] = c['price']
+            ..['price_updated_at'] = params['p_at'];
+          priceEdits[c['category_id']! as String] = (
+            params['p_device_id']! as String,
+            params['p_at']! as String,
+          );
+        }
+        _audit(params['p_audit']);
+        return {'status': 'changed'};
     }
     fail('No fake for $name.');
+  }
+
+  /// The owner changes a price at the desk first (not yet seen here).
+  void setPriceAtDesk(String categoryId, int price, DateTime at) {
+    _row('bed_categories', categoryId)!
+      ..['price_per_night'] = price
+      ..['price_updated_at'] = at.toIso8601String();
+    priceEdits[categoryId] = ('dev-1', at.toIso8601String());
   }
 
   @override
@@ -218,12 +339,36 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
       {
         'device_id': 'dev-1',
         'reported_at': at(const Duration(minutes: 2)),
+        'last_push_at': at(const Duration(minutes: 3)),
         'pending': 3,
         'problem': null,
       },
     ],
     'bed_categories': [
-      {'id': 'c-1', 'name': 'Deluxe', 'price_per_night': 700},
+      {
+        'id': 'c-1',
+        'name': 'Deluxe',
+        'price_per_night': 700,
+        'sort_order': 1,
+        'is_active': true,
+        'price_updated_at': at(const Duration(days: 30)),
+      },
+      {
+        'id': 'c-2',
+        'name': 'VIP',
+        'price_per_night': 1000,
+        'sort_order': 0,
+        'is_active': true,
+        'price_updated_at': at(const Duration(days: 30)),
+      },
+      {
+        'id': 'c-3',
+        'name': 'Normal',
+        'price_per_night': 500,
+        'sort_order': 3,
+        'is_active': false,
+        'price_updated_at': at(const Duration(days: 30)),
+      },
     ],
     'rooms': [
       {'id': 'r-5', 'room_number': '5', 'is_active': true},
@@ -333,6 +478,7 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
         'category_id': 'c-1',
         'old_price': 700,
         'new_price': 750,
+        'reason': 'Other lodgings nearby charge 800.',
         'requested_by': 'u-sup',
         'requested_at': at(const Duration(minutes: 15)),
         'withdrawn_at': null,

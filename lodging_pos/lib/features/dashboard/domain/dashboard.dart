@@ -45,6 +45,15 @@ DateTime sameMomentLastMonth(DateTime utc) {
   return nairobiInstant(t.year, t.month - 1, day, t.hour, t.minute, t.second);
 }
 
+/// Nairobi midnight starting the Monday of [utc]'s week (as UTC).
+DateTime weekStart(DateTime utc) {
+  final t = toNairobi(utc);
+  return nairobiInstant(t.year, t.month, t.day - (t.weekday - 1));
+}
+
+/// The same wall-clock moment 7 Nairobi days before [utc].
+DateTime sameMomentLastWeek(DateTime utc) => addNairobiDays(utc, -7);
+
 /// "Wednesday 21 October": Today's date line.
 String formatLongDate(DateTime utc) {
   final t = toNairobi(utc);
@@ -121,11 +130,194 @@ final class TodaysMoney {
 }
 
 TodaysMoney todaysMoney(Iterable<MoneyMove> moves, DateTime now) {
-  final weekAgo = addNairobiDays(now, -7);
+  final weekAgo = sameMomentLastWeek(now);
   return TodaysMoney(
     today: takingsBetween(moves, from: dayStart(now), to: now),
     lastWeek: takingsBetween(moves, from: dayStart(weekAgo), to: weekAgo).net,
   );
+}
+
+// ── The Money screen ────────────────────────────────────────────────────
+
+/// The owner's Money screen periods (Figma "04 Money").
+enum MoneyPeriod { today, week, month }
+
+/// Where [period] starts for [now] (Nairobi midnight, as UTC).
+DateTime periodStart(MoneyPeriod period, DateTime now) => switch (period) {
+  MoneyPeriod.today => dayStart(now),
+  MoneyPeriod.week => weekStart(now),
+  MoneyPeriod.month => monthStart(now),
+};
+
+/// The moment [period] is compared at: the same time last week (today and
+/// this week) or the same point last month ([sameMomentLastMonth]).
+DateTime periodPointBefore(MoneyPeriod period, DateTime now) =>
+    switch (period) {
+      MoneyPeriod.today || MoneyPeriod.week => sameMomentLastWeek(now),
+      MoneyPeriod.month => sameMomentLastMonth(now),
+    };
+
+/// The Nairobi dates [period] covers so far, today included (as returned by
+/// [nairobiDate]).
+({DateTime first, DateTime last}) periodDates(
+  MoneyPeriod period,
+  DateTime now,
+) => (first: nairobiDate(periodStart(period, now)), last: nairobiDate(now));
+
+/// A period's money so far: what came in, what went back out as refunds,
+/// net by method (payments − refunds paid − anything voided, as
+/// [takingsBetween]), and the same span before it.
+final class PeriodMoney {
+  const PeriodMoney({
+    required this.period,
+    required this.now,
+    required this.takings,
+    required this.received,
+    required this.refundsPaid,
+    required this.voided,
+    required this.before,
+  });
+
+  final MoneyPeriod period;
+  final DateTime now;
+
+  /// Net, by method.
+  final Takings takings;
+
+  /// Payments received, not voided.
+  final int received;
+
+  /// Refunds paid out, not voided.
+  final int refundsPaid;
+
+  /// Payments voided in the period: shown, never counted.
+  final int voided;
+
+  /// Net over the same span before ([periodPointBefore]).
+  final int before;
+
+  int get net => takings.net;
+
+  /// "OCTOBER SO FAR · NET".
+  String get title => switch (period) {
+    MoneyPeriod.today => 'TODAY SO FAR · NET',
+    MoneyPeriod.week => 'THIS WEEK SO FAR · NET',
+    MoneyPeriod.month => '${monthName(now)} SO FAR · NET',
+  };
+
+  /// "Same point in September".
+  String get beforeLabel {
+    final point = toNairobi(periodPointBefore(period, now));
+    return switch (period) {
+      MoneyPeriod.today => 'Same time last ${_weekdays[point.weekday - 1]}',
+      MoneyPeriod.week => 'Same point last week',
+      MoneyPeriod.month => 'Same point in ${_months[point.month - 1]}',
+    };
+  }
+
+  /// "CASH VS M-PESA · OCTOBER".
+  String get splitTitle {
+    final when = switch (period) {
+      MoneyPeriod.today => 'TODAY',
+      MoneyPeriod.week => 'THIS WEEK',
+      MoneyPeriod.month => monthName(now),
+    };
+    return 'CASH VS M-PESA · $when';
+  }
+
+  /// Whole percent of the net taken in cash; null with no net to share.
+  int? get cashPercent => net <= 0
+      ? null
+      : (takings.cash * 100 / net).round().clamp(0, 100).toInt();
+
+  int? get mpesaPercent => switch (cashPercent) {
+    final cash? => 100 - cash,
+    null => null,
+  };
+}
+
+PeriodMoney periodMoney(
+  Iterable<MoneyMove> moves,
+  MoneyPeriod period,
+  DateTime now,
+) {
+  final from = periodStart(period, now);
+  final point = periodPointBefore(period, now);
+  var received = 0;
+  var refundsPaid = 0;
+  var voided = 0;
+  for (final m in moves) {
+    if (m.at.isBefore(from) || !m.at.isBefore(now)) continue;
+    switch (m) {
+      case MoneyMove(voided: true, isPayout: false):
+        voided += m.amount;
+      case MoneyMove(voided: true):
+        break;
+      case MoneyMove(isPayout: true):
+        refundsPaid += m.amount;
+      default:
+        received += m.amount;
+    }
+  }
+  return PeriodMoney(
+    period: period,
+    now: now,
+    takings: takingsBetween(moves, from: from, to: now),
+    received: received,
+    refundsPaid: refundsPaid,
+    voided: voided,
+    before: takingsBetween(
+      moves,
+      from: periodStart(period, point),
+      to: point,
+    ).net,
+  );
+}
+
+/// One day's net (Nairobi day).
+final class DayNet {
+  const DayNet(this.day, this.net);
+
+  /// The Nairobi date, as [nairobiDate] returns it.
+  final DateTime day;
+  final int net;
+}
+
+/// Net for each of the last [days] Nairobi days, oldest first, today (so
+/// far) last.
+List<DayNet> dailyNet(
+  Iterable<MoneyMove> moves,
+  DateTime now, {
+  int days = 14,
+}) {
+  final out = <DayNet>[];
+  for (var i = days - 1; i >= 0; i--) {
+    final start = dayStart(addNairobiDays(now, -i));
+    final end = i == 0 ? now : dayStart(addNairobiDays(now, -i + 1));
+    out.add(
+      DayNet(
+        nairobiDate(start),
+        takingsBetween(moves, from: start, to: end).net,
+      ),
+    );
+  }
+  return out;
+}
+
+String _dayDate(DateTime date) =>
+    formatDayDate(nairobiInstant(date.year, date.month, date.day, 12));
+
+/// "Tue 20 Oct · KES 26,100": a day as text, under the chart.
+String dayLine(DayNet d) => '${_dayDate(d.day)} · ${formatKes(d.net)}';
+
+/// "Best day: Tue 20 Oct, KES 26,100. Today so far: KES 18,400."
+String dailySummary(List<DayNet> days) {
+  if (days.every((d) => d.net == 0)) {
+    return 'Nothing taken in the last ${days.length} days.';
+  }
+  final best = days.reduce((a, b) => b.net > a.net ? b : a);
+  return 'Best day: ${_dayDate(best.day)}, ${formatKes(best.net)}. '
+      'Today so far: ${formatKes(days.last.net)}.';
 }
 
 /// "▲ 12% vs last Wednesday (KES 16,400)". The arrow is never coloured.
@@ -208,28 +400,96 @@ final class StayNights {
   final int refundedNights;
 }
 
-/// A charge's nights: [nights] ending at [periodEnd] (10:00).
+/// A charge's nights: [nights] ending at [periodEnd] (10:00), of
+/// [categoryName] at the stay's locked [pricePerNight].
 final class ChargeNights {
-  const ChargeNights({required this.nights, required this.periodEnd});
+  const ChargeNights({
+    required this.nights,
+    required this.periodEnd,
+    required this.categoryName,
+    required this.pricePerNight,
+  });
   final int nights;
   final DateTime periodEnd;
+  final String categoryName;
+  final int pricePerNight;
 }
 
-/// The Nairobi date each of the stay's sold nights belongs to: a night
-/// ending at 10:00 on Friday is Thursday's night. The refunded nights (the
-/// last ones) are left out; a voided stay has none.
-List<DateTime> soldNightDates(StayNights stay) {
+/// One sold night: its Nairobi date and the charge it was sold by.
+typedef SoldNight = ({DateTime date, ChargeNights charge});
+
+/// The stay's sold nights, by date: only nights charged (an overstay the
+/// desk hasn't charged yet isn't sold). A night ending at 10:00 on Friday
+/// is Thursday's night. The refunded nights (the last ones) are left out;
+/// a voided stay has none.
+List<SoldNight> soldNights(StayNights stay) {
   if (stay.voided) return const [];
-  final dates = <DateTime>[];
+  final nights = <SoldNight>[];
   for (final c in stay.charges) {
     final end = toNairobi(c.periodEnd);
     for (var i = c.nights; i >= 1; i--) {
-      dates.add(DateTime.utc(end.year, end.month, end.day - i));
+      nights.add((
+        date: DateTime.utc(end.year, end.month, end.day - i),
+        charge: c,
+      ));
     }
   }
-  dates.sort();
-  final keep = dates.length - stay.refundedNights;
-  return dates.sublist(0, keep < 0 ? 0 : keep);
+  nights.sort((a, b) => a.date.compareTo(b.date));
+  final keep = nights.length - stay.refundedNights;
+  return nights.sublist(0, keep < 0 ? 0 : keep);
+}
+
+/// The Nairobi dates of [soldNights].
+List<DateTime> soldNightDates(StayNights stay) => [
+  for (final n in soldNights(stay)) n.date,
+];
+
+/// One category's nights let in a period: how many, and their value at
+/// each stay's locked price.
+final class CategoryNights {
+  const CategoryNights({
+    required this.name,
+    required this.nights,
+    required this.value,
+  });
+
+  final String name;
+  final int nights;
+
+  /// Whole KES.
+  final int value;
+
+  /// "210 bed-nights".
+  String get line => '$nights ${nights == 1 ? 'bed-night' : 'bed-nights'}';
+}
+
+/// "By category · nights let" (Figma "04 Money"): the nights sold on the
+/// Nairobi dates [first] to [last] by category, most valuable first. The
+/// value of nights stayed, not money received, so it doesn't add up to the
+/// period's net.
+List<CategoryNights> nightsLetByCategory(
+  Iterable<StayNights> stays, {
+  required DateTime first,
+  required DateTime last,
+}) {
+  final nights = <String, int>{};
+  final value = <String, int>{};
+  for (final stay in stays) {
+    for (final n in soldNights(stay)) {
+      if (n.date.isBefore(first) || n.date.isAfter(last)) continue;
+      final name = n.charge.categoryName;
+      nights[name] = (nights[name] ?? 0) + 1;
+      value[name] = (value[name] ?? 0) + n.charge.pricePerNight;
+    }
+  }
+  return [
+    for (final name in nights.keys)
+      CategoryNights(name: name, nights: nights[name]!, value: value[name]!),
+  ]..sort(
+    (a, b) => b.value != a.value
+        ? b.value.compareTo(a.value)
+        : a.name.compareTo(b.name),
+  );
 }
 
 /// Bed-nights sold on the Nairobi dates [first] to [last] (inclusive; both

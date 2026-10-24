@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/notes.dart';
-import '../../../core/clock/clock.dart';
 import '../../bed_board/domain/bed_board.dart';
 import '../../dashboard/domain/dashboard.dart';
 import '../../dashboard/presentation/today_cards.dart';
@@ -22,7 +21,7 @@ class OwnerTodayScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(ownerTodayDataProvider);
-    final now = ref.watch(clockProvider).now();
+    final now = ref.watch(ownerClockProvider).now();
     Future<void> reload() =>
         ref.read(ownerTodayDataProvider.notifier).refresh();
 

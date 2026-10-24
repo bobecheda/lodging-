@@ -219,15 +219,6 @@ void main() {
     expect(app.read(ownerTodayDataProvider).value, isNull);
   });
 
-  testWidgets('Money, Beds and Prices come in the next update', (tester) async {
-    await pumpOwnerApp(tester, cloud, clock);
-    await signIn(tester);
-    for (final tab in ['money', 'beds', 'prices']) {
-      await tapKey(tester, 'owner.nav.$tab');
-      expect(find.byKey(const ValueKey('owner.comingSoon')), findsOneWidget);
-    }
-  });
-
   testWidgets('a desk not heard from for 12 minutes shows offline', (
     tester,
   ) async {

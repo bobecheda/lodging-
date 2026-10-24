@@ -178,6 +178,7 @@ select ok(
     'decide_refund(text,text,text,text,timestamp with time zone,text,jsonb)',
     'decide_price_request(text,text,text,text,timestamp with time zone,text,jsonb)',
     'set_prices(jsonb,timestamp with time zone)',
+    'change_prices(jsonb,timestamp with time zone,text,jsonb)',
     'import_owner_rows(text,jsonb)'],
   'the check sees the known writers');
 

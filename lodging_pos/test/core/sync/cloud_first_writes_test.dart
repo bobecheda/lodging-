@@ -76,6 +76,14 @@ void main() {
     await env.close();
   });
 
+  Future<int> localPrice(String categoryId) async => (await (env.db.select(
+    env.db.bedCategories,
+  )..where((c) => c.id.equals(categoryId))).getSingle()).pricePerNight;
+
+  Future<int> audited(String action) async => (await (env.db.select(
+    env.db.auditLog,
+  )..where((a) => a.action.equals(action))).get()).length;
+
   Matcher refundRule(String message) => throwsA(
     isA<RefundRuleViolation>().having((e) => e.message, 'message', message),
   );
@@ -282,6 +290,10 @@ void main() {
           ),
         ),
       );
+      // Nothing was saved here first.
+      expect(await localPrice(SeedIds.vip), 1000);
+      expect(await audited('price.update'), 0);
+
       cloud.offline = false;
       await prices.savePrices(owner, {SeedIds.vip: 1100});
       expect(
@@ -289,6 +301,35 @@ void main() {
         1100,
       );
       expect(await outboxSent('bed_categories', SeedIds.vip), isTrue);
+    });
+
+    test('prices: an edit made on the phone first wins; the desk is told '
+        'where and saves nothing', () async {
+      final atPhone = nairobiInstant(2026, 10, 16, 10, 40);
+      cloud.setPriceElsewhere(SeedIds.vip, 1200, atPhone);
+      // Not pulled yet: the desk still thinks VIP is 1,000.
+      await expectLater(
+        prices.savePrices(owner, {SeedIds.vip: 1100, SeedIds.deluxe: 750}),
+        throwsA(
+          isA<CategoryRuleViolation>().having(
+            (e) => e.message,
+            'message',
+            'VIP was changed to KES 1,200 on the phone · Fri 16 Oct, 10:40. '
+                'Check it and save again.',
+          ),
+        ),
+      );
+      expect(
+        cloud.row('bed_categories', SeedIds.vip)!['price_per_night'],
+        1200,
+      );
+      // All or nothing: Deluxe wasn't changed either, here or there.
+      expect(
+        cloud.row('bed_categories', SeedIds.deluxe)!['price_per_night'],
+        700,
+      );
+      expect(await localPrice(SeedIds.deluxe), 700);
+      expect(await audited('price.update'), 0);
     });
   });
 }

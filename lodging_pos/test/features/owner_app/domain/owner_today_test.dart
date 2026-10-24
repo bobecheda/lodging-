@@ -66,6 +66,45 @@ void main() {
     });
   });
 
+  group('how fresh Money is', () {
+    test('up to the desk’s last push; what still waits', () {
+      DeskStatus at(Duration ago, {int pending = 0, DateTime? pushed}) =>
+          DeskStatus(
+            deviceId: 'dev-1',
+            reportedAt: now.subtract(ago),
+            lastPushAt: pushed,
+            pending: pending,
+          );
+      final pushed = nairobiInstant(2026, 10, 24, 9, 5);
+      expect(
+        freshnessLine([at(Duration.zero, pushed: pushed)], now),
+        'Up to the desk’s last sync, 09:05.',
+      );
+      expect(
+        freshnessLine([at(Duration.zero, pending: 3, pushed: pushed)], now),
+        'Up to the desk’s last sync, 09:05 · 3 changes not sent yet.',
+      );
+      expect(
+        freshnessLine([
+          at(
+            Duration.zero,
+            pending: 1,
+            pushed: nairobiInstant(2026, 10, 23, 18, 40),
+          ),
+        ], now),
+        'Up to the desk’s last sync, yesterday 18:40 · 1 change not sent yet.',
+      );
+      expect(
+        freshnessLine([at(Duration.zero)], now),
+        'The desk hasn’t synced yet.',
+      );
+      expect(
+        freshnessLine(const [], now),
+        'The desk isn’t connected to the cloud yet.',
+      );
+    });
+  });
+
   group('the updated line', () {
     final at = nairobiInstant(2026, 10, 24, 9, 15);
     test('online: how long ago', () {

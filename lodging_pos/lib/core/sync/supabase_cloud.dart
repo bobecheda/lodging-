@@ -247,6 +247,33 @@ class SupabaseCloud implements Cloud {
   );
 
   @override
+  Future<PriceChangeAnswer> changePrices(
+    List<PriceEdit> edits,
+    DateTime at, {
+    required String deviceId,
+  }) => _asOwner((c) async {
+    final map = ((await c.rpc(
+      'change_prices',
+      params: {
+        'p_changes': [for (final e in edits) e.toJson()],
+        'p_at': _time(at),
+        'p_device_id': deviceId,
+      },
+    )) as Map).cast<String, Object?>();
+    return switch (map['status']) {
+      'changed' => const PricesChanged(),
+      'stale' => PriceMovedOn(
+        categoryId: map['category_id']! as String,
+        currentPrice: map['current_price']! as int,
+        changedAt: DateTime.parse(map['changed_at']! as String).toUtc(),
+        changedOn: map['changed_on'] as String?,
+      ),
+      'missing' => const PriceCategoryMissing(),
+      final other => throw CloudRefused('Unexpected answer: $other'),
+    };
+  });
+
+  @override
   Future<CloudDecision> decideRefund({
     required String id,
     required String refundId,

@@ -3,6 +3,7 @@
 library;
 
 import '../../../core/clock/clock_time.dart';
+import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../../../core/settings/setting_defaults.dart';
 import '../../auth/domain/idle_lock.dart';
@@ -42,8 +43,46 @@ final class PriceChange {
   /// For the confirmation dialog: `Deluxe: 700 → 750`.
   String get label => '$name: ${_amount(oldPrice)} → ${_amount(newPrice)}';
 
+  /// More than half the old price, up or down: asks first.
+  bool get isBig => isBigPriceChange(oldPrice, newPrice);
+
   static String _amount(int kes) => formatKes(kes).substring('KES '.length);
 }
+
+/// A change of more than 50% either way (desk and phone ask "Are you
+/// sure?" before saving it). Exactly 50% doesn't ask.
+bool isBigPriceChange(int oldPrice, int newPrice) =>
+    (newPrice - oldPrice).abs() * 2 > oldPrice;
+
+/// "Are you sure? Deluxe goes from KES 700 to KES 1,200 a night, 71% more."
+String bigPriceChangeQuestion(PriceChange c) {
+  final diff = c.newPrice - c.oldPrice;
+  final percent = (diff.abs() * 100 / c.oldPrice).round();
+  return 'Are you sure? ${c.name} goes from ${formatKes(c.oldPrice)} to '
+      '${formatKes(c.newPrice)} a night, $percent% '
+      '${diff > 0 ? 'more' : 'less'}.';
+}
+
+/// An owner's price edit lost the race to another one (the cloud's
+/// `change_prices` answered `stale`): "Deluxe was changed to KES 750 on the
+/// desk · Sat 24 Oct, 09:29. Check it and save again." [where] is "on the
+/// desk" or "on the phone".
+String priceMovedOnMessage(
+  String name, {
+  required int currentPrice,
+  required DateTime at,
+  required String where,
+}) =>
+    '$name was changed to ${formatKes(currentPrice)} $where · '
+    '${formatDayDateComma(at)}. Check it and save again.';
+
+/// "on the desk", "on the phone" or "elsewhere", for [priceMovedOnMessage]
+/// from the cloud's `changed_on`.
+String priceChangedWhere(String? changedOn) => switch (changedOn) {
+  'desk' => 'on the desk',
+  'phone' => 'on the phone',
+  _ => 'elsewhere',
+};
 
 /// The prices in [edits] (category id → new price) that differ from
 /// [categories], in category order.
