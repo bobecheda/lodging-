@@ -111,6 +111,24 @@ void main() {
     expect(await env.auditFor('price.update'), hasLength(1));
   });
 
+  testWidgets('a change of more than 50% asks "Are you sure?" first; a '
+      'small one doesn’t', (tester) async {
+    await openPrices(tester, asOwner: true);
+    await enterKey(tester, 'price.${SeedIds.deluxe}', '1200');
+    await enterKey(tester, 'price.${SeedIds.vip}', '1100');
+    await tapKey(tester, 'prices.save');
+    expect(
+      find.text(
+        'Are you sure? Deluxe goes from KES 700 to KES 1,200 a night, 71% '
+        'more.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(ValueKey('confirm.big.${SeedIds.vip}')), findsNothing);
+    await tapKey(tester, 'confirm.cancel');
+    expect(await priceOf(SeedIds.deluxe), 700);
+  });
+
   testWidgets('a price over 100,000 is refused before any dialog', (
     tester,
   ) async {

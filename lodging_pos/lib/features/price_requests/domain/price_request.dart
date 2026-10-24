@@ -249,9 +249,22 @@ PriceRequest withdrawForClosedCategory(
 String? staleError(PriceRequest request, BedCategory category) =>
     category.pricePerNight == request.oldPrice
     ? null
-    : '${category.name} is now ${formatKes(category.pricePerNight)}, not '
-          '${formatKesPlain(request.oldPrice)}. Reject this request or ask '
-          'for a new one.';
+    : staleText(
+        category.name,
+        currentPrice: category.pricePerNight,
+        oldPrice: request.oldPrice,
+      );
+
+/// "Deluxe is now KES 750, not 700. Reject this request or ask for a new
+/// one.": the owner's card (desk and phone) for a request the price has
+/// moved on from.
+String staleText(
+  String categoryName, {
+  required int currentPrice,
+  required int oldPrice,
+}) =>
+    '$categoryName is now ${formatKes(currentPrice)}, not '
+    '${formatKesPlain(oldPrice)}. Reject this request or ask for a new one.';
 
 /// BR-2: approves [request]; the caller sets [category]'s price to
 /// `newPrice` in the same transaction.

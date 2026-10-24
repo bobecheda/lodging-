@@ -2,15 +2,18 @@ import '../../../core/settings/setting_defaults.dart';
 import '../../bed_board/domain/bed_board.dart';
 import '../../dashboard/domain/dashboard.dart';
 import '../../payments/domain/payment_rules.dart';
+import '../../price_requests/domain/price_request.dart';
+import '../../setup/domain/bed_category.dart';
 import '../../setup/domain/prices_settings.dart';
 import '../../setup/domain/rooms.dart';
 import '../domain/owner_today.dart';
 import 'owner_cloud.dart';
 import 'owner_rows.dart';
 
-/// Reads the owner's Today from the cloud, the same figures as the desk's
-/// `DashboardRepository` and bed board, column by column: only what the
-/// cards show.
+/// Reads the owner's Today, Money, Beds and Prices from the cloud: the same
+/// figures as the desk's `DashboardRepository`, bed board and Prices,
+/// column by column (only what the screens show; no guest columns but the
+/// masked names of refunds waiting).
 class OwnerTodayRepository {
   OwnerTodayRepository(this._cloud);
 
@@ -43,6 +46,9 @@ class OwnerTodayRepository {
       ))
         s.str('key'): s.str('value'),
     };
+    final categories = await _categories();
+    final (rooms, bedsByCategory) = await _rooms(categories);
+    final requests = await _priceRequests(users, categories);
     return OwnerToday(
       lodgingName: settings[SettingKeys.lodgingName] ?? '',
       graceMinutes: graceMinutesFrom(settings[SettingKeys.graceMinutes]),
@@ -50,10 +56,26 @@ class OwnerTodayRepository {
       moves: await _moves(from, voided),
       stays: await _stayNights(from, voided),
       refunds: await _refundsAwaiting(name),
-      prices: await _pricesAwaiting(users),
+      prices: [
+        for (final r in requests)
+          PriceAwaiting(
+            requestId: r.id,
+            categoryName: r.category.name,
+            oldPrice: r.request.oldPrice,
+            newPrice: r.request.newPrice,
+            requestedBy: r.requestedByName,
+            requestedByRole: r.requestedByRole,
+            requestedAt: r.request.requestedAt,
+          ),
+      ],
       shortages: shortages(await _closedShifts(since, name), now),
       voids: await _paymentVoids(voids, since, name),
-      rooms: await _rooms(),
+      rooms: rooms,
+      categories: [
+        for (final c in categories.values)
+          OwnerCategory(c, beds: bedsByCategory[c.id] ?? 0),
+      ],
+      priceRequests: requests,
     );
   }
 
@@ -61,12 +83,14 @@ class OwnerTodayRepository {
     for (final d in await _cloud.rows('desk_status', [
       'device_id',
       'reported_at',
+      'last_push_at',
       'pending',
       'problem',
     ]))
       DeskStatus(
         deviceId: d.str('device_id'),
         reportedAt: d.time('reported_at'),
+        lastPushAt: d.timeOrNull('last_push_at'),
         pending: d.integer('pending'),
         problem: d.strOrNull('problem'),
       ),
@@ -111,7 +135,13 @@ class OwnerTodayRepository {
     DateTime from,
     Set<(String, String)> voided,
   ) async {
-    const columns = ['stay_id', 'nights', 'period_end'];
+    const columns = [
+      'stay_id',
+      'nights',
+      'period_end',
+      'category_name',
+      'price_per_night',
+    ];
     final recent = await _cloud.rows(
       'stay_charges',
       columns,
@@ -156,6 +186,8 @@ class OwnerTodayRepository {
             ChargeNights(
               nights: c.integer('nights'),
               periodEnd: c.time('period_end'),
+              categoryName: c.str('category_name'),
+              pricePerNight: c.integer('price_per_night'),
             ),
           );
     }
@@ -225,9 +257,29 @@ class OwnerTodayRepository {
     ];
   }
 
-  /// Price requests waiting for the owner (BR-2), oldest first.
-  Future<List<PriceAwaiting>> _pricesAwaiting(
+  /// Every category, in sort order.
+  Future<Map<String, BedCategory>> _categories() async => {
+    for (final c in await _cloud.rows('bed_categories', [
+      'id',
+      'name',
+      'price_per_night',
+      'sort_order',
+      'is_active',
+    ], orderBy: 'sort_order'))
+      c.str('id'): BedCategory(
+        id: c.str('id'),
+        name: c.str('name'),
+        pricePerNight: c.integer('price_per_night'),
+        sortOrder: c.integer('sort_order'),
+        isActive: c['is_active']! as bool,
+      ),
+  };
+
+  /// Price requests waiting for the owner (BR-2): not withdrawn, not
+  /// decided; oldest first.
+  Future<List<OwnerPriceRequest>> _priceRequests(
     Map<String, ({String name, String role})> users,
+    Map<String, BedCategory> categories,
   ) async {
     final open = await _cloud.rows(
       'price_requests',
@@ -236,6 +288,7 @@ class OwnerTodayRepository {
         'category_id',
         'old_price',
         'new_price',
+        'reason',
         'requested_by',
         'requested_at',
       ],
@@ -253,22 +306,24 @@ class OwnerTodayRepository {
       ))
         d.str('request_id'),
     };
-    final categories = {
-      for (final c in await _cloud.rows('bed_categories', ['id', 'name']))
-        c.str('id'): c.str('name'),
-    };
     return [
       for (final r in open)
         if (!decided.contains(r.str('id')))
-          PriceAwaiting(
-            requestId: r.str('id'),
-            categoryName: categories[r.str('category_id')] ?? '—',
-            oldPrice: r.integer('old_price'),
-            newPrice: r.integer('new_price'),
-            requestedBy: users[r.str('requested_by')]?.name ?? '—',
-            requestedByRole: users[r.str('requested_by')]?.role ?? '',
-            requestedAt: r.time('requested_at'),
-          ),
+          if (categories[r.str('category_id')] case final category?)
+            OwnerPriceRequest(
+              request: PriceRequest(
+                id: r.str('id'),
+                categoryId: category.id,
+                oldPrice: r.integer('old_price'),
+                newPrice: r.integer('new_price'),
+                reason: r.strOrNull('reason'),
+                requestedBy: r.str('requested_by'),
+                requestedAt: r.time('requested_at'),
+              ),
+              category: category,
+              requestedByName: users[r.str('requested_by')]?.name ?? '—',
+              requestedByRole: users[r.str('requested_by')]?.role ?? '',
+            ),
     ];
   }
 
@@ -329,8 +384,12 @@ class OwnerTodayRepository {
     ]..sort((a, b) => a.voidedAt.compareTo(b.voidedAt));
   }
 
-  /// Active rooms and beds, with their active stays (for the counts only).
-  Future<List<BoardRoom>> _rooms() async {
+  /// Active rooms and beds with their active stays' paid-until (statuses
+  /// only: no guest, not even an id), and active beds per category (in
+  /// any room, as the desk's Prices counts them).
+  Future<(List<BoardRoom>, Map<String, int>)> _rooms(
+    Map<String, BedCategory> categories,
+  ) async {
     final rooms = await _cloud.rows(
       'rooms',
       ['id', 'room_number'],
@@ -342,14 +401,11 @@ class OwnerTodayRepository {
       where: const [Eq('is_active', true)],
       orderBy: 'label',
     );
-    final categories = {
-      for (final c in await _cloud.rows('bed_categories', [
-        'id',
-        'name',
-        'price_per_night',
-      ]))
-        c.str('id'): c,
-    };
+    final bedsByCategory = <String, int>{};
+    for (final b in beds) {
+      final id = b.str('category_id');
+      bedsByCategory[id] = (bedsByCategory[id] ?? 0) + 1;
+    }
     final stays = {
       for (final s in await _cloud.rows(
         'stays',
@@ -358,7 +414,7 @@ class OwnerTodayRepository {
       ))
         s.str('bed_id'): s,
     };
-    return [
+    final board = [
       for (final room in rooms)
         BoardRoom(
           id: room.str('id'),
@@ -370,9 +426,9 @@ class OwnerTodayRepository {
                   BoardBed(
                     id: b.str('id'),
                     label: BedLabel.parse(b.str('label')),
-                    categoryId: category.str('id'),
-                    categoryName: category.str('name'),
-                    pricePerNight: category.integer('price_per_night'),
+                    categoryId: category.id,
+                    categoryName: category.name,
+                    pricePerNight: category.pricePerNight,
                     cleanliness: Cleanliness.parse(b.str('cleanliness')),
                     stay: switch (stays[b.str('id')]) {
                       final s? => BoardStay(
@@ -387,5 +443,6 @@ class OwnerTodayRepository {
           ],
         ),
     ];
+    return (board, bedsByCategory);
   }
 }

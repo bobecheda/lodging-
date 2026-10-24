@@ -5,8 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/clock/clock.dart';
 import '../data/owner_cloud.dart';
+import '../data/owner_prices_repository.dart';
 import '../data/owner_refunds_repository.dart';
 import '../data/owner_today_repository.dart';
+import '../data/server_clock.dart';
 import '../data/supabase_owner_cloud.dart';
 import '../domain/owner_today.dart';
 
@@ -21,6 +23,11 @@ OwnerCloud? ownerCloud(Ref ref) {
   if (url.isEmpty || anonKey.isEmpty) return null;
   return SupabaseOwnerCloud(url: url, anonKey: anonKey);
 }
+
+/// The phone's clock corrected to the server's on every load: every "now"
+/// on the phone comes from here.
+@Riverpod(keepAlive: true)
+ServerClock ownerClock(Ref ref) => ServerClock(ref.watch(clockProvider));
 
 /// How often Today reloads while open; null turns the timer off (tests).
 @Riverpod(keepAlive: true)
@@ -98,8 +105,9 @@ class OwnerTodayData extends _$OwnerTodayData {
 
   Future<OwnerSnapshot> _load() async {
     final cloud = ref.read(ownerCloudProvider)!;
-    final now = ref.read(clockProvider).now();
     try {
+      // Day, week and month boundaries come from the server's time.
+      final now = await ref.read(ownerClockProvider).sync(cloud);
       return OwnerSnapshot(
         await OwnerTodayRepository(cloud).load(now),
         loadedAt: now,
@@ -130,6 +138,10 @@ class OwnerTodayData extends _$OwnerTodayData {
     }
   }
 }
+
+@Riverpod(keepAlive: true)
+OwnerPricesRepository ownerPricesRepository(Ref ref) =>
+    OwnerPricesRepository(ref.watch(ownerCloudProvider)!);
 
 @Riverpod(keepAlive: true)
 OwnerRefundsRepository ownerRefundsRepository(Ref ref) =>

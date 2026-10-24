@@ -791,12 +791,38 @@ class SyncEngine implements CloudWrites {
   }
 
   @override
-  Future<void> setPrices(Map<String, int> prices, DateTime at) async {
+  Future<void> changePrices(List<PriceEdit> edits, DateTime at) async {
     await _readyForCloudWrite(owner: true);
-    await _call(() async {
-      await _cloud.setPrices(prices, at);
-      return const Decided();
-    });
+    final PriceChangeAnswer answer;
+    try {
+      answer = await _cloud.changePrices(edits, at, deviceId: _deviceId);
+    } on CloudOffline {
+      throw const NeedsInternet();
+    } on CloudSignInRefused {
+      throw const OwnerCloudSignInNeeded();
+    } on CloudRefused catch (e) {
+      throw RefusedByCloud(e.message);
+    }
+    switch (answer) {
+      case PricesChanged():
+        return;
+      case PriceMovedOn(
+        :final categoryId,
+        :final currentPrice,
+        :final changedAt,
+        :final changedOn,
+      ):
+        throw PriceChangedElsewhere(
+          categoryId: categoryId,
+          currentPrice: currentPrice,
+          at: changedAt,
+          changedOn: changedOn,
+        );
+      case PriceCategoryMissing():
+        throw const SyncBlocked(
+          'This desk’s latest changes haven’t reached the cloud yet.',
+        );
+    }
   }
 
   @override

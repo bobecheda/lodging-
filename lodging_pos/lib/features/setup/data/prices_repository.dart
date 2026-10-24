@@ -94,11 +94,30 @@ class PricesRepository {
 
     if (_connected) {
       try {
-        await _cloud!.setPrices({
-          for (final c in pending) c.categoryId: c.newPrice,
-        }, _audit.now());
+        // Each over the price this desk has: refused if one moved on.
+        await _cloud!.changePrices([
+          for (final c in pending)
+            PriceEdit(
+              categoryId: c.categoryId,
+              expected: c.oldPrice,
+              price: c.newPrice,
+            ),
+        ], _audit.now());
       } on OwnerCloudSignInNeeded {
         rethrow;
+      } on PriceChangedElsewhere catch (e) {
+        throw CategoryRuleViolation(
+          priceMovedOnMessage(
+            [
+                  for (final c in pending)
+                    if (c.categoryId == e.categoryId) c.name,
+                ].firstOrNull ??
+                'A category',
+            currentPrice: e.currentPrice,
+            at: e.at,
+            where: priceChangedWhere(e.changedOn),
+          ),
+        );
       } on CloudWriteRefused catch (e) {
         throw CategoryRuleViolation(
           cloudRefusalMessage(

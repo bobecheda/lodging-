@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/theme/theme.dart';
+import 'owner_beds_screen.dart';
+import 'owner_money_screen.dart';
 import 'owner_more_screen.dart';
+import 'owner_prices_screen.dart';
 import 'owner_providers.dart';
 import 'owner_refund_screen.dart';
 import 'owner_shell.dart';
@@ -91,15 +94,18 @@ GoRouter ownerRouter(Ref ref) {
               refundId: state.uri.queryParameters['id'] ?? '',
             ),
           ),
-          for (final (path, title) in [
-            (OwnerRoutes.money, 'Money'),
-            (OwnerRoutes.beds, 'Beds'),
-            (OwnerRoutes.prices, 'Prices'),
-          ])
-            GoRoute(
-              path: path,
-              builder: (_, _) => ComingSoonScreen(title: title),
-            ),
+          GoRoute(
+            path: OwnerRoutes.money,
+            builder: (_, _) => const OwnerMoneyScreen(),
+          ),
+          GoRoute(
+            path: OwnerRoutes.beds,
+            builder: (_, _) => const OwnerBedsScreen(),
+          ),
+          GoRoute(
+            path: OwnerRoutes.prices,
+            builder: (_, _) => const OwnerPricesScreen(),
+          ),
           GoRoute(
             path: OwnerRoutes.more,
             builder: (_, _) => const OwnerMoreScreen(),

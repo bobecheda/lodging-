@@ -89,7 +89,14 @@ class DashboardRepository {
     for (final c in all) {
       byStay
           .putIfAbsent(c.stayId, () => [])
-          .add(ChargeNights(nights: c.nights, periodEnd: c.periodEnd));
+          .add(
+            ChargeNights(
+              nights: c.nights,
+              periodEnd: c.periodEnd,
+              categoryName: c.categoryName,
+              pricePerNight: c.pricePerNight,
+            ),
+          );
     }
     return [
       for (final MapEntry(key: stayId, value: list) in byStay.entries)

@@ -297,6 +297,43 @@ class FakeCloud implements Cloud {
     }
   }
 
+  /// Where each category's price was last edited: (device id, time).
+  final priceEdits = <String, (String, DateTime)>{};
+
+  @override
+  Future<PriceChangeAnswer> changePrices(
+    List<PriceEdit> edits,
+    DateTime at, {
+    required String deviceId,
+  }) async {
+    _asOwner();
+    for (final e in edits) {
+      final category = row('bed_categories', e.categoryId);
+      if (category == null) return const PriceCategoryMissing();
+      final current = category['price_per_night']! as int;
+      if (current != e.expected) {
+        final (device, editedAt) =
+            priceEdits[e.categoryId] ??
+            ('', DateTime.parse(category['price_updated_at']! as String));
+        return PriceMovedOn(
+          categoryId: e.categoryId,
+          currentPrice: current,
+          changedAt: editedAt,
+          changedOn: device.isEmpty
+              ? null
+              : devices.containsKey(device)
+              ? 'desk'
+              : 'phone',
+        );
+      }
+    }
+    for (final e in edits) {
+      _price(e.categoryId, e.price, at);
+      priceEdits[e.categoryId] = (deviceId, at);
+    }
+    return const PricesChanged();
+  }
+
   /// The owner's path sets a price: pulled afterwards.
   void _price(String categoryId, int price, DateTime at) {
     row('bed_categories', categoryId)!
@@ -437,8 +474,11 @@ class FakeCloud implements Cloud {
   }
 
   /// The owner changes a price on the phone.
-  void setPriceElsewhere(String categoryId, int price, DateTime at) =>
-      _price(categoryId, price, at);
+  /// The owner changes a price on the phone.
+  void setPriceElsewhere(String categoryId, int price, DateTime at) {
+    _price(categoryId, price, at);
+    priceEdits[categoryId] = ('phone-1', at);
+  }
 
   /// An audit row written on the phone (the owner's action).
   void phoneAudit(String id, {required String action, required DateTime at}) {

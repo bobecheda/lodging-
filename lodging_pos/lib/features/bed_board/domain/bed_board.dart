@@ -2,11 +2,22 @@
 /// the clock and its cleanliness. Never stored. Pure Dart.
 library;
 
+import '../../../core/clock/nairobi.dart';
 import '../../setup/domain/rooms.dart';
 import '../../stays/domain/stay_rules.dart';
 
 /// One per bed, never overlapping: Overstay > In use > To clean > Ready.
-enum BoardStatus { ready, occupied, overstay, toClean }
+enum BoardStatus {
+  ready('Ready'),
+  occupied('Occupied'),
+  overstay('Overstay'),
+  toClean('Needs cleaning');
+
+  const BoardStatus(this.label);
+
+  /// As the desk's board and the owner's Beds name it.
+  final String label;
+}
 
 /// The active stay on a bed, as the board shows it.
 final class BoardStay {
@@ -112,6 +123,39 @@ final class OverstayAlert {
   final String guestName;
   final DateTime paidUntil;
   final DateTime graceEnded;
+}
+
+/// "1 overstay", "3 overstays": the owner's alert heading.
+String overstayCount(int n) => n == 1 ? '1 overstay' : '$n overstays';
+
+/// The owner's alert line (Figma "05 Beds"): where, and how long past the
+/// grace period; never who. "Room 5 B · paid to 10:00, now 40 min past the
+/// grace period."
+String overstayLine(OverstayAlert a, {required DateTime now}) {
+  final sameDay = _nairobiDate(a.paidUntil) == _nairobiDate(now);
+  final paidTo = sameDay
+      ? formatTime(a.paidUntil)
+      : formatWhen(a.paidUntil, now: now);
+  return 'Room ${a.roomNumber} ${a.label.code} · paid to $paidTo, now '
+      '${formatOverdue(now.difference(a.graceEnded))} past the grace period.';
+}
+
+DateTime _nairobiDate(DateTime utc) {
+  final t = toNairobi(utc);
+  return DateTime.utc(t.year, t.month, t.day);
+}
+
+/// "40 min", "2 h 15 min", "1 day", "2 days 3 h"; "under a minute".
+String formatOverdue(Duration d) {
+  if (d.inMinutes < 1) return 'under a minute';
+  if (d.inMinutes < 60) return '${d.inMinutes} min';
+  if (d.inHours < 24) {
+    final m = d.inMinutes % 60;
+    return '${d.inHours} h${m == 0 ? '' : ' $m min'}';
+  }
+  final days = d.inDays;
+  final h = d.inHours % 24;
+  return '$days ${days == 1 ? 'day' : 'days'}${h == 0 ? '' : ' $h h'}';
 }
 
 /// The board after filtering, with counts for the chips and the overstays

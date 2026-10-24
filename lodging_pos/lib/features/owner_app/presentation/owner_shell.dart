@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/brand_wordmark.dart';
-import '../../../core/clock/clock.dart';
 import '../../dashboard/domain/dashboard.dart';
 import '../domain/owner_today.dart';
 import 'owner_app.dart';
@@ -62,7 +61,7 @@ class _OwnerShellState extends ConsumerState<OwnerShell> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Header(now: ref.watch(clockProvider).now()),
+          _Header(now: ref.watch(ownerClockProvider).now()),
           Expanded(child: widget.child),
         ],
       ),
@@ -183,34 +182,6 @@ class _Header extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Money, Beds and Prices until owner-app-2.
-class ComingSoonScreen extends StatelessWidget {
-  const ComingSoonScreen({super.key, required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(Space.x16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(header: true, child: Text(title, style: t.pageTitle)),
-          const SizedBox(height: Space.x8),
-          Text(
-            'Coming in the next update.',
-            key: const ValueKey('owner.comingSoon'),
-            style: t.body.copyWith(color: c.inkSoft),
-          ),
-        ],
       ),
     );
   }
