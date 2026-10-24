@@ -5,5 +5,10 @@
 *.env
 secrets*.json
 
+# The Android upload key and its passwords (lodging_pos/docs/release.md).
+key.properties
+*.jks
+*.keystore
+
 # Editor settings are per machine.
 .vscode/

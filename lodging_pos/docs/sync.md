@@ -27,6 +27,25 @@ The desk works offline and sends everything it writes to Supabase. The owner's d
 - **Run the desk under one Windows user.** Under another Windows user the secret is missing; the pill shows "Sync problem · details" and the owner uses **Reconnect this desk** in the Sync panel (their email and desk password; the desk gets a new secret).
 - **The owner's cloud account** is created when the owner first connects a desk, with the owner's email and the **same password** as on the desk. Signing in on the desk while online also signs the owner in to the cloud, quietly. If that sign-in is missing (signed in offline, or the password was changed on the phone), the first decision asks "Sign in to the cloud" once.
 
+## The owner's phone
+
+The owner's app (`lib/main_owner.dart`, Android and web; `features/owner_app`) has no database: it reads the cloud and decides through the same functions as the desk. It is built with the same `secrets.json` (`flutter run -t lib/main_owner.dart --dart-define-from-file=secrets.json`); release builds are in `docs/release.md`.
+
+- **Sign-in.** The owner's cloud email and password (the desk's owner password). Only an account whose `app_metadata.role` is `owner` gets in. The session is kept in the phone's secure storage, so the owner stays signed in until **Sign out** (More); if the cloud stops renewing it (e.g. the password was changed elsewhere), the app goes back to sign-in.
+- **Today.** The desk's cards (`dashboard/presentation/today_cards.dart`), worked out by the same `dashboard/domain` functions, plus under Needs your attention: shifts closed short in the last 7 days and payments voided in the last 7 days. The header shows when the figures were loaded ("Updated 4 min ago") and the desk's last heartbeat ("Desk online · 3 changes waiting", or "Desk offline · last seen today 09:18" after 11 minutes without one). Today reloads when the app opens, when it comes back to the front, on pull-down and every 60 s.
+- **Offline.** The last figures stay on screen, in memory only, marked "Offline · showing today 09:30". Deciding needs the internet ("Approving needs an internet connection.").
+- **Refunds.** The desk's "Refund request" layout (`refunds/presentation/refund_detail_body.dart`) and rules (`refunds/domain/refund.dart`), then `decide_refund` with the server's time (`server_time()`, never the phone's clock), this install's id as `device_id` (made once, kept in secure storage) and its `refund.approve` / `refund.reject` audit row. The first decision anywhere wins; the desk pulls it.
+- **Privacy.** The phone downloads only the columns a screen shows. It never reads `guests` (only the `owner_guests` view: id, name and masked phone, with the caller's row-level security), never an ID number, a full phone, the M-Pesa payout phone or a password hash, and never `*`. `test/policy/owner_app_test.dart` fails if its code names any of them, and checks the app imports nothing of the desk's database, sync or files; `FakeOwnerCloud` refuses them in every test. Nothing guest-related is written to the phone's storage: only the sign-in session and the install id.
+- **Forgot password.** There is no reset screen or recovery email (the apps have no page to land on). You reset it by hand in the Supabase dashboard, **SQL Editor**, choosing a temporary password and giving it to the owner in person or by phone:
+
+  ```sql
+  update auth.users
+  set encrypted_password = extensions.crypt('<temporary password>', extensions.gen_salt('bf'))
+  where email = '<the owner''s email>';
+  ```
+
+  Then delete that query from the SQL Editor's history. The owner signs in with it and changes it (Change password, owner-app-3). Until owner-app-3 the desk keeps accepting its own copy of the old password; set the same one there too (Change password on the desk).
+
 ## Setting up the cloud (once)
 
 You need the Supabase project ("UB40 Lodging", eu-central-1) and Node.js (for `npx`). Docker is not needed.

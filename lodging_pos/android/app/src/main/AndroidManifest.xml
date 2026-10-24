@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The owner's app reads the cloud. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="lodging_pos"
         android:name="${applicationName}"

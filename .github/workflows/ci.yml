@@ -4,7 +4,9 @@
 # required status check for main ("CI / checks"). `cloud` runs the Supabase
 # migrations and their pgTAP tests on a local Supabase. `windows-build` builds the
 # desk app on pushes to main (and on demand) and keeps the release folder
-# for 14 days. GitGuardian runs separately as a GitHub app.
+# for 14 days. `owner-app-build` compiles the owner's phone app for Android
+# and the web (never with the real signing key). GitGuardian runs separately
+# as a GitHub app.
 #
 # Actions are pinned to exact commits (the version is in the comment), so a
 # moved tag can't change what runs.
@@ -106,6 +108,36 @@ jobs:
 
       - name: pgTAP tests
         run: supabase test db
+
+  owner-app-build:
+    # The owner's phone app (lib/main_owner.dart) must compile for Android
+    # and the web. The APK is signed with the runner's debug key: the real
+    # upload key (android/key.properties) never exists here, and nothing is
+    # kept or hosted (docs/release.md).
+    name: owner-app-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache-key: pub-${{ runner.os }}-${{ hashFiles('lodging_pos/pubspec.lock') }}
+
+      - name: Get packages
+        run: flutter pub get --enforce-lockfile
+
+      - name: No signing key here
+        run: test ! -e android/key.properties
+
+      - name: Build the APK (release, debug-signed)
+        run: flutter build apk --release -t lib/main_owner.dart
+
+      - name: Build for the web
+        run: flutter build web --release -t lib/main_owner.dart
 
   windows-build:
     name: windows-build
