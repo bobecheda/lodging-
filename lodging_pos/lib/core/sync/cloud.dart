@@ -54,12 +54,44 @@ final class DeskHeartbeat {
     required this.lastPushAt,
     required this.problem,
     required this.appVersion,
+    this.clockOffsetSeconds,
   });
 
   final int pending;
   final DateTime? lastPushAt;
   final String? problem;
   final String appVersion;
+
+  /// The PC's clock minus the server's (positive: the PC is fast), from the
+  /// last pull; null before the first.
+  final int? clockOffsetSeconds;
+}
+
+/// One row the pull brought: an owner's decision, a category's price (id,
+/// `price_per_night`, `price_updated_at` only) or another device's audit
+/// row, with its `server_seq`.
+final class PulledRow {
+  const PulledRow(this.table, this.seq, this.row);
+
+  final String table;
+  final int seq;
+  final Map<String, Object?> row;
+}
+
+/// A page of the pull, oldest first.
+final class PullPage {
+  const PullPage({
+    required this.serverTime,
+    required this.rows,
+    required this.more,
+  });
+
+  /// The server's clock when it answered.
+  final DateTime serverTime;
+  final List<PulledRow> rows;
+
+  /// More rows wait after this page.
+  final bool more;
 }
 
 /// The answer to an owner decision or a withdrawal.
@@ -158,6 +190,10 @@ abstract interface class Cloud {
   });
 
   Future<void> heartbeat(DeskHeartbeat heartbeat);
+
+  /// What the owner's side wrote after [after] (`server_seq`), oldest
+  /// first, at most [limit] rows.
+  Future<PullPage> pullChanges(int after, {required int limit});
 
   // ── The owner's sign-in ────────────────────────────────────────────────
 

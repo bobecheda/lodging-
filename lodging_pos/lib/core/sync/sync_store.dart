@@ -37,6 +37,15 @@ class SyncStore {
   /// The refused row stopping the queue: "table id: message".
   static const problem = 'problem';
 
+  /// The pull's cursor: the last `server_seq` applied (sync-2).
+  static const pullAfter = 'pull.after';
+
+  /// The PC's clock minus the server's, in seconds, from the last pull.
+  static const clockOffset = 'clock.offset_s';
+
+  /// "on" while the clock warning lasts (an episode), across restarts.
+  static const clockWarning = 'clock.warning';
+
   // ── What goes up, in which order ───────────────────────────────────────
 
   /// The desk's tables, parents before children, so every foreign key

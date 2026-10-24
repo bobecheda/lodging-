@@ -179,7 +179,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
       key: const ValueKey('sync.retry'),
       label: 'Try again now',
       busy: _busy,
-      onPressed: engine == null ? null : () => _run(engine.pushNow),
+      onPressed: engine == null ? null : () => _run(engine.syncNow),
     );
 
     final List<Widget> body = switch (status.phase) {
@@ -312,6 +312,20 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
               formatKesPlain(pending),
               key: const ValueKey('sync.pending'),
             ),
+            if (status.clockWarning && status.clockOffset != null) ...[
+              const SizedBox(height: Space.x16),
+              Note.warning(
+                clockWarningText(status.clockOffset!),
+                key: const ValueKey('sync.clock'),
+                title: 'Check the PC’s clock',
+              ),
+              const SizedBox(height: Space.x4),
+              Text(
+                'Checkout times and late charges use this PC’s clock. Nothing '
+                'is blocked meanwhile.',
+                style: t.small.copyWith(color: c.inkSoft),
+              ),
+            ],
             const SizedBox(height: Space.x20),
             ...body,
             if (_problem != null) ...[

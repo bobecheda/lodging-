@@ -83,7 +83,7 @@ void main() {
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
     supervisor = await env.createFirstSupervisor(testSetup);
     owner = env.owner!;
-    cloud = FakeCloud();
+    cloud = FakeCloud(serverNow: () => env.clock.now());
     secrets = MemoryDeskSecretStore();
     store = SyncStore(env.db);
     engine = newEngine();

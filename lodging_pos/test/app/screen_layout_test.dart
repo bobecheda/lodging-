@@ -632,7 +632,7 @@ void main() {
   group('Cloud sync (sync-1)', () {
     testWidgets("the owner's Connect form with every error", (tester) async {
       await withOwner();
-      env.cloud = FakeCloud();
+      env.cloud = FakeCloud(serverNow: () => env.clock.now());
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'owner', 'owner-pass');
       await tapKey(tester, 'shell.syncPill');
@@ -645,11 +645,46 @@ void main() {
       );
     });
 
+    testWidgets('a PC clock 12 minutes slow: the pill and the panel', (
+      tester,
+    ) async {
+      await withOwner();
+      final cloud = env.cloud = FakeCloud(
+        serverNow: () => env.clock.now().add(const Duration(minutes: 12)),
+      );
+      final engine = SyncEngine(
+        db: env.db,
+        audit: env.audit,
+        cloud: cloud,
+        secrets: env.deskSecrets,
+        clock: env.clock,
+      );
+      await engine.start();
+      await engine.connect(
+        owner: env.owner!,
+        installCode: 'ABCD-EFGH-JKLM',
+        ownerEmail: testOwnerEmail,
+        password: testOwner.password,
+      );
+      await engine.ownerLeft();
+      cloud.dropDeskSession();
+      final app = await pumpDeskApp(tester, env);
+      await signInAs(tester, 'supervisor', 'super-pass');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.home,
+        'PC clock 12 min slow · fix',
+      );
+      await tapKey(tester, 'shell.syncPill');
+      await expectCleanLayout(tester, app, Routes.home, 'Check the PC’s clock');
+    });
+
     testWidgets('a desk that needs reconnecting, as the owner sees it', (
       tester,
     ) async {
       await withOwner();
-      final cloud = env.cloud = FakeCloud();
+      final cloud = env.cloud = FakeCloud(serverNow: () => env.clock.now());
       final engine = SyncEngine(
         db: env.db,
         audit: env.audit,

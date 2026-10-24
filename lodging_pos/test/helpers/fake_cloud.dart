@@ -9,8 +9,16 @@ const testOwnerEmail = 'owner@lodging.test';
 /// desk relies on: rows upserted only when newer, audit rows and decisions
 /// insert-if-absent, a category's price never taken from a desk update,
 /// the desk pushing only after its first upload and never the owner's
-/// tables, the first decision winning. Switches simulate trouble.
+/// tables, the first decision winning; payments, charges and voids
+/// insert-only (a payment's print_count only rises); the pull by
+/// server_seq. Switches simulate trouble.
 class FakeCloud implements Cloud {
+  FakeCloud({this.serverNow});
+
+  /// The server's clock, for the pull's `server_time` (set it to the
+  /// test's clock, skewed to test the clock check).
+  DateTime Function()? serverNow;
+
   /// table → key → row.
   final tables = <String, Map<String, Map<String, Object?>>>{};
 
@@ -51,6 +59,15 @@ class FakeCloud implements Cloud {
   var _deskSignedIn = false;
   var _ownerSignedIn = false;
 
+  /// The server_seq of each row's last write ("table/key").
+  final _seqs = <String, int>{};
+  var _seq = 0;
+
+  /// Calls to [pullChanges], with the cursor each asked from.
+  final pulls = <int>[];
+
+  void _stamp(String table, String key) => _seqs['$table/$key'] = ++_seq;
+
   int count(String table) => tables[table]?.length ?? 0;
   Map<String, Object?>? row(String table, String key) => tables[table]?[key];
 
@@ -80,9 +97,21 @@ class FakeCloud implements Cloud {
     final existing = rows[key];
     if (existing == null) {
       rows[key] = {...r.row};
+      _stamp(r.table, key);
       return;
     }
-    if (r.table == 'audit_log' || SyncStore.ownerTables.contains(r.table)) {
+    if (r.table == 'audit_log' ||
+        r.table == 'stay_charges' ||
+        r.table == 'voids' ||
+        SyncStore.ownerTables.contains(r.table)) {
+      return;
+    }
+    if (r.table == 'payments') {
+      final count = r.row['print_count']! as int;
+      if (count > (existing['print_count']! as int)) {
+        existing['print_count'] = count;
+        _stamp(r.table, key);
+      }
       return;
     }
     final incoming = DateTime.parse(r.row['updated_at']! as String);
@@ -91,9 +120,12 @@ class FakeCloud implements Cloud {
     rows[key] = {
       ...r.row,
       'created_at': existing['created_at'],
-      if (r.table == 'bed_categories')
+      if (r.table == 'bed_categories') ...{
         'price_per_night': existing['price_per_night'],
+        'price_updated_at': existing['price_updated_at'],
+      },
     };
+    _stamp(r.table, key);
   }
 
   int _apply(List<CloudRow> rows, Set<String> allowed) {
@@ -214,6 +246,7 @@ class FakeCloud implements Cloud {
       ..['withdrawn_by'] = by
       ..['withdraw_reason'] = reason
       ..['updated_at'] = at.toIso8601String();
+    _stamp('price_requests', requestId);
     return const Decided();
   }
 
@@ -260,8 +293,16 @@ class FakeCloud implements Cloud {
     for (final MapEntry(:key, :value) in prices.entries) {
       final category = row('bed_categories', key);
       if (category == null) throw CloudRefused('category $key is missing');
-      category['price_per_night'] = value;
+      _price(key, value, at);
     }
+  }
+
+  /// The owner's path sets a price: pulled afterwards.
+  void _price(String categoryId, int price, DateTime at) {
+    row('bed_categories', categoryId)!
+      ..['price_per_night'] = price
+      ..['price_updated_at'] = at.toIso8601String();
+    _stamp('bed_categories', categoryId);
   }
 
   Map<String, Object?>? _decisionFor(String table, String column, String id) {
@@ -322,6 +363,7 @@ class FakeCloud implements Cloud {
       at,
       deviceId,
     );
+    _stamp('refund_decisions', id);
     return const Decided();
   }
 
@@ -356,28 +398,98 @@ class FakeCloud implements Cloud {
       at,
       deviceId,
     );
+    _stamp('price_decisions', id);
     if (decision == 'approved') {
-      category['price_per_night'] = request['new_price'];
+      _price(category['id']! as String, request['new_price']! as int, at);
     }
     return const Decided();
   }
 
-  /// Another device (the phone) decides first.
+  /// Another device (the phone) decides first; approving a price request
+  /// sets its price too.
   void decideElsewhere(
     String table,
     String column,
     String target, {
     required String decision,
     required DateTime at,
+    String? note,
   }) {
-    tables.putIfAbsent(table, () => {})['elsewhere-$target'] = _decision(
-      'elsewhere-$target',
+    final id = 'elsewhere-$target';
+    tables.putIfAbsent(table, () => {})[id] = _decision(
+      id,
       column,
       target,
       decision,
-      decision == 'rejected' ? 'Decided on the phone' : null,
+      note ?? (decision == 'rejected' ? 'Decided on the phone' : null),
       at,
       'phone',
+    );
+    _stamp(table, id);
+    if (table == 'price_decisions' && decision == 'approved') {
+      final request = row('price_requests', target)!;
+      _price(
+        request['category_id']! as String,
+        request['new_price']! as int,
+        at,
+      );
+    }
+  }
+
+  /// The owner changes a price on the phone.
+  void setPriceElsewhere(String categoryId, int price, DateTime at) =>
+      _price(categoryId, price, at);
+
+  /// An audit row written on the phone (the owner's action).
+  void phoneAudit(String id, {required String action, required DateTime at}) {
+    tables.putIfAbsent('audit_log', () => {})[id] = {
+      'id': id,
+      'created_at': at.toIso8601String(),
+      'updated_at': at.toIso8601String(),
+      'device_id': 'phone',
+      'at': at.toIso8601String(),
+      'operation_id': 'op-$id',
+      'user_id': ownerUserId,
+      'action': action,
+      'entity': 'refund_decisions',
+      'entity_id': id,
+      'before_json': null,
+      'after_json': '{}',
+    };
+    _stamp('audit_log', id);
+  }
+
+  @override
+  Future<PullPage> pullChanges(int after, {required int limit}) async {
+    _asDesk();
+    pulls.add(after);
+    final now = serverNow;
+    if (now == null) throw StateError('Set FakeCloud.serverNow.');
+    final rows = <PulledRow>[];
+    for (final MapEntry(key: tag, value: seq) in _seqs.entries) {
+      if (seq <= after) continue;
+      final [table, key] = tag.split('/');
+      final r = row(table, key)!;
+      switch (table) {
+        case 'refund_decisions' || 'price_decisions':
+          rows.add(PulledRow(table, seq, {...r}));
+        case 'bed_categories' when r['price_updated_at'] != null:
+          rows.add(
+            PulledRow(table, seq, {
+              'id': r['id'],
+              'price_per_night': r['price_per_night'],
+              'price_updated_at': r['price_updated_at'],
+            }),
+          );
+        case 'audit_log' when r['device_id'] != _deskDevice:
+          rows.add(PulledRow(table, seq, {...r}));
+      }
+    }
+    rows.sort((a, b) => a.seq.compareTo(b.seq));
+    return PullPage(
+      serverTime: now(),
+      rows: rows.take(limit).toList(),
+      more: rows.length > limit,
     );
   }
 

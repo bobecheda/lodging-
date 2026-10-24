@@ -370,7 +370,10 @@ class _SyncPill extends ConsumerWidget {
             pending: waiting,
             now: ref.watch(clockProvider).now(),
           );
-    final (background, foreground, icon) = switch (syncTone(status.phase)) {
+    final (background, foreground, icon) = switch (syncTone(
+      status.phase,
+      clockWarning: status.clockWarning,
+    )) {
       SyncTone.calm => (
         c.marineTint,
         c.marine,
@@ -378,7 +381,13 @@ class _SyncPill extends ConsumerWidget {
             ? Icons.cloud_upload_outlined
             : Icons.cloud_done_outlined,
       ),
-      SyncTone.waiting => (c.butter, c.butterText, Icons.cloud_off_outlined),
+      SyncTone.waiting => (
+        c.butter,
+        c.butterText,
+        status.clockWarning && status.phase == SyncPhase.online
+            ? Icons.schedule_rounded
+            : Icons.cloud_off_outlined,
+      ),
       SyncTone.problem => (c.redTint, c.redText, Icons.error_outline_rounded),
     };
     return Material(

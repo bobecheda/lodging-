@@ -55,24 +55,27 @@ final class PricesRepositoryProvider
 
 String _$pricesRepositoryHash() => r'9ba49dccd891954e2c61143688faf13bcaacd862';
 
-/// Categories in sort order with their active beds. Invalidate after a write.
+/// Categories in sort order with their active beds, live: a price pulled
+/// from the owner's phone shows at once.
 
 @ProviderFor(categoryUsage)
 final categoryUsageProvider = CategoryUsageProvider._();
 
-/// Categories in sort order with their active beds. Invalidate after a write.
+/// Categories in sort order with their active beds, live: a price pulled
+/// from the owner's phone shows at once.
 
 final class CategoryUsageProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<CategoryUsage>>,
           List<CategoryUsage>,
-          FutureOr<List<CategoryUsage>>
+          Stream<List<CategoryUsage>>
         >
     with
         $FutureModifier<List<CategoryUsage>>,
-        $FutureProvider<List<CategoryUsage>> {
-  /// Categories in sort order with their active beds. Invalidate after a write.
+        $StreamProvider<List<CategoryUsage>> {
+  /// Categories in sort order with their active beds, live: a price pulled
+  /// from the owner's phone shows at once.
   CategoryUsageProvider._()
     : super(
         from: null,
@@ -89,17 +92,17 @@ final class CategoryUsageProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<CategoryUsage>> $createElement(
+  $StreamProviderElement<List<CategoryUsage>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<CategoryUsage>> create(Ref ref) {
+  Stream<List<CategoryUsage>> create(Ref ref) {
     return categoryUsage(ref);
   }
 }
 
-String _$categoryUsageHash() => r'43703adf2baa3b862a37a1cc5384fdc38c93e77e';
+String _$categoryUsageHash() => r'19dd69a62e467f4ada767fec15fa5f3b27a0c7d3';
 
 /// The settings form as stored. Invalidate after saving.
 

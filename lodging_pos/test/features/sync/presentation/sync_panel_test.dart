@@ -27,7 +27,7 @@ void main() {
     env.clock.set(nairobiInstant(2026, 10, 15, 19));
     await env.createFirstSupervisor(testSetup);
     owner = env.owner!;
-    cloud = env.cloud = FakeCloud();
+    cloud = env.cloud = FakeCloud(serverNow: () => env.clock.now());
   });
   tearDown(() => env.close());
 

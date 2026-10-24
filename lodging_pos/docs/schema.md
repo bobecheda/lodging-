@@ -320,7 +320,7 @@ Audit JSON redacts `users.password_hash` and guests' `full_name` as `"[redacted]
 | sent_at | DATETIME | null until synced; set at once for a row the cloud wrote first (an owner decision, a price, a withdrawal); sent rows are dropped after 30 days |
 
 ### sync_state (v9, local only)
-`key` primary key, `value` TEXT. `desk_email` (connected), `owner_email`, `upload.max_seq` / `upload.total` / `upload.sent` / `upload.after.<table>` (the first upload, resumable), `upload.done`, `last_push_at`, `problem`. Written only by `SyncStore`, never audited or synced.
+`key` primary key, `value` TEXT. `desk_email` (connected), `owner_email`, `upload.max_seq` / `upload.total` / `upload.sent` / `upload.after.<table>` (the first upload, resumable), `upload.done`, `last_push_at`, `problem`; since sync-2 `pull.after` (the pull's cursor), `clock.offset_s` (PC minus server, seconds) and `clock.warning` ("on" during a clock-warning episode). No drift migration: they are keys. Written only by `SyncStore`, never audited or synced.
 
 ### receipt_counter (local only)
 `device_id` primary key, `next_number` INT. Incremented inside the same transaction as the payment or refund payout; both draw from this one counter.
