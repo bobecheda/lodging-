@@ -54,6 +54,17 @@ class PricesRepository {
 
   bool get _connected => _cloud?.active ?? false;
 
+  /// [categories], again whenever a category, bed or room changes, e.g. a
+  /// price pulled from the owner's phone (sync-2).
+  Stream<List<CategoryUsage>> watchCategories() async* {
+    yield await categories();
+    await for (final _ in _db.tableUpdates(
+      TableUpdateQuery.onAllTables([_db.bedCategories, _db.beds, _db.rooms]),
+    )) {
+      yield await categories();
+    }
+  }
+
   /// All categories in sort order, with their active beds.
   Future<List<CategoryUsage>> categories() async {
     final rows = await (_db.select(

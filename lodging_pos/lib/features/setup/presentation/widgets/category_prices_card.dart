@@ -57,16 +57,19 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
     super.dispose();
   }
 
-  /// Keeps one input per category; a stored price that changed (e.g. after
-  /// saving) resets its input.
+  /// Keeps one input per category. When a stored price changes (saved here,
+  /// or pulled from the owner's phone), an untouched input takes the new
+  /// price; a typed one keeps what was typed, its "was" hint now showing the
+  /// new stored price, and Save compares against that.
   void _sync(List<CategoryUsage> categories) {
     for (final u in categories) {
       final c = u.category;
       final controller = _prices.putIfAbsent(c.id, TextEditingController.new);
-      if (_stored[c.id] != c.pricePerNight) {
-        _stored[c.id] = c.pricePerNight;
-        controller.text = _plain(c.pricePerNight);
-      }
+      final before = _stored[c.id];
+      if (before == c.pricePerNight) continue;
+      _stored[c.id] = c.pricePerNight;
+      final untouched = before == null || parseKes(controller.text) == before;
+      if (untouched) controller.text = _plain(c.pricePerNight);
     }
   }
 

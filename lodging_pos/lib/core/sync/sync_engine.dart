@@ -8,6 +8,7 @@ import '../database/database.dart';
 import 'cloud.dart';
 import 'cloud_writes.dart';
 import 'desk_secret_store.dart';
+import 'pulled_rows.dart';
 import 'sync_store.dart';
 
 enum SyncPhase {
@@ -38,6 +39,8 @@ final class SyncStatus {
     this.uploadTotal = 0,
     this.problem,
     this.needsReconnect = false,
+    this.clockOffset,
+    this.clockWarning = false,
   });
 
   final SyncPhase phase;
@@ -50,14 +53,21 @@ final class SyncStatus {
 
   /// The desk's key is missing or refused: "Reconnect this desk".
   final bool needsReconnect;
+
+  /// The PC's clock minus the server's, from the last pull (sync-2).
+  final Duration? clockOffset;
+
+  /// The PC's clock is more than 5 minutes off (until it's back within 4).
+  final bool clockWarning;
 }
 
-/// Sync for this desk (sync-1, docs/sync.md): connecting, the resumable
-/// first upload, the ordered push of the outbox, the heartbeat, and the
-/// writes that go to the cloud first ([CloudWrites]).
+/// Sync for this desk (docs/sync.md): connecting, the resumable first
+/// upload, the ordered push of the outbox, the heartbeat, the writes that go
+/// to the cloud first ([CloudWrites]) and, since sync-2, the pull of what the
+/// owner's side wrote and the clock check.
 ///
-/// With null intervals no timer runs; tests call [pushNow],
-/// [continueFirstUpload] and [sendHeartbeat] themselves.
+/// With null intervals no timer runs; tests call [syncNow], [pushNow],
+/// [pullNow], [continueFirstUpload] and [sendHeartbeat] themselves.
 class SyncEngine implements CloudWrites {
   SyncEngine({
     required AppDatabase db,
@@ -67,6 +77,7 @@ class SyncEngine implements CloudWrites {
     required this._clock,
     this.appVersion = '1.0.0',
     this.batchSize = 200,
+    this.pullPageSize = 500,
     this.pushEvery,
     this.heartbeatEvery,
     this.nudgeDelay = const Duration(seconds: 2),
@@ -85,6 +96,7 @@ class SyncEngine implements CloudWrites {
 
   final String appVersion;
   final int batchSize;
+  final int pullPageSize;
   final Duration? pushEvery;
   final Duration? heartbeatEvery;
   final Duration nudgeDelay;
@@ -92,10 +104,24 @@ class SyncEngine implements CloudWrites {
   /// How long sent outbox rows are kept.
   static const keepSent = Duration(days: 30);
   static const _firstRetry = Duration(seconds: 5);
+
+  /// The clock check: warn above [clockWarnAbove] either way, clear only
+  /// within [clockClearWithin]; a measurement from a slower round trip than
+  /// [clockMaxRoundTrip] is ignored.
+  static const clockWarnAbove = Duration(minutes: 5);
+  static const clockClearWithin = Duration(minutes: 4);
+  static const clockMaxRoundTrip = Duration(seconds: 10);
   static const _maxRetry = Duration(minutes: 5);
 
   final _changes = StreamController<SyncStatus>.broadcast();
   var _status = const SyncStatus(phase: SyncPhase.notConnected);
+
+  /// What the push and upload last said; [_publish] adds the pull's problem
+  /// and the clock.
+  var _base = const SyncStatus(phase: SyncPhase.notConnected);
+  String? _pullProblem;
+  Duration? _clockOffset;
+  var _clockWarning = false;
 
   late String _deviceId;
   var _connected = false;
@@ -111,16 +137,12 @@ class SyncEngine implements CloudWrites {
   DateTime? _retryAt;
   DateTime? _prunedAt;
   Future<void>? _pushing;
+  Future<void>? _pulling;
   Future<void>? _uploading;
   var _disposed = false;
 
   SyncStatus get status => _status;
   Stream<SyncStatus> get changes => _changes.stream;
-
-  void _emit(SyncStatus status) {
-    _status = status;
-    if (!_disposed) _changes.add(status);
-  }
 
   void _emitPhase(
     SyncPhase phase, {
@@ -128,16 +150,38 @@ class SyncEngine implements CloudWrites {
     bool needsReconnect = false,
     int? uploadSent,
     int? uploadTotal,
-  }) => _emit(
-    SyncStatus(
+  }) {
+    _base = SyncStatus(
       phase: phase,
       lastSyncAt: _lastSyncAt,
-      uploadSent: uploadSent ?? _status.uploadSent,
-      uploadTotal: uploadTotal ?? _status.uploadTotal,
+      uploadSent: uploadSent ?? _base.uploadSent,
+      uploadTotal: uploadTotal ?? _base.uploadTotal,
       problem: problem,
       needsReconnect: needsReconnect,
-    ),
-  );
+    );
+    _publish();
+  }
+
+  /// The status shown: a pull conflict outranks online or offline (a push
+  /// problem already outranks it); the clock rides along in every state.
+  void _publish() {
+    final base = _base;
+    final pull = _pullProblem;
+    final pullStops =
+        pull != null &&
+        (base.phase == SyncPhase.online || base.phase == SyncPhase.offline);
+    _status = SyncStatus(
+      phase: pullStops ? SyncPhase.problem : base.phase,
+      lastSyncAt: base.lastSyncAt,
+      uploadSent: base.uploadSent,
+      uploadTotal: base.uploadTotal,
+      problem: pullStops ? pull : base.problem,
+      needsReconnect: base.needsReconnect,
+      clockOffset: _clockOffset,
+      clockWarning: _clockWarning,
+    );
+    if (!_disposed) _changes.add(_status);
+  }
 
   // ── Starting ───────────────────────────────────────────────────────────
 
@@ -149,6 +193,9 @@ class SyncEngine implements CloudWrites {
       await _store.get(SyncStore.lastPushAt) ?? '',
     );
     _lastSyncAt = _lastPushAt;
+    final offset = int.tryParse(await _store.get(SyncStore.clockOffset) ?? '');
+    _clockOffset = offset == null ? null : Duration(seconds: offset);
+    _clockWarning = await _store.get(SyncStore.clockWarning) == 'on';
     if (!_connected) {
       _emitPhase(SyncPhase.notConnected);
       return;
@@ -157,7 +204,7 @@ class SyncEngine implements CloudWrites {
     if (!await _ensureDesk()) return;
     await prune();
     if (_uploadDone) {
-      await pushNow();
+      await syncNow();
     } else {
       await continueFirstUpload();
     }
@@ -178,7 +225,13 @@ class SyncEngine implements CloudWrites {
   void _tick() {
     final due = _retryAt;
     if (due != null && _clock.now().isBefore(due)) return;
-    unawaited(_uploadDone ? _push() : continueFirstUpload());
+    unawaited(_uploadDone ? _round() : continueFirstUpload());
+  }
+
+  /// Push, then pull.
+  Future<void> _round() async {
+    await _push();
+    await _pull();
   }
 
   /// Signs the desk in from its stored key if it isn't yet. False (and the
@@ -281,7 +334,7 @@ class SyncEngine implements CloudWrites {
     await _cloud.signInDesk(credentials);
     await _cloud.signInOwner(email, password);
     if (_uploadDone) {
-      await pushNow();
+      await syncNow();
     } else {
       await continueFirstUpload();
     }
@@ -390,7 +443,7 @@ class SyncEngine implements CloudWrites {
     );
     _failures = 0;
     _retryAt = null;
-    await pushNow();
+    await syncNow();
   }
 
   Future<int> _uploadTable(
@@ -426,10 +479,16 @@ class SyncEngine implements CloudWrites {
     _nudgeTimer = Timer(nudgeDelay, () => unawaited(_push()));
   }
 
-  /// Pushes everything queued now ("Retry" too).
+  /// Pushes everything queued now.
   Future<void> pushNow() {
     _retryAt = null;
     return _push();
+  }
+
+  /// Pushes, then pulls, now ("Try again now", start, after the upload).
+  Future<void> syncNow() {
+    _retryAt = null;
+    return _round();
   }
 
   Future<void> _push() =>
@@ -492,12 +551,100 @@ class SyncEngine implements CloudWrites {
     if (pushEvery == null) return;
     _retryTimer = Timer(delay, () {
       _retryAt = null;
-      unawaited(_uploadDone ? _push() : continueFirstUpload());
+      unawaited(_uploadDone ? _round() : continueFirstUpload());
     });
   }
 
   /// When the next retry is due, if one is waiting.
   DateTime? get retryAt => _retryAt;
+
+  // ── Pulling (sync-2) ───────────────────────────────────────────────────
+
+  /// Pulls what the owner's side wrote since the cursor, now.
+  Future<void> pullNow() => _pull();
+
+  Future<void> _pull() =>
+      _pulling ??= _pullLoop().whenComplete(() => _pulling = null);
+
+  /// Page after page by `server_seq` until the cloud has no more: after
+  /// days offline it simply catches up. Each page and the cursor are
+  /// written in one transaction ([PulledRows]). It runs whatever the push
+  /// queue is doing; a clash stops it (and only it) with a problem.
+  Future<void> _pullLoop() async {
+    if (!_connected || !_uploadDone || !await _ensureDesk()) return;
+    final rows = PulledRows(_db, _clock);
+    while (true) {
+      final after = await _store.getInt(SyncStore.pullAfter);
+      final sent = _clock.now();
+      final PullPage page;
+      try {
+        page = await _cloud.pullChanges(after, limit: pullPageSize);
+      } on CloudOffline {
+        if (_base.phase == SyncPhase.online) _offline();
+        return;
+      } on CloudSignInRefused {
+        await _ensureDesk();
+        return;
+      } on CloudRefused catch (e) {
+        _pullProblem = 'The pull was refused: ${e.message}';
+        _publish();
+        return;
+      }
+      await _checkClock(page.serverTime, sent: sent, received: _clock.now());
+      try {
+        await rows.apply(
+          page.rows,
+          cursor: page.rows.isEmpty ? after : page.rows.last.seq,
+        );
+      } on PullConflict catch (e) {
+        _pullProblem = e.message;
+        _publish();
+        return;
+      }
+      if (_pullProblem != null) {
+        _pullProblem = null;
+        _publish();
+      }
+      if (!page.more) return;
+    }
+  }
+
+  // ── The clock check (sync-2) ──────────────────────────────────────────
+
+  /// Compares this PC's clock with the server's from a pull answered
+  /// between [sent] and [received]; the PC's moment is taken halfway.
+  Future<void> _checkClock(
+    DateTime server, {
+    required DateTime sent,
+    required DateTime received,
+  }) async {
+    final roundTrip = received.difference(sent);
+    if (roundTrip > clockMaxRoundTrip) return;
+    final pcAt = sent.add(roundTrip ~/ 2);
+    final offset = Duration(seconds: pcAt.difference(server).inSeconds);
+    _clockOffset = offset;
+    await _store.set(SyncStore.clockOffset, offset.inSeconds);
+    final off = offset.abs();
+    if (!_clockWarning && off > clockWarnAbove) {
+      _clockWarning = true;
+      await _store.set(SyncStore.clockWarning, 'on');
+      await _audit.recordEvent(
+        action: 'sync.clock_warning',
+        userId: null,
+        entity: 'sync',
+        entityId: _deviceId,
+        details: {
+          'offset_seconds': offset.inSeconds,
+          'pc_time': pcAt.toUtc().toIso8601String(),
+          'server_time': server.toUtc().toIso8601String(),
+        },
+      );
+    } else if (_clockWarning && off < clockClearWithin) {
+      _clockWarning = false;
+      await _store.set(SyncStore.clockWarning, 'off');
+    }
+    _publish();
+  }
 
   // ── Heartbeat and tidying ──────────────────────────────────────────────
 
@@ -512,6 +659,7 @@ class SyncEngine implements CloudWrites {
           lastPushAt: _lastPushAt,
           problem: _status.problem,
           appVersion: appVersion,
+          clockOffsetSeconds: _clockOffset?.inSeconds,
         ),
       );
     } on Exception {

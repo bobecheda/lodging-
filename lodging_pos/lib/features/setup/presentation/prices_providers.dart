@@ -15,10 +15,11 @@ PricesRepository pricesRepository(Ref ref) => PricesRepository(
   cloud: ref.watch(cloudWritesProvider),
 );
 
-/// Categories in sort order with their active beds. Invalidate after a write.
+/// Categories in sort order with their active beds, live: a price pulled
+/// from the owner's phone shows at once.
 @riverpod
-Future<List<CategoryUsage>> categoryUsage(Ref ref) =>
-    ref.watch(pricesRepositoryProvider).categories();
+Stream<List<CategoryUsage>> categoryUsage(Ref ref) =>
+    ref.watch(pricesRepositoryProvider).watchCategories();
 
 /// The settings form as stored. Invalidate after saving.
 @riverpod

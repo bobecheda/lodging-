@@ -182,9 +182,31 @@ class SupabaseCloud implements Cloud {
         'p_last_push_at': h.lastPushAt == null ? null : _time(h.lastPushAt!),
         'p_problem': h.problem,
         'p_app_version': h.appVersion,
+        'p_clock_offset': h.clockOffsetSeconds,
       },
     ),
   );
+
+  @override
+  Future<PullPage> pullChanges(int after, {required int limit}) =>
+      _asDesk((c) async {
+        final answer = (await c.rpc(
+          'pull_changes',
+          params: {'p_after': after, 'p_limit': limit},
+        ) as Map).cast<String, Object?>();
+        return PullPage(
+          serverTime: DateTime.parse(answer['server_time']! as String),
+          more: answer['more'] == true,
+          rows: [
+            for (final r in (answer['rows']! as List).cast<Map>())
+              PulledRow(
+                r['table']! as String,
+                (r['seq']! as num).toInt(),
+                (r['row']! as Map).cast<String, Object?>(),
+              ),
+          ],
+        );
+      });
 
   @override
   Future<void> signInOwner(String email, String password) => _guard(

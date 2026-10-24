@@ -52,7 +52,7 @@ void main() {
     await env.checkOut(stay, by: desk);
     refundId = (await env.db.select(env.db.refunds).getSingle()).id;
 
-    cloud = FakeCloud();
+    cloud = FakeCloud(serverNow: () => env.clock.now());
     engine = SyncEngine(
       db: env.db,
       audit: env.audit,
