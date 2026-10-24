@@ -75,14 +75,17 @@ select throws_ok($$select * from public.owner_guests$$, '42501', null,
   'anon can''t read the view');
 reset role;
 
+-- The view joins a computed part, so Postgres can't write through it at
+-- all (55000, checked before permissions), and no write is granted anyway.
 select tests_o.act('owner');
 select throws_ok($$insert into public.owner_guests (id, full_name)
-  values ('g-9', 'X')$$, '42501', null, 'nobody writes through the view');
+  values ('g-9', 'X')$$, '55000', null, 'nobody writes through the view');
 reset role;
 
 select ok(
-  not has_table_privilege('authenticated', 'public.owner_guests', 'UPDATE'),
-  'no update either');
+  not has_table_privilege('authenticated', 'public.owner_guests',
+    'INSERT, UPDATE, DELETE, TRUNCATE'),
+  'no write is granted on the view');
 
 select * from finish();
 rollback;
