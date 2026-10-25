@@ -89,7 +89,55 @@ final class LoginServiceProvider
   }
 }
 
-String _$loginServiceHash() => r'adba22c33a822798cdee6c72a72ed1636d5a375b';
+String _$loginServiceHash() => r'16d2db419877395d26d1f22f0ab040fff811856e';
+
+@ProviderFor(ownerPasswordService)
+final ownerPasswordServiceProvider = OwnerPasswordServiceProvider._();
+
+final class OwnerPasswordServiceProvider
+    extends
+        $FunctionalProvider<
+          OwnerPasswordService,
+          OwnerPasswordService,
+          OwnerPasswordService
+        >
+    with $Provider<OwnerPasswordService> {
+  OwnerPasswordServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ownerPasswordServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerPasswordServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<OwnerPasswordService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OwnerPasswordService create(Ref ref) {
+    return ownerPasswordService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OwnerPasswordService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OwnerPasswordService>(value),
+    );
+  }
+}
+
+String _$ownerPasswordServiceHash() =>
+    r'2f7476b021ffc247e6a3e457796670d09958dbbe';
 
 /// Where first-run setup stands ([SetupState]). Until it is ready, only the
 /// setup screen is reachable; once ready, it is unreachable.

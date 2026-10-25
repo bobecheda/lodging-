@@ -3,7 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/password_hasher.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../data/login_service.dart';
+import '../data/owner_password_service.dart';
 import '../data/user_repository.dart';
 import '../domain/setup.dart';
 
@@ -21,6 +23,14 @@ LoginService loginService(Ref ref) => LoginService(
   ref.watch(userRepositoryProvider),
   ref.watch(passwordHasherProvider),
   ref.watch(auditWriterProvider),
+  cloud: ref.watch(syncEngineProvider),
+);
+
+@Riverpod(keepAlive: true)
+OwnerPasswordService ownerPasswordService(Ref ref) => OwnerPasswordService(
+  ref.watch(userRepositoryProvider),
+  ref.watch(passwordHasherProvider),
+  cloud: ref.watch(syncEngineProvider),
 );
 
 /// Where first-run setup stands ([SetupState]). Until it is ready, only the

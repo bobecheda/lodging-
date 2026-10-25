@@ -74,13 +74,27 @@ abstract interface class OwnerCloud {
   Future<void> signOut();
 
   /// The rows of [table] matching every filter in [where], with only
-  /// [columns] (never `*`), ordered by [orderBy] when given. All pages.
+  /// [columns] (never `*`), ordered by [orderBy] when given (latest first
+  /// with [newestFirst]). All pages, or the first [limit] rows.
   Future<List<Map<String, Object?>>> rows(
     String table,
     List<String> columns, {
     List<Where> where = const [],
     String? orderBy,
+    bool newestFirst = false,
+    int? limit,
   });
+
+  /// Checks [password] is the signed-in owner's (by signing in again).
+  /// Throws [OwnerSignInRefused] or [OwnerCloudOffline].
+  Future<void> verifyPassword(String password);
+
+  /// Sets the signed-in owner's password.
+  Future<void> updatePassword(String password);
+
+  /// Ends the owner's other sessions (the desk's owner sign-in); this
+  /// phone stays signed in, and the desk's own sign-in is untouched.
+  Future<void> signOutOtherSessions();
 
   /// Calls the cloud function [name].
   Future<Object?> rpc(String name, Map<String, Object?> params);

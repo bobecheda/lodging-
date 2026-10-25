@@ -46,6 +46,13 @@ class SyncStore {
   /// "on" while the clock warning lasts (an episode), across restarts.
   static const clockWarning = 'clock.warning';
 
+  /// The owner's password (owner-app-3): the latest change the cloud
+  /// recorded (from the pull, ISO time) and the change this desk's own copy
+  /// is up to date with. While the first is later, the desk's copy is
+  /// refused at sign-in.
+  static const passwordCloudAt = 'password.cloud_at';
+  static const passwordDeskAt = 'password.desk_at';
+
   // ── What goes up, in which order ───────────────────────────────────────
 
   /// The desk's tables, parents before children, so every foreign key

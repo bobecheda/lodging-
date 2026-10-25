@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:uuid/uuid.dart';
+
 import '../audit/audit_writer.dart';
+import '../auth/owner_password.dart';
 import '../auth/user_account.dart';
 import '../clock/clock.dart';
 import '../database/database.dart';
@@ -68,7 +71,7 @@ final class SyncStatus {
 ///
 /// With null intervals no timer runs; tests call [syncNow], [pushNow],
 /// [pullNow], [continueFirstUpload] and [sendHeartbeat] themselves.
-class SyncEngine implements CloudWrites {
+class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   SyncEngine({
     required AppDatabase db,
     required this._audit,
@@ -371,6 +374,74 @@ class SyncEngine implements CloudWrites {
 
   /// The owner signed out or the screen locked.
   Future<void> ownerLeft() => _cloud.signOutOwner();
+
+  // ── The owner's password (owner-app-3) ─────────────────────────────────
+
+  Future<DateTime?> _time(String key) async {
+    final v = await _store.get(key);
+    return v == null ? null : DateTime.parse(v).toUtc();
+  }
+
+  @override
+  Future<bool> isOwnerPasswordBehind() async {
+    if (!_connected) return false;
+    return ownerPasswordBehind(
+      cloudAt: await _time(SyncStore.passwordCloudAt),
+      deskAt: await _time(SyncStore.passwordDeskAt),
+    );
+  }
+
+  @override
+  Future<void> confirmOwnerPassword(String password) async {
+    try {
+      await signInOwner(password);
+    } on CloudSignInRefused {
+      throw const OwnerPasswordRefused();
+    }
+  }
+
+  @override
+  Future<void> ownerPasswordCaughtUp() async {
+    final cloud = await _store.get(SyncStore.passwordCloudAt);
+    if (cloud != null) await _store.set(SyncStore.passwordDeskAt, cloud);
+  }
+
+  @override
+  Future<DateTime> changeOwnerPassword({
+    required String current,
+    required String next,
+  }) async {
+    await confirmOwnerPassword(current);
+    try {
+      // Recorded first: if setting it then fails, the desk only asks for
+      // one online sign-in, which the unchanged password passes.
+      final at = await _cloud.recordPasswordChange(
+        id: const Uuid().v4(),
+        deviceId: _deviceId,
+      );
+      await _cloud.updateOwnerPassword(next);
+      return at;
+    } on CloudOffline {
+      throw const NeedsInternet();
+    } on CloudSignInRefused {
+      throw const OwnerCloudSignInNeeded();
+    } on CloudRefused catch (e) {
+      throw RefusedByCloud(
+        'The new password wasn’t saved in the cloud (${e.message}). Try '
+        'again.',
+      );
+    }
+  }
+
+  @override
+  Future<void> ownerPasswordChangedHere(DateTime at) async {
+    final cloud = await _time(SyncStore.passwordCloudAt);
+    final iso = at.toUtc().toIso8601String();
+    await _store.set(SyncStore.passwordDeskAt, iso);
+    if (cloud == null || at.isAfter(cloud)) {
+      await _store.set(SyncStore.passwordCloudAt, iso);
+    }
+  }
 
   // ── The first upload ───────────────────────────────────────────────────
 

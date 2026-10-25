@@ -7,6 +7,16 @@ import 'fixtures.dart';
 
 export 'fake_cloud.dart' show testOwnerEmail;
 
+/// The audit entities whose before/after details the phone may read
+/// (owner-app-3); `refunds` is not one: its rows carry `payout_phone`.
+const auditDetailEntitiesAllowed = {
+  'bed_categories',
+  'refund_decisions',
+  'price_decisions',
+  'voids',
+  'shifts',
+};
+
 /// Columns the owner's phone must never download: guests' full phones and
 /// ID numbers, the M-Pesa payout phone, and password hashes.
 const forbiddenOwnerColumns = {
@@ -66,6 +76,44 @@ class FakeOwnerCloud implements OwnerCloud {
   /// Every RPC call, in order: (name, params).
   final calls = <(String, Map<String, Object?>)>[];
 
+  /// The password calls, in order: verify, update, signOutOthers.
+  final passwordSteps = <String>[];
+
+  /// The owner's cloud password.
+  String password = testOwner.password;
+
+  /// The next password update fails.
+  var failPasswordUpdate = false;
+
+  @override
+  Future<void> verifyPassword(String password) async {
+    _online();
+    _signedIn();
+    passwordSteps.add('verify');
+    if (password != this.password) {
+      throw const OwnerSignInRefused('That isn’t your current password.');
+    }
+  }
+
+  @override
+  Future<void> updatePassword(String password) async {
+    _online();
+    _signedIn();
+    passwordSteps.add('update');
+    if (failPasswordUpdate) {
+      failPasswordUpdate = false;
+      throw const OwnerCloudRefused('The password could not be updated.');
+    }
+    this.password = password;
+  }
+
+  @override
+  Future<void> signOutOtherSessions() async {
+    _online();
+    _signedIn();
+    passwordSteps.add('signOutOthers');
+  }
+
   static const owner = OwnerSignIn(userId: 'u-owner', email: testOwnerEmail);
 
   /// Where each category's price was last edited: (device id, time). A
@@ -104,7 +152,7 @@ class FakeOwnerCloud implements OwnerCloud {
     required String password,
   }) async {
     _online();
-    if (email.trim() != testOwnerEmail || password != testOwner.password) {
+    if (email.trim() != testOwnerEmail || password != this.password) {
       throw const OwnerSignInRefused('Wrong email or password.');
     }
     return _session = stored = owner;
@@ -119,9 +167,22 @@ class FakeOwnerCloud implements OwnerCloud {
     List<String> columns, {
     List<Where> where = const [],
     String? orderBy,
+    bool newestFirst = false,
+    int? limit,
   }) async {
     if (columns.isEmpty || columns.contains('*')) {
       fail('The phone read $table without naming its columns.');
+    }
+    if (columns.contains('before_json') || columns.contains('after_json')) {
+      final entities = where
+          .whereType<InList>()
+          .where((w) => w.column == 'entity')
+          .firstOrNull;
+      if (table != 'audit_log' ||
+          entities == null ||
+          !auditDetailEntitiesAllowed.containsAll(entities.values)) {
+        fail('The phone read audit details beyond the allowed entities.');
+      }
     }
     final forbidden = columns.toSet().intersection(forbiddenOwnerColumns);
     if (forbidden.isNotEmpty) fail('The phone read $forbidden from $table.');
@@ -151,8 +212,14 @@ class FakeOwnerCloud implements OwnerCloud {
     ];
     if (orderBy != null) {
       out.sort((a, b) => '${a[orderBy]}'.compareTo('${b[orderBy]}'));
+      if (newestFirst) {
+        final reversed = out.reversed.toList();
+        out
+          ..clear()
+          ..addAll(reversed);
+      }
     }
-    return out;
+    return limit == null ? out : out.take(limit).toList();
   }
 
   static bool _matches(Map<String, Object?> row, Where w) {
@@ -250,6 +317,20 @@ class FakeOwnerCloud implements OwnerCloud {
         }
         _audit(params['p_audit']);
         return {'status': 'decided'};
+      case 'record_password_change':
+        final rows = table('owner_password_changes');
+        final id = params['p_id']! as String;
+        final existing = rows.where((r) => r['id'] == id).firstOrNull;
+        if (existing != null) return existing['changed_at'];
+        final at = serverNow().toUtc().toIso8601String();
+        rows.add({
+          'id': id,
+          'device_id': params['p_device_id'],
+          'user_id': owner.userId,
+          'changed_at': at,
+        });
+        _audit(params['p_audit']);
+        return at;
       case 'change_prices':
         final changes = [
           for (final c in params['p_changes']! as List)
@@ -327,9 +408,19 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
   String at(Duration ago) => now.subtract(ago).toIso8601String();
   cloud.tables.addAll({
     'users': [
-      {'id': 'u-owner', 'full_name': 'Amina Owner', 'role': 'owner'},
-      {'id': 'u-sup', 'full_name': 'Grace Akinyi', 'role': 'supervisor'},
-      {'id': 'u-desk', 'full_name': 'John Otieno', 'role': 'receptionist'},
+      for (final (id, name, username, role, active) in [
+        ('u-owner', 'Amina Owner', 'owner', 'owner', true),
+        ('u-sup', 'Grace Akinyi', 'grace', 'supervisor', true),
+        ('u-desk', 'John Otieno', 'john', 'receptionist', true),
+        ('u-old', 'Peter Mwangi', 'peter', 'receptionist', false),
+      ])
+        {
+          'id': id,
+          'full_name': name,
+          'username': username,
+          'role': role,
+          'is_active': active,
+        },
     ],
     'settings': [
       {'key': 'lodging_name', 'value': 'UB40'},
@@ -414,6 +505,7 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
     'payments': [
       {
         'id': 'p-1',
+        'shift_id': 's-2',
         'receipt_number': 'R-000041',
         'received_at': at(const Duration(days: 1, hours: 15)),
         'amount': 2800,
@@ -421,6 +513,7 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
       },
       {
         'id': 'p-2',
+        'shift_id': 's-3',
         'receipt_number': 'R-000042',
         'received_at': at(const Duration(hours: 2)),
         'amount': 1400,
@@ -428,6 +521,7 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
       },
       {
         'id': 'p-3',
+        'shift_id': 's-3',
         'receipt_number': 'R-000043',
         'received_at': at(const Duration(hours: 1)),
         'amount': 700,
@@ -490,15 +584,43 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
         'id': 's-1',
         'user_id': 'u-desk',
         'status': 'closed',
+        'opened_at': at(const Duration(hours: 13)),
         'closed_at': at(const Duration(hours: 3)),
+        'opening_float': 500,
+        'expected_cash': 5000,
+        'expected_paybill': 1400,
+        'counted_cash': 4700,
         'variance': -300,
+        'close_note': 'Gave change from my pocket',
+        'closed_by': 'u-desk',
       },
       {
         'id': 's-2',
         'user_id': 'u-desk',
         'status': 'closed',
+        'opened_at': at(const Duration(days: 1, hours: 10)),
         'closed_at': at(const Duration(days: 1)),
-        'variance': 0,
+        'opening_float': 500,
+        'expected_cash': 3000,
+        'expected_paybill': 0,
+        'counted_cash': 3200,
+        'variance': 200,
+        'close_note': null,
+        'closed_by': 'u-sup',
+      },
+      {
+        'id': 's-3',
+        'user_id': 'u-sup',
+        'status': 'open',
+        'opened_at': at(const Duration(hours: 3)),
+        'closed_at': null,
+        'opening_float': 1000,
+        'expected_cash': null,
+        'expected_paybill': null,
+        'counted_cash': null,
+        'variance': null,
+        'close_note': null,
+        'closed_by': null,
       },
     ],
     'voids': [
@@ -520,5 +642,83 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
       'id_number': '12343921',
     },
     {'id': 'g-2', 'full_name': 'Jane Okello', 'phone': '+256712345678'},
+  ]);
+}
+
+/// Audit entries for More → Audit trail, at [now] (as [seedOwnerLodging]):
+/// a check-in and a guest at the desk, a price changed on the phone, a
+/// refund asked for and a payment voided.
+void seedAuditTrail(FakeOwnerCloud cloud, DateTime now) {
+  String at(Duration ago) => now.subtract(ago).toIso8601String();
+  cloud.table('audit_log').addAll([
+    for (final (id, ago, user, action, entity, entityId, device, before, after)
+        in [
+          (
+            'a-1',
+            50,
+            'u-desk',
+            'stay.check_in',
+            'stays',
+            'st-2',
+            'dev-1',
+            null,
+            '{}',
+          ),
+          (
+            'a-2',
+            40,
+            'u-desk',
+            'guest.create',
+            'guests',
+            'g-2',
+            'dev-1',
+            null,
+            '{"full_name":"[redacted]","phone":"+2567•••678"}',
+          ),
+          (
+            'a-3',
+            30,
+            'u-owner',
+            'price.update',
+            'bed_categories',
+            'c-1',
+            'phone-install-1',
+            '{"name":"Deluxe","price_per_night":650}',
+            '{"name":"Deluxe","price_per_night":700}',
+          ),
+          (
+            'a-4',
+            20,
+            'u-desk',
+            'refund.request',
+            'refunds',
+            'rf-1',
+            'dev-1',
+            null,
+            '{"payout_phone":null}',
+          ),
+          (
+            'a-5',
+            10,
+            'u-sup',
+            'void.create',
+            'voids',
+            'v-1',
+            'dev-1',
+            null,
+            '{"target_type":"payment","reason":"Wrong bed"}',
+          ),
+        ])
+      {
+        'id': id,
+        'at': at(Duration(minutes: ago)),
+        'user_id': user,
+        'action': action,
+        'entity': entity,
+        'entity_id': entityId,
+        'device_id': device,
+        'before_json': before,
+        'after_json': after,
+      },
   ]);
 }

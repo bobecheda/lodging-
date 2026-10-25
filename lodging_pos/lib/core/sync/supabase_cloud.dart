@@ -217,6 +217,23 @@ class SupabaseCloud implements Cloud {
   bool get ownerSignedIn => _owner.auth.currentSession != null;
 
   @override
+  Future<DateTime> recordPasswordChange({
+    required String id,
+    required String deviceId,
+  }) => _asOwner(
+    (c) async => DateTime.parse(
+      (await c.rpc(
+        'record_password_change',
+        params: {'p_id': id, 'p_device_id': deviceId},
+      )) as String,
+    ).toUtc(),
+  );
+
+  @override
+  Future<void> updateOwnerPassword(String password) =>
+      _asOwner((c) => c.auth.updateUser(UserAttributes(password: password)));
+
+  @override
   Future<void> signOutOwner() async {
     try {
       await _owner.auth.signOut(scope: SignOutScope.local);

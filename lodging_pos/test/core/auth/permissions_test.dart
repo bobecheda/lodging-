@@ -60,6 +60,7 @@ void main() {
       Permission.viewBusinessDashboard,
       Permission.manageSupervisors,
       Permission.connectDesk,
+      Permission.ownerCloudPassword,
     };
     const ownerAndSupervisor = {
       Permission.viewAllReports,

@@ -12,6 +12,7 @@ import '../../core/sync/outbox_status.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/sync/sync_providers.dart';
 import '../../core/sync/sync_status_text.dart';
+import '../../features/auth/presentation/change_my_password_dialog.dart';
 import '../../features/auth/presentation/idle_lock.dart';
 import '../../features/backup/domain/backup.dart';
 import '../../features/backup/presentation/backup_providers.dart';
@@ -543,6 +544,19 @@ class _UserBlock extends ConsumerWidget {
             minimumSize: const Size(Sizes.target, Sizes.targetCompact),
           ),
         ),
+        // The owner's password is also their cloud sign-in (owner-app-3).
+        if (can(user, Permission.ownerCloudPassword))
+          TextButton(
+            key: const ValueKey('shell.changeMyPassword'),
+            onPressed: () => showDialog<bool>(
+              context: context,
+              builder: (_) => const ChangeMyPasswordDialog(),
+            ),
+            child: Text(
+              'Change my password',
+              style: t.small.copyWith(color: c.navText),
+            ),
+          ),
       ],
     );
   }

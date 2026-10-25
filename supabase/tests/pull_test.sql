@@ -156,7 +156,7 @@ language sql as $$
   with writes as (
     select p.oid::regprocedure::text as fn, p.prosrc as src,
       '(insert\s+into|update)\s+public\.(refund_decisions|price_decisions'
-      '|bed_categories|audit_log)\M|insert_audit\s*\('
+      '|bed_categories|owner_password_changes|audit_log)\M|insert_audit\s*\('
       '|apply_rows\s*\(\s*p_rows\s*,\s*app_private\.owner_tables\(\)' as pattern
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname in ('public', 'app_private', 'tests_p')
@@ -179,6 +179,7 @@ select ok(
     'decide_price_request(text,text,text,text,timestamp with time zone,text,jsonb)',
     'set_prices(jsonb,timestamp with time zone)',
     'change_prices(jsonb,timestamp with time zone,text,jsonb)',
+    'record_password_change(text,text,jsonb)',
     'import_owner_rows(text,jsonb)'],
   'the check sees the known writers');
 
