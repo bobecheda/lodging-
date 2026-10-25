@@ -94,6 +94,56 @@ final class PullPage {
   final bool more;
 }
 
+/// One category's new price, over the price the owner started from.
+final class PriceEdit {
+  const PriceEdit({
+    required this.categoryId,
+    required this.expected,
+    required this.price,
+  });
+
+  final String categoryId;
+  final int expected;
+  final int price;
+
+  Map<String, Object?> toJson() => {
+    'category_id': categoryId,
+    'expected': expected,
+    'price': price,
+  };
+}
+
+/// The answer to [Cloud.changePrices].
+sealed class PriceChangeAnswer {
+  const PriceChangeAnswer();
+}
+
+final class PricesChanged extends PriceChangeAnswer {
+  const PricesChanged();
+}
+
+/// A category's price moved on before this edit: nothing was saved.
+final class PriceMovedOn extends PriceChangeAnswer {
+  const PriceMovedOn({
+    required this.categoryId,
+    required this.currentPrice,
+    required this.changedAt,
+    required this.changedOn,
+  });
+
+  final String categoryId;
+  final int currentPrice;
+  final DateTime changedAt;
+
+  /// `desk`, `phone`, or null when the cloud doesn't know.
+  final String? changedOn;
+}
+
+/// A category isn't in the cloud yet (its push hasn't arrived).
+final class PriceCategoryMissing extends PriceChangeAnswer {
+  const PriceCategoryMissing();
+}
+
 /// The answer to an owner decision or a withdrawal.
 sealed class CloudDecision {
   const CloudDecision();
@@ -205,8 +255,16 @@ abstract interface class Cloud {
   Future<int> importOwnerRows(String deviceId, List<CloudRow> rows);
   Future<void> finishFirstUpload(String deviceId);
 
-  /// {category id: price}.
+  /// {category id: price}: the first upload's prices, as they are.
   Future<void> setPrices(Map<String, int> prices, DateTime at);
+
+  /// The owner's price edit: saved only if every category still has its
+  /// [PriceEdit.expected] price (all or nothing).
+  Future<PriceChangeAnswer> changePrices(
+    List<PriceEdit> edits,
+    DateTime at, {
+    required String deviceId,
+  });
 
   Future<CloudDecision> decideRefund({
     required String id,

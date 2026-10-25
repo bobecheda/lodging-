@@ -7,6 +7,8 @@ import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../../bed_board/domain/bed_board.dart';
 import '../../dashboard/domain/dashboard.dart';
+import '../../price_requests/domain/price_request.dart';
+import '../../setup/domain/bed_category.dart';
 
 // ── The desk ─────────────────────────────────────────────────────────────
 
@@ -16,6 +18,7 @@ final class DeskStatus {
     required this.deviceId,
     required this.reportedAt,
     required this.pending,
+    this.lastPushAt,
     this.problem,
   });
 
@@ -23,6 +26,9 @@ final class DeskStatus {
 
   /// UTC.
   final DateTime reportedAt;
+
+  /// When the desk last sent its changes (UTC); null before its first.
+  final DateTime? lastPushAt;
 
   /// Changes waiting to go up.
   final int pending;
@@ -63,6 +69,30 @@ DeskLine deskLine(List<DeskStatus> desks, DateTime now) {
     DeskStatus(:final pending) => '$pending changes waiting',
   };
   return DeskLine('Desk online · $state', online: true);
+}
+
+/// How fresh the cloud's figures are (Money, Figma "04"): "Up to the desk's
+/// last sync, 14:05", "· 3 changes not sent yet" while some wait.
+String freshnessLine(List<DeskStatus> desks, DateTime now) {
+  if (desks.isEmpty) return 'The desk isn’t connected to the cloud yet.';
+  final d = desks.reduce((a, b) => b.reportedAt.isAfter(a.reportedAt) ? b : a);
+  final pushed = d.lastPushAt;
+  if (pushed == null) return 'The desk hasn’t synced yet.';
+  final at = _sameDay(pushed, now)
+      ? formatTime(pushed)
+      : formatWhen(pushed, now: now);
+  final waiting = switch (d.pending) {
+    0 => '',
+    1 => ' · 1 change not sent yet',
+    final n => ' · $n changes not sent yet',
+  };
+  return 'Up to the desk’s last sync, $at$waiting.';
+}
+
+bool _sameDay(DateTime a, DateTime b) {
+  final x = toNairobi(a);
+  final y = toNairobi(b);
+  return x.year == y.year && x.month == y.month && x.day == y.day;
 }
 
 /// "Updated just now", "Updated 4 min ago", "Updated today 09:15"; offline,
@@ -151,6 +181,55 @@ final class PaymentVoided {
   String get figure => formatKes(amount);
 }
 
+// ── Prices ───────────────────────────────────────────────────────────────
+
+/// A category on the owner's Prices (Figma "06 Prices"), with its active
+/// beds ("8 beds").
+final class OwnerCategory {
+  const OwnerCategory(this.category, {required this.beds});
+  final BedCategory category;
+  final int beds;
+
+  String get bedsLine => beds == 1 ? '1 bed' : '$beds beds';
+}
+
+/// A price request waiting for the owner, with what the card shows.
+final class OwnerPriceRequest {
+  const OwnerPriceRequest({
+    required this.request,
+    required this.category,
+    required this.requestedByName,
+    required this.requestedByRole,
+  });
+
+  final PriceRequest request;
+
+  /// The category as it is now.
+  final BedCategory category;
+  final String requestedByName;
+
+  /// As stored: `supervisor`.
+  final String requestedByRole;
+
+  String get id => request.id;
+
+  /// The price has moved on since the request: it can only be rejected
+  /// ([staleError]).
+  String? get staleMessage => staleError(request, category);
+
+  /// "REQUEST FROM GRACE (SUPERVISOR)".
+  String get heading =>
+      'REQUEST FROM ${requestedByName.split(' ').first.toUpperCase()} '
+      '(${requestedByRole.toUpperCase()})';
+
+  /// "“Other lodgings nearby charge 800.” · today 09:15".
+  String reasonLine(DateTime now) {
+    final when = formatWhen(request.requestedAt, now: now);
+    final reason = request.reason;
+    return reason == null ? 'Asked $when' : '“$reason” · $when';
+  }
+}
+
 // ── Everything Today shows ───────────────────────────────────────────────
 
 /// One load of the owner's Today. Kept in memory only.
@@ -166,6 +245,8 @@ final class OwnerToday {
     required this.voids,
     required this.rooms,
     required this.graceMinutes,
+    this.categories = const [],
+    this.priceRequests = const [],
   });
 
   final String lodgingName;
@@ -185,4 +266,10 @@ final class OwnerToday {
   /// counts don't need them).
   final List<BoardRoom> rooms;
   final int graceMinutes;
+
+  /// Every category in sort order, closed ones included (Prices).
+  final List<OwnerCategory> categories;
+
+  /// Price requests waiting for the owner, oldest first (Prices).
+  final List<OwnerPriceRequest> priceRequests;
 }

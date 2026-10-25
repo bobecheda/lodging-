@@ -144,7 +144,14 @@ void main() {
     test("a night belongs to the date it starts: a Thursday 19:00 check-in "
         "for 2 nights sells Thursday's and Friday's", () {
       final stay = StayNights(
-        charges: [ChargeNights(nights: 2, periodEnd: oct(17, 10))],
+        charges: [
+          ChargeNights(
+            nights: 2,
+            periodEnd: oct(17, 10),
+            categoryName: 'Deluxe',
+            pricePerNight: 700,
+          ),
+        ],
       );
       expect(soldNightDates(stay), [
         DateTime.utc(2026, 10, 15),
@@ -156,8 +163,18 @@ void main() {
         'unless rejected; a voided stay sells nothing', () {
       final extended = StayNights(
         charges: [
-          ChargeNights(nights: 1, periodEnd: oct(16, 10)),
-          ChargeNights(nights: 4, periodEnd: oct(20, 10)), // 16–19
+          ChargeNights(
+            nights: 1,
+            periodEnd: oct(16, 10),
+            categoryName: 'Deluxe',
+            pricePerNight: 700,
+          ),
+          ChargeNights(
+            nights: 4,
+            periodEnd: oct(20, 10),
+            categoryName: 'Deluxe',
+            pricePerNight: 700,
+          ), // 16–19
         ],
         refundedNights: 2, // left early: 18 and 19 not used
       );
@@ -169,7 +186,14 @@ void main() {
       expect(
         soldNightDates(
           StayNights(
-            charges: [ChargeNights(nights: 3, periodEnd: oct(18, 10))],
+            charges: [
+              ChargeNights(
+                nights: 3,
+                periodEnd: oct(18, 10),
+                categoryName: 'Deluxe',
+                pricePerNight: 700,
+              ),
+            ],
             voided: true,
           ),
         ),
@@ -183,10 +207,24 @@ void main() {
         // 29 Sep – 2 Oct: 30 Sep... nights 29, 30 Sep and 1 Oct.
         StayNights(
           charges: [
-            ChargeNights(nights: 3, periodEnd: nairobiInstant(2026, 10, 2, 10)),
+            ChargeNights(
+              nights: 3,
+              periodEnd: nairobiInstant(2026, 10, 2, 10),
+              categoryName: 'Deluxe',
+              pricePerNight: 700,
+            ),
           ],
         ),
-        StayNights(charges: [ChargeNights(nights: 2, periodEnd: oct(5, 10))]),
+        StayNights(
+          charges: [
+            ChargeNights(
+              nights: 2,
+              periodEnd: oct(5, 10),
+              categoryName: 'Deluxe',
+              pricePerNight: 700,
+            ),
+          ],
+        ),
       ];
       final sold = bedNightsSold(
         stays,
@@ -211,10 +249,24 @@ void main() {
       ];
       // One bed, sold every night 1–21 Oct, and 1–7 Sep.
       final stays = [
-        StayNights(charges: [ChargeNights(nights: 21, periodEnd: oct(22, 10))]),
         StayNights(
           charges: [
-            ChargeNights(nights: 7, periodEnd: nairobiInstant(2026, 9, 8, 10)),
+            ChargeNights(
+              nights: 21,
+              periodEnd: oct(22, 10),
+              categoryName: 'Deluxe',
+              pricePerNight: 700,
+            ),
+          ],
+        ),
+        StayNights(
+          charges: [
+            ChargeNights(
+              nights: 7,
+              periodEnd: nairobiInstant(2026, 9, 8, 10),
+              categoryName: 'Deluxe',
+              pricePerNight: 700,
+            ),
           ],
         ),
       ];
