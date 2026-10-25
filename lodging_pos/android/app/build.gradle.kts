@@ -59,6 +59,12 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // R8 is on for release (Flutter's default); these keep what
+            // flutter_secure_storage and Tink need at run time.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
