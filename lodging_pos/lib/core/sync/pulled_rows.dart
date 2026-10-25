@@ -65,6 +65,9 @@ class PulledRows {
     'audit_log' => _auditRow(
       AuditLogRow.fromJson(r.row, serializer: auditJsonSerializer),
     ),
+    'owner_password_changes' => _passwordChange(
+      DateTime.parse(r.row['changed_at']! as String).toUtc(),
+    ),
     _ => throw PullConflict('The cloud sent rows of ${r.table}.'),
   };
 
@@ -121,6 +124,17 @@ class PulledRows {
         updatedAt: Value(next),
       ),
     );
+    return true;
+  }
+
+  /// The owner's password was changed (here or on the phone) at [at]:
+  /// kept as the latest the cloud knows. Nothing else is stored; no
+  /// password ever comes down.
+  Future<bool> _passwordChange(DateTime at) async {
+    final store = SyncStore(_db);
+    final known = await store.get(SyncStore.passwordCloudAt);
+    if (known != null && !at.isAfter(DateTime.parse(known))) return false;
+    await store.set(SyncStore.passwordCloudAt, at.toIso8601String());
     return true;
   }
 

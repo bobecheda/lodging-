@@ -265,6 +265,239 @@ abstract class _$OwnerTodayData extends $AsyncNotifier<OwnerSnapshot?> {
   }
 }
 
+@ProviderFor(ownerMoreRepository)
+final ownerMoreRepositoryProvider = OwnerMoreRepositoryProvider._();
+
+final class OwnerMoreRepositoryProvider
+    extends
+        $FunctionalProvider<
+          OwnerMoreRepository,
+          OwnerMoreRepository,
+          OwnerMoreRepository
+        >
+    with $Provider<OwnerMoreRepository> {
+  OwnerMoreRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ownerMoreRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerMoreRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<OwnerMoreRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OwnerMoreRepository create(Ref ref) {
+    return ownerMoreRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OwnerMoreRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OwnerMoreRepository>(value),
+    );
+  }
+}
+
+String _$ownerMoreRepositoryHash() =>
+    r'48af26399190ad16a73b769b35c3dd25fdf917c5';
+
+/// More → Shifts: the open shifts and the last 30 days', read when shown.
+
+@ProviderFor(ownerShifts)
+final ownerShiftsProvider = OwnerShiftsProvider._();
+
+/// More → Shifts: the open shifts and the last 30 days', read when shown.
+
+final class OwnerShiftsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<OwnerShift>>,
+          List<OwnerShift>,
+          FutureOr<List<OwnerShift>>
+        >
+    with $FutureModifier<List<OwnerShift>>, $FutureProvider<List<OwnerShift>> {
+  /// More → Shifts: the open shifts and the last 30 days', read when shown.
+  OwnerShiftsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ownerShiftsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerShiftsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<OwnerShift>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<OwnerShift>> create(Ref ref) {
+    return ownerShifts(ref);
+  }
+}
+
+String _$ownerShiftsHash() => r'f43eb63ba5c1286c27693b3002eecebd9e5845e9';
+
+/// More → Staff.
+
+@ProviderFor(ownerStaff)
+final ownerStaffProvider = OwnerStaffProvider._();
+
+/// More → Staff.
+
+final class OwnerStaffProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<OwnerStaffMember>>,
+          List<OwnerStaffMember>,
+          FutureOr<List<OwnerStaffMember>>
+        >
+    with
+        $FutureModifier<List<OwnerStaffMember>>,
+        $FutureProvider<List<OwnerStaffMember>> {
+  /// More → Staff.
+  OwnerStaffProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ownerStaffProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerStaffHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<OwnerStaffMember>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<OwnerStaffMember>> create(Ref ref) {
+    return ownerStaff(ref);
+  }
+}
+
+String _$ownerStaffHash() => r'b0103a942037ad0481590565e64cedc385890a12';
+
+/// More → Audit trail, for [filter]; the desks' device ids say "on the
+/// desk".
+
+@ProviderFor(ownerAudit)
+final ownerAuditProvider = OwnerAuditFamily._();
+
+/// More → Audit trail, for [filter]; the desks' device ids say "on the
+/// desk".
+
+final class OwnerAuditProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<OwnerAuditEntry>>,
+          List<OwnerAuditEntry>,
+          FutureOr<List<OwnerAuditEntry>>
+        >
+    with
+        $FutureModifier<List<OwnerAuditEntry>>,
+        $FutureProvider<List<OwnerAuditEntry>> {
+  /// More → Audit trail, for [filter]; the desks' device ids say "on the
+  /// desk".
+  OwnerAuditProvider._({
+    required OwnerAuditFamily super.from,
+    required AuditFilter super.argument,
+  }) : super(
+         retry: null,
+         name: r'ownerAuditProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$ownerAuditHash();
+
+  @override
+  String toString() {
+    return r'ownerAuditProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<OwnerAuditEntry>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<OwnerAuditEntry>> create(Ref ref) {
+    final argument = this.argument as AuditFilter;
+    return ownerAudit(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OwnerAuditProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$ownerAuditHash() => r'f478d2b0ef8880b9db9d2eb2b3bf0e45455fc726';
+
+/// More → Audit trail, for [filter]; the desks' device ids say "on the
+/// desk".
+
+final class OwnerAuditFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<OwnerAuditEntry>>,
+          AuditFilter
+        > {
+  OwnerAuditFamily._()
+    : super(
+        retry: null,
+        name: r'ownerAuditProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// More → Audit trail, for [filter]; the desks' device ids say "on the
+  /// desk".
+
+  OwnerAuditProvider call(AuditFilter filter) =>
+      OwnerAuditProvider._(argument: filter, from: this);
+
+  @override
+  String toString() => r'ownerAuditProvider';
+}
+
 @ProviderFor(ownerPricesRepository)
 final ownerPricesRepositoryProvider = OwnerPricesRepositoryProvider._();
 

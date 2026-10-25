@@ -10,7 +10,12 @@ enum LoginOutcome {
   invalidCredentials,
 
   /// Right password, but the supervisor disabled the account.
-  disabled;
+  disabled,
+
+  /// The owner's password was changed on the phone after this desk's copy,
+  /// and the cloud couldn't confirm this one (offline, or not the new one):
+  /// [passwordChangedOnPhone].
+  passwordChangedElsewhere;
 
   bool get signsIn => this == success || this == mustChangePassword;
 }

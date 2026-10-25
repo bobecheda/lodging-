@@ -43,6 +43,10 @@ The APK is `build\app\outputs\flutter-apk\app-release.apk`. Copy it to the phone
 
 Without `android/key.properties` the release build is signed with the debug key (`android/app/build.gradle.kts`). That is what CI builds (job `owner-app-build`, which also compiles the web build and keeps nothing). **Never install a debug-signed APK on the owner's phone**: the next properly signed one won't install over it.
 
+## Before go-live (hardening)
+
+- Show the app version on More's account card ("Android app 1.0"; needs `package_info_plus`).
+
 ## Checking a build
 
 ```bash

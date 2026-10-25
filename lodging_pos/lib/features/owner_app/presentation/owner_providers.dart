@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/clock/clock.dart';
 import '../data/owner_cloud.dart';
+import '../data/owner_more_repository.dart';
 import '../data/owner_prices_repository.dart';
 import '../data/owner_refunds_repository.dart';
 import '../data/owner_today_repository.dart';
@@ -137,6 +138,33 @@ class OwnerTodayData extends _$OwnerTodayData {
       if (ref.mounted && state.value == null) state = AsyncError(e, stack);
     }
   }
+}
+
+@Riverpod(keepAlive: true)
+OwnerMoreRepository ownerMoreRepository(Ref ref) =>
+    OwnerMoreRepository(ref.watch(ownerCloudProvider)!);
+
+/// More → Shifts: the open shifts and the last 30 days', read when shown.
+@riverpod
+Future<List<OwnerShift>> ownerShifts(Ref ref) => ref
+    .watch(ownerMoreRepositoryProvider)
+    .shifts(
+      ref.read(ownerClockProvider).now().subtract(const Duration(days: 30)),
+    );
+
+/// More → Staff.
+@riverpod
+Future<List<OwnerStaffMember>> ownerStaff(Ref ref) =>
+    ref.watch(ownerMoreRepositoryProvider).staff();
+
+/// More → Audit trail, for [filter]; the desks' device ids say "on the
+/// desk".
+@riverpod
+Future<List<OwnerAuditEntry>> ownerAudit(Ref ref, AuditFilter filter) {
+  final desks = ref.read(ownerTodayDataProvider).value?.today.desks ?? [];
+  return ref
+      .watch(ownerMoreRepositoryProvider)
+      .audit(filter, deskIds: {for (final d in desks) d.deviceId});
 }
 
 @Riverpod(keepAlive: true)

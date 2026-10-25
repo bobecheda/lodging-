@@ -42,6 +42,22 @@ Future<ProviderContainer> pumpOwnerApp(
   return container;
 }
 
+/// Scrolls More down to Sign out (below the fold on a small phone) and
+/// taps it.
+Future<void> signOutFromMore(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.byKey(const ValueKey('owner.signOut')),
+    200,
+    scrollable: find
+        .descendant(
+          of: find.byKey(const ValueKey('owner.more')),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
+  await tapKey(tester, 'owner.signOut');
+}
+
 String ownerLocation(ProviderContainer app) =>
     app.read(ownerRouterProvider).state.matchedLocation;
 
@@ -213,7 +229,7 @@ void main() {
 
     await tapKey(tester, 'owner.nav.more');
     expect(text(tester, 'owner.more.email'), testOwnerEmail);
-    await tapKey(tester, 'owner.signOut');
+    await signOutFromMore(tester);
     expect(ownerLocation(app), OwnerRoutes.signIn);
     expect(cloud.stored, isNull);
     expect(app.read(ownerTodayDataProvider).value, isNull);
@@ -250,7 +266,7 @@ void main() {
         await tapKey(tester, 'today.attention.refund.rf-1');
         await tapKey(tester, 'refund.approve');
         await tapKey(tester, 'owner.nav.more');
-        await tapKey(tester, 'owner.signOut');
+        await signOutFromMore(tester);
         await enterKey(tester, 'ownerSignIn.password', 'not-it');
         await tapKey(tester, 'ownerSignIn.submit');
         // Any overflow fails the test on its own.

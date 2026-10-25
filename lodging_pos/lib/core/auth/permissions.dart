@@ -68,6 +68,11 @@ enum Permission {
   /// Connect (or reconnect) this desk to the cloud: with the owner's email
   /// and password and a one-time install code (sync-1, docs/sync.md).
   connectDesk,
+
+  /// The password that is also a cloud sign-in: changed from the sidebar's
+  /// "Change my password" (cloud first), and followed at sign-in when it
+  /// was changed on the phone (owner-app-3).
+  ownerCloudPassword,
 }
 
 const _ownerOnly = {Role.owner};
@@ -86,6 +91,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.viewBusinessDashboard: _ownerOnly,
   Permission.manageSupervisors: _ownerOnly,
   Permission.connectDesk: _ownerOnly,
+  Permission.ownerCloudPassword: _ownerOnly,
   // Prices and adding or closing categories (BR-2); the supervisor asks.
   Permission.editPrices: _ownerOnly,
   Permission.viewAllReports: _ownerAndSupervisor,

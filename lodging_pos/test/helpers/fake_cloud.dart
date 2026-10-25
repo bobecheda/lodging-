@@ -271,6 +271,62 @@ class FakeCloud implements Cloud {
   @override
   Future<void> signOutOwner() async => _ownerSignedIn = false;
 
+  /// The next password update fails (after the change was recorded).
+  var failPasswordUpdate = false;
+
+  @override
+  Future<DateTime> recordPasswordChange({
+    required String id,
+    required String deviceId,
+  }) async {
+    _asOwner();
+    final rows = tables.putIfAbsent('owner_password_changes', () => {});
+    final existing = rows[id];
+    if (existing != null) {
+      return DateTime.parse(existing['changed_at']! as String);
+    }
+    final now = serverNow!().toUtc();
+    rows[id] = {
+      'id': id,
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+      'device_id': deviceId,
+      'user_id': ownerUserId,
+      'changed_at': now.toIso8601String(),
+    };
+    _stamp('owner_password_changes', id);
+    return now;
+  }
+
+  @override
+  Future<void> updateOwnerPassword(String password) async {
+    _asOwner();
+    if (failPasswordUpdate) {
+      failPasswordUpdate = false;
+      throw const CloudRefused('the password could not be updated');
+    }
+    ownerPassword = password;
+  }
+
+  /// The owner changes their password on the phone: recorded, set, and
+  /// their other sessions (the desk's owner sign-in) ended. The desk's own
+  /// sign-in is untouched.
+  void phoneChangesPassword(String password) {
+    final now = serverNow!().toUtc().toIso8601String();
+    final id = 'pc-${count('owner_password_changes') + 1}';
+    tables.putIfAbsent('owner_password_changes', () => {})[id] = {
+      'id': id,
+      'created_at': now,
+      'updated_at': now,
+      'device_id': 'phone-1',
+      'user_id': ownerUserId,
+      'changed_at': now,
+    };
+    _stamp('owner_password_changes', id);
+    ownerPassword = password;
+    _ownerSignedIn = false;
+  }
+
   @override
   Future<int> importOwnerRows(String deviceId, List<CloudRow> rows) async {
     _asOwner();
@@ -511,7 +567,9 @@ class FakeCloud implements Cloud {
       final [table, key] = tag.split('/');
       final r = row(table, key)!;
       switch (table) {
-        case 'refund_decisions' || 'price_decisions':
+        case 'refund_decisions' ||
+            'price_decisions' ||
+            'owner_password_changes':
           rows.add(PulledRow(table, seq, {...r}));
         case 'bed_categories' when r['price_updated_at'] != null:
           rows.add(

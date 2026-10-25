@@ -111,6 +111,8 @@ class SupabaseOwnerCloud implements OwnerCloud {
     List<String> columns, {
     List<Where> where = const [],
     String? orderBy,
+    bool newestFirst = false,
+    int? limit,
   }) async {
     if (columns.isEmpty || columns.contains('*')) {
       throw ArgumentError('Name the columns to read from $table.');
@@ -142,6 +144,7 @@ class SupabaseOwnerCloud implements OwnerCloud {
               ),
             ],
             orderBy: orderBy,
+            newestFirst: newestFirst,
           ),
       ];
     }
@@ -157,15 +160,37 @@ class SupabaseOwnerCloud implements OwnerCloud {
             InList(:final column, :final values) => q.inFilter(column, values),
           };
         }
-        return (orderBy == null ? q : q.order(orderBy, ascending: true)).range(
-          from,
-          from + _page - 1,
-        );
+        final size = limit == null || limit > _page ? _page : limit;
+        return (orderBy == null ? q : q.order(orderBy, ascending: !newestFirst))
+            .range(from, from + size - 1);
       });
       all.addAll(page);
+      if (limit != null && all.length >= limit) return all.take(limit).toList();
       if (page.length < _page) return all;
     }
   }
+
+  @override
+  Future<void> verifyPassword(String password) async {
+    final email = _client.auth.currentUser?.email;
+    if (email == null) throw const OwnerSignInRefused('Sign in again.');
+    try {
+      await _guard(
+        () => _client.auth.signInWithPassword(email: email, password: password),
+        signingIn: true,
+      );
+    } on OwnerSignInRefused {
+      throw const OwnerSignInRefused('That isn’t your current password.');
+    }
+  }
+
+  @override
+  Future<void> updatePassword(String password) =>
+      _call(() => _client.auth.updateUser(UserAttributes(password: password)));
+
+  @override
+  Future<void> signOutOtherSessions() =>
+      _call(() => _client.auth.signOut(scope: SignOutScope.others));
 
   @override
   Future<Object?> rpc(String name, Map<String, Object?> params) =>

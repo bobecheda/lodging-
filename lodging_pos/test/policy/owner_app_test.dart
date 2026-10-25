@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:lodging_pos/features/owner_app/domain/owner_more.dart';
+
 import '../helpers/fake_owner_cloud.dart' show forbiddenOwnerColumns;
 
 /// The owner's phone app (`lib/main_owner.dart`, `features/owner_app`):
@@ -60,6 +62,38 @@ void main() {
       }
     }
     expect(count, greaterThan(10));
+  });
+
+  test('audit details are read only for the agreed entities, never a '
+      'refund’s row (it carries payout_phone)', () {
+    expect(auditDetailEntities, {
+      'bed_categories',
+      'refund_decisions',
+      'price_decisions',
+      'voids',
+      'shifts',
+    });
+    final details = RegExp(r"'(before_json|after_json)'");
+    var reads = 0;
+    for (final f in ownerSources()) {
+      final src = f.readAsStringSync();
+      for (final m in RegExp(r'\.rows\(').allMatches(src)) {
+        final end = src.indexOf(');', m.start);
+        final call = src.substring(m.start, end < 0 ? src.length : end);
+        if (!details.hasMatch(call)) continue;
+        reads++;
+        expect(
+          call,
+          contains("InList('entity', auditDetailEntities"),
+          reason: '${rel(f)} reads audit details without the allowlist',
+        );
+        expect(call, contains("'audit_log'"));
+      }
+    }
+    expect(reads, greaterThan(0));
+    // payout_phone is never named (the first test), and FakeOwnerCloud
+    // refuses it at run time.
+    expect(forbiddenOwnerColumns, contains('payout_phone'));
   });
 
   test('the phone app imports nothing of the desk\'s database, sync, files '

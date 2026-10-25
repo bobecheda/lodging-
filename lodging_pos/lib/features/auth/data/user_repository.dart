@@ -132,6 +132,22 @@ class UserRepository {
     return _toAccount(row);
   }
 
+  /// The owner's password as the cloud now has it (changed on the phone):
+  /// this desk's copy follows (`user.password_from_cloud`).
+  Future<UserAccount> passwordFromCloud(String userId, String password) async {
+    final hash = await _hasher.hash(password);
+    final row = await _audit.writeWithAudit(
+      action: 'user.password_from_cloud',
+      userId: userId,
+      body: (w) => w.update(
+        _db.users,
+        userId,
+        UsersCompanion(passwordHash: Value(hash)),
+      ),
+    );
+    return _toAccount(row);
+  }
+
   /// Sets a new password and clears `must_change_password`.
   Future<UserAccount> changePassword(String userId, String newPassword) async {
     final problem = passwordError(newPassword);

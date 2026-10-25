@@ -8,6 +8,7 @@ import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/labeled_field.dart';
 import '../../../app/widgets/notes.dart';
 import '../../../app/widgets/split_gate_layout.dart';
+import '../../../core/auth/owner_password.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/sync/sync_providers.dart';
@@ -65,6 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _error = switch (result.outcome) {
           LoginOutcome.disabled =>
             'This account is disabled. Ask the supervisor to enable it.',
+          LoginOutcome.passwordChangedElsewhere => passwordChangedOnPhone,
           _ => 'Wrong username or password. Try again.',
         };
       });

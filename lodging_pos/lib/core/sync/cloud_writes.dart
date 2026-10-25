@@ -43,6 +43,37 @@ abstract interface class CloudWrites {
   });
 }
 
+/// The owner's password as a cloud sign-in (owner-app-3): the desk follows
+/// a change made on the phone, and changes it in the cloud first.
+abstract interface class OwnerPasswordCloud {
+  /// Connected: the owner's password changes need the cloud.
+  bool get active;
+
+  /// The cloud recorded a change after this desk's copy
+  /// ([ownerPasswordBehind]).
+  Future<bool> isOwnerPasswordBehind();
+
+  /// Signs the owner in to the cloud with [password]. Throws
+  /// [NeedsInternet] or [OwnerPasswordRefused].
+  Future<void> confirmOwnerPassword(String password);
+
+  /// This desk's copy now matches the cloud's latest change.
+  Future<void> ownerPasswordCaughtUp();
+
+  /// Changes the owner's password in the cloud: [current] confirmed, the
+  /// change recorded, then the password set. Answers the change's time.
+  /// Throws [NeedsInternet], [OwnerPasswordRefused] (the cloud doesn't
+  /// take [current]) or [RefusedByCloud] (recorded, but the new password
+  /// wasn't set: try again).
+  Future<DateTime> changeOwnerPassword({
+    required String current,
+    required String next,
+  });
+
+  /// This desk's copy is the change made at [at].
+  Future<void> ownerPasswordChangedHere(DateTime at);
+}
+
 /// Why a cloud-first write didn't happen. Repositories turn these into
 /// their own rule messages ("Approving needs an internet connection.").
 sealed class CloudWriteRefused implements Exception {
@@ -89,6 +120,11 @@ final class DecidedElsewhere extends CloudWriteRefused {
   final bool approved;
   final String? byName;
   final DateTime at;
+}
+
+/// The cloud didn't take the owner's password.
+final class OwnerPasswordRefused extends CloudWriteRefused {
+  const OwnerPasswordRefused();
 }
 
 /// The price request was withdrawn first.
@@ -145,4 +181,5 @@ String cloudRefusalMessage(
     'The price is now KES $currentPrice in the cloud. Check it and save '
         'again.',
   OwnerCloudSignInNeeded() => 'Sign in to the cloud again to continue.',
+  OwnerPasswordRefused() => 'The cloud didn’t accept that password.',
 };

@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/theme/theme.dart';
 import 'owner_beds_screen.dart';
 import 'owner_money_screen.dart';
+import 'owner_more_pages.dart';
 import 'owner_more_screen.dart';
 import 'owner_prices_screen.dart';
 import 'owner_providers.dart';
@@ -38,6 +39,10 @@ abstract final class OwnerRoutes {
   static const beds = '/beds';
   static const prices = '/prices';
   static const more = '/more';
+  static const shifts = '/more/shifts';
+  static const audit = '/more/audit';
+  static const staff = '/more/staff';
+  static const password = '/more/password';
   static const refund = '/refund';
 
   static String refundFor(String id) =>
@@ -109,6 +114,22 @@ GoRouter ownerRouter(Ref ref) {
           GoRoute(
             path: OwnerRoutes.more,
             builder: (_, _) => const OwnerMoreScreen(),
+          ),
+          GoRoute(
+            path: OwnerRoutes.shifts,
+            builder: (_, _) => const OwnerShiftsScreen(),
+          ),
+          GoRoute(
+            path: OwnerRoutes.audit,
+            builder: (_, _) => const OwnerAuditScreen(),
+          ),
+          GoRoute(
+            path: OwnerRoutes.staff,
+            builder: (_, _) => const OwnerStaffScreen(),
+          ),
+          GoRoute(
+            path: OwnerRoutes.password,
+            builder: (_, _) => const OwnerPasswordScreen(),
           ),
         ],
       ),

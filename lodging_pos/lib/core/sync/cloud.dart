@@ -251,6 +251,17 @@ abstract interface class Cloud {
   bool get ownerSignedIn;
   Future<void> signOutOwner();
 
+  /// Records that the owner's password is changing (owner-app-3), before
+  /// it changes; answers the server's time of the change. A retry with
+  /// the same [id] answers the first time.
+  Future<DateTime> recordPasswordChange({
+    required String id,
+    required String deviceId,
+  });
+
+  /// Sets the signed-in owner's cloud password.
+  Future<void> updateOwnerPassword(String password);
+
   /// The first upload, owner part: decisions made before connecting.
   Future<int> importOwnerRows(String deviceId, List<CloudRow> rows);
   Future<void> finishFirstUpload(String deviceId);

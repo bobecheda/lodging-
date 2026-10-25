@@ -48,4 +48,4 @@ final class OwnerRouterProvider
   }
 }
 
-String _$ownerRouterHash() => r'5b306820cea92648338219511bafbd50d939ad9b';
+String _$ownerRouterHash() => r'b8460280d6dd466faa2bc403c37a984b8a293f7b';

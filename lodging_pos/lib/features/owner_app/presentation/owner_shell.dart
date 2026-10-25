@@ -55,6 +55,8 @@ class _OwnerShellState extends ConsumerState<OwnerShell> {
   Widget build(BuildContext context) {
     final at = widget.location == OwnerRoutes.refund
         ? OwnerRoutes.today
+        : widget.location.startsWith('${OwnerRoutes.more}/')
+        ? OwnerRoutes.more
         : widget.location;
     final index = OwnerRoutes.tabs.indexOf(at);
     return Scaffold(
