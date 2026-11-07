@@ -17,8 +17,8 @@ The desk works offline and sends everything it writes to Supabase. The owner's d
 
 ## Environments
 
-- **This Supabase project ("UB40 Lodging", eu-central-1) is dev/staging.** It holds test data and the test owner account, and is where new migrations and the Edge Function are tried first.
-- **Production will be a fresh project**, created in the hardening week: the same steps below (`db push`, deploy `connect-desk`, sign-ups off), then the desk connected to it with a new install code.
+- **The project used so far ("UB40 Lodging", region eu-west-1, Ireland) is dev/staging.** It holds test data and the test owner account, and is where new migrations and the Edge Function are tried first.
+- **Production is a fresh project** on Supabase Pro, set up with `docs/go-live.md` (the same steps as below, plus the plan, region, advisors and on-site checks), then the desk connected to it with a new install code.
 - **Use the owner's real email there.** The owner's cloud account is created by the first connect, and **can't be changed later**: there is one owner per project (`app_private.owner`), and every later connect must use the same email. A forgotten password is reset by email, so it must be an inbox the owner reads.
 
 ## The desk's identity
@@ -64,7 +64,7 @@ The owner's password is also their cloud sign-in, and the desk keeps its own cop
 
 ## Setting up the cloud (once)
 
-You need the Supabase project ("UB40 Lodging", eu-central-1) and Node.js (for `npx`). Docker is not needed.
+You need a Supabase project (the dev one for development; production per `docs/go-live.md`) and Node.js (for `npx`). Docker is not needed. Check which project the CLI is linked to before every `db push`.
 
 1. **Turn off public sign-ups.** Dashboard → Authentication → Sign In / Providers → turn off "Allow new users to sign up". Only `connect-desk` creates accounts.
 2. **Link the project and apply the migrations.** In the repo root (the folder with `supabase/`):

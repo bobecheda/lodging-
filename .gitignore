@@ -12,3 +12,7 @@ key.properties
 
 # Editor settings are per machine.
 .vscode/
+
+# The Supabase CLI's local link to a project (docs/go-live.md): per PC,
+# never shared.
+supabase/.temp/
