@@ -670,3 +670,82 @@ final class PriceAwaiting {
   /// "+50": the change a night.
   String get change => formatPriceChange(newPrice - oldPrice);
 }
+
+/// An active stay's charges, for the voided-payment row: each charge's
+/// receipt, its amount for this bed, and whether that payment was voided.
+final class ActiveStayCharges {
+  const ActiveStayCharges({
+    required this.stayId,
+    required this.roomNumber,
+    required this.bedLabel,
+    required this.charges,
+  });
+
+  final String stayId;
+  final String roomNumber;
+  final String bedLabel;
+  final List<({String receiptNumber, int amount, bool paymentVoided})> charges;
+}
+
+/// A guest still in a bed whose payment was voided (AD-7): nights with no
+/// money behind them, until the stay is voided and checked in again.
+final class UnpaidStay {
+  const UnpaidStay({
+    required this.stayId,
+    required this.roomNumber,
+    required this.bedLabel,
+    required this.receipts,
+    required this.amount,
+  });
+
+  final String stayId;
+  final String roomNumber;
+  final String bedLabel;
+
+  /// The voided receipts, in charge order.
+  final List<String> receipts;
+
+  /// This bed's voided charges, whole KES.
+  final int amount;
+
+  String get title => 'Guest in bed, payment voided';
+
+  /// `Room 4 · Bed A · R-000041 voided`.
+  String get subtitle =>
+      'Room $roomNumber · Bed $bedLabel · ${receipts.join(', ')} voided';
+
+  String get figure => formatKes(amount);
+}
+
+/// The active stays with a voided payment; pass active, unvoided stays.
+List<UnpaidStay> unpaidStays(Iterable<ActiveStayCharges> stays) => [
+  for (final s in stays)
+    if (s.charges.any((c) => c.paymentVoided))
+      UnpaidStay(
+        stayId: s.stayId,
+        roomNumber: s.roomNumber,
+        bedLabel: s.bedLabel,
+        receipts: [
+          for (final c in s.charges)
+            if (c.paymentVoided) c.receiptNumber,
+        ],
+        amount: s.charges
+            .where((c) => c.paymentVoided)
+            .fold(0, (sum, c) => sum + c.amount),
+      ),
+];
+
+/// The row for void rows the cloud refused, held on the desk (AD-7), or
+/// null for none.
+({String title, String subtitle, String figure})? heldVoidsRow(int count) =>
+    count == 0
+    ? null
+    : (
+        title: count == 1
+            ? 'Void not in the cloud'
+            : '$count voids not in the cloud',
+        subtitle: count == 1
+            ? 'The cloud refused a void; the phone still counts what it voids'
+            : 'The cloud refused them; the phone still counts what they void',
+        figure: '$count',
+      );

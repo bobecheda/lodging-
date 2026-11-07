@@ -243,6 +243,19 @@ class _ShiftCard extends StatelessWidget {
                 ),
               if (s.closedBy case final by? when by != s.userName)
                 Text('Closed by $by', style: t.small.copyWith(color: c.muted)),
+              if (!s.voidedAfterClose.isEmpty) ...[
+                const SizedBox(height: Space.x8),
+                Text(
+                  s.voidedAfterClose.line,
+                  key: ValueKey('owner.shift.${s.id}.voided'),
+                  style: t.small.copyWith(color: c.redText),
+                ),
+                if (variance != null)
+                  _Line(
+                    'Difference after voids',
+                    varianceLine(s.voidedAfterClose.varianceAfter(variance)),
+                  ),
+              ],
             ],
           ],
         ),

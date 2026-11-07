@@ -183,6 +183,7 @@ class SupabaseCloud implements Cloud {
         'p_problem': h.problem,
         'p_app_version': h.appVersion,
         'p_clock_offset': h.clockOffsetSeconds,
+        'p_voids_held': h.voidsHeld,
       },
     ),
   );

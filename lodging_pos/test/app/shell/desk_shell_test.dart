@@ -79,6 +79,7 @@ void main() {
       Routes.receipts,
       Routes.refunds,
       Routes.shifts,
+      Routes.voids,
       Routes.adminRooms,
       Routes.adminPrices,
       Routes.adminStaff,

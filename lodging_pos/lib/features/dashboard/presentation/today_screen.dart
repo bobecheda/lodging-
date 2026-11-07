@@ -8,6 +8,7 @@ import '../../../app/widgets/notes.dart';
 import '../../bed_board/domain/bed_board.dart';
 import '../../bed_board/presentation/bed_board_providers.dart';
 import '../domain/dashboard.dart';
+import '../../../core/sync/sync_providers.dart';
 import 'dashboard_providers.dart';
 import 'today_cards.dart';
 
@@ -75,12 +76,21 @@ class TodayScreen extends ConsumerWidget {
                       onTap: () =>
                           context.go(Routes.refundDetailFor(r.refundId)),
                     ),
+                  // A guest in a bed with no money behind the nights.
+                  for (final u in d.unpaid)
+                    AttentionRow.unpaid(
+                      u,
+                      onTap: () => context.go(Routes.voids),
+                    ),
                   for (final p in d.prices)
                     AttentionRow.price(
                       p,
                       now: now,
                       onTap: () => context.go(Routes.adminPrices),
                     ),
+                  ?AttentionRow.heldVoids(
+                    ref.watch(syncStatusProvider).value?.voidsHeld ?? 0,
+                  ),
                 ],
               ),
               MoneyCard(money, vsLine: vsLastWeekLine(money, now)),

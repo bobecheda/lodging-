@@ -149,6 +149,13 @@ class _ShiftCard extends StatelessWidget {
                         color: high ? c.butterText : c.muted,
                       ),
                     ),
+                  if (!s.voidedAfterClose.isEmpty && variance != null)
+                    Text(
+                      '${s.voidedAfterClose.line} After the voids: '
+                      '${varianceLabel(s.voidedAfterClose.varianceAfter(variance))}.',
+                      key: ValueKey('shifts.voided.${s.id}'),
+                      style: t.small.copyWith(color: c.redText),
+                    ),
                 ],
               ],
             ),

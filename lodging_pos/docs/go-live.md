@@ -1,4 +1,4 @@
-# Go-live runbook (UB40, 11 Nov 2026)
+# Go-live runbook (UB40, 20 Nov 2026)
 
 The steps to put lodging_pos live at UB40 on a **fresh production Supabase project**, in order, with a check after each. It builds on `docs/sync.md` (the cloud) and `docs/release.md` (builds, installs, checklists); where a step is already there, this file points to it.
 
@@ -6,12 +6,14 @@ Tick each box as you go. Don't skip a check: each one is cheap now and expensive
 
 **Who does what:** you run every cloud step (dashboard, SQL, CLI); nobody else needs a service key, and none goes into an app or a file in the repo.
 
-## 0. The week before (by Mon 9 Nov)
+## 0. The freeze (Tue 17 Nov)
+
+Voids, then the blind cash count with the supervisor's review, are built before the freeze. Tue 17 Nov is a full regression pass (both builds, network off, the smoke test below) and the tag, with no new features. Expenses, monthly reports and AD-11 come after go-live.
 
 - [ ] `main` is green in CI (`checks`, `cloud`, `owner-app-build`, `windows-build`).
 - [ ] Remove the dev project's link files from the repo, if not done yet (see "Pointers to the dev project" at the end).
-- [ ] Raise the version for the release: `pubspec.yaml` `version: 1.0.0+2` (the `+2` must be higher than any APK already installed on a phone). Merge it.
-- [ ] Tag the go-live commit and build only from the tag:
+- [ ] Raise the version for the release: `pubspec.yaml` `version: 1.1.0+3` (the `+3` must be higher than any APK already installed on a phone). Merge it.
+- [ ] Tag the go-live commit and build only from the tag. **`v1.1-golive` replaces `v1.0-golive`**: that tag (on `944ca87`, version `1.0.0+2`, pushed 7 Nov before go-live moved) stays where it is and is never moved or built from.
 
   ```bash
   git checkout main
@@ -22,11 +24,11 @@ Tick each box as you go. Don't skip a check: each one is cheap now and expensive
   ```
 
   ```bash
-  git tag -a v1.0-golive -m "UB40 go-live"
+  git tag -a v1.1-golive -m "UB40 go-live"
   ```
 
   ```bash
-  git push origin v1.0-golive
+  git push origin v1.1-golive
   ```
 
 - [ ] The upload key (`upload-keystore.jks`) and its passwords are backed up in two places (`docs/release.md`).
@@ -50,7 +52,7 @@ Tick each box as you go. Don't skip a check: each one is cheap now and expensive
 Use the tag, so production gets exactly what was tested:
 
 ```bash
-git checkout v1.0-golive
+git checkout v1.1-golive
 ```
 
 Link the CLI to **production** (this replaces the dev link on this PC):
@@ -76,8 +78,9 @@ npx supabase@2.121.0 db push
 ```
 
 - [ ] It lists and applies these, in this order, with no error:
-  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`.
-- [ ] Check in the SQL Editor that they're all recorded (8 rows):
+  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`.
+  (The blind count's PR adds its cloud migration here, and the desk's schema goes from v9 to v10 with it; this list and the count below are updated in that PR.)
+- [ ] Check in the SQL Editor that they're all recorded (9 rows):
 
   ```sql
   select version from supabase_migrations.schema_migrations order by version;
@@ -124,7 +127,7 @@ npx supabase@2.121.0 link --project-ref <dev-ref>
 
   Keep your dev file as `secrets.json`; never mix them up. Every production build below names `secrets.prod.json`.
 
-From `lodging_pos`, on the tag (`git checkout v1.0-golive`):
+From `lodging_pos`, on the tag (`git checkout v1.1-golive`):
 
 ```bash
 flutter build apk --release -t lib/main_owner.dart --dart-define-from-file=secrets.prod.json
@@ -136,13 +139,13 @@ flutter build apk --release -t lib/main_owner.dart --dart-define-from-file=secre
   keytool -printcert -jarfile build\app\outputs\flutter-apk\app-release.apk
   ```
 
-- [ ] Copy `build\app\outputs\flutter-apk\app-release.apk` somewhere safe, renamed `lodging-owner-1.0.apk`.
+- [ ] Copy `build\app\outputs\flutter-apk\app-release.apk` somewhere safe, renamed `lodging-owner-1.1.apk`.
 
 ```bash
 flutter build windows --release --dart-define-from-file=secrets.prod.json
 ```
 
-- [ ] Copy the whole `build\windows\x64\runner\Release` folder to a USB drive as `UB40-Desk-1.0`, and `vc_redist.x64.exe` (Microsoft) next to it.
+- [ ] Copy the whole `build\windows\x64\runner\Release` folder to a USB drive as `UB40-Desk-1.1`, and `vc_redist.x64.exe` (Microsoft) next to it.
 - [ ] Quick check on this PC before leaving: run `Release\lodging_pos.exe` from the USB copy; it should open on "Create the owner's account" **only if this PC has no desk data** for that Windows user; otherwise just close it. Don't connect it to production.
 
 ## 4. On site: the UB40 PC
@@ -160,7 +163,7 @@ On the UB40 PC (`docs/release.md`, "First run on a new PC"):
 - [ ] Windows date, time and time zone (Nairobi, UTC+3) right and set automatically.
 - [ ] The desk runs under **one** Windows user, always the same (the desk's cloud secret lives in that user's Credential Manager).
 - [ ] VC++ 2015–2022 Redistributable (x64) installed.
-- [ ] `UB40-Desk-1.0` copied whole to `C:\UB40\Desk`; shortcut to `lodging_pos.exe` on the desktop and in Startup if wanted.
+- [ ] `UB40-Desk-1.1` copied whole to `C:\UB40\Desk`; shortcut to `lodging_pos.exe` on the desktop and in Startup if wanted.
 - [ ] Printer installed in Windows; a test page prints.
 
 First run:
@@ -187,9 +190,10 @@ Use a test guest you will then check out; all money in this test is small and re
 | 5 | Within a minute: Refunds → **To pay** shows it; pay it in cash from the open shift; the REFUND receipt prints with "Approved by" the owner. | Money: **Refunds paid**; the net goes down. |
 | 6 | Housekeeping: assign the bed, then mark it clean. | Beds: the bed **Ready**. Audit trail: "Assigned a cleaning", "Marked a bed clean". |
 | 7 | Receptionist closes the shift with a cash count. | More → Shifts: the shift closed, "Exact" (or "KES … short/over"); a shortage also shows under Needs your attention. |
-| 8 | Sync pill: **"Online · synced just now"**, nothing waiting. | Header: "Desk online · up to date". |
+| 8 | A second test guest checked in (cash) by the receptionist; then the **supervisor** voids that stay (Voids → the receipt → Void stay…, reason "Smoke test"). The receipt shows VOID; the bed needs cleaning. | Money: the amount is gone again. Beds: the bed **Needs cleaning**. Audit trail: "Voided a record". No "Void not in the cloud" under Needs your attention. |
+| 9 | Sync pill: **"Online · synced just now"**, nothing waiting (no "void not in the cloud"). | Header: "Desk online · up to date". |
 
-- [ ] All 8 rows pass. Then void nothing and delete nothing: the test stay stays in the books, as every real record does. (If the owner wants it gone from the figures, the supervisor voids the payment later, when voids have a screen.)
+- [ ] All 9 rows pass. Delete nothing: the test stays stay in the books, as every real record does (the first one has a refund, so it can't be voided; the owner can note it in the corrections book).
 
 ## 6. The owner's phone
 

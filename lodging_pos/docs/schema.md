@@ -32,7 +32,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 - Database triggers (`triggers.drift`) back this up: an UPDATE of a synced table that leaves `updated_at` unchanged is aborted, `stays`, `payments`, `stay_charges`, `refunds`, `refund_decisions`, `price_requests`, `price_decisions` and `voids` rows cannot be deleted, and `audit_log`, `refund_decisions` and `price_decisions` cannot be updated. Triggers also enforce the refund lifecycle, M-Pesa codes across tables (see `refunds`) and the price request rules (see `price_requests`).
 - All timestamps are UTC. All money columns are INTEGER whole KES.
 - `outbox`, `receipt_counter` and `device` are local only and never synced. `audit_log` is append-only.
-- Ownership for sync: the **desk** owns operational tables (including `refunds` and `price_requests`), the **admin side** owns setup tables, `voids`, `refund_decisions`, `price_decisions`, `expenses` and `inventory_items` (the supervisor's and the owner's records). Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
+- Ownership for sync: the **desk** owns operational tables (including `refunds`, `price_requests` and, since AD-7, `voids`: written only on the desk, by the owner or a supervisor, through `writeWithAudit`, and pushed), the **admin side** owns setup tables, `refund_decisions`, `price_decisions`, `expenses` and `inventory_items` (the supervisor's and the owner's records). Each row has a single writer. In sprint 1 the admin signs in on the desk PC, so admin-owned rows (e.g. a refund decision) are written there too; sync (sprint 2) must push them from the desk as well as from the phone.
 - Payment and refund methods are `cash` | `paybill` everywhere; screens and reports label `paybill` as "M-Pesa".
 
 ## Relationships
@@ -251,13 +251,13 @@ The supervisor's request to the owner (BR-2); the answer is a `price_decisions` 
 ### voids
 | Column | Type | Notes |
 |---|---|---|
-| target_type | TEXT | `payment` \| `stay` \| `refund` (voids a refund's payout) |
+| target_type | TEXT | `payment` \| `stay` \| `refund` (a refund's payout; nothing writes it yet: payouts aren't voided before go-live) |
 | target_id | TEXT | |
-| reason | TEXT | required |
-| voided_by | TEXT → users | needs `voidRecords` (supervisor) |
+| reason | TEXT | required; the app allows at most 200 characters |
+| voided_by | TEXT → users | needs `voidRecords` (owner or supervisor); never the record's creator |
 | voided_at | DATETIME | |
 
-Voided payments and refund payouts are excluded from shift totals and revenue.
+Voided payments and refund payouts are excluded from shift totals and revenue; a voided stay's nights from occupancy. Written on the desk only (`VoidsRepository`, rules in `features/voids/domain/void_rules.dart`); a stay's void writes a row for the stay, one for each payment still behind it (and the other bed's stay when one payment paid both), closes it if active and marks its bed `not_cleaned`, all as one `void.create` operation. Unique `(target_type, target_id)`: nothing is voided twice. Never deleted or edited. The cloud checks the same rules on arrival (`20261029000000_voids.sql`); a void it still refuses is held on the desk (`sync_state` `held.<seq>`) without stopping the queue (`docs/sync.md`).
 
 ### refund_decisions
 | Column | Type | Notes |

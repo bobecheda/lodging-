@@ -37,6 +37,11 @@ class SyncStore {
   /// The refused row stopping the queue: "table id: message".
   static const problem = 'problem';
 
+  /// A void row the cloud refused (AD-7), held aside so it never stops the
+  /// queue: `held.<seq>` = "voids id: message". Tried again at each start.
+  static const heldPrefix = 'held.';
+  static String heldKey(int seq) => '$heldPrefix$seq';
+
   /// The pull's cursor: the last `server_seq` applied (sync-2).
   static const pullAfter = 'pull.after';
 
@@ -111,27 +116,50 @@ class SyncStore {
 
   // ── The outbox ─────────────────────────────────────────────────────────
 
-  Future<int> pendingCount() async {
-    final count = countAll(filter: _db.outbox.sentAt.isNull());
-    return (await (_db.selectOnly(
-      _db.outbox,
-    )..addColumns([count])).getSingle()).read(count)!;
+  /// Unsent rows waiting their turn (held voids aside).
+  Selectable<int> _pending() => _db
+      .customSelect(
+        'SELECT count(*) AS n FROM outbox WHERE sent_at IS NULL AND seq NOT IN '
+        "(SELECT CAST(substr(key, ${heldPrefix.length + 1}) AS INTEGER) "
+        "FROM sync_state WHERE key LIKE '$heldPrefix%')",
+        readsFrom: {_db.outbox, _db.syncState},
+      )
+      .map((r) => r.read<int>('n'));
+
+  Future<int> pendingCount() => _pending().getSingle();
+
+  Stream<int> watchPending() => _pending().watchSingle();
+
+  /// The oldest [limit] unsent rows, in the order they were written, held
+  /// voids aside.
+  Future<List<OutboxRow>> unsent({required int limit}) async {
+    final held = (await this.held()).keys;
+    return (_db.select(_db.outbox)
+          ..where((o) => o.sentAt.isNull() & o.seq.isNotIn(held))
+          ..orderBy([(o) => OrderingTerm.asc(o.seq)])
+          ..limit(limit))
+        .get();
   }
 
-  Stream<int> watchPending() {
-    final count = countAll(filter: _db.outbox.sentAt.isNull());
-    return (_db.selectOnly(
-      _db.outbox,
-    )..addColumns([count])).map((r) => r.read(count)!).watchSingle();
+  /// The void rows held aside: seq → "voids id: message".
+  Future<Map<int, String>> held() async => {
+    for (final s in await (_db.select(
+      _db.syncState,
+    )..where((s) => s.key.like('$heldPrefix%'))).get())
+      int.parse(s.key.substring(heldPrefix.length)): s.value,
+  };
+
+  /// Holds outbox row [seq] aside with the cloud's [message].
+  Future<void> hold(int seq, String message) async {
+    await recordFailure(seq, message);
+    await set(heldKey(seq), message);
   }
 
-  /// The oldest [limit] unsent rows, in the order they were written.
-  Future<List<OutboxRow>> unsent({required int limit}) =>
-      (_db.select(_db.outbox)
-            ..where((o) => o.sentAt.isNull())
-            ..orderBy([(o) => OrderingTerm.asc(o.seq)])
-            ..limit(limit))
-          .get();
+  /// Puts [seq] back in the queue (sent, or to be tried again).
+  Future<void> release(int seq) => set(heldKey(seq), null);
+
+  Future<OutboxRow> outboxRow(int seq) =>
+      (_db.select(_db.outbox)..where((o) => o.seq.equals(seq))).getSingle();
 
   /// The highest seq written so far (0 for an empty outbox).
   Future<int> maxSeq() async {

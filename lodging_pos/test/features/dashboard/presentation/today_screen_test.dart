@@ -69,6 +69,7 @@ void main() {
     expect(navLabels(tester), [
       Routes.today,
       Routes.shifts,
+      Routes.voids, // AD-7: the owner voids on the desk
       Routes.adminPrices,
       Routes.adminStaff,
     ]);

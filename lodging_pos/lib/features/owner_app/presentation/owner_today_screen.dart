@@ -82,8 +82,11 @@ class OwnerTodayScreen extends ConsumerWidget {
                   r,
                   onTap: () => context.go(OwnerRoutes.refundFor(r.refundId)),
                 ),
+              // A guest in a bed with no money behind the nights (AD-7).
+              for (final u in d.unpaid) AttentionRow.unpaid(u),
               // Decided on Prices, in the next update.
               for (final p in d.prices) AttentionRow.price(p, now: now),
+              ?AttentionRow.heldVoids(d.voidsHeld),
               for (final s in d.shortages)
                 AttentionRow(
                   key: ValueKey('today.attention.short.${s.shiftId}'),

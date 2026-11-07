@@ -76,7 +76,61 @@ class OwnerTodayRepository {
           OwnerCategory(c, beds: bedsByCategory[c.id] ?? 0),
       ],
       priceRequests: requests,
+      unpaid: await _unpaid(voided),
     );
+  }
+
+  /// Active stays with a voided payment (AD-7); read only when a payment
+  /// was voided at all. No guest columns.
+  Future<List<UnpaidStay>> _unpaid(Set<(String, String)> voided) async {
+    if (!voided.any((v) => v.$1 == 'payment')) return const [];
+    final stays = [
+      for (final s in await _cloud.rows(
+        'stays',
+        ['id', 'room_number', 'bed_label'],
+        where: const [Eq('status', 'active')],
+      ))
+        if (!voided.contains(('stay', s.str('id')))) s,
+    ];
+    if (stays.isEmpty) return const [];
+    final charges = await _cloud.rows(
+      'stay_charges',
+      ['stay_id', 'payment_id', 'nights', 'price_per_night', 'period_start'],
+      where: [
+        InList('stay_id', [for (final s in stays) s.str('id')]),
+      ],
+      orderBy: 'period_start',
+    );
+    final receipts = {
+      for (final p in await _cloud.rows(
+        'payments',
+        ['id', 'receipt_number'],
+        where: [
+          InList('id', {for (final c in charges) c.str('payment_id')}.toList()),
+        ],
+      ))
+        p.str('id'): p.str('receipt_number'),
+    };
+    return unpaidStays([
+      for (final s in stays)
+        ActiveStayCharges(
+          stayId: s.str('id'),
+          roomNumber: s.str('room_number'),
+          bedLabel: s.str('bed_label'),
+          charges: [
+            for (final c in charges)
+              if (c.str('stay_id') == s.str('id'))
+                (
+                  receiptNumber: receipts[c.str('payment_id')] ?? '',
+                  amount: c.integer('nights') * c.integer('price_per_night'),
+                  paymentVoided: voided.contains((
+                    'payment',
+                    c.str('payment_id'),
+                  )),
+                ),
+          ],
+        ),
+    ]);
   }
 
   Future<List<DeskStatus>> _desks() async => [
@@ -86,6 +140,7 @@ class OwnerTodayRepository {
       'last_push_at',
       'pending',
       'problem',
+      'voids_held',
     ]))
       DeskStatus(
         deviceId: d.str('device_id'),
@@ -93,6 +148,7 @@ class OwnerTodayRepository {
         lastPushAt: d.timeOrNull('last_push_at'),
         pending: d.integer('pending'),
         problem: d.strOrNull('problem'),
+        voidsHeld: d.intOrNull('voids_held') ?? 0,
       ),
   ];
 

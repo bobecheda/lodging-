@@ -165,6 +165,14 @@ class _ReceiptTile extends StatelessWidget {
               Row(
                 children: [
                   Expanded(child: Text(r.receiptNumber, style: t.monoStrong)),
+                  if (r.isVoid) ...[
+                    StatusBadge(
+                      'VOID',
+                      key: ValueKey('receipts.void.${r.receiptNumber}'),
+                      tone: BadgeTone.danger,
+                    ),
+                    const SizedBox(width: Space.x8),
+                  ],
                   Text(formatKes(r.total), style: t.monoStrong),
                 ],
               ),

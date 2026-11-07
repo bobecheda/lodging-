@@ -23,6 +23,7 @@ Receipt receipt({
   DateTime? checkedOutAt,
   bool isExtension = false,
   RefundFacts? refund,
+  ReceiptVoid? voided,
 }) => Receipt(
   lodgingName: 'Sunrise Lodge',
   receiptNumber: 'R-000041',
@@ -40,6 +41,7 @@ Receipt receipt({
   checkedOutAt: checkedOutAt,
   isExtension: isExtension,
   refund: refund,
+  voided: voided,
 );
 
 void main() {
@@ -270,6 +272,44 @@ void main() {
         ('Served by', 'Mary Wanjiku', false),
       ]);
       expect(receipt().totalLabel, 'Total paid');
+    });
+  });
+
+  group('a voided payment (AD-7, BR-11)', () {
+    test('says VOID, when, by whom and why; the figures stay as taken', () {
+      final r = receipt(
+        voided: ReceiptVoid(
+          voidedAt: oct(16, 8, 5),
+          voidedBy: 'Grace Supervisor',
+          reason: 'Was M-Pesa, not cash',
+        ),
+      );
+      expect(r.isVoid, isTrue);
+      expect(
+        r.voidLine,
+        'Voided Fri 16 Oct 2026, 08:05 by Grace Supervisor: Was M-Pesa, not '
+        'cash',
+      );
+      expect(r.total, 1200);
+      expect(receiptFileName(r), 'R-000041 VOID.pdf');
+    });
+
+    test('a reprint of a voided receipt is a VOID copy', () {
+      final r = receipt(
+        printCount: 2,
+        voided: ReceiptVoid(
+          voidedAt: oct(16, 8, 5),
+          voidedBy: 'Grace Supervisor',
+          reason: 'Duplicate',
+        ),
+      );
+      expect((r.isVoid, r.isCopy), (true, true));
+      expect(receiptFileName(r), 'R-000041 VOID COPY 2.pdf');
+    });
+
+    test('not voided: no mark', () {
+      final r = receipt();
+      expect((r.isVoid, r.voidLine), (false, null));
     });
   });
 }

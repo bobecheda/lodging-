@@ -22,6 +22,7 @@ final class ReceiptSummary {
     required this.total,
     required this.method,
     this.isRefund = false,
+    this.isVoid = false,
   });
 
   /// The receipt's key: the payment's id, or [refundReceiptKey] for a
@@ -43,6 +44,9 @@ final class ReceiptSummary {
 
   /// A refund payout's REFUND receipt (AD-7).
   final bool isRefund;
+
+  /// A voided payment (AD-7, BR-11): listed with a VOID badge.
+  final bool isVoid;
 }
 
 /// Receipts (FD-6): a payment and its charges, as printed. Reading is open
@@ -57,17 +61,15 @@ class ReceiptsRepository {
   static const listLimit = 50;
 
   /// The receipt with [key] (a payment's id, or a [refundReceiptKey]),
-  /// watched: a print or save turns it into a COPY at once.
-  Stream<Receipt> watchReceipt(String key) {
-    if (refundIdOfKey(key) case final refundId?) {
-      return (_db.select(_db.refunds)..where((r) => r.id.equals(refundId)))
-          .watchSingle()
-          .asyncMap(_assembleRefund);
-    }
-    return (_db.select(
-      _db.payments,
-    )..where((p) => p.id.equals(key))).watchSingle().asyncMap(_assemble);
-  }
+  /// watched: a print or save turns it into a COPY at once, a void into a
+  /// VOID.
+  Stream<Receipt> watchReceipt(String key) => _db
+      .customSelect(
+        'SELECT 1',
+        readsFrom: {_db.payments, _db.refunds, _db.voids},
+      )
+      .watch()
+      .asyncMap((_) => receipt(key));
 
   Future<Receipt> receipt(String key) async {
     if (refundIdOfKey(key) case final refundId?) {
@@ -184,8 +186,22 @@ class ReceiptsRepository {
             .putIfAbsent(row.readTable(_db.payments).id, () => [])
             .add(row);
       }
+      final voided = {
+        for (final v
+            in await (_db.select(_db.voids)..where(
+                  (v) =>
+                      v.targetType.equals('payment') &
+                      v.targetId.isIn(byPayment.keys),
+                ))
+                .get())
+          v.targetId,
+      };
       final all = [
-        for (final group in byPayment.values.take(listLimit)) _summary(group),
+        for (final group in byPayment.values.take(listLimit))
+          _summary(
+            group,
+            isVoid: voided.contains(group.first.readTable(_db.payments).id),
+          ),
         for (final row in await refunds.get()) _refundSummary(row),
       ];
       // Newest first; the same minute, the later number first.
@@ -198,9 +214,10 @@ class ReceiptsRepository {
       return all.take(listLimit).toList();
     }
 
-    // Read again whenever a payment or a refund (payout, reprint) changes.
+    // Read again whenever a payment or a refund (payout, reprint) changes,
+    // or something is voided.
     final changes = _db.tableUpdates(
-      TableUpdateQuery.onAllTables([_db.payments, _db.refunds]),
+      TableUpdateQuery.onAllTables([_db.payments, _db.refunds, _db.voids]),
     );
     return () async* {
       yield await load();
@@ -293,7 +310,7 @@ class ReceiptsRepository {
     );
   }
 
-  ReceiptSummary _summary(List<TypedResult> rows) {
+  ReceiptSummary _summary(List<TypedResult> rows, {required bool isVoid}) {
     final payment = rows.first.readTable(_db.payments);
     final guest = rows.first.readTable(_db.guests);
     final stays = [for (final r in rows) r.readTable(_db.stays)];
@@ -309,6 +326,7 @@ class ReceiptsRepository {
           : 'Room ${stays.first.roomNumber} · Beds ${labels.join(' and ')}',
       total: payment.amount,
       method: PaymentMethod.parse(payment.method),
+      isVoid: isVoid,
     );
   }
 
@@ -334,6 +352,18 @@ class ReceiptsRepository {
     final settings = {
       for (final s in await _db.select(_db.settings).get()) s.key: s.value,
     };
+    final voided =
+        await (_db.select(_db.voids)..where(
+              (v) =>
+                  v.targetType.equals('payment') &
+                  v.targetId.equals(payment.id),
+            ))
+            .getSingleOrNull();
+    final voider = voided == null
+        ? null
+        : await (_db.select(
+            _db.users,
+          )..where((u) => u.id.equals(voided.voidedBy))).getSingle();
 
     return Receipt(
       lodgingName:
@@ -367,6 +397,13 @@ class ReceiptsRepository {
           ? stays.first.checkedOutAt
           : null,
       isExtension: charges.first.kind == 'extension',
+      voided: voided == null
+          ? null
+          : ReceiptVoid(
+              voidedAt: voided.voidedAt,
+              voidedBy: voider!.fullName,
+              reason: voided.reason,
+            ),
     );
   }
 }

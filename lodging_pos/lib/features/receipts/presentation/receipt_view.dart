@@ -288,6 +288,34 @@ class ReceiptView extends StatelessWidget {
                 ),
               ),
             ],
+            if (r.voidLine case final line?) ...[
+              const SizedBox(height: Space.x12),
+              Container(
+                key: const ValueKey('receipt.void'),
+                padding: const EdgeInsets.all(Space.x12),
+                decoration: BoxDecoration(
+                  color: c.redTint,
+                  border: Border.all(color: c.redText, width: 2),
+                  borderRadius: BorderRadius.circular(Radii.control),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'VOID',
+                      textAlign: TextAlign.center,
+                      style: t.moneyLarge.copyWith(color: c.redText),
+                    ),
+                    Text(
+                      line,
+                      key: const ValueKey('receipt.voidLine'),
+                      textAlign: TextAlign.center,
+                      style: t.small.copyWith(color: c.redText),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: Space.x12),
             row('Guest', r.guestName),
             row(

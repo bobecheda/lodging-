@@ -21,6 +21,7 @@ final class TodayData {
     required this.stays,
     required this.awaiting,
     required this.prices,
+    this.unpaid = const [],
   });
 
   final List<MoneyMove> moves;
@@ -29,6 +30,9 @@ final class TodayData {
 
   /// Price requests waiting for the owner.
   final List<PriceAwaiting> prices;
+
+  /// Guests in a bed whose payment was voided (AD-7).
+  final List<UnpaidStay> unpaid;
 }
 
 /// Read again whenever a payment, refund, void, stay, charge or price
@@ -46,5 +50,6 @@ Future<TodayData> todayData(Ref ref) async {
     stays: await repo.stayNights(from),
     awaiting: await repo.refundsAwaiting(),
     prices: await repo.pricesAwaiting(),
+    unpaid: unpaidStays(await repo.activeStayCharges()),
   );
 }

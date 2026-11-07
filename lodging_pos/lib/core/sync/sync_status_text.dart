@@ -7,14 +7,18 @@ import 'sync_engine.dart';
 
 enum SyncTone { calm, waiting, problem }
 
-/// The pill's tone; a clock warning shows (in butter) only while online.
-SyncTone syncTone(SyncPhase phase, {bool clockWarning = false}) =>
-    switch (phase) {
-      SyncPhase.online when clockWarning => SyncTone.waiting,
-      SyncPhase.online || SyncPhase.uploading => SyncTone.calm,
-      SyncPhase.problem => SyncTone.problem,
-      _ => SyncTone.waiting,
-    };
+/// The pill's tone; a held void and a clock warning show (in butter) only
+/// while online.
+SyncTone syncTone(
+  SyncPhase phase, {
+  bool clockWarning = false,
+  int voidsHeld = 0,
+}) => switch (phase) {
+  SyncPhase.online when clockWarning || voidsHeld > 0 => SyncTone.waiting,
+  SyncPhase.online || SyncPhase.uploading => SyncTone.calm,
+  SyncPhase.problem => SyncTone.problem,
+  _ => SyncTone.waiting,
+};
 
 /// `12 min slow` / `7 min fast`: the PC against the server ([offset] is
 /// the PC's clock minus the server's).
@@ -27,6 +31,13 @@ String clockGap(Duration offset) {
 String clockWarningText(Duration offset) =>
     'PC clock is ${clockGap(offset)}. Windows Settings → Time & language → '
     'Sync now';
+
+/// The Sync panel's words for void rows the cloud refused (AD-7).
+String heldVoidsText(int count) =>
+    '${count == 1 ? 'One void is' : '$count voids are'} kept on this desk: '
+    'everything else carries on. Until it goes up, the owner\'s phone still '
+    'counts what it voids. It is tried again each time the desk starts. Tell '
+    'the developer.';
 
 /// `just now`, `4 min ago`, `3 h ago`, then the date (`Thu 15 Oct`).
 String syncAgo(DateTime at, DateTime now) {
@@ -42,8 +53,9 @@ String _waiting(int pending) =>
 
 /// "Online · synced 2 min ago", "Offline · 14 changes waiting",
 /// "Sync problem · details", "Uploading 3,400 of 12,880",
-/// "PC clock 12 min slow · fix", … A sync problem outranks the clock
-/// warning, which outranks online; offline keeps the warning for the panel.
+/// "1 void not in the cloud · details", "PC clock 12 min slow · fix", … A
+/// sync problem outranks a held void, which outranks the clock warning,
+/// which outranks online; offline keeps both for the panel.
 String syncPillText(
   SyncStatus status, {
   required int pending,
@@ -55,6 +67,9 @@ String syncPillText(
     'Uploading ${formatKesPlain(status.uploadSent)} of '
         '${formatKesPlain(status.uploadTotal)}',
   SyncPhase.waitingForOwner => 'First upload · owner sign-in needed',
+  SyncPhase.online when status.voidsHeld > 0 =>
+    '${status.voidsHeld == 1 ? '1 void' : '${status.voidsHeld} voids'} not in '
+        'the cloud · details',
   SyncPhase.online when status.clockWarning && status.clockOffset != null =>
     'PC clock ${clockGap(status.clockOffset!)} · fix',
   SyncPhase.online =>

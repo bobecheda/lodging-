@@ -46,6 +46,7 @@ final class ShiftSummary {
     required this.variance,
     required this.note,
     required this.closedByName,
+    this.voidedAfterClose = const VoidedAfterClose(cash: 0, paybill: 0),
   });
 
   final String id;
@@ -70,6 +71,10 @@ final class ShiftSummary {
   final int? variance;
   final String? note;
   final String? closedByName;
+
+  /// Its payments voided after it closed (BR-11); the figures above stay
+  /// as counted.
+  final VoidedAfterClose voidedAfterClose;
 
   bool get isOpen => closedAt == null;
 }
@@ -230,36 +235,73 @@ class ShiftRepository {
 
   /// The newest [limit] shifts on this device, open ones included, for the
   /// supervisor's Shifts screen. Watched, so a close shows at once.
-  Stream<List<ShiftSummary>> watchShifts({int limit = 50}) =>
-      (_db.select(_db.shifts)
-            ..orderBy([(s) => OrderingTerm.desc(s.openedAt)])
-            ..limit(limit))
-          .watch()
-          .asyncMap((rows) async {
-            final names = {
-              for (final u in await _db.select(_db.users).get())
-                u.id: u.fullName,
-            };
-            return [
-              for (final s in rows)
-                ShiftSummary(
-                  id: s.id,
-                  userId: s.userId,
-                  userName: names[s.userId] ?? '',
-                  openedAt: s.openedAt,
-                  openingFloat: s.openingFloat,
-                  closedAt: s.closedAt,
-                  takings: (await takings(s.id)).received,
-                  expectedCash: s.expectedCash,
-                  expectedPaybill: s.expectedPaybill,
-                  firstCount: s.firstCount,
-                  counted: s.countedCash,
-                  variance: s.variance,
-                  note: s.closeNote,
-                  closedByName: s.closedBy == null ? null : names[s.closedBy],
-                ),
-            ];
-          });
+  /// Voids refresh it too: a payment voided after a close shows beside it.
+  Stream<List<ShiftSummary>> watchShifts({int limit = 50}) {
+    Future<List<ShiftSummary>> load() async {
+      final rows =
+          await (_db.select(_db.shifts)
+                ..orderBy([(s) => OrderingTerm.desc(s.openedAt)])
+                ..limit(limit))
+              .get();
+      final names = {
+        for (final u in await _db.select(_db.users).get()) u.id: u.fullName,
+      };
+      return [
+        for (final s in rows)
+          ShiftSummary(
+            id: s.id,
+            userId: s.userId,
+            userName: names[s.userId] ?? '',
+            openedAt: s.openedAt,
+            openingFloat: s.openingFloat,
+            closedAt: s.closedAt,
+            takings: (await takings(s.id)).received,
+            expectedCash: s.expectedCash,
+            expectedPaybill: s.expectedPaybill,
+            firstCount: s.firstCount,
+            counted: s.countedCash,
+            variance: s.variance,
+            note: s.closeNote,
+            closedByName: s.closedBy == null ? null : names[s.closedBy],
+            voidedAfterClose: s.closedAt == null
+                ? const VoidedAfterClose(cash: 0, paybill: 0)
+                : await _voidedAfterClose(s.id, s.closedAt!),
+          ),
+      ];
+    }
+
+    return _db
+        .customSelect(
+          'SELECT 1',
+          readsFrom: {_db.shifts, _db.voids, _db.payments},
+        )
+        .watch()
+        .asyncMap((_) => load());
+  }
+
+  Future<VoidedAfterClose> _voidedAfterClose(
+    String shiftId,
+    DateTime closedAt,
+  ) async {
+    final payments = await (_db.select(
+      _db.payments,
+    )..where((p) => p.shiftId.equals(shiftId))).get();
+    final voids =
+        await (_db.select(_db.voids)..where(
+              (v) =>
+                  v.targetType.equals('payment') &
+                  v.targetId.isIn([for (final p in payments) p.id]),
+            ))
+            .get();
+    return voidedAfterClose(
+      closedAt: closedAt,
+      payments: [
+        for (final p in payments)
+          (id: p.id, amount: p.amount, method: PaymentMethod.parse(p.method)),
+      ],
+      voidedAt: {for (final v in voids) v.targetId: v.voidedAt},
+    );
+  }
 
   /// The shift with [id], as an open shift (for the close screen).
   Future<OpenShift?> openShiftById(String id) async {
