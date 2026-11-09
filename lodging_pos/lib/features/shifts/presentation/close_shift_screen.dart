@@ -16,15 +16,15 @@ import '../../backup/presentation/backup_providers.dart';
 import '../data/shift_repository.dart';
 import '../domain/shift.dart';
 import '../domain/shift_close.dart';
-import '../domain/shift_rules.dart';
 import 'shift_providers.dart';
 
-enum _Step { count, review, done }
-
-/// FD-11 "Close shift": a blind cash count, then the review (expected,
-/// counted, variance, M-Pesa), a note when it's short or over, and Close
-/// or Recount. Your own shift ends with Sign out; a supervisor closing
-/// someone else's goes back to Shifts.
+/// FD-11 "Close shift", blind (Story B): count the cash; a count that
+/// matches closes the shift. One that doesn't says so, with no amount and
+/// no short or over, and asks for one recount; a recount that still doesn't
+/// match asks why, and the shift closes anyway, for review. Each count is
+/// saved before the next is asked for, so leaving and coming back never
+/// gives another try. Only users with `viewShiftTotals` (supervisor, owner)
+/// see any figure, and only once the shift is closed.
 class CloseShiftScreen extends ConsumerStatefulWidget {
   const CloseShiftScreen({super.key, this.shiftId});
 
@@ -37,86 +37,29 @@ class CloseShiftScreen extends ConsumerStatefulWidget {
 
 class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
   final _count = TextEditingController();
-  final _note = TextEditingController();
-  var _step = _Step.count;
-  int? _firstCount;
-  int? _counted;
-  ShiftTakings? _takings;
+  final _reason = TextEditingController();
   CloseFigures? _closed;
+  var _needsReview = false;
   String? _countError;
-  String? _noteError;
+  String? _reasonError;
   String? _problem;
   var _busy = false;
+  OpenShift? _lastShift;
 
   @override
   void dispose() {
     _count.dispose();
-    _note.dispose();
+    _reason.dispose();
     super.dispose();
   }
 
-  Future<void> _review(OpenShift shift) async {
-    final amount = parseKes(_count.text);
-    final problem = countError(amount);
-    setState(() => _countError = problem);
-    if (problem != null) return;
-    final takings = await ref.read(shiftRepositoryProvider).takings(shift.id);
-    if (!mounted) return;
-    setState(() {
-      _firstCount ??= amount;
-      _counted = amount;
-      _takings = takings;
-      _problem = null;
-      _step = _Step.review;
-    });
-  }
-
-  void _recount() => setState(() {
-    _count.clear();
-    _noteError = null;
-    _problem = null;
-    _step = _Step.count;
-  });
-
-  Future<void> _close(OpenShift shift) async {
-    final user = ref.read(sessionProvider);
-    final takings = _takings;
-    if (user == null || takings == null) return;
-    final variance = closeFigures(
-      takings,
-      openingFloat: shift.openingFloat,
-      firstCount: _firstCount!,
-      counted: _counted!,
-    ).variance;
-    final noteProblem = closeNoteError(_note.text, variance);
-    setState(() => _noteError = noteProblem);
-    if (noteProblem != null) return;
+  Future<void> _run(Future<void> Function() action) async {
     setState(() {
       _busy = true;
       _problem = null;
     });
     try {
-      final figures = await ref
-          .read(shiftRepositoryProvider)
-          .closeShift(
-            user,
-            shift.id,
-            firstCount: _firstCount!,
-            counted: _counted!,
-            note: _note.text,
-            shown: takings,
-          );
-      // The day's takings go into a backup straight away, in the
-      // background; the summary doesn't wait.
-      ref.read(backupsProvider.notifier).afterShiftClose(user);
-      if (!mounted) return;
-      setState(() {
-        _closed = figures;
-        _step = _Step.done;
-      });
-      // Someone else's shift: the device is free now. (Your own is let go
-      // on Sign out, so the gate doesn't take this screen away first.)
-      if (shift.userId != user.id) ref.invalidate(currentShiftProvider);
+      await action();
     } on ShiftCloseRefused catch (e) {
       if (mounted) setState(() => _problem = e.message);
     } on NotPermitted {
@@ -124,6 +67,57 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _closedWith(
+    OpenShift shift,
+    CloseFigures figures, {
+    bool review = false,
+  }) {
+    final user = ref.read(sessionProvider)!;
+    // The day's takings go into a backup straight away, in the background.
+    ref.read(backupsProvider.notifier).afterShiftClose(user);
+    setState(() {
+      _closed = figures;
+      _needsReview = review;
+    });
+    // Someone else's shift: the device is free now. (Your own is let go on
+    // Sign out, so the gate doesn't take this screen away first.)
+    if (shift.userId != user.id) ref.invalidate(currentShiftProvider);
+  }
+
+  Future<void> _submitCount(OpenShift shift) async {
+    final user = ref.read(sessionProvider);
+    final amount = parseKes(_count.text);
+    final problem = countError(amount);
+    setState(() => _countError = problem);
+    if (user == null || problem != null) return;
+    await _run(() async {
+      final result = await ref
+          .read(shiftRepositoryProvider)
+          .submitCount(user, shift.id, amount!);
+      if (!mounted) return;
+      _count.clear();
+      switch (result) {
+        case CountClosed(:final figures):
+          _closedWith(shift, figures);
+        case CountAgain() || ReasonNeeded():
+          ref.invalidate(closeStageProvider(shift.id));
+      }
+    });
+  }
+
+  Future<void> _submitReason(OpenShift shift) async {
+    final user = ref.read(sessionProvider);
+    final problem = closeReasonError(_reason.text);
+    setState(() => _reasonError = problem);
+    if (user == null || problem != null) return;
+    await _run(() async {
+      final figures = await ref
+          .read(shiftRepositoryProvider)
+          .closeWithReason(user, shift.id, _reason.text);
+      if (mounted) _closedWith(shift, figures, review: true);
+    });
   }
 
   void _signOut() {
@@ -142,6 +136,7 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
         : ref.watch(openShiftByIdProvider(id));
     // Keep the shift being closed on screen after it's closed.
     final shift = _lastShift = found.value ?? _lastShift;
+    final seesFigures = user != null && can(user, Permission.viewShiftTotals);
 
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,28 +145,36 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
         if (shift != null)
           Text(
             '${shift.userName} · shift since '
-            '${formatDayDateTime(shift.openedAt)} · float '
-            '${formatKes(shift.openingFloat)}',
+            '${formatDayDateTime(shift.openedAt)}',
             key: const ValueKey('closeShift.whose'),
             style: t.small.copyWith(color: c.muted),
           ),
       ],
     );
 
+    final closed = _closed;
     final Widget body;
     if (user == null) {
       body = const SizedBox.shrink();
-    } else if (shift == null ||
-        (_step != _Step.done && id == null && shift.userId != user.id)) {
+    } else if (closed != null && shift != null) {
+      body = _doneStep(
+        closed,
+        own: shift.userId == user.id,
+        seesFigures: seesFigures,
+      );
+    } else if (shift == null || (id == null && shift.userId != user.id)) {
       body = const Note.info(
         'You have no open shift on this computer.',
         key: ValueKey('closeShift.none'),
       );
     } else {
-      body = switch (_step) {
-        _Step.count => _countStep(shift),
-        _Step.review => _reviewStep(shift),
-        _Step.done => _doneStep(shift, own: shift.userId == user.id),
+      body = switch (ref.watch(closeStageProvider(shift.id)).value) {
+        null => const SizedBox(
+          height: 120,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        CountStage.reason => _reasonStep(shift),
+        final stage => _countStep(shift, recount: stage == CountStage.recount),
       };
     }
 
@@ -201,17 +204,23 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
     );
   }
 
-  OpenShift? _lastShift;
-
-  Widget _countStep(OpenShift shift) {
+  Widget _countStep(OpenShift shift, {required bool recount}) {
     final t = LodgingType.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (recount) ...[
+          const Note.warning(
+            countAgainMessage,
+            key: ValueKey('closeShift.countAgain'),
+          ),
+          const SizedBox(height: Space.x16),
+        ],
         Text(
-          _firstCount == null
-              ? 'Count the cash in the drawer, including the float.'
-              : 'Count again. Your first count stays on the record.',
+          recount
+              ? 'Count all the cash in the drawer once more. Your first '
+                    'count stays on the record.'
+              : 'Count all the cash in the drawer.',
           style: t.body,
         ),
         const SizedBox(height: Space.x16),
@@ -222,88 +231,47 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
           large: true,
           autofocus: true,
           errorText: _countError,
-          helperText: 'Count first: what’s expected shows after.',
-          onSubmitted: (_) => _review(shift),
+          onSubmitted: (_) => _submitCount(shift),
         ),
+        if (_problem != null) ...[
+          const SizedBox(height: Space.x12),
+          Note.error(_problem!, key: const ValueKey('closeShift.problem')),
+        ],
         const SizedBox(height: Space.x20),
         AppButton.primary(
-          key: const ValueKey('closeShift.review'),
-          label: 'Review',
-          onPressed: () => _review(shift),
+          key: const ValueKey('closeShift.submit'),
+          label: recount ? 'Submit the recount' : 'Submit the count',
+          busy: _busy,
+          onPressed: () => _submitCount(shift),
+        ),
+        const SizedBox(height: Space.x8),
+        Text(
+          'A closed shift can’t be reopened.',
+          textAlign: TextAlign.center,
+          style: t.small,
         ),
       ],
     );
   }
 
-  Widget _reviewStep(OpenShift shift) {
-    final c = LodgingColors.of(context);
+  Widget _reasonStep(OpenShift shift) {
     final t = LodgingType.of(context);
-    final takings = _takings!;
-    final f = closeFigures(
-      takings,
-      openingFloat: shift.openingFloat,
-      firstCount: _firstCount!,
-      counted: _counted!,
-    );
-    final recount = recountLine(f.firstCount, f.counted);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Row('Opening float', formatKes(shift.openingFloat)),
-        _Row('Cash taken', formatKes(takings.cash.received)),
-        if (takings.cash.refunded > 0)
-          _Row('Cash refunds paid', '− ${formatKes(takings.cash.refunded)}'),
-        _Row(
-          'Expected cash',
-          formatKes(f.expectedCash),
-          strong: true,
-          valueKey: 'closeShift.expected',
-        ),
-        _Row(
-          'Counted',
-          formatKes(f.counted),
-          strong: true,
-          valueKey: 'closeShift.counted',
-        ),
-        if (recount != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: Space.x6),
-            child: Text(
-              recount,
-              key: const ValueKey('closeShift.recountLine'),
-              style: t.small.copyWith(color: c.muted),
-            ),
-          ),
-        const SizedBox(height: Space.x6),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: StatusBadge(
-            varianceLabel(f.variance).toUpperCase(),
-            key: const ValueKey('closeShift.variance'),
-            tone: f.variance == 0 ? BadgeTone.active : BadgeTone.warning,
-          ),
-        ),
-        const SizedBox(height: Space.x12),
-        Divider(color: c.lineSoft),
-        _Row(
-          'M-Pesa taken',
-          formatKes(f.expectedPaybill),
-          valueKey: 'closeShift.paybill',
-        ),
-        Text(
-          'Compare this with the M-Pesa statement.',
-          style: t.small.copyWith(color: c.muted),
+        const Note.warning(
+          reasonNeededMessage,
+          key: ValueKey('closeShift.reasonNeeded'),
         ),
         const SizedBox(height: Space.x16),
         LabeledField(
-          label: f.variance == 0 ? 'Note (optional)' : 'Note',
-          controller: _note,
-          fieldKey: const ValueKey('closeShift.note'),
-          errorText: _noteError,
-          helperText: f.variance == 0
-              ? 'At most $closeNoteMax characters.'
-              : 'Say why the cash is ${f.variance < 0 ? 'short' : 'over'}. '
-                    'At most $closeNoteMax characters.',
+          label: 'Reason',
+          controller: _reason,
+          fieldKey: const ValueKey('closeShift.reason'),
+          errorText: _reasonError,
+          autofocus: true,
+          helperText:
+              'The supervisor reviews it. At most $closeNoteMax characters.',
         ),
         if (_problem != null) ...[
           const SizedBox(height: Space.x12),
@@ -314,28 +282,25 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
           key: const ValueKey('closeShift.confirm'),
           label: 'Close shift',
           busy: _busy,
-          onPressed: () => _close(shift),
-        ),
-        const SizedBox(height: Space.x8),
-        AppButton.secondary(
-          key: const ValueKey('closeShift.recount'),
-          label: 'Recount',
-          onPressed: _busy ? null : _recount,
+          onPressed: () => _submitReason(shift),
         ),
         const SizedBox(height: Space.x8),
         Text(
           'A closed shift can’t be reopened.',
           textAlign: TextAlign.center,
-          style: t.small.copyWith(color: c.muted),
+          style: t.small,
         ),
       ],
     );
   }
 
-  Widget _doneStep(OpenShift shift, {required bool own}) {
+  Widget _doneStep(
+    CloseFigures f, {
+    required bool own,
+    required bool seesFigures,
+  }) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final f = _closed!;
     return Column(
       key: const ValueKey('closeShift.done'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -347,11 +312,27 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
             Text('Shift closed', style: t.sectionTitle),
           ],
         ),
-        const SizedBox(height: Space.x16),
-        _Row('Expected cash', formatKes(f.expectedCash)),
-        _Row('Counted', formatKes(f.counted)),
-        _Row('Variance', varianceLabel(f.variance), strong: true),
-        _Row('M-Pesa taken', formatKes(f.expectedPaybill)),
+        const SizedBox(height: Space.x8),
+        Text(
+          _needsReview
+              ? 'Your count and your reason are recorded for review.'
+              : 'Your count is recorded.',
+          style: t.body.copyWith(color: c.inkSoft),
+        ),
+        if (seesFigures) ...[
+          const SizedBox(height: Space.x16),
+          _Row('Expected cash', formatKes(f.expectedCash)),
+          _Row('Counted', formatKes(f.counted)),
+          if (recountLine(f.firstCount, f.counted) case final line?)
+            Text(line, style: t.small.copyWith(color: c.muted)),
+          _Row(
+            'Variance',
+            varianceLabel(f.variance),
+            strong: true,
+            valueKey: 'closeShift.variance',
+          ),
+          _Row('M-Pesa taken', formatKes(f.expectedPaybill)),
+        ],
         const SizedBox(height: Space.x20),
         if (own)
           AppButton.primary(

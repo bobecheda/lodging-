@@ -71,6 +71,7 @@ class SyncStore {
     'housekeepers',
     'guests',
     'shifts',
+    'drawer_events',
     'stays',
     'payments',
     'stay_charges',

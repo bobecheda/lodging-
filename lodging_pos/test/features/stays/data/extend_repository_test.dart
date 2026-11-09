@@ -6,7 +6,6 @@ import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
 import 'package:lodging_pos/features/receipts/data/receipts_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 import 'package:lodging_pos/features/shifts/domain/shift_rules.dart';
 import 'package:lodging_pos/features/stays/data/check_out_repository.dart';
 import 'package:lodging_pos/features/stays/data/extend_repository.dart';
@@ -27,10 +26,7 @@ void main() {
     env.clock.set(nairobiInstant(2026, 10, 15, 19)); // Thu 19:00
     supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('mary');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 0);
+    await env.openShift(desk, startingCash: 0);
     repo = ExtendRepository(env.db, env.audit);
     final room = await RoomsRepository(env.db, env.audit).createRoom(
       supervisor,

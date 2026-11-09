@@ -19,7 +19,8 @@ void main() {
   );
   tearDown(() => db.close());
 
-  /// table → its columns, from every `create table public.X (...)`.
+  /// table → its columns, from every `create table public.X (...)` and
+  /// every `alter table public.X add column Y` after it.
   Map<String, Set<String>> cloudTables() {
     final sql = [
       for (final f in Directory(
@@ -32,7 +33,7 @@ void main() {
       dotAll: true,
     ).allMatches(sql);
     const notColumns = {'check', 'unique', 'primary', 'foreign', 'constraint'};
-    return {
+    final columns = {
       for (final t in tables)
         t.group(1)!: {
           for (final line in t.group(2)!.split('\n'))
@@ -41,6 +42,17 @@ void main() {
               name,
         },
     };
+    for (final alter in RegExp(
+      r'alter table public\.(\w+)(.*?);',
+      dotAll: true,
+    ).allMatches(sql)) {
+      for (final added in RegExp(
+        r'add column (\w+)',
+      ).allMatches(alter.group(2)!)) {
+        columns[alter.group(1)!]?.add(added.group(1)!);
+      }
+    }
+    return columns;
   }
 
   test('the upload lists name every synced table, once', () {

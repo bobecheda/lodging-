@@ -63,6 +63,8 @@ void main() {
       Permission.manageSupervisors,
       Permission.connectDesk,
       Permission.ownerCloudPassword,
+      // Story B (10 Nov 2026): the count tolerance.
+      Permission.setCashRules,
     };
     const ownerAndSupervisor = {
       Permission.viewAllReports,
@@ -70,6 +72,9 @@ void main() {
       Permission.workWithoutShift,
       // AD-7 voids (7 Nov 2026): the owner voids on the desk too.
       Permission.voidRecords,
+      // Story B: the blind close's figures and counting the drawer.
+      Permission.viewShiftTotals,
+      Permission.checkDrawer,
     };
     const supervisorOnly = {
       Permission.requestPriceChange,
@@ -93,7 +98,6 @@ void main() {
       Permission.assignHousekeeping,
       Permission.markClean,
       Permission.recordStock,
-      Permission.viewOwnReport,
       Permission.registerGuests,
       Permission.printReceipts,
     };

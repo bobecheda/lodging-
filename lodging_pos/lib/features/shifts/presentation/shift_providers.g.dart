@@ -79,7 +79,7 @@ final class CurrentShiftProvider
   CurrentShift create() => CurrentShift();
 }
 
-String _$currentShiftHash() => r'eb4505f0c36fa9e74aa419d19ff17073a8bdf4d5';
+String _$currentShiftHash() => r'380c322c01bd2f11887c9ca34aa87b32256a8728';
 
 /// The open shift on this device, if any.
 
@@ -167,58 +167,98 @@ abstract class _$ShiftContinued extends $Notifier<bool> {
   }
 }
 
-/// Taken so far on [shiftId], for the resume card.
+/// Whether the drawer has been counted at least once (the starting cash).
 
-@ProviderFor(shiftTakings)
-final shiftTakingsProvider = ShiftTakingsFamily._();
+@ProviderFor(drawerStarted)
+final drawerStartedProvider = DrawerStartedProvider._();
 
-/// Taken so far on [shiftId], for the resume card.
+/// Whether the drawer has been counted at least once (the starting cash).
 
-final class ShiftTakingsProvider
+final class DrawerStartedProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// Whether the drawer has been counted at least once (the starting cash).
+  DrawerStartedProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'drawerStartedProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$drawerStartedHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    return drawerStarted(ref);
+  }
+}
+
+String _$drawerStartedHash() => r'7080925121f5c318dcf71602984a9a8bf42f0521';
+
+/// Where [shiftId]'s close is (first count, recount, reason), from the shift
+/// itself.
+
+@ProviderFor(closeStage)
+final closeStageProvider = CloseStageFamily._();
+
+/// Where [shiftId]'s close is (first count, recount, reason), from the shift
+/// itself.
+
+final class CloseStageProvider
     extends
         $FunctionalProvider<
-          AsyncValue<ShiftTakings>,
-          ShiftTakings,
-          FutureOr<ShiftTakings>
+          AsyncValue<CountStage>,
+          CountStage,
+          FutureOr<CountStage>
         >
-    with $FutureModifier<ShiftTakings>, $FutureProvider<ShiftTakings> {
-  /// Taken so far on [shiftId], for the resume card.
-  ShiftTakingsProvider._({
-    required ShiftTakingsFamily super.from,
+    with $FutureModifier<CountStage>, $FutureProvider<CountStage> {
+  /// Where [shiftId]'s close is (first count, recount, reason), from the shift
+  /// itself.
+  CloseStageProvider._({
+    required CloseStageFamily super.from,
     required String super.argument,
   }) : super(
          retry: null,
-         name: r'shiftTakingsProvider',
+         name: r'closeStageProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$shiftTakingsHash();
+  String debugGetCreateSourceHash() => _$closeStageHash();
 
   @override
   String toString() {
-    return r'shiftTakingsProvider'
+    return r'closeStageProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<ShiftTakings> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<CountStage> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
-  FutureOr<ShiftTakings> create(Ref ref) {
+  FutureOr<CountStage> create(Ref ref) {
     final argument = this.argument as String;
-    return shiftTakings(ref, argument);
+    return closeStage(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ShiftTakingsProvider && other.argument == argument;
+    return other is CloseStageProvider && other.argument == argument;
   }
 
   @override
@@ -227,29 +267,116 @@ final class ShiftTakingsProvider
   }
 }
 
-String _$shiftTakingsHash() => r'2c59d1691ff87b19e6c42daa317dad773b53ad42';
+String _$closeStageHash() => r'723ad26e212657359cef8e6a4a565970447f3f23';
 
-/// Taken so far on [shiftId], for the resume card.
+/// Where [shiftId]'s close is (first count, recount, reason), from the shift
+/// itself.
 
-final class ShiftTakingsFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<ShiftTakings>, String> {
-  ShiftTakingsFamily._()
+final class CloseStageFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<CountStage>, String> {
+  CloseStageFamily._()
     : super(
         retry: null,
-        name: r'shiftTakingsProvider',
+        name: r'closeStageProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// Taken so far on [shiftId], for the resume card.
+  /// Where [shiftId]'s close is (first count, recount, reason), from the shift
+  /// itself.
 
-  ShiftTakingsProvider call(String shiftId) =>
-      ShiftTakingsProvider._(argument: shiftId, from: this);
+  CloseStageProvider call(String shiftId) =>
+      CloseStageProvider._(argument: shiftId, from: this);
 
   @override
-  String toString() => r'shiftTakingsProvider';
+  String toString() => r'closeStageProvider';
 }
+
+/// What the drawer should hold now, for [viewShiftTotals] users only; null
+/// for anyone else and before any count.
+
+@ProviderFor(drawerNow)
+final drawerNowProvider = DrawerNowProvider._();
+
+/// What the drawer should hold now, for [viewShiftTotals] users only; null
+/// for anyone else and before any count.
+
+final class DrawerNowProvider
+    extends $FunctionalProvider<AsyncValue<int?>, int?, FutureOr<int?>>
+    with $FutureModifier<int?>, $FutureProvider<int?> {
+  /// What the drawer should hold now, for [viewShiftTotals] users only; null
+  /// for anyone else and before any count.
+  DrawerNowProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'drawerNowProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$drawerNowHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<int?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int?> create(Ref ref) {
+    return drawerNow(ref);
+  }
+}
+
+String _$drawerNowHash() => r'e70d69b6bc4234e67a88e2118a6efa5d8fa00859';
+
+/// The drawer's chain, newest first, for [viewShiftTotals] users only.
+
+@ProviderFor(drawerChain)
+final drawerChainProvider = DrawerChainProvider._();
+
+/// The drawer's chain, newest first, for [viewShiftTotals] users only.
+
+final class DrawerChainProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ChainEntry>>,
+          List<ChainEntry>,
+          Stream<List<ChainEntry>>
+        >
+    with $FutureModifier<List<ChainEntry>>, $StreamProvider<List<ChainEntry>> {
+  /// The drawer's chain, newest first, for [viewShiftTotals] users only.
+  DrawerChainProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'drawerChainProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$drawerChainHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<ChainEntry>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<ChainEntry>> create(Ref ref) {
+    return drawerChain(ref);
+  }
+}
+
+String _$drawerChainHash() => r'93f10763fa6a8fdc0f8f8bbf8658cb1ab3dd0a71';
 
 /// The supervisor's list of shifts (FD-11), watched.
 

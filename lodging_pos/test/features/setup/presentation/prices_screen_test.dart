@@ -249,9 +249,9 @@ void main() {
 
   testWidgets('a receptionist cannot open Prices & settings', (tester) async {
     await env.addReceptionist('desk');
+    await env.ensureDrawerStarted(counted: 500);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
-    await enterKey(tester, 'shift.float', '500');
     await tapKey(tester, 'shift.submit');
     expect(find.text('Prices & settings'), findsNothing);
 

@@ -16,7 +16,6 @@ import 'package:lodging_pos/features/guests/data/guests_repository.dart';
 import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/price_requests/data/price_requests_repository.dart';
 import 'package:lodging_pos/features/refunds/data/refunds_repository.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/core/database/database.dart';
@@ -93,10 +92,7 @@ void main() {
   testWidgets('lock screen after idle, shift kept', (tester) async {
     await withOwner();
     final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 1000);
+    await env.openShift(desk, startingCash: 1000);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
@@ -131,7 +127,9 @@ void main() {
     );
   });
 
-  testWidgets('open shift, with an error', (tester) async {
+  testWidgets('open shift, before the starting cash is counted', (
+    tester,
+  ) async {
     await withOwner();
     await env.addReceptionist('desk');
     final app = await pumpDeskApp(tester, env);
@@ -141,17 +139,15 @@ void main() {
       tester,
       app,
       Routes.shift,
-      'Enter the opening cash float',
+      'The starting cash hasn’t been counted yet. Ask the supervisor or the '
+      'owner to count it.',
     );
   });
 
   testWidgets('resume shift', (tester) async {
     await withOwner();
     final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 2000);
+    await env.openShift(desk, startingCash: 2000);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await expectCleanLayout(tester, app, Routes.shift, 'Continue my shift');
@@ -161,10 +157,7 @@ void main() {
     await withOwner();
     final desk = await env.addReceptionist('desk');
     await env.addReceptionist('tom');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 2000);
+    await env.openShift(desk, startingCash: 2000);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'tom', 'desk-pass');
     await expectCleanLayout(
@@ -229,7 +222,7 @@ void main() {
       await env.addReceptionist('desk');
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'desk', 'desk-pass');
-      await expectCleanLayout(tester, app, Routes.shift, 'Opening cash float');
+      await expectCleanLayout(tester, app, Routes.shift, 'Open shift');
       expect(wordmark(), findsOne);
     });
   });
@@ -237,10 +230,7 @@ void main() {
   testWidgets('desk shell: receptionist in a shift', (tester) async {
     await withOwner();
     final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 1000);
+    await env.openShift(desk, startingCash: 1000);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
@@ -910,10 +900,7 @@ void main() {
           .account;
       final staff = StaffRepository(env.db, env.audit, env.hasher);
       final mary = await env.addReceptionist('mary');
-      await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: mary, openingFloat: 500);
+      await env.openShift(mary, startingCash: 500);
       await env.addReceptionist('james', mustChangePassword: true);
       final kevin = await env.addReceptionist('kevin');
       await staff.disableUser(supervisor, kevin.id);
@@ -1115,10 +1102,7 @@ void main() {
           .account;
       final repo = RoomsRepository(env.db, env.audit);
       if (shift) {
-        await ShiftRepository(
-          env.db,
-          env.audit,
-        ).openShift(user: supervisor, openingFloat: 0);
+        await env.openShift(supervisor, startingCash: 0);
       }
       final r7 = await repo.createRoom(
         supervisor,
@@ -1239,10 +1223,7 @@ void main() {
       await withOwner();
       final supervisor = (await env.users.findByUsername('supervisor'))!
           .account;
-      await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: supervisor, openingFloat: 0);
+      await env.openShift(supervisor, startingCash: 0);
       final repo = RoomsRepository(env.db, env.audit);
       for (var n = 1; n <= 12; n++) {
         final room = await repo.createRoom(
@@ -1420,15 +1401,13 @@ void main() {
     Future<(ProviderContainer, String)> withMaryShift(
       WidgetTester tester, {
       required String signIn,
+      Future<void> Function(UserAccount supervisor, String shiftId)? before,
     }) async {
       await withOwner();
       final supervisor = (await env.users.findByUsername('supervisor'))!
           .account;
       final mary = await env.addReceptionist('mary');
-      final shift = await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: mary, openingFloat: 1000);
+      final shift = await env.openShift(mary, startingCash: 1000);
       final room = await RoomsRepository(env.db, env.audit).createRoom(
         supervisor,
         const NewRoom(
@@ -1440,6 +1419,7 @@ void main() {
         ),
       );
       await env.checkIn(room.beds.single.id, by: mary, nights: 3);
+      await before?.call(supervisor, shift.id);
       final app = await pumpDeskApp(tester, env);
       await signInAs(
         tester,
@@ -1449,36 +1429,39 @@ void main() {
       return (app, shift.id);
     }
 
-    testWidgets('review after a recount, short, with the note error', (
+    testWidgets('the recount, then the reason step with its error', (
       tester,
     ) async {
       final (app, _) = await withMaryShift(tester, signIn: 'mary');
       await tapKey(tester, 'shift.continue');
       await tapKey(tester, 'shell.closeShift');
       await enterKey(tester, 'closeShift.count', '2000');
-      await tapKey(tester, 'closeShift.review');
-      await tapKey(tester, 'closeShift.recount');
+      await tapKey(tester, 'closeShift.submit');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.closeShift,
+        'Your count doesn’t match. Count the cash again.',
+      );
       await enterKey(tester, 'closeShift.count', '2900');
-      await tapKey(tester, 'closeShift.review');
+      await tapKey(tester, 'closeShift.submit');
       await tapKey(tester, 'closeShift.confirm');
       await expectCleanLayout(tester, app, Routes.closeShift, 'Close shift');
-      expect(find.text('Say why the cash is short.'), findsOneWidget);
+      expect(find.text('Say why the count may be different.'), findsOneWidget);
     });
 
     testWidgets('the supervisor’s Shifts: a closed shift with a high variance, '
         'a recount and who closed it', (tester) async {
-      final (app, shiftId) = await withMaryShift(tester, signIn: 'supervisor');
-      final supervisor = (await env.users.findByUsername('supervisor'))!
-          .account;
-      final shifts = ShiftRepository(env.db, env.audit);
-      await tester.runAsync(
-        () async => shifts.closeShift(
+      // Closed before the app runs: a close is several writes and reads.
+      final (app, shiftId) = await withMaryShift(
+        tester,
+        signIn: 'supervisor',
+        before: (supervisor, shiftId) => env.closeShiftWith(
           supervisor,
           shiftId,
           firstCount: 2600,
           counted: 2800,
-          note: 'Change for a large note was given from the float twice',
-          shown: await shifts.takings(shiftId),
+          reason: 'Change for a large note was given from the float twice',
         ),
       );
       await tapKey(tester, 'nav.${Routes.shifts}');

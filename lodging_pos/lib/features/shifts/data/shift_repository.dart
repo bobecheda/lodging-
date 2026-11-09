@@ -4,7 +4,9 @@ import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database.dart';
+import '../../../core/settings/setting_defaults.dart';
 import '../../payments/domain/payment_rules.dart';
+import '../domain/drawer.dart';
 import '../domain/shift.dart';
 import '../domain/shift_close.dart';
 import '../domain/shift_rules.dart';
@@ -29,6 +31,47 @@ class ShiftCloseRefused implements Exception {
   String toString() => message;
 }
 
+/// No count of the drawer yet: the supervisor or owner counts the starting
+/// cash before the first shift (`drawer.start`).
+class NoStartingCash implements Exception {
+  const NoStartingCash();
+
+  @override
+  String toString() =>
+      'The starting cash hasn’t been counted yet. Ask the supervisor or the '
+      'owner to count it (Cash).';
+}
+
+/// A drawer count can't be saved; [message] says why.
+class DrawerRefused implements Exception {
+  const DrawerRefused(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// What a count at close did.
+sealed class CountResult {
+  const CountResult();
+}
+
+/// The count matched (first time or on the recount): the shift is closed.
+final class CountClosed extends CountResult {
+  const CountClosed(this.figures);
+  final CloseFigures figures;
+}
+
+/// The first count didn't match; it's saved. Count once more.
+final class CountAgain extends CountResult {
+  const CountAgain();
+}
+
+/// The recount didn't match either; it's saved. Give a reason to close.
+final class ReasonNeeded extends CountResult {
+  const ReasonNeeded();
+}
+
 /// A shift as the supervisor's Shifts screen lists it.
 final class ShiftSummary {
   const ShiftSummary({
@@ -47,6 +90,7 @@ final class ShiftSummary {
     required this.note,
     required this.closedByName,
     this.voidedAfterClose = const VoidedAfterClose(cash: 0, paybill: 0),
+    this.needsReview = false,
   });
 
   final String id;
@@ -76,8 +120,18 @@ final class ShiftSummary {
   /// as counted.
   final VoidedAfterClose voidedAfterClose;
 
+  /// Closed with a count that didn't match even on the recount (Story B).
+  final bool needsReview;
+
   bool get isOpen => closedAt == null;
 }
+
+/// The domain's [drawerChain] (the repository's method of the same name
+/// hides it inside the class).
+List<ChainEntry> _chainOf({
+  required List<ChainShift> shifts,
+  required List<DrawerStartRecord> starts,
+}) => drawerChain(shifts: shifts, starts: starts);
 
 class ShiftRepository {
   ShiftRepository(this._db, this._audit);
@@ -99,26 +153,189 @@ class ShiftRepository {
     return _toOpenShift(row.readTable(_db.shifts), row.readTable(_db.users));
   }
 
-  /// Opens a shift for [user] with [openingFloat] whole KES (`shift.open`).
-  Future<OpenShift> openShift({
-    required UserAccount user,
-    required int openingFloat,
-  }) async {
-    final problem = openingFloatError(openingFloat);
-    if (problem != null) throw ArgumentError(problem);
+  // ── The drawer (Story B) ─────────────────────────────────────────────
+
+  /// Every count the drawer's balance starts again from: the drawer's own
+  /// counts, then closing counts (a close wins a tie: a count during a
+  /// shift comes before its close).
+  Future<List<DrawerAnchor>> _anchors() async => [
+    for (final d in await _db.select(_db.drawerEvents).get())
+      DrawerAnchor(
+        id: d.id,
+        kind: AnchorKind.values.byName(d.kind),
+        at: d.countedAt,
+        counted: d.counted,
+        removed: d.removed,
+      ),
+    for (final s in await (_db.select(
+      _db.shifts,
+    )..where((s) => s.status.equals('closed'))).get())
+      DrawerAnchor(
+        id: s.id,
+        kind: AnchorKind.close,
+        at: s.closedAt!,
+        counted: s.countedCash!,
+      ),
+  ];
+
+  /// Whether the drawer has been counted at least once.
+  Future<bool> drawerStarted() async => (await _anchors()).isNotEmpty;
+
+  /// The supervisor or owner counts the starting cash, once, before the
+  /// first shift (`drawer.start`). Throws [NotPermitted] or
+  /// [DrawerRefused].
+  Future<void> startDrawer(UserAccount user, {required int counted}) async {
+    requirePermission(user, Permission.checkDrawer);
+    if (countError(counted) case final problem?) throw DrawerRefused(problem);
+    await _audit.writeWithAudit(
+      action: 'drawer.start',
+      userId: user.id,
+      body: (w) async {
+        if ((await _anchors()).isNotEmpty) {
+          throw const DrawerRefused('The starting cash was already counted.');
+        }
+        await w.insert(
+          _db.drawerEvents,
+          DrawerEventsCompanion.insert(
+            kind: 'start',
+            countedBy: user.id,
+            counted: counted,
+            countedAt: w.now,
+          ),
+        );
+      },
+    );
+  }
+
+  /// What the drawer should hold now. Needs [Permission.viewShiftTotals].
+  Future<int?> drawerNow(UserAccount user) async {
+    requirePermission(user, Permission.viewShiftTotals);
+    final open = await openShiftOnThisDevice();
+    return drawerExpectedNow(
+      latest: openingFloatFrom(await _anchors())?.balance,
+      openFloat: open?.openingFloat,
+      openCashNet: open == null ? 0 : (await takings(open.id)).cash.net,
+    );
+  }
+
+  /// The drawer's history, newest first. Needs
+  /// [Permission.viewShiftTotals].
+  Future<List<ChainEntry>> drawerChain(UserAccount user) async {
+    requirePermission(user, Permission.viewShiftTotals);
+    final names = {
+      for (final u in await _db.select(_db.users).get()) u.id: u.fullName,
+    };
+    return _chainOf(
+      shifts: [
+        for (final s in await _db.select(_db.shifts).get())
+          ChainShift(
+            id: s.id,
+            userName: names[s.userId] ?? '',
+            openedAt: s.openedAt,
+            openingFloat: s.openingFloat,
+            closedAt: s.closedAt,
+            expectedCash: s.expectedCash,
+            firstCount: s.firstCount,
+            counted: s.status == 'closed' ? s.countedCash : null,
+            needsReview: s.needsReview,
+            note: s.closeNote,
+          ),
+      ],
+      starts: [
+        for (final d in await (_db.select(
+          _db.drawerEvents,
+        )..where((d) => d.kind.equals('start'))).get())
+          DrawerStartRecord(
+            id: d.id,
+            at: d.countedAt,
+            counted: d.counted,
+            by: names[d.countedBy] ?? '',
+          ),
+      ],
+    );
+  }
+
+  /// [drawerChain], watched.
+  Stream<List<ChainEntry>> watchDrawerChain(UserAccount user) {
+    requirePermission(user, Permission.viewShiftTotals);
+    return _db
+        .customSelect(
+          'SELECT 1',
+          readsFrom: {_db.shifts, _db.drawerEvents, _db.users},
+        )
+        .watch()
+        .asyncMap((_) => drawerChain(user));
+  }
+
+  /// A shift's takings so far, for those who may see them (the resume
+  /// card, the review). Needs [Permission.viewShiftTotals].
+  Future<ShiftTakings> shiftFigures(UserAccount user, String shiftId) async {
+    requirePermission(user, Permission.viewShiftTotals);
+    return takings(shiftId);
+  }
+
+  /// The count tolerance in KES, owner only (`setCashRules`,
+  /// `settings.update`).
+  Future<void> setCountTolerance(UserAccount user, int kes) async {
+    requirePermission(user, Permission.setCashRules);
+    if (kes < 0) throw ArgumentError('The tolerance cannot be negative.');
+    const key = SettingKeys.shiftCountTolerance;
+    final stored = await (_db.select(
+      _db.settings,
+    )..where((s) => s.key.equals(key))).getSingleOrNull();
+    await _audit.writeWithAudit(
+      action: 'settings.update',
+      userId: user.id,
+      body: (w) async {
+        if (stored != null) {
+          await w.update(
+            _db.settings,
+            key,
+            SettingsCompanion(value: Value('$kes'), updatedBy: Value(user.id)),
+          );
+        } else {
+          await w.insert(
+            _db.settings,
+            SettingsCompanion.insert(
+              key: key,
+              value: '$kes',
+              updatedBy: Value(user.id),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Future<int> _tolerance() async {
+    const key = SettingKeys.shiftCountTolerance;
+    final stored = await (_db.select(
+      _db.settings,
+    )..where((s) => s.key.equals(key))).getSingleOrNull();
+    return int.tryParse(stored?.value ?? settingDefaults[key]!) ?? 0;
+  }
+
+  /// Opens a shift for [user] (`shift.open`). The float is the drawer's
+  /// balance at the last count, never typed; before the starting cash is
+  /// counted, throws [NoStartingCash].
+  Future<OpenShift> openShift({required UserAccount user}) async {
+    requirePermission(user, Permission.openShift);
     final row = await _audit.writeWithAudit(
       action: 'shift.open',
       userId: user.id,
       body: (w) async {
         final existing = await openShiftOnThisDevice();
         if (existing != null) throw ShiftAlreadyOpen(existing);
+        final anchor = openingFloatFrom(await _anchors());
+        if (anchor == null) throw const NoStartingCash();
         return w.insert(
           _db.shifts,
           ShiftsCompanion.insert(
             userId: user.id,
             openedAt: w.now,
-            openingFloat: openingFloat,
+            openingFloat: anchor.balance,
             status: 'open',
+            openedFrom: Value(anchor.id),
           ),
         );
       },
@@ -168,70 +385,147 @@ class ShiftRepository {
     );
   }
 
-  /// Closes [shiftId] with a blind [firstCount] and the final [counted]
-  /// cash (equal unless there was a recount) and [note] (`shift.close`).
-  /// [shown] is what the review screen worked from: if a payment came in
-  /// since, nothing is saved. Throws [NotPermitted] or [ShiftCloseRefused].
-  Future<CloseFigures> closeShift(
+  // ── Closing: the blind count (FD-11, Story B) ──────────────────────────
+
+  Future<ShiftRow> _closable(UserAccount user, String shiftId) async {
+    final shift = await (_db.select(
+      _db.shifts,
+    )..where((s) => s.id.equals(shiftId))).getSingle();
+    if (!mayCloseShift(user, shiftUserId: shift.userId)) {
+      throw NotPermitted(
+        shift.userId == user.id
+            ? Permission.closeShift
+            : Permission.closeOtherShifts,
+      );
+    }
+    if (shift.status != 'open') {
+      throw const ShiftCloseRefused('This shift is already closed.');
+    }
+    return shift;
+  }
+
+  /// Where [shiftId]'s close is: the first count, the recount or the
+  /// reason. Read from the shift, so leaving and coming back never gives
+  /// another try.
+  Future<CountStage> countStageOf(String shiftId) async {
+    final s = await (_db.select(
+      _db.shifts,
+    )..where((s) => s.id.equals(shiftId))).getSingle();
+    return countStage(firstCount: s.firstCount, recount: s.countedCash);
+  }
+
+  /// One blind count of [shiftId]'s drawer by [user]. Matching closes the
+  /// shift (`shift.close`); not matching saves it (`shift.count_mismatch`)
+  /// and asks once more, then for a reason ([closeWithReason]). The counter
+  /// learns only which of the three it is. Throws [NotPermitted] or
+  /// [ShiftCloseRefused].
+  Future<CountResult> submitCount(
     UserAccount user,
-    String shiftId, {
-    required int firstCount,
-    required int counted,
-    required String note,
-    required ShiftTakings shown,
-  }) async {
-    return _audit.writeWithAudit(
-      action: 'shift.close',
+    String shiftId,
+    int count,
+  ) async {
+    if (countError(count) case final problem?) {
+      throw ShiftCloseRefused(problem);
+    }
+    final shift = await _closable(user, shiftId);
+    final stage = countStage(
+      firstCount: shift.firstCount,
+      recount: shift.countedCash,
+    );
+    if (stage == CountStage.reason) {
+      throw const ShiftCloseRefused(reasonNeededMessage);
+    }
+    final figures = closeFigures(
+      await takings(shiftId),
+      openingFloat: shift.openingFloat,
+      firstCount: shift.firstCount ?? count,
+      counted: count,
+    );
+    if (countMatches(
+      count,
+      expected: figures.expectedCash,
+      tolerance: await _tolerance(),
+    )) {
+      return CountClosed(
+        await _close(user, shiftId, figures, needsReview: false, note: null),
+      );
+    }
+    await _audit.writeWithAudit(
+      action: 'shift.count_mismatch',
       userId: user.id,
-      body: (w) async {
-        final shift = await (_db.select(
-          _db.shifts,
-        )..where((s) => s.id.equals(shiftId))).getSingle();
-        if (!mayCloseShift(user, shiftUserId: shift.userId)) {
-          throw NotPermitted(
-            shift.userId == user.id
-                ? Permission.closeShift
-                : Permission.closeOtherShifts,
-          );
-        }
-        if (shift.status != 'open') {
-          throw const ShiftCloseRefused('This shift is already closed.');
-        }
-        final countProblem = countError(firstCount) ?? countError(counted);
-        if (countProblem != null) throw ShiftCloseRefused(countProblem);
+      body: (w) => w.update(
+        _db.shifts,
+        shiftId,
+        stage == CountStage.first
+            ? ShiftsCompanion(firstCount: Value(count))
+            : ShiftsCompanion(countedCash: Value(count)),
+      ),
+    );
+    return stage == CountStage.first
+        ? const CountAgain()
+        : const ReasonNeeded();
+  }
 
-        final now = await takings(shiftId);
-        final change = closeChange(shown, now);
-        if (change != null) throw ShiftCloseRefused(change);
-
-        final figures = closeFigures(
-          now,
-          openingFloat: shift.openingFloat,
-          firstCount: firstCount,
-          counted: counted,
-        );
-        final noteProblem = closeNoteError(note, figures.variance);
-        if (noteProblem != null) throw ShiftCloseRefused(noteProblem);
-
-        await w.update(
-          _db.shifts,
-          shiftId,
-          ShiftsCompanion(
-            status: const Value('closed'),
-            closedAt: Value(w.now),
-            expectedCash: Value(figures.expectedCash),
-            expectedPaybill: Value(figures.expectedPaybill),
-            firstCount: Value(firstCount),
-            countedCash: Value(counted),
-            variance: Value(figures.variance),
-            closeNote: Value(note.trim().isEmpty ? null : note.trim()),
-            closedBy: Value(user.id),
-          ),
-        );
-        return figures;
-      },
+  /// Closes [shiftId] after two counts that didn't match, with [reason]
+  /// (required): the close needs review. BR-12 is never blocked. Throws
+  /// [NotPermitted] or [ShiftCloseRefused].
+  Future<CloseFigures> closeWithReason(
+    UserAccount user,
+    String shiftId,
+    String reason,
+  ) async {
+    final shift = await _closable(user, shiftId);
+    if (countStage(firstCount: shift.firstCount, recount: shift.countedCash) !=
+        CountStage.reason) {
+      throw const ShiftCloseRefused('Count the cash first.');
+    }
+    if (closeReasonError(reason) case final problem?) {
+      throw ShiftCloseRefused(problem);
+    }
+    return _close(
+      user,
+      shiftId,
+      closeFigures(
+        await takings(shiftId),
+        openingFloat: shift.openingFloat,
+        firstCount: shift.firstCount!,
+        counted: shift.countedCash!,
+      ),
+      needsReview: true,
+      note: reason.trim(),
     );
   }
+
+  Future<CloseFigures> _close(
+    UserAccount user,
+    String shiftId,
+    CloseFigures figures, {
+    required bool needsReview,
+    required String? note,
+  }) => _audit.writeWithAudit(
+    action: 'shift.close',
+    userId: user.id,
+    body: (w) async {
+      final shift = await _closable(user, shiftId);
+      await w.update(
+        _db.shifts,
+        shift.id,
+        ShiftsCompanion(
+          status: const Value('closed'),
+          closedAt: Value(w.now),
+          expectedCash: Value(figures.expectedCash),
+          expectedPaybill: Value(figures.expectedPaybill),
+          firstCount: Value(figures.firstCount),
+          countedCash: Value(figures.counted),
+          variance: Value(figures.variance),
+          closeNote: Value(note),
+          closedBy: Value(user.id),
+          needsReview: Value(needsReview),
+        ),
+      );
+      return figures;
+    },
+  );
 
   /// The newest [limit] shifts on this device, open ones included, for the
   /// supervisor's Shifts screen. Watched, so a close shows at once.
@@ -263,6 +557,7 @@ class ShiftRepository {
             variance: s.variance,
             note: s.closeNote,
             closedByName: s.closedBy == null ? null : names[s.closedBy],
+            needsReview: s.needsReview,
             voidedAfterClose: s.closedAt == null
                 ? const VoidedAfterClose(cash: 0, paybill: 0)
                 : await _voidedAfterClose(s.id, s.closedAt!),

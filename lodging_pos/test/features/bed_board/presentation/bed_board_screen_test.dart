@@ -10,7 +10,6 @@ import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
@@ -228,10 +227,7 @@ void main() {
     // runAsync wakes the board's watched queries, which take the database
     // lock in fake time, and a later read inside runAsync would wait for
     // it forever.
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: supervisor, openingFloat: 0);
+    await env.openShift(supervisor, startingCash: 0);
     await openBoard(tester);
     expect(tileText('4A', 'READY'), findsOneWidget);
 

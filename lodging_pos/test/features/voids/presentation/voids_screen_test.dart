@@ -28,7 +28,7 @@ void main() {
     supervisor = await env.createFirstSupervisor(testSetup);
     desk = await env.addReceptionist('desk');
     final shifts = ShiftRepository(env.db, env.audit);
-    await shifts.openShift(user: desk, openingFloat: 0);
+    await env.openShift(desk, startingCash: 0);
     final rooms = RoomsRepository(env.db, env.audit);
     final r8 = await rooms.createRoom(
       supervisor,
@@ -80,15 +80,12 @@ void main() {
     );
     twoBeds = await env.checkIns.checkIn(desk, request(r8.beds));
     // The supervisor's own payment, in a shift of their own.
-    await shifts.closeShift(
+    await env.closeShiftWith(
       desk,
       (await shifts.openShiftOnThisDevice())!.id,
       firstCount: 1300,
-      counted: 1300,
-      note: '',
-      shown: await shifts.takings((await shifts.openShiftOnThisDevice())!.id),
     );
-    await shifts.openShift(user: supervisor, openingFloat: 0);
+    await env.openShift(supervisor, startingCash: 0);
     own = await env.checkIns.checkIn(supervisor, request(r9.beds));
   });
   tearDown(() => env.close());

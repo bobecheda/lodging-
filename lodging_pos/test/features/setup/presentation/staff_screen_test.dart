@@ -5,7 +5,6 @@ import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/features/setup/data/staff_repository.dart';
 import 'package:lodging_pos/features/setup/presentation/staff_screen.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
@@ -83,10 +82,7 @@ void main() {
   testWidgets('disabling a user whose shift is open warns, then disables; '
       'enable brings them back', (tester) async {
     final mary = await env.addReceptionist('mary');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: mary, openingFloat: 500);
+    await env.openShift(mary, startingCash: 500);
     await openStaff(tester);
     expect(
       inRow('mary', find.textContaining('shift open since')),
@@ -159,9 +155,9 @@ void main() {
 
   testWidgets('a receptionist cannot open Users & staff', (tester) async {
     await env.addReceptionist('desk');
+    await env.ensureDrawerStarted(counted: 500);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
-    await enterKey(tester, 'shift.float', '500');
     await tapKey(tester, 'shift.submit');
     expect(find.text('Users & staff'), findsNothing);
 

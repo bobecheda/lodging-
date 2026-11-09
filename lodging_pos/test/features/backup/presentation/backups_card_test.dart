@@ -7,7 +7,6 @@ import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/features/backup/domain/backup.dart';
 import 'package:lodging_pos/features/backup/presentation/backup_providers.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
@@ -88,10 +87,7 @@ void main() {
   testWidgets('a failed backup: a receptionist sees the chip, which leads '
       'nowhere for them', (tester) async {
     final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 0);
+    await env.openShift(desk, startingCash: 0);
     File(inTemp(backupFileName(nairobiInstant(2026, 10, 18, 7))))
         .writeAsStringSync('x');
     blockTodaysBackup();

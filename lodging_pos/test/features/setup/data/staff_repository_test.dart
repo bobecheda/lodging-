@@ -7,7 +7,6 @@ import 'package:lodging_pos/features/auth/data/login_service.dart';
 import 'package:lodging_pos/features/auth/domain/login.dart';
 import 'package:lodging_pos/features/setup/data/staff_repository.dart';
 import 'package:lodging_pos/features/setup/domain/staff.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
@@ -102,10 +101,7 @@ void main() {
         ),
       );
       await staff.disableUser(supervisor, james.id);
-      await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: mary, openingFloat: 500);
+      await env.openShift(mary, startingCash: 500);
 
       final list = await staff.users();
       expect(
@@ -158,10 +154,7 @@ void main() {
 
     test('disabling a user with an open shift is allowed', () async {
       final mary = await addMary();
-      await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: mary, openingFloat: 500);
+      await env.openShift(mary, startingCash: 500);
       await staff.disableUser(supervisor, mary.id);
       expect((await reload(mary.id)).isActive, isFalse);
     });

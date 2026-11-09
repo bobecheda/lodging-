@@ -132,7 +132,8 @@ void main() {
     ];
 
     // Every v1 key present; the upgrade adds only the keys created since,
-    // at their default (backup_second_folder, daily backups).
+    // at their default (backup_second_folder, daily backups;
+    // shift_count_tolerance, Story B).
     final oldSettingsData = <v1.SettingsData>[
       for (final s in settings)
         v1.SettingsData(
@@ -156,6 +157,13 @@ void main() {
       const v5.SettingsData(
         key: 'backup_second_folder',
         value: '',
+        createdAt: '2026-10-14T19:00:00.000Z',
+        updatedAt: '2026-10-14T19:00:00.000Z',
+        deviceId: 'seed',
+      ),
+      const v5.SettingsData(
+        key: 'shift_count_tolerance',
+        value: '0',
         createdAt: '2026-10-14T19:00:00.000Z',
         updatedAt: '2026-10-14T19:00:00.000Z',
         deviceId: 'seed',
@@ -992,7 +1000,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      9,
+      10,
     );
   });
 
@@ -1046,7 +1054,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      9,
+      10,
     );
     final category = await db
         .customSelect('SELECT price_per_night, updated_at FROM bed_categories')
@@ -1109,8 +1117,151 @@ void main() {
     expect((outbox.targetRowId, outbox.sentAt), ('r1', null));
   });
 
+  test('migration from v9 to v10: shifts keep everything, need no review and '
+      'have no float source; an open shift can now hold its first count; a '
+      'closed one still never changes; drawer counts start empty and are '
+      'never edited or deleted', () async {
+    const at = "'2026-11-09T06:00:00.000Z'";
+    final db = open(
+      NativeDatabase.memory(
+        setup: (raw) {
+          appStatements(9).forEach(raw.execute);
+          raw.execute('PRAGMA user_version = 9');
+          raw.execute(
+            'INSERT INTO users (id, created_at, updated_at, device_id, '
+            'full_name, username, password_hash, role, is_active, '
+            'must_change_password) VALUES '
+            "('u-desk', $at, $at, 'dev', 'Mary Desk', 'mary', 'x', "
+            "'receptionist', 1, 0), "
+            "('u-sup', $at, $at, 'dev', 'Grace', 'grace', 'x', "
+            "'supervisor', 1, 0)",
+          );
+          raw.execute(
+            'INSERT INTO shifts (id, created_at, updated_at, device_id, '
+            'user_id, opened_at, opening_float, closed_at, expected_cash, '
+            'expected_paybill, counted_cash, variance, status, first_count, '
+            'close_note, closed_by) VALUES '
+            "('s-closed', $at, $at, 'dev', 'u-desk', $at, 1000, $at, 5000, "
+            "1400, 4800, -200, 'closed', 4700, 'Change from my pocket', "
+            "'u-desk'), "
+            "('s-open', $at, $at, 'dev', 'u-desk', $at, 4800, NULL, NULL, "
+            "NULL, NULL, NULL, 'open', NULL, NULL, NULL)",
+          );
+        },
+      ),
+    );
+    addTearDown(db.close);
+
+    final shifts = await (db.select(
+      db.shifts,
+    )..orderBy([(s) => OrderingTerm.asc(s.id)])).get();
+    expect(
+      [
+        for (final s in shifts)
+          (
+            s.id,
+            s.openingFloat,
+            s.firstCount,
+            s.countedCash,
+            s.variance,
+            s.closeNote,
+            s.needsReview,
+            s.openedFrom,
+          ),
+      ],
+      [
+        (
+          's-closed',
+          1000,
+          4700,
+          4800,
+          -200,
+          'Change from my pocket',
+          false,
+          null,
+        ),
+        ('s-open', 4800, null, null, null, null, false, null),
+      ],
+    );
+    // v10: an open shift holds its first count (a count that didn't match).
+    await db.customStatement(
+      "UPDATE shifts SET first_count = 4800, updated_at = "
+      "'2026-11-09T07:00:00.000Z' WHERE id = 's-open'",
+    );
+    // A closed one still never changes, and the stamp trigger is back.
+    await expectLater(
+      db.customStatement(
+        "UPDATE shifts SET close_note = 'edited', updated_at = "
+        "'2030-01-01T00:00:00.000Z' WHERE id = 's-closed'",
+      ),
+      throwsA(anything),
+    );
+    await expectLater(
+      db.customStatement(
+        "UPDATE shifts SET first_count = 1 WHERE id = 's-open'",
+      ),
+      throwsA(anything),
+    );
+    // A closed shift still needs its first count.
+    await expectLater(
+      db.customStatement(
+        "UPDATE shifts SET status = 'closed', closed_at = $at, "
+        'expected_cash = 0, expected_paybill = 0, counted_cash = 0, '
+        "variance = 0, first_count = NULL, closed_by = 'u-desk', "
+        "updated_at = '2026-11-09T08:00:00.000Z' WHERE id = 's-open'",
+      ),
+      throwsA(anything),
+    );
+
+    expect(await db.select(db.drawerEvents).get(), isEmpty);
+    await db.customStatement(
+      'INSERT INTO drawer_events (id, created_at, updated_at, device_id, '
+      'kind, counted_by, counted, counted_at) VALUES '
+      "('d-1', $at, $at, 'dev', 'start', 'u-sup', 2000, $at)",
+    );
+    await expectLater(
+      db.customStatement(
+        "UPDATE drawer_events SET counted = 1, updated_at = "
+        "'2030-01-01T00:00:00.000Z' WHERE id = 'd-1'",
+      ),
+      throwsA(anything),
+    );
+    await expectLater(
+      db.customStatement("DELETE FROM drawer_events WHERE id = 'd-1'"),
+      throwsA(anything),
+    );
+    // A check needs the receptionist present, who isn't the counter.
+    await expectLater(
+      db.customStatement(
+        'INSERT INTO drawer_events (id, created_at, updated_at, device_id, '
+        'kind, counted_by, counted, expected, counted_at) VALUES '
+        "('d-2', $at, $at, 'dev', 'check', 'u-sup', 2000, 2000, $at)",
+      ),
+      throwsA(anything),
+    );
+    await expectLater(
+      db.customStatement(
+        'INSERT INTO drawer_events (id, created_at, updated_at, device_id, '
+        'kind, counted_by, present_user, counted, expected, counted_at) '
+        "VALUES ('d-3', $at, $at, 'dev', 'check', 'u-sup', 'u-sup', 2000, "
+        '2000, $at)',
+      ),
+      throwsA(anything),
+    );
+    // Only a collection removes cash, and never more than counted.
+    await expectLater(
+      db.customStatement(
+        'INSERT INTO drawer_events (id, created_at, updated_at, device_id, '
+        'kind, counted_by, present_user, counted, expected, removed, '
+        "counted_at) VALUES ('d-4', $at, $at, 'dev', 'collect', 'u-sup', "
+        "'u-desk', 2000, 2000, 2500, $at)",
+      ),
+      throwsA(anything),
+    );
+  });
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4, 5, 6, 7, 8]) {
+    for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -1135,7 +1286,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          9,
+          10,
         );
         final objects = await db
             .customSelect(

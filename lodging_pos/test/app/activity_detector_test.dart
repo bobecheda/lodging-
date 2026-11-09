@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/features/auth/presentation/idle_lock.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../helpers/fixtures.dart';
 
@@ -19,10 +18,7 @@ void main() {
   Future<ProviderContainer> signedInApp(WidgetTester tester) async {
     await env.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 1000);
+    await env.openShift(desk, startingCash: 1000);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');

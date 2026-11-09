@@ -70,7 +70,7 @@ Each story lists the conditions that must all hold before it counts as done.
 
 - Login works with no internet, using the last synced credentials.
 - No check-in or payment is possible without an open shift.
-- Opening a shift records the opening cash float.
+- Opening a shift records the opening cash float, which comes from the drawer (Story B, 10 Nov 2026): the last count of it (the previous closing count, or the starting cash), never typed and never shown to the receptionist. Before the first shift ever, the supervisor or owner counts the starting cash on the day (Cash, `drawer.start`); until then no shift opens.
 
 **FD-2 See the bed board.** As a receptionist, I want to see every bed's status at once so that I know what I can let.
 
@@ -151,18 +151,16 @@ Each story lists the conditions that must all hold before it counts as done.
 
 **FD-11 Close a shift.** As a receptionist, I want to close my shift with a cash count so that my takings are reconciled.
 
-- Shows expected cash (float + cash payments) and expected Paybill total.
-- Requires the counted cash; the variance is saved and shown to the supervisor (and the owner, sprint 2).
-- A closed shift cannot be reopened.
-- The count is blind: the cash counted is entered before the expected amount is shown. A recount is allowed; the first count is kept beside the final one.
-- A short or over variance needs a note (at most 200 characters).
-- A supervisor can close someone else's open shift (e.g. left open overnight), recorded as "closed by X for Y's shift"; a blocked receptionist is told who can close it.
-- The supervisor's Shifts screen lists shifts with their variance, highlighting any over 1% of the shift's takings, with the recount and the note.
+- **Blind (Story B1, 10 Nov 2026):** the receptionist never sees expected cash, the M-Pesa total or any shift total, before, during or after the close (`viewShiftTotals` is the supervisor's and the owner's only). The resume card shows no takings.
+- A count that matches (within `shift_count_tolerance`, owner-only, default and UB40 0, so overs are reviewed like shorts) closes the shift.
+- One that doesn't: "Your count doesn't match. Count the cash again." — no amount, no short or over. The first count is saved at once (`shift.count_mismatch`), so leaving and coming back goes straight to the recount; there is one recount, never a third count.
+- A recount that still doesn't match asks for a reason (required, at most 200 characters, neutral wording); the shift closes anyway, needing review (`needs_review`). Closing is never blocked (BR-12). "Matched only on recount" (first count missed, recount matched) is recorded and shown on Shifts and Cash.
+- The expected cash, the counts and the variance are saved; the supervisor and owner see them after the close. A closed shift cannot be reopened.
+- A supervisor can close someone else's open shift (e.g. left open overnight), blind too, recorded as "closed by X for Y's shift"; a blocked receptionist is told who can close it.
+- The supervisor's (and owner's) Shifts screen lists shifts with their variance, highlighting those that need review, with the recount, "matched only on recount" and the reason. The 1% highlight is dropped.
+- **Cash** (supervisor and owner): what the drawer should hold now and its chain, newest first: the starting cash, each shift's opening (its float checked against the count before it; a mismatch is a break) and close. Drawer checks and weekly collections join the chain in Story B2; review decisions come with Story B3.
 
-**FD-12 Download my monthly report.** As a receptionist, I want a PDF of my takings for the month.
-
-- Covers only that receptionist's own shifts: takings by day and method, and shift variances.
-- Does not show other receptionists' takings, expenses or profit.
+**FD-12 Download my monthly report.** *Dropped (10 Nov 2026):* it would show a receptionist their takings, which the blind close (FD-11) forbids. Reports are the owner's only (AD-9).
 
 ## Admin stories
 
@@ -251,7 +249,7 @@ These rules are enforced by the system and override anything a user enters.
 | BR-9 | Checkout makes the bed Available and Not cleaned; only completed housekeeping makes it Clean. |
 | BR-10 | Each M-Pesa transaction code can be used once. |
 | BR-11 | Stays, payments and audit entries are never edited or deleted; a supervisor voids with a reason. |
-| BR-12 | Payments need an open shift; each shift closes with a cash count and recorded variance. |
+| BR-12 | Payments need an open shift; each shift closes with a blind cash count and recorded variance (never blocked: a count that doesn't match closes with a reason, for review). |
 
 ## Non-functional requirements
 
@@ -288,7 +286,7 @@ The project runs as two-week Scrum sprints adapted for one developer, with the o
 | 1 | 14–27 Oct | A receptionist can run a full stay offline: check-in, payment, receipt, checkout | Project setup and audit logging, FD-1 to FD-6, FD-8 (refund requests; approval and payout move to sprint 2 with AD-7), FD-9 (assign and mark clean, so a checked-out bed can be let again), AD-1 to AD-4 (on the desk app); then CI, FD-11 shift close, FD-7 extend and the daily local backup, in that order | \~118 |
 | 2 | 28 Oct–10 Nov | Money is controlled and the owner can see it from his phone | The owner's sign-in (first run creates the owner; `editPrices` moves to the owner; supervisors request price changes), AD-7 (the owner approves refunds; payout and REFUND receipt at the desk), cloud sync, admin app, AD-5 (today and monthly revenue), Windows installer | \~106 |
 | **Go-live** | **11 Nov** | **Core in use at the lodging, alongside paper records for the first week** |  |  |
-| 3 | 11–24 Nov | Complete the MVP and fix pilot issues | FD-10, AD-10, AD-6, AD-8 (audit trail screen), AD-9, FD-12, full dashboard metrics, pilot fixes | \~90 |
+| 3 | 11–24 Nov | Complete the MVP and fix pilot issues | FD-10, AD-10, AD-6, AD-8 (audit trail screen), AD-9, full dashboard metrics, pilot fixes (FD-12 dropped) | \~90 |
 
 **Priorities (MoSCoW)**
 

@@ -139,11 +139,30 @@ Partial UNIQUE(id_type, id_number) WHERE id_number IS NOT NULL, ignoring case: t
 | counted_cash | INT | set on close |
 | variance | INT | counted − expected |
 | first_count | INT | v5: the first, blind count; `counted_cash` is the final one after any recount |
-| close_note | TEXT | v5: ≤ 200 characters; the app requires it when variance ≠ 0 |
+| close_note | TEXT | v5: ≤ 200 characters; since v10 the reason a count that didn't match on the recount was given (required then) |
 | closed_by | TEXT → users | v5: who closed it (a supervisor may close someone else's, `closeOtherShifts`) |
 | status | TEXT | `open` \| `closed` |
+| needs_review | BOOL | v10: closed with a count that didn't match even on the recount; fixed at close |
+| opened_from | TEXT | v10: the count the opening float came from (a closed shift's id or a `drawer_events` id); null before v10 |
 
-At most one open shift per device. A closed shift must have `closed_at`, `expected_cash`, `expected_paybill`, `counted_cash` and `variance`, with `variance = counted_cash − expected_cash`. Since v5 it also has `first_count` and `closed_by`, and trigger `shifts_closed_final` refuses any change to it: a closed shift can't be reopened (FD-11). Closing is one `shift.close` write; its audit entry keeps both counts.
+At most one open shift per device. A closed shift must have `closed_at`, `expected_cash`, `expected_paybill`, `counted_cash`, `variance` (= `counted_cash − expected_cash`), `first_count` and `closed_by`, and trigger `shifts_closed_final` refuses any change to it: a closed shift can't be reopened (FD-11). **v10 (Story B1), the blind close:** a first count that doesn't match is saved on the open shift at once (`first_count`, `shift.count_mismatch`), and a recount that doesn't match either too (`counted_cash` while open), so leaving the close never gives another try; the close is one `shift.close` write. The opening float is never typed: it is the drawer's last count (`ShiftRepository.openShift`, `shifts/domain/drawer.dart`).
+
+### drawer_events (v10, desk-owned)
+| Column | Type | Notes |
+|---|---|---|
+| kind | TEXT | `start` (the starting cash, B1) \| `check` (a drawer check, B2) \| `collect` (a weekly collection, B2) |
+| counted_by | TEXT → users | the owner or a supervisor (`checkDrawer`) |
+| present_user | TEXT → users | the receptionist present; null only for `start`; never the counter |
+| shift_id | TEXT → shifts | the shift open at the time, if any |
+| first_count | INT | a first count that didn't match (one recount) |
+| counted | INT | ≥ 0 |
+| expected | INT | what the drawer should have held; null for `start` |
+| removed | INT | cash taken away; only for `collect`, ≤ `counted` |
+| note | TEXT | ≤ 200 characters |
+| needs_review | BOOL | |
+| counted_at | DATETIME | |
+
+The drawer's own counts. Each is an anchor of its running ledger: a shift's float is the latest anchor's balance (`counted − removed`). Never edited or deleted (triggers). The starting cash is counted once, before the first shift. Pushed insert-only; the cloud checks the counter's role (`20261110000000_cash_drawer.sql`).
 
 ### stays
 | Column | Type | Notes |

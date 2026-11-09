@@ -6,21 +6,20 @@ import '../../../app/gate.dart';
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/buttons.dart';
 import '../../../app/widgets/gate_top_bar.dart';
-import '../../../app/widgets/money_input.dart';
 import '../../../app/widgets/notes.dart';
+import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/clock/nairobi.dart';
-import '../../../core/money/kes.dart';
-import '../../payments/domain/payment_rules.dart';
 import '../data/shift_repository.dart';
 import '../domain/shift.dart';
 import '../domain/shift_close.dart';
 import '../domain/shift_rules.dart';
 import 'shift_providers.dart';
 
-/// Before working, a receptionist opens a shift (counting the float),
+/// Before working, a receptionist opens a shift (its float comes from the
+/// drawer, Story B),
 /// continues their own open shift, or is told whose shift is blocking the
 /// device (artboard "Open or resume shift").
 class OpenShiftScreen extends ConsumerWidget {
@@ -117,29 +116,26 @@ class _OpenNew extends ConsumerStatefulWidget {
   ConsumerState<_OpenNew> createState() => _OpenNewState();
 }
 
+/// Opening a shift (Story B): no float to type. The float is what the
+/// drawer held at its last count, and the receptionist never sees it.
+/// Before the starting cash is counted, the shift can't open.
 class _OpenNewState extends ConsumerState<_OpenNew> {
-  final _float = TextEditingController();
   String? _error;
   var _busy = false;
 
-  @override
-  void dispose() {
-    _float.dispose();
-    super.dispose();
-  }
-
   Future<void> _submit() async {
-    final amount = parseKes(_float.text);
-    final problem = openingFloatError(amount);
-    setState(() => _error = problem);
-    if (problem != null) return;
-
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
-      await ref.read(currentShiftProvider.notifier).open(widget.user, amount!);
+      await ref.read(currentShiftProvider.notifier).open(widget.user);
     } on ShiftAlreadyOpen {
       // Someone opened one meanwhile; reload so the router re-decides.
       ref.invalidate(currentShiftProvider);
+    } on NoStartingCash catch (e) {
+      ref.invalidate(drawerStartedProvider);
+      if (mounted) setState(() => _error = '$e');
     } catch (e) {
       if (mounted) setState(() => _error = 'Could not open the shift: $e');
     } finally {
@@ -151,33 +147,46 @@ class _OpenNewState extends ConsumerState<_OpenNew> {
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
+    final started = ref.watch(drawerStartedProvider).value;
+    final mayCount = can(widget.user, Permission.checkDrawer);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         const _Heading(null),
         Text(
-          'Count the cash in the drawer, then open your shift. Check-ins and '
-          'payments start once it is open.',
+          'Open your shift. Check-ins and payments start once it is open.',
           style: t.body.copyWith(color: c.muted),
         ),
         const SizedBox(height: Space.x24),
-        MoneyInput(
-          label: 'Opening cash float',
-          controller: _float,
-          fieldKey: const ValueKey('shift.float'),
-          large: true,
-          autofocus: true,
-          errorText: _error,
-          onSubmitted: (_) => _submit(),
-        ),
-        const SizedBox(height: Space.x20),
+        if (started == false) ...[
+          Note.warning(
+            mayCount
+                ? 'Count the starting cash in the drawer first (Cash).'
+                : 'The starting cash hasn’t been counted yet. Ask the '
+                      'supervisor or the owner to count it.',
+            key: const ValueKey('shift.noStartingCash'),
+          ),
+          const SizedBox(height: Space.x16),
+          if (mayCount) ...[
+            AppButton.secondary(
+              key: const ValueKey('shift.countStart'),
+              label: 'Count the starting cash',
+              onPressed: () => context.go(Routes.cash),
+            ),
+            const SizedBox(height: Space.x12),
+          ],
+        ],
+        if (_error != null) ...[
+          Note.error(_error!, key: const ValueKey('shift.error')),
+          const SizedBox(height: Space.x16),
+        ],
         AppButton.primary(
           key: const ValueKey('shift.submit'),
           label: 'Open shift',
           large: true,
           busy: _busy,
-          onPressed: _submit,
+          onPressed: started == true ? _submit : null,
         ),
         if (widget.onBack != null) ...[
           const SizedBox(height: Space.x12),
@@ -192,6 +201,9 @@ class _OpenNewState extends ConsumerState<_OpenNew> {
   }
 }
 
+/// A receptionist back at their open shift: when it opened, and Continue.
+/// No figures: the close is blind (Story B), so nothing here says what has
+/// been taken.
 class _Resume extends ConsumerWidget {
   const _Resume(this.user, this.shift);
 
@@ -202,25 +214,6 @@ class _Resume extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final takings = ref.watch(shiftTakingsProvider(shift.id)).value;
-
-    Widget row(String label, int amount, {bool strong = false, Key? key}) =>
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: Space.x6),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(label, style: strong ? t.bodyStrong : t.body),
-              ),
-              Text(
-                formatKes(amount),
-                key: key,
-                style: strong ? t.moneyLarge : t.monoStrong,
-              ),
-            ],
-          ),
-        );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -228,44 +221,8 @@ class _Resume extends ConsumerWidget {
         _Heading('Welcome back, ${user.fullName.split(' ').first}'),
         Text(
           'Your shift has been open since ${formatDayDateTime(shift.openedAt)}.',
+          key: const ValueKey('shift.since'),
           style: t.body.copyWith(color: c.muted),
-        ),
-        const SizedBox(height: Space.x20),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.x16,
-            vertical: Space.x10,
-          ),
-          decoration: BoxDecoration(
-            color: c.surface,
-            borderRadius: BorderRadius.circular(Radii.control),
-            border: Border.all(color: c.line),
-          ),
-          child: takings == null
-              ? const Padding(
-                  padding: EdgeInsets.all(Space.x12),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : Column(
-                  children: [
-                    row(
-                      'Taken so far (net)',
-                      takings.net,
-                      strong: true,
-                      key: const ValueKey('shift.takenTotal'),
-                    ),
-                    Divider(color: c.lineSoft),
-                    _TakingsTable(takings),
-                    Divider(color: c.lineSoft),
-                    row('Opening float', shift.openingFloat),
-                  ],
-                ),
-        ),
-        const SizedBox(height: Space.x8),
-        Text(
-          'Refunds count once paid out. Voided payments and refunds are not '
-          'counted.',
-          style: t.small,
         ),
         const SizedBox(height: Space.x20),
         AppButton.primary(
@@ -274,62 +231,6 @@ class _Resume extends ConsumerWidget {
           large: true,
           onPressed: () => ref.read(shiftContinuedProvider.notifier).confirm(),
         ),
-      ],
-    );
-  }
-}
-
-/// Received, refunded and net for each method, so refunds stay visible
-/// rather than just making the total smaller.
-class _TakingsTable extends StatelessWidget {
-  const _TakingsTable(this.takings);
-
-  final ShiftTakings takings;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-
-    Widget cell(String text, {TextStyle? style, Key? key}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: Space.x6),
-      child: Text(text, key: key, textAlign: TextAlign.end, style: style),
-    );
-    Widget head(String text) =>
-        cell(text, style: t.small.copyWith(color: c.muted));
-    TableRow line(PaymentMethod method, MethodTakings m) => TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: Space.x6),
-          child: Text(method.label, style: t.body),
-        ),
-        cell(formatKes(m.received), style: t.mono),
-        cell(
-          m.refunded == 0 ? formatKes(0) : formatKes(-m.refunded),
-          style: t.mono.copyWith(color: m.refunded == 0 ? c.muted : null),
-        ),
-        cell(
-          formatKes(m.net),
-          style: t.monoStrong,
-          key: ValueKey('shift.net.${method.code}'),
-        ),
-      ],
-    );
-
-    return Table(
-      columnWidths: const {0: FlexColumnWidth(1.1)},
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        TableRow(
-          children: [
-            const SizedBox.shrink(),
-            head('Received'),
-            head('Refunded'),
-            head('Net'),
-          ],
-        ),
-        line(PaymentMethod.cash, takings.cash),
-        line(PaymentMethod.paybill, takings.paybill),
       ],
     );
   }

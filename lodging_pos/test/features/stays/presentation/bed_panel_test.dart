@@ -186,15 +186,9 @@ void main() {
       // Desk closes her shift (FD-11), so the device has no open shift.
       final shifts = ShiftRepository(env.db, env.audit);
       final shift = (await shifts.openShiftOnThisDevice())!;
-      await shifts.closeShift(
-        desk,
-        shift.id,
-        firstCount: 700,
-        counted: 700,
-        note: '',
-        shown: await shifts.takings(shift.id),
-      );
+      await env.closeShiftWith(desk, shift.id, firstCount: 700);
       env.clock.set(nairobiInstant(2026, 10, 16, 9));
+      await env.ensureDrawerStarted(counted: 0);
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'supervisor', 'super-pass');
       expect(locationOf(app), Routes.home); // never forced to the shift screen
@@ -203,7 +197,6 @@ void main() {
       expect(find.byKey(const ValueKey('panel.noShift')), findsOneWidget);
       await tapKey(tester, 'panel.openShift');
       expect(locationOf(app), Routes.shift);
-      await enterKey(tester, 'shift.float', '0');
       await tapKey(tester, 'shift.submit');
 
       // Back on the board with the same panel open, now without the note.

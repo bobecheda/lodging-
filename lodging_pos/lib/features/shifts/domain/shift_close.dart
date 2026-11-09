@@ -1,9 +1,14 @@
-/// Shift close (FD-11): the cash count, the variance and who may close.
-/// Pure Dart.
+/// Shift close (FD-11, Story B): the blind cash count, the variance and who
+/// may close. Pure Dart.
 ///
-/// The count is blind: the receptionist enters it before seeing what's
-/// expected. A recount is allowed; the first count is kept beside the final
-/// one, so the supervisor sees both.
+/// The count is blind: whoever closes never sees what's expected, and a
+/// receptionist never sees it at all (`viewShiftTotals`). A count that
+/// matches (within `shift_count_tolerance`, UB40: 0, so overs too) closes the
+/// shift. One that doesn't is saved at once and asks for one recount, with
+/// no amount and no short or over; a recount that still doesn't match needs
+/// a reason, and the shift closes anyway, needing review (BR-12 is never
+/// blocked). Leaving and coming back never gives a third try: each count is
+/// on the shift before the next is asked for.
 library;
 
 import '../../../core/auth/permissions.dart';
@@ -64,23 +69,46 @@ String? countError(int? amount) {
 
 const closeNoteMax = 200;
 
-/// Null if [note] is fine for [variance]: required when the cash is short
-/// or over, at most [closeNoteMax] characters.
-String? closeNoteError(String note, int variance) {
-  final n = note.trim();
-  if (n.length > closeNoteMax) {
-    return 'Use at most $closeNoteMax characters.';
-  }
-  if (variance != 0 && n.isEmpty) {
-    return 'Say why the cash is ${variance < 0 ? 'short' : 'over'}.';
-  }
+/// Whether [count] matches [expected]: within [tolerance] either way
+/// (`shift_count_tolerance`, owner-only; UB40 keeps 0).
+bool countMatches(int count, {required int expected, int tolerance = 0}) =>
+    (count - expected).abs() <= tolerance;
+
+/// Where a close is: the first count, the one recount, or the reason.
+enum CountStage { first, recount, reason }
+
+/// The stage from what the open shift already holds: its saved first
+/// count, and its saved recount.
+CountStage countStage({required int? firstCount, required int? recount}) =>
+    firstCount == null
+    ? CountStage.first
+    : recount == null
+    ? CountStage.recount
+    : CountStage.reason;
+
+/// What the counter is told after a first count that doesn't match.
+const countAgainMessage = 'Your count doesn’t match. Count the cash again.';
+
+/// After a recount that still doesn't match.
+const reasonNeededMessage =
+    'Your count still doesn’t match. Say why, then close the shift.';
+
+/// Null if [reason] can close a shift whose count didn't match: required,
+/// at most [closeNoteMax] characters. Never says short or over.
+String? closeReasonError(String reason) {
+  final r = reason.trim();
+  if (r.isEmpty) return 'Say why the count may be different.';
+  if (r.length > closeNoteMax) return 'Use at most $closeNoteMax characters.';
   return null;
 }
 
-/// Whether the Shifts screen highlights [variance]: more than 1% of
-/// the shift's takings (the PRD's target), or any variance with no takings.
-bool highVariance(int variance, {required int takings}) =>
-    variance != 0 && variance.abs() * 100 > takings;
+/// The first count missed, the recount matched: recorded, shown to the
+/// reviewer and counted in the receptionist's history.
+bool matchedOnRecount({
+  required int firstCount,
+  required int counted,
+  required bool needsReview,
+}) => !needsReview && firstCount != counted;
 
 /// `first count KES 4,800 → recounted KES 5,000`, or null without a
 /// recount that changed the figure.
@@ -101,15 +129,3 @@ bool mayCloseShift(UserAccount user, {required String shiftUserId}) =>
     user.id == shiftUserId
     ? can(user, Permission.closeShift)
     : can(user, Permission.closeOtherShifts);
-
-/// Null if the takings are still what the review showed; otherwise why the
-/// close must be checked again.
-String? closeChange(ShiftTakings shown, ShiftTakings now) {
-  bool same(MethodTakings a, MethodTakings b) =>
-      a.received == b.received && a.refunded == b.refunded;
-  if (same(shown.cash, now.cash) && same(shown.paybill, now.paybill)) {
-    return null;
-  }
-  return 'A payment came in since you counted. Check the figures and close '
-      'again.';
-}

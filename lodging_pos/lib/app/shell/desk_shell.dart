@@ -119,7 +119,13 @@ List<NavItem> deskNavItems(Ref ref) => const [
     route: Routes.shifts,
     label: 'Shifts',
     icon: Icons.point_of_sale_outlined,
-    permissions: {Permission.viewAllReports},
+    permissions: {Permission.viewShiftTotals},
+  ),
+  NavItem(
+    route: Routes.cash,
+    label: 'Cash',
+    icon: Icons.payments_outlined,
+    permissions: {Permission.viewShiftTotals},
   ),
   NavItem(
     route: Routes.voids,

@@ -65,6 +65,15 @@ class Shifts extends Table with SyncedColumns {
   @ReferenceName('shiftsClosed')
   TextColumn get closedBy => text().nullable().references(Users, #id)();
 
+  // v10 (Story B).
+  /// Closed with a count that didn't match even on the recount: a reason
+  /// was given and the close waits for review. Fixed at close.
+  BoolColumn get needsReview => boolean().withDefault(const Constant(false))();
+
+  /// The count the opening float came from (a closed shift's id or a
+  /// `drawer_events` id); null for shifts from before v10.
+  TextColumn get openedFrom => text().nullable()();
+
   @override
   List<String> get customConstraints => [
     "CHECK ((status = 'open') = (closed_at IS NULL))",
@@ -72,7 +81,49 @@ class Shifts extends Table with SyncedColumns {
         'AND expected_paybill IS NOT NULL AND counted_cash IS NOT NULL '
         'AND variance IS NOT NULL AND variance = counted_cash - expected_cash))',
     "CHECK ((status = 'open') = (closed_by IS NULL))",
-    "CHECK ((status = 'open') = (first_count IS NULL))",
+    // v10: the first count is saved while still open (a count that didn't
+    // match), so leaving the close never gives another first try.
+    "CHECK (status = 'open' OR first_count IS NOT NULL)",
+  ];
+}
+
+/// v10 (Story B): counts of the cash drawer by the supervisor or owner. B1
+/// writes `start` (the starting cash, before the first shift); Story B2 adds
+/// `check` (a drawer check, any time) and `collect` (a weekly collection:
+/// counted, then [removed] taken away), both with the receptionist on shift
+/// [presentUser]. Each count is an anchor of the drawer's ledger
+/// (`shifts/domain/drawer.dart`). Never changed or deleted.
+@DataClassName('DrawerEventRow')
+class DrawerEvents extends Table with SyncedColumns {
+  TextColumn get kind =>
+      text().check(kind.isIn(['start', 'check', 'collect']))();
+  @ReferenceName('drawerEventsCounted')
+  TextColumn get countedBy => text().references(Users, #id)();
+  @ReferenceName('drawerEventsPresent')
+  TextColumn get presentUser => text().nullable().references(Users, #id)();
+
+  /// The shift open at the time, if any.
+  TextColumn get shiftId => text().nullable().references(Shifts, #id)();
+
+  /// A blind first count that didn't match (one recount, as at close).
+  IntColumn get firstCount => integer().nullable()();
+  IntColumn get counted => integer().check(counted.isBiggerOrEqualValue(0))();
+
+  /// What the drawer should have held; null for the starting cash.
+  IntColumn get expected => integer().nullable()();
+  IntColumn get removed => integer().withDefault(const Constant(0))();
+  TextColumn get note =>
+      text().nullable().check(note.length.isSmallerOrEqualValue(200))();
+  BoolColumn get needsReview => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get countedAt => dateTime()();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (removed >= 0 AND removed <= counted)',
+    "CHECK (kind = 'collect' OR removed = 0)",
+    "CHECK ((kind = 'start') = (present_user IS NULL))",
+    "CHECK ((kind = 'start') = (expected IS NULL))",
+    'CHECK (present_user IS NULL OR present_user <> counted_by)',
   ];
 }
 

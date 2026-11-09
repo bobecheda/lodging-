@@ -31,7 +31,6 @@ enum Permission {
   assignHousekeeping,
   markClean,
   recordStock,
-  viewOwnReport,
 
   /// Find, register and correct guests (FD-3). Exporting guest data will be
   /// a separate permission.
@@ -49,6 +48,19 @@ enum Permission {
   /// "Back up now" and the backup folders on the Backups card. The daily
   /// backups themselves run for everyone, signed in or not.
   manageBackups,
+
+  /// See a shift's or the drawer's figures: expected cash, takings, the
+  /// variance, the drawer's chain (Story B). A receptionist never does:
+  /// the close is blind.
+  viewShiftTotals,
+
+  /// Count the drawer: the starting cash before the first shift (B1), a
+  /// drawer check at any time (B2).
+  checkDrawer,
+
+  /// The cash rules: the count tolerance and (later) the reminder days.
+  /// Owner only, not under `editSettings`.
+  setCashRules,
 
   // The owner's business view (sprint 2). Mapped now; their screens and
   // flows are separate stories.
@@ -92,12 +104,15 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.manageSupervisors: _ownerOnly,
   Permission.connectDesk: _ownerOnly,
   Permission.ownerCloudPassword: _ownerOnly,
+  Permission.setCashRules: _ownerOnly,
   // Prices and adding or closing categories (BR-2); the supervisor asks.
   Permission.editPrices: _ownerOnly,
   Permission.viewAllReports: _ownerAndSupervisor,
   Permission.viewAuditTrail: _ownerAndSupervisor,
   // Neither works shifts: the owner never takes money at the desk.
   Permission.workWithoutShift: _ownerAndSupervisor,
+  Permission.viewShiftTotals: _ownerAndSupervisor,
+  Permission.checkDrawer: _ownerAndSupervisor,
   // The supervisor: setup, staff, settings, shift oversight.
   Permission.requestPriceChange: _supervisorOnly,
   Permission.manageRooms: _supervisorOnly,
@@ -120,7 +135,6 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.assignHousekeeping: _desk,
   Permission.markClean: _desk,
   Permission.recordStock: _desk,
-  Permission.viewOwnReport: _desk,
   Permission.registerGuests: _desk,
   Permission.printReceipts: _desk,
 };
