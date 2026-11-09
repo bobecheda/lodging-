@@ -78,7 +78,8 @@ class Note extends StatelessWidget {
   }
 }
 
-enum BadgeTone { neutral, active, warning, disabled }
+/// [danger]: a voided record (VOID).
+enum BadgeTone { neutral, active, warning, disabled, danger }
 
 /// A small caps status label, e.g. ACTIVE, CLOSED · REPAIRS, MUST SET
 /// PASSWORD, DISABLED. Pass the text in capitals.
@@ -97,6 +98,7 @@ class StatusBadge extends StatelessWidget {
       BadgeTone.active => (null, c.marine),
       BadgeTone.warning => (c.butter, c.butterText),
       BadgeTone.disabled => (c.lineSoft, c.muted),
+      BadgeTone.danger => (c.redTint, c.redText),
     };
     return Container(
       padding: EdgeInsets.symmetric(

@@ -312,6 +312,16 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
               formatKesPlain(pending),
               key: const ValueKey('sync.pending'),
             ),
+            if (status.voidsHeld > 0) ...[
+              const SizedBox(height: Space.x16),
+              Note.warning(
+                heldVoidsText(status.voidsHeld),
+                key: const ValueKey('sync.heldVoids'),
+                title:
+                    'The cloud refused '
+                    '${status.voidsHeld == 1 ? 'a void' : 'some voids'}',
+              ),
+            ],
             if (status.clockWarning && status.clockOffset != null) ...[
               const SizedBox(height: Space.x16),
               Note.warning(

@@ -33,7 +33,9 @@ $$;
 
 insert into public.users (id, created_at, updated_at, device_id, full_name,
   username, role, must_change_password) values
-  ('u-1', now(), now(), 'dev-1', 'Mary', 'mary', 'receptionist', false);
+  ('u-1', now(), now(), 'dev-1', 'Mary', 'mary', 'receptionist', false),
+  -- Voids are the supervisor's (20261029000000_voids.sql).
+  ('u-2', now(), now(), 'dev-1', 'Grace', 'grace', 'supervisor', false);
 insert into public.bed_categories (id, created_at, updated_at, device_id, name,
   price_per_night, sort_order) values
   ('c-1', now(), now(), 'dev-1', 'Deluxe', 700, 1);
@@ -63,7 +65,7 @@ create table tests_h.charge as select
    "category_name":"Deluxe"}'::jsonb as row;
 create table tests_h.void as select
   '{"id":"v-1","target_type":"payment","target_id":"p-1","reason":"Typo",
-   "voided_by":"u-1","voided_at":"2026-10-22T07:00:00Z"}'::jsonb as row;
+   "voided_by":"u-2","voided_at":"2026-10-22T07:00:00Z"}'::jsonb as row;
 grant select on tests_h.payment, tests_h.charge, tests_h.void to authenticated;
 
 -- ── 1. Payments, charges and voids never change once in the cloud ─────

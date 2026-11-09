@@ -33,6 +33,7 @@ void main() {
         expect(can(supervisor, p), isTrue, reason: '$p');
         requirePermission(supervisor, p);
       }
+      expect(can(owner, Permission.voidRecords), isTrue);
       for (final p in [Permission.editPrices, Permission.approveRefund]) {
         expect(can(supervisor, p), isFalse, reason: '$p');
         expect(can(owner, p), isTrue, reason: '$p');
@@ -52,7 +53,8 @@ void main() {
     });
   });
 
-  test('the map as agreed with the owner (21 Oct 2026; owner sign-in)', () {
+  test('the map as agreed with the owner (21 Oct 2026; owner sign-in; '
+      'voids 7 Nov 2026)', () {
     const ownerOnly = {
       Permission.editPrices,
       Permission.approveRefund,
@@ -66,6 +68,8 @@ void main() {
       Permission.viewAllReports,
       Permission.viewAuditTrail,
       Permission.workWithoutShift,
+      // AD-7 voids (7 Nov 2026): the owner voids on the desk too.
+      Permission.voidRecords,
     };
     const supervisorOnly = {
       Permission.requestPriceChange,
@@ -75,7 +79,6 @@ void main() {
       Permission.editSettings,
       Permission.manageUsers,
       Permission.manageHousekeepers,
-      Permission.voidRecords,
       Permission.manageInventoryItems,
       Permission.recordExpenses,
     };

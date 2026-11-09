@@ -25,6 +25,7 @@ final class OwnerShift {
     this.variance,
     this.closeNote,
     this.closedBy,
+    this.voidedAfterClose = const VoidedAfterClose(cash: 0, paybill: 0),
   });
 
   final String id;
@@ -45,6 +46,10 @@ final class OwnerShift {
   final int? variance;
   final String? closeNote;
   final String? closedBy;
+
+  /// When closed: its payments voided after the close (AD-7); the figures
+  /// above stay as counted.
+  final VoidedAfterClose voidedAfterClose;
 
   bool get open => closedAt == null;
 }
@@ -163,6 +168,10 @@ class OwnerMoreRepository {
       for (final s in byId.values)
         if (s.str('status') == 'open') s.str('id'),
     ];
+    final closedIds = [
+      for (final s in byId.values)
+        if (s.str('status') == 'closed') s.str('id'),
+    ];
     final payments = openIds.isEmpty
         ? const <Map<String, Object?>>[]
         : await _cloud.rows(
@@ -177,9 +186,22 @@ class OwnerMoreRepository {
             ['id', 'shift_id', 'amount', 'method'],
             where: [InList('shift_id', openIds)],
           );
-    final voids = openIds.isEmpty
+    final voids = byId.isEmpty
         ? const <Map<String, Object?>>[]
-        : await _cloud.rows('voids', ['target_type', 'target_id']);
+        : await _cloud.rows('voids', ['target_type', 'target_id', 'voided_at']);
+    final paymentVoidedAt = {
+      for (final v in voids)
+        if (v.str('target_type') == 'payment')
+          v.str('target_id'): v.time('voided_at'),
+    };
+    // A closed shift's payments, only when one of them was voided at all.
+    final closedPayments = closedIds.isEmpty || paymentVoidedAt.isEmpty
+        ? const <Map<String, Object?>>[]
+        : await _cloud.rows(
+            'payments',
+            ['id', 'shift_id', 'amount', 'method'],
+            where: [InList('shift_id', closedIds)],
+          );
     Set<String> voided(String type) => {
       for (final v in voids)
         if (v.str('target_type') == type) v.str('target_id'),
@@ -219,6 +241,16 @@ class OwnerMoreRepository {
           closedBy: s.strOrNull('closed_by') == null
               ? null
               : name(s.strOrNull('closed_by')),
+          voidedAfterClose: s.str('status') == 'open'
+              ? const VoidedAfterClose(cash: 0, paybill: 0)
+              : voidedAfterClose(
+                  closedAt: s.time('closed_at'),
+                  payments: [
+                    for (final p in closedPayments)
+                      if (p.str('shift_id') == s.str('id')) line(p),
+                  ],
+                  voidedAt: paymentVoidedAt,
+                ),
         ),
     ];
     return shifts..sort((a, b) {

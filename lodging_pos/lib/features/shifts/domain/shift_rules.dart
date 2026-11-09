@@ -1,5 +1,6 @@
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
+import '../../../core/money/kes.dart';
 import '../../payments/domain/payment_rules.dart';
 import 'shift.dart';
 
@@ -130,5 +131,63 @@ ShiftTakings takingsFrom({
   return ShiftTakings(
     cash: of(PaymentMethod.cash),
     paybill: of(PaymentMethod.paybill),
+  );
+}
+
+/// A closed shift's payments voided after it closed (BR-11). The close's
+/// stored figures never change (the shift is final); these show beside
+/// them, for the supervisor and the owner.
+final class VoidedAfterClose {
+  const VoidedAfterClose({
+    required this.cash,
+    required this.paybill,
+    this.receipts = const [],
+  });
+
+  /// Whole KES voided, by method.
+  final int cash;
+  final int paybill;
+
+  /// The voided payments' ids, oldest void first.
+  final List<String> receipts;
+
+  bool get isEmpty => cash == 0 && paybill == 0;
+
+  /// The cash variance (counted − expected) had the voided cash never been
+  /// taken: the drawer never should have held it.
+  int varianceAfter(int variance) => variance + cash;
+
+  /// `Voided after close: KES 700 cash and KES 600 M-Pesa. The close figures
+  /// stay as counted.`
+  String get line {
+    final parts = [
+      if (cash > 0)
+        '${formatKes(cash)} ${PaymentMethod.cash.label.toLowerCase()}',
+      if (paybill > 0) '${formatKes(paybill)} ${PaymentMethod.paybill.label}',
+    ];
+    return 'Voided after close: ${parts.join(' and ')}. The close figures '
+        'stay as counted.';
+  }
+}
+
+/// Which of a closed shift's [payments] were voided after [closedAt]
+/// ([voidedAt]: payment id → when its void was recorded).
+VoidedAfterClose voidedAfterClose({
+  required DateTime closedAt,
+  required Iterable<MoneyLine> payments,
+  required Map<String, DateTime> voidedAt,
+}) {
+  final after = [
+    for (final p in payments)
+      if (voidedAt[p.id] case final at? when at.isAfter(closedAt)) (p, at),
+  ]..sort((a, b) => a.$2.compareTo(b.$2));
+  int sum(PaymentMethod m) => [
+    for (final (p, _) in after)
+      if (p.method == m) p.amount,
+  ].fold(0, (a, b) => a + b);
+  return VoidedAfterClose(
+    cash: sum(PaymentMethod.cash),
+    paybill: sum(PaymentMethod.paybill),
+    receipts: [for (final (p, _) in after) p.id],
   );
 }

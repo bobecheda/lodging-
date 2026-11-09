@@ -433,6 +433,7 @@ void seedOwnerLodging(FakeOwnerCloud cloud, DateTime now) {
         'last_push_at': at(const Duration(minutes: 3)),
         'pending': 3,
         'problem': null,
+        'voids_held': 0,
       },
     ],
     'bed_categories': [

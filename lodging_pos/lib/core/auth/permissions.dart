@@ -104,7 +104,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.editSettings: _supervisorOnly,
   Permission.manageUsers: _supervisorOnly,
   Permission.manageHousekeepers: _supervisorOnly,
-  Permission.voidRecords: _supervisorOnly,
+  Permission.voidRecords: _ownerAndSupervisor,
   Permission.manageInventoryItems: _supervisorOnly,
   Permission.recordExpenses: _supervisorOnly,
   Permission.closeOtherShifts: _supervisorOnly,

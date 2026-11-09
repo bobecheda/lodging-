@@ -83,6 +83,30 @@ void main() {
     expect(find.byKey(const ValueKey('owner.more')), findsOneWidget);
   });
 
+  testWidgets('Shifts: a payment voided after its shift closed shows beside '
+      'the close, which stays as counted (AD-7)', (tester) async {
+    // R-000041 (KES 2,800 cash, in s-2) voided an hour ago, after the
+    // close.
+    cloud.table('voids').add({
+      'id': 'v-2',
+      'target_type': 'payment',
+      'target_id': 'p-1',
+      'reason': 'Test check-in',
+      'voided_by': 'u-owner',
+      'voided_at': now.subtract(const Duration(hours: 1)).toIso8601String(),
+    });
+    await open(tester, 'shifts');
+    await reveal(tester, 'owner.shift.s-2.voided', 'owner.shifts');
+    expect(
+      text(tester, 'owner.shift.s-2.voided'),
+      'Voided after close: KES 2,800 cash. The close figures stay as '
+      'counted.',
+    );
+    expect(text(tester, 'owner.shift.s-2.variance'), 'KES 200 over');
+    expect(find.text('KES 3,000 over'), findsOneWidget);
+    expect(find.byKey(const ValueKey('owner.shift.s-1.voided')), findsNothing);
+  });
+
   testWidgets('Audit trail: newest first, in words, where; details only '
       'without guest data; filters', (tester) async {
     await open(tester, 'audit');

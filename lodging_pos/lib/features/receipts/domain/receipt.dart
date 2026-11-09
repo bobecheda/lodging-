@@ -46,6 +46,23 @@ final class RefundFacts {
   final String? sentTo;
 }
 
+/// A voided payment's mark (AD-7, BR-11): the receipt still shows what was
+/// taken, under a VOID mark saying when, by whom and why.
+final class ReceiptVoid {
+  const ReceiptVoid({
+    required this.voidedAt,
+    required this.voidedBy,
+    required this.reason,
+  });
+
+  /// UTC.
+  final DateTime voidedAt;
+
+  /// The voider's full name.
+  final String voidedBy;
+  final String reason;
+}
+
 /// The receipt key of [refundId]'s REFUND receipt: receipts are opened by a
 /// payment's id, or this.
 String refundReceiptKey(String refundId) => 'refund:$refundId';
@@ -72,6 +89,7 @@ final class Receipt {
     this.checkedOutAt,
     this.isExtension = false,
     this.refund,
+    this.voided,
   });
 
   final String lodgingName;
@@ -119,6 +137,19 @@ final class Receipt {
   final RefundFacts? refund;
 
   bool get isRefund => refund != null;
+
+  /// Set once the payment is voided (a stay's void voids its payments).
+  final ReceiptVoid? voided;
+
+  bool get isVoid => voided != null;
+
+  /// `Voided Fri 16 Oct 2026, 08:05 by Grace Supervisor: Duplicate`.
+  String? get voidLine => switch (voided) {
+    final v? =>
+      'Voided ${formatDayDate(v.voidedAt)} ${toNairobi(v.voidedAt).year}, '
+          '${formatTime(v.voidedAt)} by ${v.voidedBy}: ${v.reason}',
+    null => null,
+  };
 
   /// "RECEIPT", or "REFUND" for a refund payout.
   String get title => isRefund ? 'REFUND' : 'RECEIPT';
@@ -238,6 +269,8 @@ String receiptFolderName(String lodgingName) {
 
 /// `R-000041.pdf` for the original; a copy is `R-000041 COPY 1.pdf`, so it
 /// never overwrites the original.
-String receiptFileName(Receipt r) => r.isCopy
-    ? '${r.receiptNumber} COPY ${r.printCount}.pdf'
-    : '${r.receiptNumber}.pdf';
+/// A voided one says so: `R-000041 VOID.pdf`, `R-000041 VOID COPY 2.pdf`.
+String receiptFileName(Receipt r) {
+  final number = '${r.receiptNumber}${r.isVoid ? ' VOID' : ''}';
+  return r.isCopy ? '$number COPY ${r.printCount}.pdf' : '$number.pdf';
+}

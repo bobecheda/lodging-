@@ -51,7 +51,9 @@ Future<Uint8List> buildReceiptPdf(Receipt r, ReceiptFonts fonts) {
   );
 
   final doc = pw.Document(
-    title: '${r.receiptNumber}${r.isCopy ? ' COPY' : ''}',
+    title:
+        '${r.receiptNumber}${r.isVoid ? ' VOID' : ''}'
+        '${r.isCopy ? ' COPY' : ''}',
     author: r.lodgingName,
   );
   doc.addPage(
@@ -107,6 +109,29 @@ Future<Uint8List> buildReceiptPdf(Receipt r, ReceiptFonts fonts) {
                 'COPY',
                 textAlign: pw.TextAlign.center,
                 style: s.copy,
+              ),
+            ),
+          ],
+          if (r.voidLine case final line?) ...[
+            pw.SizedBox(height: 4),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(
+                  color: ReceiptPrintStyle.ink,
+                  width: ReceiptPrintStyle.rule * 2,
+                ),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+                  pw.Text(
+                    'VOID',
+                    textAlign: pw.TextAlign.center,
+                    style: s.total,
+                  ),
+                  pw.Text(line, textAlign: pw.TextAlign.center, style: s.label),
+                ],
               ),
             ),
           ],

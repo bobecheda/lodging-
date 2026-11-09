@@ -44,6 +44,7 @@ final class SyncStatus {
     this.needsReconnect = false,
     this.clockOffset,
     this.clockWarning = false,
+    this.voidsHeld = 0,
   });
 
   final SyncPhase phase;
@@ -62,6 +63,10 @@ final class SyncStatus {
 
   /// The PC's clock is more than 5 minutes off (until it's back within 4).
   final bool clockWarning;
+
+  /// Void rows the cloud refused, held aside so the queue goes on (AD-7);
+  /// the desk's figures and the cloud's differ by them until they go up.
+  final int voidsHeld;
 }
 
 /// Sync for this desk (docs/sync.md): connecting, the resumable first
@@ -125,6 +130,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   String? _pullProblem;
   Duration? _clockOffset;
   var _clockWarning = false;
+  var _voidsHeld = 0;
 
   late String _deviceId;
   var _connected = false;
@@ -182,6 +188,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
       needsReconnect: base.needsReconnect,
       clockOffset: _clockOffset,
       clockWarning: _clockWarning,
+      voidsHeld: _voidsHeld,
     );
     if (!_disposed) _changes.add(_status);
   }
@@ -199,6 +206,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     final offset = int.tryParse(await _store.get(SyncStore.clockOffset) ?? '');
     _clockOffset = offset == null ? null : Duration(seconds: offset);
     _clockWarning = await _store.get(SyncStore.clockWarning) == 'on';
+    _voidsHeld = (await _store.held()).length;
     if (!_connected) {
       _emitPhase(SyncPhase.notConnected);
       return;
@@ -208,6 +216,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     await prune();
     if (_uploadDone) {
       await syncNow();
+      await retryHeld();
     } else {
       await continueFirstUpload();
     }
@@ -593,6 +602,14 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
         return;
       } on CloudRefused catch (e) {
         final row = batch[(e.index ?? 0).clamp(0, batch.length - 1)];
+        if (e.index != null && row.targetTable == 'voids') {
+          // A void never stops the queue (AD-7): the desk checked the same
+          // rules before writing it, so a refusal here is a mismatch to
+          // look into, not a reason to hold everything after it. The batch
+          // was all or nothing: send it again without the void.
+          await _holdVoid(row.seq, e.message);
+          continue;
+        }
         await _store.recordFailure(row.seq, e.message);
         await _store.set(SyncStore.problem, e.message);
         _emitPhase(SyncPhase.problem, problem: e.message);
@@ -603,6 +620,34 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
       _lastPushAt = now;
       await _store.set(SyncStore.lastPushAt, now.toIso8601String());
     }
+  }
+
+  Future<void> _holdVoid(int seq, String message) async {
+    await _store.hold(seq, message);
+    _voidsHeld = (await _store.held()).length;
+    _publish();
+  }
+
+  /// Sends each held void alone, once (at start): accepted ones are marked
+  /// sent; still refused ones stay held with the latest answer.
+  Future<void> retryHeld() async {
+    if (!_connected || !_uploadDone) return;
+    for (final seq in (await _store.held()).keys) {
+      final row = await _store.outboxRow(seq);
+      try {
+        await _cloud.pushChanges([SyncStore.fromOutbox(row)]);
+      } on CloudRefused catch (e) {
+        await _store.hold(seq, e.message);
+        continue;
+      } on Exception {
+        // Offline or signed out: tried again at the next start.
+        return;
+      }
+      await _store.markSent([seq], _clock.now());
+      await _store.release(seq);
+    }
+    _voidsHeld = (await _store.held()).length;
+    _publish();
   }
 
   void _offline() {
@@ -731,6 +776,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
           problem: _status.problem,
           appVersion: appVersion,
           clockOffsetSeconds: _clockOffset?.inSeconds,
+          voidsHeld: _voidsHeld,
         ),
       );
     } on Exception {

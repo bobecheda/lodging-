@@ -182,6 +182,57 @@ class DashboardRepository {
     ];
   }
 
+  /// Active stays (not voided) with each charge's receipt and whether its
+  /// payment was voided, for the voided-payment row (AD-7).
+  Future<List<ActiveStayCharges>> activeStayCharges() async {
+    final voided = await _voided();
+    final rows =
+        await (_db.select(_db.stays).join([
+                innerJoin(
+                  _db.stayCharges,
+                  _db.stayCharges.stayId.equalsExp(_db.stays.id),
+                ),
+                innerJoin(
+                  _db.payments,
+                  _db.payments.id.equalsExp(_db.stayCharges.paymentId),
+                ),
+              ])
+              ..where(_db.stays.status.equals('active'))
+              ..orderBy([
+                OrderingTerm.asc(_db.stays.roomNumber),
+                OrderingTerm.asc(_db.stays.bedLabel),
+                OrderingTerm.asc(_db.stayCharges.periodStart),
+              ]))
+            .get();
+    final byStay =
+        <
+          String,
+          (
+            StayRow,
+            List<({String receiptNumber, int amount, bool paymentVoided})>,
+          )
+        >{};
+    for (final r in rows) {
+      final stay = r.readTable(_db.stays);
+      if (voided.contains(('stay', stay.id))) continue;
+      final payment = r.readTable(_db.payments);
+      byStay.putIfAbsent(stay.id, () => (stay, [])).$2.add((
+        receiptNumber: payment.receiptNumber,
+        amount: r.readTable(_db.stayCharges).amount,
+        paymentVoided: voided.contains(('payment', payment.id)),
+      ));
+    }
+    return [
+      for (final (stay, charges) in byStay.values)
+        ActiveStayCharges(
+          stayId: stay.id,
+          roomNumber: stay.roomNumber,
+          bedLabel: stay.bedLabel,
+          charges: charges,
+        ),
+    ];
+  }
+
   /// (target_type, target_id) of every void.
   Future<Set<(String, String)>> _voided() async => {
     for (final v in await _db.select(_db.voids).get())

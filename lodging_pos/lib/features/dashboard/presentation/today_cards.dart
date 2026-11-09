@@ -214,6 +214,29 @@ class AttentionRow extends StatelessWidget {
       );
 
   /// A price request waiting for the owner; opens Prices, where it's decided.
+  /// A guest in a bed whose payment was voided (AD-7).
+  factory AttentionRow.unpaid(UnpaidStay stay, {VoidCallback? onTap}) =>
+      AttentionRow(
+        key: ValueKey('today.attention.unpaid.${stay.stayId}'),
+        kind: AttentionKind.voided,
+        title: stay.title,
+        subtitle: stay.subtitle,
+        figure: stay.figure,
+        onTap: onTap,
+      );
+
+  /// Void rows the cloud refused, held on the desk (AD-7); null for none.
+  static AttentionRow? heldVoids(int count) => switch (heldVoidsRow(count)) {
+    final r? => AttentionRow(
+      key: const ValueKey('today.attention.heldVoids'),
+      kind: AttentionKind.voided,
+      title: r.title,
+      subtitle: r.subtitle,
+      figure: r.figure,
+    ),
+    null => null,
+  };
+
   factory AttentionRow.price(
     PriceAwaiting price, {
     required DateTime now,

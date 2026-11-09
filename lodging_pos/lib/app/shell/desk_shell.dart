@@ -122,6 +122,12 @@ List<NavItem> deskNavItems(Ref ref) => const [
     permissions: {Permission.viewAllReports},
   ),
   NavItem(
+    route: Routes.voids,
+    label: 'Voids',
+    icon: Icons.block_rounded,
+    permissions: {Permission.voidRecords},
+  ),
+  NavItem(
     route: Routes.adminRooms,
     label: 'Rooms & beds',
     icon: Icons.bed_outlined,
@@ -374,6 +380,7 @@ class _SyncPill extends ConsumerWidget {
     final (background, foreground, icon) = switch (syncTone(
       status.phase,
       clockWarning: status.clockWarning,
+      voidsHeld: status.voidsHeld,
     )) {
       SyncTone.calm => (
         c.marineTint,

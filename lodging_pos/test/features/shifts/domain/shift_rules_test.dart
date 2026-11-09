@@ -219,4 +219,69 @@ void main() {
       expect((t.received, t.refunded, t.net), (0, 0, 0));
     });
   });
+
+  group("a closed shift's payments voided after it closed (BR-11)", () {
+    final closedAt = DateTime.utc(2026, 11, 9, 20);
+    const payments = <MoneyLine>[
+      (id: 'p-cash', amount: 700, method: PaymentMethod.cash),
+      (id: 'p-mpesa', amount: 600, method: PaymentMethod.paybill),
+      (id: 'p-kept', amount: 500, method: PaymentMethod.cash),
+      (id: 'p-before', amount: 400, method: PaymentMethod.cash),
+    ];
+
+    test('only voids after the close count, by method', () {
+      final v = voidedAfterClose(
+        closedAt: closedAt,
+        payments: payments,
+        voidedAt: {
+          'p-cash': closedAt.add(const Duration(hours: 12)),
+          'p-mpesa': closedAt.add(const Duration(minutes: 1)),
+          // Voided while the shift was open: already out of its figures.
+          'p-before': closedAt.subtract(const Duration(minutes: 1)),
+        },
+      );
+      expect((v.cash, v.paybill, v.isEmpty), (700, 600, false));
+      expect(v.receipts, ['p-mpesa', 'p-cash']); // oldest void first
+    });
+
+    test('the variance had the voided cash never been taken', () {
+      final v = voidedAfterClose(
+        closedAt: closedAt,
+        payments: payments,
+        voidedAt: {'p-cash': closedAt.add(const Duration(hours: 1))},
+      );
+      // Counted 500 against 1,200 expected: 700 short; without the 700
+      // that was never taken, it matches.
+      expect(v.varianceAfter(-700), 0);
+      expect(
+        v.line,
+        'Voided after close: KES 700 cash. The close figures stay as '
+        'counted.',
+      );
+    });
+
+    test("M-Pesa voids don't move the cash variance", () {
+      final v = voidedAfterClose(
+        closedAt: closedAt,
+        payments: payments,
+        voidedAt: {'p-mpesa': closedAt.add(const Duration(hours: 1))},
+      );
+      expect(v.varianceAfter(-200), -200);
+      expect(
+        v.line,
+        'Voided after close: KES 600 M-Pesa. The close figures stay as '
+        'counted.',
+      );
+    });
+
+    test('nothing voided after the close', () {
+      final v = voidedAfterClose(
+        closedAt: closedAt,
+        payments: payments,
+        voidedAt: const {},
+      );
+      expect(v.isEmpty, isTrue);
+      expect(v.varianceAfter(-200), -200);
+    });
+  });
 }

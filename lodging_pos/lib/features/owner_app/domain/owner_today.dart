@@ -20,6 +20,7 @@ final class DeskStatus {
     required this.pending,
     this.lastPushAt,
     this.problem,
+    this.voidsHeld = 0,
   });
 
   final String deviceId;
@@ -33,6 +34,9 @@ final class DeskStatus {
   /// Changes waiting to go up.
   final int pending;
   final String? problem;
+
+  /// Void rows the cloud refused, held on the desk (AD-7).
+  final int voidsHeld;
 }
 
 /// The header's line about the desk.
@@ -247,6 +251,7 @@ final class OwnerToday {
     required this.graceMinutes,
     this.categories = const [],
     this.priceRequests = const [],
+    this.unpaid = const [],
   });
 
   final String lodgingName;
@@ -272,4 +277,10 @@ final class OwnerToday {
 
   /// Price requests waiting for the owner, oldest first (Prices).
   final List<OwnerPriceRequest> priceRequests;
+
+  /// Guests in a bed whose payment was voided (AD-7).
+  final List<UnpaidStay> unpaid;
+
+  /// Void rows the desks hold because the cloud refused them.
+  int get voidsHeld => desks.fold(0, (sum, d) => sum + d.voidsHeld);
 }

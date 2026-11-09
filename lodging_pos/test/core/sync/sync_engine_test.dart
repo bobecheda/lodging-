@@ -8,6 +8,7 @@ import 'package:lodging_pos/core/sync/cloud.dart';
 import 'package:lodging_pos/core/sync/cloud_writes.dart';
 import 'package:lodging_pos/core/sync/desk_secret_store.dart';
 import 'package:lodging_pos/core/sync/sync_engine.dart';
+import 'package:lodging_pos/core/sync/sync_status_text.dart';
 import 'package:lodging_pos/core/sync/sync_store.dart';
 import 'package:lodging_pos/features/refunds/data/refunds_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
@@ -313,6 +314,82 @@ void main() {
       await engine.pushNow();
       expect(engine.status.phase, SyncPhase.online);
       expect(cloud.row('rooms', fourteen), isNotNull);
+    });
+
+    test('a void the cloud refuses is held aside, never stopping the queue: '
+        'later rows go up, the pill, the heartbeat and the desk say so, and '
+        'it is tried again on the next start', () async {
+      cloud.refuse = (table, row) =>
+          table == 'voids' ? 'voided_by is not an owner or supervisor' : null;
+      final before = await addRoom('60');
+      final v = await env.audit.writeWithAudit(
+        action: 'void.create',
+        userId: supervisor.id,
+        body: (w) => w.insert(
+          env.db.voids,
+          VoidsCompanion.insert(
+            targetType: 'payment',
+            targetId: 'p-elsewhere',
+            reason: 'Duplicate',
+            voidedBy: supervisor.id,
+            voidedAt: env.clock.now(),
+          ),
+        ),
+      );
+      final after = await addRoom('61');
+
+      await engine.pushNow();
+      expect(engine.status.phase, SyncPhase.online);
+      expect(engine.status.voidsHeld, 1);
+      expect(cloud.row('rooms', before), isNotNull);
+      expect(cloud.row('rooms', after), isNotNull);
+      expect(cloud.row('voids', v.id), isNull);
+      // The void's own audit row went up: only the void row is held.
+      expect(await store.pendingCount(), 0);
+      final held = await store.held();
+      expect(
+        held.values.single,
+        'voids ${v.id}: voided_by is not an owner '
+        'or supervisor',
+      );
+      expect(
+        syncPillText(engine.status, pending: 0, now: env.clock.now()),
+        '1 void not in the cloud · details',
+      );
+      expect(
+        syncTone(engine.status.phase, voidsHeld: engine.status.voidsHeld),
+        SyncTone.waiting,
+      );
+      await engine.sendHeartbeat();
+      expect(cloud.heartbeats.last.voidsHeld, 1);
+      expect(cloud.heartbeats.last.problem, isNull);
+
+      // Still refused at the next start: held again, nothing stops.
+      await engine.dispose();
+      engine = newEngine();
+      await engine.start();
+      expect(engine.status.voidsHeld, 1);
+      expect(engine.status.phase, SyncPhase.online);
+
+      // Fixed in the cloud: the next start sends it.
+      cloud.refuse = null;
+      await engine.dispose();
+      engine = newEngine();
+      await engine.start();
+      expect(engine.status.voidsHeld, 0);
+      expect(cloud.row('voids', v.id), isNotNull);
+      expect(await store.held(), isEmpty);
+      await engine.sendHeartbeat();
+      expect(cloud.heartbeats.last.voidsHeld, 0);
+    });
+
+    test('a refused row of any other table still stops the queue', () async {
+      cloud.refuse = (table, row) => table == 'rooms' ? 'no' : null;
+      await addRoom('62');
+      await engine.pushNow();
+      expect(engine.status.phase, SyncPhase.problem);
+      expect(engine.status.voidsHeld, 0);
+      expect(await store.held(), isEmpty);
     });
 
     test('sent rows are kept 30 days, unsent ones always', () async {

@@ -39,6 +39,9 @@ abstract final class Routes {
   /// FD-11: the supervisor's list of shifts and their variances.
   static const shifts = '/shifts';
 
+  /// AD-7: void a payment or a stay (owner and supervisor).
+  static const voids = '/voids';
+
   static String closeShiftFor(String shiftId) =>
       Uri(path: closeShift, queryParameters: {'shift': shiftId}).toString();
 
@@ -70,6 +73,7 @@ abstract final class Routes {
     receipts: {Permission.printReceipts},
     closeShift: {Permission.closeShift, Permission.closeOtherShifts},
     shifts: {Permission.viewAllReports},
+    voids: {Permission.voidRecords},
     adminRooms: {Permission.manageRooms},
     adminPrices: {
       Permission.editPrices,

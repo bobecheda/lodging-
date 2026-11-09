@@ -125,6 +125,35 @@ void main() {
     expect(text(tester, 'owner.updated'), 'Updated 4 min ago');
   });
 
+  testWidgets('a guest in a bed whose payment was voided, and a void the '
+      'desk holds, show under Needs your attention (AD-7)', (tester) async {
+    // Jane's R-000042 (Room 5 · Bed A, still in the bed) voided.
+    cloud.table('voids').add({
+      'id': 'v-2',
+      'target_type': 'payment',
+      'target_id': 'p-2',
+      'reason': 'Never paid',
+      'voided_by': 'u-sup',
+      'voided_at': now.subtract(const Duration(minutes: 5)).toIso8601String(),
+    });
+    cloud.table('desk_status').single['voids_held'] = 1;
+    await pumpOwnerApp(tester, cloud, clock);
+    await signIn(tester);
+
+    expect(
+      find.byKey(const ValueKey('today.attention.unpaid.st-2')),
+      findsOneWidget,
+    );
+    expect(find.text('Guest in bed, payment voided'), findsOneWidget);
+    expect(find.text('Room 5 · Bed A · R-000042 voided'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('today.attention.heldVoids')),
+      findsOneWidget,
+    );
+    expect(find.text('Void not in the cloud'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the refund: masked phone, the receipts, then Approve, in the '
       'cloud with its audit row', (tester) async {
     final app = await pumpOwnerApp(tester, cloud, clock);

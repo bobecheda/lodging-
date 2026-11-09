@@ -55,6 +55,7 @@ final class DeskHeartbeat {
     required this.problem,
     required this.appVersion,
     this.clockOffsetSeconds,
+    this.voidsHeld = 0,
   });
 
   final int pending;
@@ -65,6 +66,10 @@ final class DeskHeartbeat {
   /// The PC's clock minus the server's (positive: the PC is fast), from the
   /// last pull; null before the first.
   final int? clockOffsetSeconds;
+
+  /// Void rows the cloud refused, held on the desk (AD-7): the owner's
+  /// phone says so, since its figures still count what they void.
+  final int voidsHeld;
 }
 
 /// One row the pull brought: an owner's decision, a category's price (id,

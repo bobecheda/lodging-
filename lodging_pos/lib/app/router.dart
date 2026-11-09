@@ -13,6 +13,7 @@ import '../features/bed_board/presentation/bed_board_screen.dart';
 import '../features/dashboard/presentation/today_screen.dart';
 import '../features/guests/presentation/guests_screen.dart';
 import '../features/receipts/presentation/receipts_screen.dart';
+import '../features/voids/presentation/voids_screen.dart';
 import '../features/refunds/presentation/refund_detail_screen.dart';
 import '../features/refunds/presentation/refunds_screen.dart';
 import '../features/stays/presentation/check_in_screen.dart';
@@ -132,6 +133,7 @@ GoRouter router(Ref ref) {
             path: Routes.receipts,
             builder: (_, _) => const ReceiptsScreen(),
           ),
+          GoRoute(path: Routes.voids, builder: (_, _) => const VoidsScreen()),
           GoRoute(
             path: Routes.closeShift,
             builder: (_, state) => CloseShiftScreen(
