@@ -58,6 +58,10 @@ enum Permission {
   /// drawer check at any time (B2).
   checkDrawer,
 
+  /// Collect cash from the drawer (weekly): a blind count, then the amount
+  /// taken away (B2).
+  collectCash,
+
   /// The cash rules: the count tolerance and (later) the reminder days.
   /// Owner only, not under `editSettings`.
   setCashRules,
@@ -113,6 +117,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.workWithoutShift: _ownerAndSupervisor,
   Permission.viewShiftTotals: _ownerAndSupervisor,
   Permission.checkDrawer: _ownerAndSupervisor,
+  Permission.collectCash: _ownerAndSupervisor,
   // The supervisor: setup, staff, settings, shift oversight.
   Permission.requestPriceChange: _supervisorOnly,
   Permission.manageRooms: _supervisorOnly,

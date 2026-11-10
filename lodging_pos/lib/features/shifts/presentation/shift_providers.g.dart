@@ -167,6 +167,60 @@ abstract class _$ShiftContinued extends $Notifier<bool> {
   }
 }
 
+/// Drawer checks and collections (Story B2). Kept alive: it remembers which
+/// co-signs were used.
+
+@ProviderFor(drawerRepository)
+final drawerRepositoryProvider = DrawerRepositoryProvider._();
+
+/// Drawer checks and collections (Story B2). Kept alive: it remembers which
+/// co-signs were used.
+
+final class DrawerRepositoryProvider
+    extends
+        $FunctionalProvider<
+          DrawerRepository,
+          DrawerRepository,
+          DrawerRepository
+        >
+    with $Provider<DrawerRepository> {
+  /// Drawer checks and collections (Story B2). Kept alive: it remembers which
+  /// co-signs were used.
+  DrawerRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'drawerRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$drawerRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<DrawerRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DrawerRepository create(Ref ref) {
+    return drawerRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DrawerRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DrawerRepository>(value),
+    );
+  }
+}
+
+String _$drawerRepositoryHash() => r'3e8de31c6b7e5e79abf5d409d4675e6cb3498d82';
+
 /// Whether the drawer has been counted at least once (the starting cash).
 
 @ProviderFor(drawerStarted)

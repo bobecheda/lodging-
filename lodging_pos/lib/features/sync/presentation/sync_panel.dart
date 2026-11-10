@@ -319,7 +319,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
                 key: const ValueKey('sync.heldVoids'),
                 title:
                     'The cloud refused '
-                    '${status.voidsHeld == 1 ? 'a void' : 'some voids'}',
+                    '${status.voidsHeld == 1 ? 'a record' : 'some records'}',
               ),
             ],
             if (status.clockWarning && status.clockOffset != null) ...[

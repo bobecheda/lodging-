@@ -131,7 +131,8 @@ final class ShiftSummary {
 List<ChainEntry> _chainOf({
   required List<ChainShift> shifts,
   required List<DrawerStartRecord> starts,
-}) => drawerChain(shifts: shifts, starts: starts);
+  required List<DrawerCountRecord> counts,
+}) => drawerChain(shifts: shifts, starts: starts, counts: counts);
 
 class ShiftRepository {
   ShiftRepository(this._db, this._audit);
@@ -158,7 +159,7 @@ class ShiftRepository {
   /// Every count the drawer's balance starts again from: the drawer's own
   /// counts, then closing counts (a close wins a tie: a count during a
   /// shift comes before its close).
-  Future<List<DrawerAnchor>> _anchors() async => [
+  Future<List<DrawerAnchor>> anchors() async => [
     for (final d in await _db.select(_db.drawerEvents).get())
       DrawerAnchor(
         id: d.id,
@@ -179,7 +180,61 @@ class ShiftRepository {
   ];
 
   /// Whether the drawer has been counted at least once.
-  Future<bool> drawerStarted() async => (await _anchors()).isNotEmpty;
+  Future<bool> drawerStarted() async => (await anchors()).isNotEmpty;
+
+  /// What the drawer should hold now (null before the starting cash):
+  /// - no shift open: the last count;
+  /// - a shift open: its float plus its net cash, or, after a drawer check
+  ///   or collection during it (B2), that count plus the shift's cash since.
+  /// The close, checks and collections all count against it.
+  Future<int?> expectedNow() async {
+    final open = await openShiftOnThisDevice();
+    if (open == null) return openingFloatFrom(await anchors())?.balance;
+    final mid =
+        await (_db.select(_db.drawerEvents)
+              ..where((d) => d.shiftId.equals(open.id))
+              ..orderBy([(d) => OrderingTerm.desc(d.countedAt)])
+              ..limit(1))
+            .getSingleOrNull();
+    if (mid == null) {
+      return open.openingFloat + (await takings(open.id)).cash.net;
+    }
+    return expectedAt(
+      anchor: DrawerAnchor(
+        id: mid.id,
+        kind: AnchorKind.values.byName(mid.kind),
+        at: mid.countedAt,
+        counted: mid.counted,
+        removed: mid.removed,
+      ),
+      moves: await _shiftCashMoves(open.id),
+      at: _audit.now(),
+    );
+  }
+
+  /// [shiftId]'s cash in (+) and out (−), voided ones left out.
+  Future<List<CashMove>> _shiftCashMoves(String shiftId) async {
+    final voided = {
+      for (final v in await _db.select(_db.voids).get())
+        (v.targetType, v.targetId),
+    };
+    return [
+      for (final p
+          in await (_db.select(_db.payments)..where(
+                (p) => p.shiftId.equals(shiftId) & p.method.equals('cash'),
+              ))
+              .get())
+        if (!voided.contains(('payment', p.id)))
+          CashMove(at: p.receivedAt, amount: p.amount),
+      for (final r
+          in await (_db.select(_db.refunds)..where(
+                (r) => r.shiftId.equals(shiftId) & r.method.equals('cash'),
+              ))
+              .get())
+        if (!voided.contains(('refund', r.id)))
+          CashMove(at: r.paidAt!, amount: -r.amount),
+    ];
+  }
 
   /// The supervisor or owner counts the starting cash, once, before the
   /// first shift (`drawer.start`). Throws [NotPermitted] or
@@ -191,7 +246,7 @@ class ShiftRepository {
       action: 'drawer.start',
       userId: user.id,
       body: (w) async {
-        if ((await _anchors()).isNotEmpty) {
+        if ((await anchors()).isNotEmpty) {
           throw const DrawerRefused('The starting cash was already counted.');
         }
         await w.insert(
@@ -210,12 +265,7 @@ class ShiftRepository {
   /// What the drawer should hold now. Needs [Permission.viewShiftTotals].
   Future<int?> drawerNow(UserAccount user) async {
     requirePermission(user, Permission.viewShiftTotals);
-    final open = await openShiftOnThisDevice();
-    return drawerExpectedNow(
-      latest: openingFloatFrom(await _anchors())?.balance,
-      openFloat: open?.openingFloat,
-      openCashNet: open == null ? 0 : (await takings(open.id)).cash.net,
-    );
+    return expectedNow();
   }
 
   /// The drawer's history, newest first. Needs
@@ -250,6 +300,24 @@ class ShiftRepository {
             at: d.countedAt,
             counted: d.counted,
             by: names[d.countedBy] ?? '',
+          ),
+      ],
+      counts: [
+        for (final d in await (_db.select(
+          _db.drawerEvents,
+        )..where((d) => d.kind.isNotValue('start'))).get())
+          DrawerCountRecord(
+            id: d.id,
+            kind: DrawerCountKind.values.byName(d.kind),
+            at: d.countedAt,
+            expected: d.expected!,
+            firstCount: d.firstCount ?? d.counted,
+            counted: d.counted,
+            removed: d.removed,
+            needsReview: d.needsReview,
+            note: d.note,
+            by: names[d.countedBy] ?? '',
+            present: names[d.presentUser] ?? '',
           ),
       ],
     );
@@ -326,7 +394,7 @@ class ShiftRepository {
       body: (w) async {
         final existing = await openShiftOnThisDevice();
         if (existing != null) throw ShiftAlreadyOpen(existing);
-        final anchor = openingFloatFrom(await _anchors());
+        final anchor = openingFloatFrom(await anchors());
         if (anchor == null) throw const NoStartingCash();
         return w.insert(
           _db.shifts,
@@ -435,9 +503,8 @@ class ShiftRepository {
     if (stage == CountStage.reason) {
       throw const ShiftCloseRefused(reasonNeededMessage);
     }
-    final figures = closeFigures(
-      await takings(shiftId),
-      openingFloat: shift.openingFloat,
+    final figures = await _figures(
+      shiftId,
       firstCount: shift.firstCount ?? count,
       counted: count,
     );
@@ -485,9 +552,8 @@ class ShiftRepository {
     return _close(
       user,
       shiftId,
-      closeFigures(
-        await takings(shiftId),
-        openingFloat: shift.openingFloat,
+      await _figures(
+        shiftId,
         firstCount: shift.firstCount!,
         counted: shift.countedCash!,
       ),
@@ -495,6 +561,20 @@ class ShiftRepository {
       note: reason.trim(),
     );
   }
+
+  /// A close's figures: expected cash from the drawer's ledger (its latest
+  /// count, a check mid-shift included, plus the cash since), M-Pesa from
+  /// the shift's own takings.
+  Future<CloseFigures> _figures(
+    String shiftId, {
+    required int firstCount,
+    required int counted,
+  }) async => CloseFigures(
+    expectedCash: (await expectedNow())!,
+    expectedPaybill: (await takings(shiftId)).expectedPaybill,
+    firstCount: firstCount,
+    counted: counted,
+  );
 
   Future<CloseFigures> _close(
     UserAccount user,

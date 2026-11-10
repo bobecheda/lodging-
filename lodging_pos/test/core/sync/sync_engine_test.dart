@@ -354,7 +354,7 @@ void main() {
       );
       expect(
         syncPillText(engine.status, pending: 0, now: env.clock.now()),
-        '1 void not in the cloud · details',
+        '1 record not in the cloud · details',
       );
       expect(
         syncTone(engine.status.phase, voidsHeld: engine.status.voidsHeld),
@@ -381,6 +381,43 @@ void main() {
       expect(await store.held(), isEmpty);
       await engine.sendHeartbeat();
       expect(cloud.heartbeats.last.voidsHeld, 0);
+    });
+
+    test('a drawer count the cloud refuses is held aside the same way '
+        '(Story B2): later rows go up, the pill says so', () async {
+      cloud.refuse = (table, row) => table == 'drawer_events'
+          ? 'only the owner or a supervisor counts the drawer'
+          : null;
+      final count = await env.audit.writeWithAudit(
+        action: 'drawer.start',
+        userId: supervisor.id,
+        body: (w) => w.insert(
+          env.db.drawerEvents,
+          DrawerEventsCompanion.insert(
+            kind: 'start',
+            countedBy: supervisor.id,
+            counted: 2000,
+            countedAt: env.clock.now(),
+          ),
+        ),
+      );
+      final after = await addRoom('63');
+
+      await engine.pushNow();
+      expect(engine.status.phase, SyncPhase.online);
+      expect(engine.status.voidsHeld, 1);
+      expect(cloud.row('rooms', after), isNotNull);
+      expect(cloud.row('drawer_events', count.id), isNull);
+      expect(
+        (await store.held()).values.single,
+        startsWith('drawer_events ${count.id}:'),
+      );
+      expect(
+        syncPillText(engine.status, pending: 0, now: env.clock.now()),
+        '1 record not in the cloud · details',
+      );
+      await engine.sendHeartbeat();
+      expect(cloud.heartbeats.last.voidsHeld, 1);
     });
 
     test('a refused row of any other table still stops the queue', () async {

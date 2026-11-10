@@ -5,6 +5,9 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/auth/password_hasher.dart';
+import '../../../core/clock/clock.dart';
+import '../data/drawer_repository.dart';
 import '../data/shift_repository.dart';
 import '../domain/drawer.dart';
 import '../domain/shift.dart';
@@ -49,6 +52,16 @@ class ShiftContinued extends _$ShiftContinued {
 
   void confirm() => state = true;
 }
+
+/// Drawer checks and collections (Story B2). Kept alive: it remembers which
+/// co-signs were used.
+@Riverpod(keepAlive: true)
+DrawerRepository drawerRepository(Ref ref) => DrawerRepository(
+  ref.watch(appDatabaseProvider),
+  ref.watch(auditWriterProvider),
+  ref.watch(passwordHasherProvider),
+  ref.watch(clockProvider),
+);
 
 /// Whether the drawer has been counted at least once (the starting cash).
 @riverpod

@@ -602,7 +602,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
         return;
       } on CloudRefused catch (e) {
         final row = batch[(e.index ?? 0).clamp(0, batch.length - 1)];
-        if (e.index != null && row.targetTable == 'voids') {
+        if (e.index != null && SyncStore.heldTables.contains(row.targetTable)) {
           // A void never stops the queue (AD-7): the desk checked the same
           // rules before writing it, so a refusal here is a mismatch to
           // look into, not a reason to hold everything after it. The batch

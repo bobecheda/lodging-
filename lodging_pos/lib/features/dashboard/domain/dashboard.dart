@@ -742,10 +742,10 @@ List<UnpaidStay> unpaidStays(Iterable<ActiveStayCharges> stays) => [
     ? null
     : (
         title: count == 1
-            ? 'Void not in the cloud'
-            : '$count voids not in the cloud',
+            ? 'Record not in the cloud'
+            : '$count records not in the cloud',
         subtitle: count == 1
-            ? 'The cloud refused a void; the phone still counts what it voids'
-            : 'The cloud refused them; the phone still counts what they void',
+            ? 'The cloud refused a void or drawer count; the desk keeps it'
+            : 'The cloud refused them; the desk keeps them',
         figure: '$count',
       );
