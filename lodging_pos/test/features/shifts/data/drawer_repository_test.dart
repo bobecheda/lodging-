@@ -67,7 +67,11 @@ void main() {
       'a wrong password is refused and audited, and gives no token',
       () async {
         await expectLater(
-          drawer.cosign(supervisor, presentUserId: mary.id, password: 'guess'),
+          drawer.cosign(
+            supervisor,
+            presentUserId: mary.id,
+            password: testOwner.password, // not Mary's
+          ),
           throwsA(
             isA<CosignRefused>().having(
               (e) => e.message,

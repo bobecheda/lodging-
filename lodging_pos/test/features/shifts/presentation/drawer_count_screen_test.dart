@@ -63,7 +63,8 @@ void main() {
     expect(find.byKey(const ValueKey('drawer.present')), findsOneWidget);
     expectNoFigure(tester, 'co-sign');
 
-    await enterKey(tester, 'drawer.password', 'not-hers');
+    // Someone else's password (the owner's): not Mary's.
+    await enterKey(tester, 'drawer.password', testOwner.password);
     await tapKey(tester, 'drawer.cosign');
     expect(find.text('That password isn’t right.'), findsOneWidget);
     expectNoFigure(tester, 'refused co-sign');
