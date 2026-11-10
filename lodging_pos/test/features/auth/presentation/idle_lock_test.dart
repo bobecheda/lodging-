@@ -92,7 +92,10 @@ void main() {
 
   test('keeps the shift open', () async {
     final shifts = ShiftRepository(env.db, env.audit);
-    final opened = await shifts.openShift(user: desk, openingFloat: 1000);
+    // A supervisor counts the starting cash (Story B), then the shift
+    // opens.
+    await env.startDrawer(counted: 1000, by: await env.addSupervisor('grace'));
+    final opened = await env.openShift(desk);
     idle(const Duration(minutes: 10));
     await lock().check();
     expect(signedIn(), isNull);
@@ -128,7 +131,13 @@ void main() {
     'Lock screen locks now: user.lock, not user.auto_lock; shift kept',
     () async {
       final shifts = ShiftRepository(env.db, env.audit);
-      final opened = await shifts.openShift(user: desk, openingFloat: 1000);
+      // A supervisor counts the starting cash (Story B), then the shift
+      // opens.
+      await env.startDrawer(
+        counted: 1000,
+        by: await env.addSupervisor('grace'),
+      );
+      final opened = await env.openShift(desk);
       await lock().lockNow();
       expect(signedIn(), isNull);
       expect(app.read(idleLockProvider), isA<ManualLockNotice>());

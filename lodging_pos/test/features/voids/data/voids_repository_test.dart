@@ -288,8 +288,7 @@ void main() {
     });
 
     test('one payment for both beds: both stays and the payment go', () async {
-      final shifts = ShiftRepository(env.db, env.audit);
-      await shifts.openShift(user: desk, openingFloat: 0);
+      await env.openShift(desk, startingCash: 0);
       final guests = env.guests;
       final result = await CheckInRepository(env.db, env.audit, guests).checkIn(
         desk,
@@ -347,15 +346,12 @@ void main() {
         final stayId = await env.checkIn(room.beds[0].id, by: desk);
         final paymentId = await paymentOf(stayId);
         final shift = (await shifts.openShiftOnThisDevice())!;
-        final shown = await shifts.takings(shift.id);
         env.clock.set(nairobiInstant(2026, 11, 9, 23));
-        await shifts.closeShift(
+        await env.closeShiftWith(
           desk,
           shift.id,
           firstCount: 500,
-          counted: 500,
-          note: 'The guest paid by M-Pesa, not cash',
-          shown: shown,
+          reason: 'The guest paid by M-Pesa, not cash',
         );
         final closed = await (env.db.select(
           env.db.shifts,

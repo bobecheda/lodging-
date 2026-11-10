@@ -53,7 +53,7 @@ void main() {
   Future<ProviderContainer> deskOnBoard(WidgetTester tester) async {
     final shifts = ShiftRepository(env.db, env.audit);
     if (await shifts.openShiftOnThisDevice() == null) {
-      await shifts.openShift(user: desk, openingFloat: 1000);
+      await env.openShift(desk, startingCash: 1000);
     }
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -296,6 +296,7 @@ void main() {
   testWidgets('a supervisor without a shift: Save is off with the note; Open '
       'shift goes to the shift screen and comes back', (tester) async {
     final r7 = await room('7');
+    await env.ensureDrawerStarted(counted: 500);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
     // Signing in doesn't send a supervisor to the shift screen.
@@ -315,7 +316,6 @@ void main() {
     expect(locationOf(app), Routes.checkIn);
 
     await tapKey(tester, 'checkIn.openShift');
-    await enterKey(tester, 'shift.float', '500');
     await tapKey(tester, 'shift.submit');
     expect(locationOf(app), Routes.checkIn);
     expect(

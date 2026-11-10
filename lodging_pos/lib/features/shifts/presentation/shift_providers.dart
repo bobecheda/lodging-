@@ -1,12 +1,14 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/audit/audit_writer.dart';
+import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/database/database_provider.dart';
 import '../data/shift_repository.dart';
+import '../domain/drawer.dart';
 import '../domain/shift.dart';
-import '../domain/shift_rules.dart';
+import '../domain/shift_close.dart';
 
 part 'shift_providers.g.dart';
 
@@ -23,10 +25,9 @@ class CurrentShift extends _$CurrentShift {
   Future<OpenShift?> build() =>
       ref.watch(shiftRepositoryProvider).openShiftOnThisDevice();
 
-  Future<void> open(UserAccount user, int openingFloat) async {
-    final shift = await ref
-        .read(shiftRepositoryProvider)
-        .openShift(user: user, openingFloat: openingFloat);
+  /// Opens [user]'s shift; the float is the drawer's (Story B).
+  Future<void> open(UserAccount user) async {
+    final shift = await ref.read(shiftRepositoryProvider).openShift(user: user);
     state = AsyncData(shift);
     // A shift you just opened needs no "Continue my shift" step.
     ref.read(shiftContinuedProvider.notifier).confirm();
@@ -49,10 +50,37 @@ class ShiftContinued extends _$ShiftContinued {
   void confirm() => state = true;
 }
 
-/// Taken so far on [shiftId], for the resume card.
+/// Whether the drawer has been counted at least once (the starting cash).
 @riverpod
-Future<ShiftTakings> shiftTakings(Ref ref, String shiftId) =>
-    ref.watch(shiftRepositoryProvider).takings(shiftId);
+Future<bool> drawerStarted(Ref ref) =>
+    ref.watch(shiftRepositoryProvider).drawerStarted();
+
+/// Where [shiftId]'s close is (first count, recount, reason), from the shift
+/// itself.
+@riverpod
+Future<CountStage> closeStage(Ref ref, String shiftId) =>
+    ref.watch(shiftRepositoryProvider).countStageOf(shiftId);
+
+/// What the drawer should hold now, for [viewShiftTotals] users only; null
+/// for anyone else and before any count.
+@riverpod
+Future<int?> drawerNow(Ref ref) async {
+  final user = ref.watch(sessionProvider);
+  if (user == null || !can(user, Permission.viewShiftTotals)) return null;
+  // Read again whenever the chain changes.
+  ref.watch(drawerChainProvider);
+  return ref.watch(shiftRepositoryProvider).drawerNow(user);
+}
+
+/// The drawer's chain, newest first, for [viewShiftTotals] users only.
+@riverpod
+Stream<List<ChainEntry>> drawerChain(Ref ref) {
+  final user = ref.watch(sessionProvider);
+  if (user == null || !can(user, Permission.viewShiftTotals)) {
+    return Stream.value(const []);
+  }
+  return ref.watch(shiftRepositoryProvider).watchDrawerChain(user);
+}
 
 /// The supervisor's list of shifts (FD-11), watched.
 @riverpod

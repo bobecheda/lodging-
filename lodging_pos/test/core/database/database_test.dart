@@ -286,6 +286,7 @@ void main() {
           'receipt_prefix': 'R',
           'idle_lock_minutes': '10',
           'backup_second_folder': '',
+          'shift_count_tolerance': '0',
         },
       );
       for (final r in rows) {

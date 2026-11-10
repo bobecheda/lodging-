@@ -3771,6 +3771,32 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
       'REFERENCES users (id)',
     ),
   );
+  static const VerificationMeta _needsReviewMeta = const VerificationMeta(
+    'needsReview',
+  );
+  @override
+  late final GeneratedColumn<bool> needsReview = GeneratedColumn<bool>(
+    'needs_review',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("needs_review" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _openedFromMeta = const VerificationMeta(
+    'openedFrom',
+  );
+  @override
+  late final GeneratedColumn<String> openedFrom = GeneratedColumn<String>(
+    'opened_from',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3789,6 +3815,8 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
     firstCount,
     closeNote,
     closedBy,
+    needsReview,
+    openedFrom,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3915,6 +3943,21 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
         closedBy.isAcceptableOrUnknown(data['closed_by']!, _closedByMeta),
       );
     }
+    if (data.containsKey('needs_review')) {
+      context.handle(
+        _needsReviewMeta,
+        needsReview.isAcceptableOrUnknown(
+          data['needs_review']!,
+          _needsReviewMeta,
+        ),
+      );
+    }
+    if (data.containsKey('opened_from')) {
+      context.handle(
+        _openedFromMeta,
+        openedFrom.isAcceptableOrUnknown(data['opened_from']!, _openedFromMeta),
+      );
+    }
     return context;
   }
 
@@ -3988,6 +4031,14 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, ShiftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}closed_by'],
       ),
+      needsReview: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}needs_review'],
+      )!,
+      openedFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}opened_from'],
+      ),
     );
   }
 
@@ -4020,6 +4071,14 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
   /// Why the cash is short or over; the app requires it when variance != 0.
   final String? closeNote;
   final String? closedBy;
+
+  /// Closed with a count that didn't match even on the recount: a reason
+  /// was given and the close waits for review. Fixed at close.
+  final bool needsReview;
+
+  /// The count the opening float came from (a closed shift's id or a
+  /// `drawer_events` id); null for shifts from before v10.
+  final String? openedFrom;
   const ShiftRow({
     required this.id,
     required this.createdAt,
@@ -4037,6 +4096,8 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     this.firstCount,
     this.closeNote,
     this.closedBy,
+    required this.needsReview,
+    this.openedFrom,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4072,6 +4133,10 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     }
     if (!nullToAbsent || closedBy != null) {
       map['closed_by'] = Variable<String>(closedBy);
+    }
+    map['needs_review'] = Variable<bool>(needsReview);
+    if (!nullToAbsent || openedFrom != null) {
+      map['opened_from'] = Variable<String>(openedFrom);
     }
     return map;
   }
@@ -4110,6 +4175,10 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
       closedBy: closedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(closedBy),
+      needsReview: Value(needsReview),
+      openedFrom: openedFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(openedFrom),
     );
   }
 
@@ -4135,6 +4204,8 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
       firstCount: serializer.fromJson<int?>(json['first_count']),
       closeNote: serializer.fromJson<String?>(json['close_note']),
       closedBy: serializer.fromJson<String?>(json['closed_by']),
+      needsReview: serializer.fromJson<bool>(json['needs_review']),
+      openedFrom: serializer.fromJson<String?>(json['opened_from']),
     );
   }
   @override
@@ -4157,6 +4228,8 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
       'first_count': serializer.toJson<int?>(firstCount),
       'close_note': serializer.toJson<String?>(closeNote),
       'closed_by': serializer.toJson<String?>(closedBy),
+      'needs_review': serializer.toJson<bool>(needsReview),
+      'opened_from': serializer.toJson<String?>(openedFrom),
     };
   }
 
@@ -4177,6 +4250,8 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     Value<int?> firstCount = const Value.absent(),
     Value<String?> closeNote = const Value.absent(),
     Value<String?> closedBy = const Value.absent(),
+    bool? needsReview,
+    Value<String?> openedFrom = const Value.absent(),
   }) => ShiftRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -4196,6 +4271,8 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     firstCount: firstCount.present ? firstCount.value : this.firstCount,
     closeNote: closeNote.present ? closeNote.value : this.closeNote,
     closedBy: closedBy.present ? closedBy.value : this.closedBy,
+    needsReview: needsReview ?? this.needsReview,
+    openedFrom: openedFrom.present ? openedFrom.value : this.openedFrom,
   );
   ShiftRow copyWithCompanion(ShiftsCompanion data) {
     return ShiftRow(
@@ -4225,6 +4302,12 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           : this.firstCount,
       closeNote: data.closeNote.present ? data.closeNote.value : this.closeNote,
       closedBy: data.closedBy.present ? data.closedBy.value : this.closedBy,
+      needsReview: data.needsReview.present
+          ? data.needsReview.value
+          : this.needsReview,
+      openedFrom: data.openedFrom.present
+          ? data.openedFrom.value
+          : this.openedFrom,
     );
   }
 
@@ -4246,7 +4329,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           ..write('status: $status, ')
           ..write('firstCount: $firstCount, ')
           ..write('closeNote: $closeNote, ')
-          ..write('closedBy: $closedBy')
+          ..write('closedBy: $closedBy, ')
+          ..write('needsReview: $needsReview, ')
+          ..write('openedFrom: $openedFrom')
           ..write(')'))
         .toString();
   }
@@ -4269,6 +4354,8 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
     firstCount,
     closeNote,
     closedBy,
+    needsReview,
+    openedFrom,
   );
   @override
   bool operator ==(Object other) =>
@@ -4289,7 +4376,9 @@ class ShiftRow extends DataClass implements Insertable<ShiftRow> {
           other.status == this.status &&
           other.firstCount == this.firstCount &&
           other.closeNote == this.closeNote &&
-          other.closedBy == this.closedBy);
+          other.closedBy == this.closedBy &&
+          other.needsReview == this.needsReview &&
+          other.openedFrom == this.openedFrom);
 }
 
 class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
@@ -4309,6 +4398,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
   final Value<int?> firstCount;
   final Value<String?> closeNote;
   final Value<String?> closedBy;
+  final Value<bool> needsReview;
+  final Value<String?> openedFrom;
   final Value<int> rowid;
   const ShiftsCompanion({
     this.id = const Value.absent(),
@@ -4327,6 +4418,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.firstCount = const Value.absent(),
     this.closeNote = const Value.absent(),
     this.closedBy = const Value.absent(),
+    this.needsReview = const Value.absent(),
+    this.openedFrom = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ShiftsCompanion.insert({
@@ -4346,6 +4439,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     this.firstCount = const Value.absent(),
     this.closeNote = const Value.absent(),
     this.closedBy = const Value.absent(),
+    this.needsReview = const Value.absent(),
+    this.openedFrom = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId),
        openedAt = Value(openedAt),
@@ -4368,6 +4463,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     Expression<int>? firstCount,
     Expression<String>? closeNote,
     Expression<String>? closedBy,
+    Expression<bool>? needsReview,
+    Expression<String>? openedFrom,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4387,6 +4484,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
       if (firstCount != null) 'first_count': firstCount,
       if (closeNote != null) 'close_note': closeNote,
       if (closedBy != null) 'closed_by': closedBy,
+      if (needsReview != null) 'needs_review': needsReview,
+      if (openedFrom != null) 'opened_from': openedFrom,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4408,6 +4507,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     Value<int?>? firstCount,
     Value<String?>? closeNote,
     Value<String?>? closedBy,
+    Value<bool>? needsReview,
+    Value<String?>? openedFrom,
     Value<int>? rowid,
   }) {
     return ShiftsCompanion(
@@ -4427,6 +4528,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
       firstCount: firstCount ?? this.firstCount,
       closeNote: closeNote ?? this.closeNote,
       closedBy: closedBy ?? this.closedBy,
+      needsReview: needsReview ?? this.needsReview,
+      openedFrom: openedFrom ?? this.openedFrom,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4482,6 +4585,12 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
     if (closedBy.present) {
       map['closed_by'] = Variable<String>(closedBy.value);
     }
+    if (needsReview.present) {
+      map['needs_review'] = Variable<bool>(needsReview.value);
+    }
+    if (openedFrom.present) {
+      map['opened_from'] = Variable<String>(openedFrom.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4507,6 +4616,8 @@ class ShiftsCompanion extends UpdateCompanion<ShiftRow> {
           ..write('firstCount: $firstCount, ')
           ..write('closeNote: $closeNote, ')
           ..write('closedBy: $closedBy, ')
+          ..write('needsReview: $needsReview, ')
+          ..write('openedFrom: $openedFrom, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11385,6 +11496,875 @@ class RefundDecisionsCompanion extends UpdateCompanion<RefundDecisionRow> {
   }
 }
 
+class $DrawerEventsTable extends DrawerEvents
+    with TableInfo<$DrawerEventsTable, DrawerEventRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DrawerEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    check: () => kind.isIn(['start', 'check', 'collect']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countedByMeta = const VerificationMeta(
+    'countedBy',
+  );
+  @override
+  late final GeneratedColumn<String> countedBy = GeneratedColumn<String>(
+    'counted_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _presentUserMeta = const VerificationMeta(
+    'presentUser',
+  );
+  @override
+  late final GeneratedColumn<String> presentUser = GeneratedColumn<String>(
+    'present_user',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _shiftIdMeta = const VerificationMeta(
+    'shiftId',
+  );
+  @override
+  late final GeneratedColumn<String> shiftId = GeneratedColumn<String>(
+    'shift_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shifts (id)',
+    ),
+  );
+  static const VerificationMeta _firstCountMeta = const VerificationMeta(
+    'firstCount',
+  );
+  @override
+  late final GeneratedColumn<int> firstCount = GeneratedColumn<int>(
+    'first_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _countedMeta = const VerificationMeta(
+    'counted',
+  );
+  @override
+  late final GeneratedColumn<int> counted = GeneratedColumn<int>(
+    'counted',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(counted).isBiggerOrEqualValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expectedMeta = const VerificationMeta(
+    'expected',
+  );
+  @override
+  late final GeneratedColumn<int> expected = GeneratedColumn<int>(
+    'expected',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _removedMeta = const VerificationMeta(
+    'removed',
+  );
+  @override
+  late final GeneratedColumn<int> removed = GeneratedColumn<int>(
+    'removed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    check: () => ComparableExpr(note.length).isSmallerOrEqualValue(200),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _needsReviewMeta = const VerificationMeta(
+    'needsReview',
+  );
+  @override
+  late final GeneratedColumn<bool> needsReview = GeneratedColumn<bool>(
+    'needs_review',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("needs_review" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _countedAtMeta = const VerificationMeta(
+    'countedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> countedAt = GeneratedColumn<DateTime>(
+    'counted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    kind,
+    countedBy,
+    presentUser,
+    shiftId,
+    firstCount,
+    counted,
+    expected,
+    removed,
+    note,
+    needsReview,
+    countedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'drawer_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DrawerEventRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('counted_by')) {
+      context.handle(
+        _countedByMeta,
+        countedBy.isAcceptableOrUnknown(data['counted_by']!, _countedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countedByMeta);
+    }
+    if (data.containsKey('present_user')) {
+      context.handle(
+        _presentUserMeta,
+        presentUser.isAcceptableOrUnknown(
+          data['present_user']!,
+          _presentUserMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shift_id')) {
+      context.handle(
+        _shiftIdMeta,
+        shiftId.isAcceptableOrUnknown(data['shift_id']!, _shiftIdMeta),
+      );
+    }
+    if (data.containsKey('first_count')) {
+      context.handle(
+        _firstCountMeta,
+        firstCount.isAcceptableOrUnknown(data['first_count']!, _firstCountMeta),
+      );
+    }
+    if (data.containsKey('counted')) {
+      context.handle(
+        _countedMeta,
+        counted.isAcceptableOrUnknown(data['counted']!, _countedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countedMeta);
+    }
+    if (data.containsKey('expected')) {
+      context.handle(
+        _expectedMeta,
+        expected.isAcceptableOrUnknown(data['expected']!, _expectedMeta),
+      );
+    }
+    if (data.containsKey('removed')) {
+      context.handle(
+        _removedMeta,
+        removed.isAcceptableOrUnknown(data['removed']!, _removedMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('needs_review')) {
+      context.handle(
+        _needsReviewMeta,
+        needsReview.isAcceptableOrUnknown(
+          data['needs_review']!,
+          _needsReviewMeta,
+        ),
+      );
+    }
+    if (data.containsKey('counted_at')) {
+      context.handle(
+        _countedAtMeta,
+        countedAt.isAcceptableOrUnknown(data['counted_at']!, _countedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DrawerEventRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DrawerEventRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      countedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}counted_by'],
+      )!,
+      presentUser: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}present_user'],
+      ),
+      shiftId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shift_id'],
+      ),
+      firstCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_count'],
+      ),
+      counted: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}counted'],
+      )!,
+      expected: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expected'],
+      ),
+      removed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}removed'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      needsReview: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}needs_review'],
+      )!,
+      countedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}counted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $DrawerEventsTable createAlias(String alias) {
+    return $DrawerEventsTable(attachedDatabase, alias);
+  }
+}
+
+class DrawerEventRow extends DataClass implements Insertable<DrawerEventRow> {
+  /// UUID v4.
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String deviceId;
+  final String kind;
+  final String countedBy;
+  final String? presentUser;
+
+  /// The shift open at the time, if any.
+  final String? shiftId;
+
+  /// A blind first count that didn't match (one recount, as at close).
+  final int? firstCount;
+  final int counted;
+
+  /// What the drawer should have held; null for the starting cash.
+  final int? expected;
+  final int removed;
+  final String? note;
+  final bool needsReview;
+  final DateTime countedAt;
+  const DrawerEventRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.kind,
+    required this.countedBy,
+    this.presentUser,
+    this.shiftId,
+    this.firstCount,
+    required this.counted,
+    this.expected,
+    required this.removed,
+    this.note,
+    required this.needsReview,
+    required this.countedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['kind'] = Variable<String>(kind);
+    map['counted_by'] = Variable<String>(countedBy);
+    if (!nullToAbsent || presentUser != null) {
+      map['present_user'] = Variable<String>(presentUser);
+    }
+    if (!nullToAbsent || shiftId != null) {
+      map['shift_id'] = Variable<String>(shiftId);
+    }
+    if (!nullToAbsent || firstCount != null) {
+      map['first_count'] = Variable<int>(firstCount);
+    }
+    map['counted'] = Variable<int>(counted);
+    if (!nullToAbsent || expected != null) {
+      map['expected'] = Variable<int>(expected);
+    }
+    map['removed'] = Variable<int>(removed);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['needs_review'] = Variable<bool>(needsReview);
+    map['counted_at'] = Variable<DateTime>(countedAt);
+    return map;
+  }
+
+  DrawerEventsCompanion toCompanion(bool nullToAbsent) {
+    return DrawerEventsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      kind: Value(kind),
+      countedBy: Value(countedBy),
+      presentUser: presentUser == null && nullToAbsent
+          ? const Value.absent()
+          : Value(presentUser),
+      shiftId: shiftId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shiftId),
+      firstCount: firstCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstCount),
+      counted: Value(counted),
+      expected: expected == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expected),
+      removed: Value(removed),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      needsReview: Value(needsReview),
+      countedAt: Value(countedAt),
+    );
+  }
+
+  factory DrawerEventRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DrawerEventRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      countedBy: serializer.fromJson<String>(json['counted_by']),
+      presentUser: serializer.fromJson<String?>(json['present_user']),
+      shiftId: serializer.fromJson<String?>(json['shift_id']),
+      firstCount: serializer.fromJson<int?>(json['first_count']),
+      counted: serializer.fromJson<int>(json['counted']),
+      expected: serializer.fromJson<int?>(json['expected']),
+      removed: serializer.fromJson<int>(json['removed']),
+      note: serializer.fromJson<String?>(json['note']),
+      needsReview: serializer.fromJson<bool>(json['needs_review']),
+      countedAt: serializer.fromJson<DateTime>(json['counted_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'kind': serializer.toJson<String>(kind),
+      'counted_by': serializer.toJson<String>(countedBy),
+      'present_user': serializer.toJson<String?>(presentUser),
+      'shift_id': serializer.toJson<String?>(shiftId),
+      'first_count': serializer.toJson<int?>(firstCount),
+      'counted': serializer.toJson<int>(counted),
+      'expected': serializer.toJson<int?>(expected),
+      'removed': serializer.toJson<int>(removed),
+      'note': serializer.toJson<String?>(note),
+      'needs_review': serializer.toJson<bool>(needsReview),
+      'counted_at': serializer.toJson<DateTime>(countedAt),
+    };
+  }
+
+  DrawerEventRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? deviceId,
+    String? kind,
+    String? countedBy,
+    Value<String?> presentUser = const Value.absent(),
+    Value<String?> shiftId = const Value.absent(),
+    Value<int?> firstCount = const Value.absent(),
+    int? counted,
+    Value<int?> expected = const Value.absent(),
+    int? removed,
+    Value<String?> note = const Value.absent(),
+    bool? needsReview,
+    DateTime? countedAt,
+  }) => DrawerEventRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    kind: kind ?? this.kind,
+    countedBy: countedBy ?? this.countedBy,
+    presentUser: presentUser.present ? presentUser.value : this.presentUser,
+    shiftId: shiftId.present ? shiftId.value : this.shiftId,
+    firstCount: firstCount.present ? firstCount.value : this.firstCount,
+    counted: counted ?? this.counted,
+    expected: expected.present ? expected.value : this.expected,
+    removed: removed ?? this.removed,
+    note: note.present ? note.value : this.note,
+    needsReview: needsReview ?? this.needsReview,
+    countedAt: countedAt ?? this.countedAt,
+  );
+  DrawerEventRow copyWithCompanion(DrawerEventsCompanion data) {
+    return DrawerEventRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      countedBy: data.countedBy.present ? data.countedBy.value : this.countedBy,
+      presentUser: data.presentUser.present
+          ? data.presentUser.value
+          : this.presentUser,
+      shiftId: data.shiftId.present ? data.shiftId.value : this.shiftId,
+      firstCount: data.firstCount.present
+          ? data.firstCount.value
+          : this.firstCount,
+      counted: data.counted.present ? data.counted.value : this.counted,
+      expected: data.expected.present ? data.expected.value : this.expected,
+      removed: data.removed.present ? data.removed.value : this.removed,
+      note: data.note.present ? data.note.value : this.note,
+      needsReview: data.needsReview.present
+          ? data.needsReview.value
+          : this.needsReview,
+      countedAt: data.countedAt.present ? data.countedAt.value : this.countedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DrawerEventRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('kind: $kind, ')
+          ..write('countedBy: $countedBy, ')
+          ..write('presentUser: $presentUser, ')
+          ..write('shiftId: $shiftId, ')
+          ..write('firstCount: $firstCount, ')
+          ..write('counted: $counted, ')
+          ..write('expected: $expected, ')
+          ..write('removed: $removed, ')
+          ..write('note: $note, ')
+          ..write('needsReview: $needsReview, ')
+          ..write('countedAt: $countedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    kind,
+    countedBy,
+    presentUser,
+    shiftId,
+    firstCount,
+    counted,
+    expected,
+    removed,
+    note,
+    needsReview,
+    countedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DrawerEventRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.kind == this.kind &&
+          other.countedBy == this.countedBy &&
+          other.presentUser == this.presentUser &&
+          other.shiftId == this.shiftId &&
+          other.firstCount == this.firstCount &&
+          other.counted == this.counted &&
+          other.expected == this.expected &&
+          other.removed == this.removed &&
+          other.note == this.note &&
+          other.needsReview == this.needsReview &&
+          other.countedAt == this.countedAt);
+}
+
+class DrawerEventsCompanion extends UpdateCompanion<DrawerEventRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> deviceId;
+  final Value<String> kind;
+  final Value<String> countedBy;
+  final Value<String?> presentUser;
+  final Value<String?> shiftId;
+  final Value<int?> firstCount;
+  final Value<int> counted;
+  final Value<int?> expected;
+  final Value<int> removed;
+  final Value<String?> note;
+  final Value<bool> needsReview;
+  final Value<DateTime> countedAt;
+  final Value<int> rowid;
+  const DrawerEventsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.countedBy = const Value.absent(),
+    this.presentUser = const Value.absent(),
+    this.shiftId = const Value.absent(),
+    this.firstCount = const Value.absent(),
+    this.counted = const Value.absent(),
+    this.expected = const Value.absent(),
+    this.removed = const Value.absent(),
+    this.note = const Value.absent(),
+    this.needsReview = const Value.absent(),
+    this.countedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DrawerEventsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required String kind,
+    required String countedBy,
+    this.presentUser = const Value.absent(),
+    this.shiftId = const Value.absent(),
+    this.firstCount = const Value.absent(),
+    required int counted,
+    this.expected = const Value.absent(),
+    this.removed = const Value.absent(),
+    this.note = const Value.absent(),
+    this.needsReview = const Value.absent(),
+    required DateTime countedAt,
+    this.rowid = const Value.absent(),
+  }) : kind = Value(kind),
+       countedBy = Value(countedBy),
+       counted = Value(counted),
+       countedAt = Value(countedAt);
+  static Insertable<DrawerEventRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<String>? kind,
+    Expression<String>? countedBy,
+    Expression<String>? presentUser,
+    Expression<String>? shiftId,
+    Expression<int>? firstCount,
+    Expression<int>? counted,
+    Expression<int>? expected,
+    Expression<int>? removed,
+    Expression<String>? note,
+    Expression<bool>? needsReview,
+    Expression<DateTime>? countedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (kind != null) 'kind': kind,
+      if (countedBy != null) 'counted_by': countedBy,
+      if (presentUser != null) 'present_user': presentUser,
+      if (shiftId != null) 'shift_id': shiftId,
+      if (firstCount != null) 'first_count': firstCount,
+      if (counted != null) 'counted': counted,
+      if (expected != null) 'expected': expected,
+      if (removed != null) 'removed': removed,
+      if (note != null) 'note': note,
+      if (needsReview != null) 'needs_review': needsReview,
+      if (countedAt != null) 'counted_at': countedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DrawerEventsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? deviceId,
+    Value<String>? kind,
+    Value<String>? countedBy,
+    Value<String?>? presentUser,
+    Value<String?>? shiftId,
+    Value<int?>? firstCount,
+    Value<int>? counted,
+    Value<int?>? expected,
+    Value<int>? removed,
+    Value<String?>? note,
+    Value<bool>? needsReview,
+    Value<DateTime>? countedAt,
+    Value<int>? rowid,
+  }) {
+    return DrawerEventsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      kind: kind ?? this.kind,
+      countedBy: countedBy ?? this.countedBy,
+      presentUser: presentUser ?? this.presentUser,
+      shiftId: shiftId ?? this.shiftId,
+      firstCount: firstCount ?? this.firstCount,
+      counted: counted ?? this.counted,
+      expected: expected ?? this.expected,
+      removed: removed ?? this.removed,
+      note: note ?? this.note,
+      needsReview: needsReview ?? this.needsReview,
+      countedAt: countedAt ?? this.countedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (countedBy.present) {
+      map['counted_by'] = Variable<String>(countedBy.value);
+    }
+    if (presentUser.present) {
+      map['present_user'] = Variable<String>(presentUser.value);
+    }
+    if (shiftId.present) {
+      map['shift_id'] = Variable<String>(shiftId.value);
+    }
+    if (firstCount.present) {
+      map['first_count'] = Variable<int>(firstCount.value);
+    }
+    if (counted.present) {
+      map['counted'] = Variable<int>(counted.value);
+    }
+    if (expected.present) {
+      map['expected'] = Variable<int>(expected.value);
+    }
+    if (removed.present) {
+      map['removed'] = Variable<int>(removed.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (needsReview.present) {
+      map['needs_review'] = Variable<bool>(needsReview.value);
+    }
+    if (countedAt.present) {
+      map['counted_at'] = Variable<DateTime>(countedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DrawerEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('kind: $kind, ')
+          ..write('countedBy: $countedBy, ')
+          ..write('presentUser: $presentUser, ')
+          ..write('shiftId: $shiftId, ')
+          ..write('firstCount: $firstCount, ')
+          ..write('counted: $counted, ')
+          ..write('expected: $expected, ')
+          ..write('removed: $removed, ')
+          ..write('note: $note, ')
+          ..write('needsReview: $needsReview, ')
+          ..write('countedAt: $countedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AuditLogTable extends AuditLog
     with TableInfo<$AuditLogTable, AuditLogRow> {
   @override
@@ -14703,6 +15683,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
     'refund_decisions_stamped_update',
   );
+  late final $DrawerEventsTable drawerEvents = $DrawerEventsTable(this);
+  late final Trigger drawerEventsNoUpdate = Trigger(
+    'CREATE TRIGGER drawer_events_no_update BEFORE UPDATE ON drawer_events BEGIN SELECT RAISE (ABORT, \'drawer_events rows are never edited\');END',
+    'drawer_events_no_update',
+  );
+  late final Trigger drawerEventsNoDelete = Trigger(
+    'CREATE TRIGGER drawer_events_no_delete BEFORE DELETE ON drawer_events BEGIN SELECT RAISE (ABORT, \'drawer_events rows are never deleted\');END',
+    'drawer_events_no_delete',
+  );
   late final $AuditLogTable auditLog = $AuditLogTable(this);
   late final Trigger auditLogNoUpdate = Trigger(
     'CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE (ABORT, \'audit_log is append-only\');END',
@@ -14944,6 +15933,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     inventoryItemsStampedUpdate,
     refundDecisions,
     refundDecisionsStampedUpdate,
+    drawerEvents,
+    drawerEventsNoUpdate,
+    drawerEventsNoDelete,
     auditLog,
     auditLogNoUpdate,
     staysNoDelete,
@@ -15132,6 +16124,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       on: TableUpdateQuery.onTableName(
         'refund_decisions',
         limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'drawer_events',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'drawer_events',
+        limitUpdateKind: UpdateKind.delete,
       ),
       result: [],
     ),
@@ -15661,6 +16667,46 @@ final class $$UsersTableReferences
     );
   }
 
+  static MultiTypedResultKey<$DrawerEventsTable, List<DrawerEventRow>>
+  _drawerEventsCountedTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.drawerEvents,
+    aliasName: 'users__id__drawer_events__counted_by',
+  );
+
+  $$DrawerEventsTableProcessedTableManager get drawerEventsCounted {
+    final manager = $$DrawerEventsTableTableManager(
+      $_db,
+      $_db.drawerEvents,
+    ).filter((f) => f.countedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _drawerEventsCountedTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$DrawerEventsTable, List<DrawerEventRow>>
+  _drawerEventsPresentTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.drawerEvents,
+    aliasName: 'users__id__drawer_events__present_user',
+  );
+
+  $$DrawerEventsTableProcessedTableManager get drawerEventsPresent {
+    final manager = $$DrawerEventsTableTableManager(
+      $_db,
+      $_db.drawerEvents,
+    ).filter((f) => f.presentUser.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _drawerEventsPresentTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$AuditLogTable, List<AuditLogRow>>
   _auditLogRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.auditLog,
@@ -16161,6 +17207,56 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$RefundDecisionsTableFilterComposer(
             $db: $db,
             $table: $db.refundDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> drawerEventsCounted(
+    Expression<bool> Function($$DrawerEventsTableFilterComposer f) f,
+  ) {
+    final $$DrawerEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.drawerEvents,
+      getReferencedColumn: (t) => t.countedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DrawerEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.drawerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> drawerEventsPresent(
+    Expression<bool> Function($$DrawerEventsTableFilterComposer f) f,
+  ) {
+    final $$DrawerEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.drawerEvents,
+      getReferencedColumn: (t) => t.presentUser,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DrawerEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.drawerEvents,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16753,6 +17849,56 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> drawerEventsCounted<T extends Object>(
+    Expression<T> Function($$DrawerEventsTableAnnotationComposer a) f,
+  ) {
+    final $$DrawerEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.drawerEvents,
+      getReferencedColumn: (t) => t.countedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DrawerEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.drawerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> drawerEventsPresent<T extends Object>(
+    Expression<T> Function($$DrawerEventsTableAnnotationComposer a) f,
+  ) {
+    final $$DrawerEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.drawerEvents,
+      getReferencedColumn: (t) => t.presentUser,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DrawerEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.drawerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> auditLogRefs<T extends Object>(
     Expression<T> Function($$AuditLogTableAnnotationComposer a) f,
   ) {
@@ -16883,6 +18029,8 @@ class $$UsersTableTableManager
             bool voidsRefs,
             bool expensesRefs,
             bool refundDecisionsRefs,
+            bool drawerEventsCounted,
+            bool drawerEventsPresent,
             bool auditLogRefs,
             bool priceRequestsMade,
             bool priceRequestsWithdrawn,
@@ -16977,6 +18125,8 @@ class $$UsersTableTableManager
                 voidsRefs = false,
                 expensesRefs = false,
                 refundDecisionsRefs = false,
+                drawerEventsCounted = false,
+                drawerEventsPresent = false,
                 auditLogRefs = false,
                 priceRequestsMade = false,
                 priceRequestsWithdrawn = false,
@@ -17000,6 +18150,8 @@ class $$UsersTableTableManager
                     if (voidsRefs) db.voids,
                     if (expensesRefs) db.expenses,
                     if (refundDecisionsRefs) db.refundDecisions,
+                    if (drawerEventsCounted) db.drawerEvents,
+                    if (drawerEventsPresent) db.drawerEvents,
                     if (auditLogRefs) db.auditLog,
                     if (priceRequestsMade) db.priceRequests,
                     if (priceRequestsWithdrawn) db.priceRequests,
@@ -17311,6 +18463,48 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (drawerEventsCounted)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          DrawerEventRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._drawerEventsCountedTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).drawerEventsCounted,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.countedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (drawerEventsPresent)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          DrawerEventRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._drawerEventsPresentTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).drawerEventsPresent,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.presentUser == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (auditLogRefs)
                         await $_getPrefetchedData<
                           UserRow,
@@ -17431,6 +18625,8 @@ typedef $$UsersTableProcessedTableManager =
         bool voidsRefs,
         bool expensesRefs,
         bool refundDecisionsRefs,
+        bool drawerEventsCounted,
+        bool drawerEventsPresent,
         bool auditLogRefs,
         bool priceRequestsMade,
         bool priceRequestsWithdrawn,
@@ -20064,6 +21260,8 @@ typedef $$ShiftsTableCreateCompanionBuilder = ShiftsCompanion Function({
   Value<int?> firstCount,
   Value<String?> closeNote,
   Value<String?> closedBy,
+  Value<bool> needsReview,
+  Value<String?> openedFrom,
   Value<int> rowid,
 });
 typedef $$ShiftsTableUpdateCompanionBuilder = ShiftsCompanion Function({
@@ -20083,6 +21281,8 @@ typedef $$ShiftsTableUpdateCompanionBuilder = ShiftsCompanion Function({
   Value<int?> firstCount,
   Value<String?> closeNote,
   Value<String?> closedBy,
+  Value<bool> needsReview,
+  Value<String?> openedFrom,
   Value<int> rowid,
 });
 
@@ -20156,6 +21356,24 @@ final class $$ShiftsTableReferences
     ).filter((f) => f.shiftId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_refundsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$DrawerEventsTable, List<DrawerEventRow>>
+  _drawerEventsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.drawerEvents,
+    aliasName: 'shifts__id__drawer_events__shift_id',
+  );
+
+  $$DrawerEventsTableProcessedTableManager get drawerEventsRefs {
+    final manager = $$DrawerEventsTableTableManager(
+      $_db,
+      $_db.drawerEvents,
+    ).filter((f) => f.shiftId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_drawerEventsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -20238,6 +21456,16 @@ class $$ShiftsTableFilterComposer
 
   ColumnFilters<String> get closeNote => $composableBuilder(
     column: $table.closeNote,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get needsReview => $composableBuilder(
+    column: $table.needsReview,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get openedFrom => $composableBuilder(
+    column: $table.openedFrom,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -20336,6 +21564,31 @@ class $$ShiftsTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> drawerEventsRefs(
+    Expression<bool> Function($$DrawerEventsTableFilterComposer f) f,
+  ) {
+    final $$DrawerEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.drawerEvents,
+      getReferencedColumn: (t) => t.shiftId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DrawerEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.drawerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ShiftsTableOrderingComposer
@@ -20414,6 +21667,16 @@ class $$ShiftsTableOrderingComposer
 
   ColumnOrderings<String> get closeNote => $composableBuilder(
     column: $table.closeNote,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get needsReview => $composableBuilder(
+    column: $table.needsReview,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get openedFrom => $composableBuilder(
+    column: $table.openedFrom,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -20525,6 +21788,16 @@ class $$ShiftsTableAnnotationComposer
   GeneratedColumn<String> get closeNote =>
       $composableBuilder(column: $table.closeNote, builder: (column) => column);
 
+  GeneratedColumn<bool> get needsReview => $composableBuilder(
+    column: $table.needsReview,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get openedFrom => $composableBuilder(
+    column: $table.openedFrom,
+    builder: (column) => column,
+  );
+
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -20620,6 +21893,31 @@ class $$ShiftsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> drawerEventsRefs<T extends Object>(
+    Expression<T> Function($$DrawerEventsTableAnnotationComposer a) f,
+  ) {
+    final $$DrawerEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.drawerEvents,
+      getReferencedColumn: (t) => t.shiftId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DrawerEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.drawerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ShiftsTableTableManager
@@ -20640,6 +21938,7 @@ class $$ShiftsTableTableManager
             bool closedBy,
             bool paymentsRefs,
             bool refundsRefs,
+            bool drawerEventsRefs,
           })
         > {
   $$ShiftsTableTableManager(_$AppDatabase db, $ShiftsTable table)
@@ -20671,6 +21970,8 @@ class $$ShiftsTableTableManager
                 Value<int?> firstCount = const Value.absent(),
                 Value<String?> closeNote = const Value.absent(),
                 Value<String?> closedBy = const Value.absent(),
+                Value<bool> needsReview = const Value.absent(),
+                Value<String?> openedFrom = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShiftsCompanion(
                 id: id,
@@ -20689,6 +21990,8 @@ class $$ShiftsTableTableManager
                 firstCount: firstCount,
                 closeNote: closeNote,
                 closedBy: closedBy,
+                needsReview: needsReview,
+                openedFrom: openedFrom,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -20709,6 +22012,8 @@ class $$ShiftsTableTableManager
                 Value<int?> firstCount = const Value.absent(),
                 Value<String?> closeNote = const Value.absent(),
                 Value<String?> closedBy = const Value.absent(),
+                Value<bool> needsReview = const Value.absent(),
+                Value<String?> openedFrom = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShiftsCompanion.insert(
                 id: id,
@@ -20727,6 +22032,8 @@ class $$ShiftsTableTableManager
                 firstCount: firstCount,
                 closeNote: closeNote,
                 closedBy: closedBy,
+                needsReview: needsReview,
+                openedFrom: openedFrom,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -20743,12 +22050,14 @@ class $$ShiftsTableTableManager
                 closedBy = false,
                 paymentsRefs = false,
                 refundsRefs = false,
+                drawerEventsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (paymentsRefs) db.payments,
                     if (refundsRefs) db.refunds,
+                    if (drawerEventsRefs) db.drawerEvents,
                   ],
                   addJoins:
                       <
@@ -20835,6 +22144,27 @@ class $$ShiftsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (drawerEventsRefs)
+                        await $_getPrefetchedData<
+                          ShiftRow,
+                          $ShiftsTable,
+                          DrawerEventRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShiftsTableReferences
+                              ._drawerEventsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShiftsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).drawerEventsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.shiftId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -20860,6 +22190,7 @@ typedef $$ShiftsTableProcessedTableManager =
         bool closedBy,
         bool paymentsRefs,
         bool refundsRefs,
+        bool drawerEventsRefs,
       })
     >;
 typedef $$StaysTableCreateCompanionBuilder = StaysCompanion Function({
@@ -26997,6 +28328,688 @@ typedef $$RefundDecisionsTableProcessedTableManager =
       RefundDecisionRow,
       PrefetchHooks Function({bool refundId, bool decidedBy})
     >;
+typedef $$DrawerEventsTableCreateCompanionBuilder =
+    DrawerEventsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      required String kind,
+      required String countedBy,
+      Value<String?> presentUser,
+      Value<String?> shiftId,
+      Value<int?> firstCount,
+      required int counted,
+      Value<int?> expected,
+      Value<int> removed,
+      Value<String?> note,
+      Value<bool> needsReview,
+      required DateTime countedAt,
+      Value<int> rowid,
+    });
+typedef $$DrawerEventsTableUpdateCompanionBuilder =
+    DrawerEventsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      Value<String> kind,
+      Value<String> countedBy,
+      Value<String?> presentUser,
+      Value<String?> shiftId,
+      Value<int?> firstCount,
+      Value<int> counted,
+      Value<int?> expected,
+      Value<int> removed,
+      Value<String?> note,
+      Value<bool> needsReview,
+      Value<DateTime> countedAt,
+      Value<int> rowid,
+    });
+
+final class $$DrawerEventsTableReferences
+    extends BaseReferences<_$AppDatabase, $DrawerEventsTable, DrawerEventRow> {
+  $$DrawerEventsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $UsersTable _countedByTable(_$AppDatabase db) =>
+      db.users.createAlias('drawer_events__counted_by__users__id');
+
+  $$UsersTableProcessedTableManager get countedBy {
+    final $_column = $_itemColumn<String>('counted_by')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_countedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTable _presentUserTable(_$AppDatabase db) =>
+      db.users.createAlias('drawer_events__present_user__users__id');
+
+  $$UsersTableProcessedTableManager? get presentUser {
+    final $_column = $_itemColumn<String>('present_user');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_presentUserTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ShiftsTable _shiftIdTable(_$AppDatabase db) =>
+      db.shifts.createAlias('drawer_events__shift_id__shifts__id');
+
+  $$ShiftsTableProcessedTableManager? get shiftId {
+    final $_column = $_itemColumn<String>('shift_id');
+    if ($_column == null) return null;
+    final manager = $$ShiftsTableTableManager(
+      $_db,
+      $_db.shifts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_shiftIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DrawerEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $DrawerEventsTable> {
+  $$DrawerEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstCount => $composableBuilder(
+    column: $table.firstCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get counted => $composableBuilder(
+    column: $table.counted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get removed => $composableBuilder(
+    column: $table.removed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get needsReview => $composableBuilder(
+    column: $table.needsReview,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get countedAt => $composableBuilder(
+    column: $table.countedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get countedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.countedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get presentUser {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.presentUser,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShiftsTableFilterComposer get shiftId {
+    final $$ShiftsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.shiftId,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableFilterComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DrawerEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DrawerEventsTable> {
+  $$DrawerEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstCount => $composableBuilder(
+    column: $table.firstCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get counted => $composableBuilder(
+    column: $table.counted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get removed => $composableBuilder(
+    column: $table.removed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get needsReview => $composableBuilder(
+    column: $table.needsReview,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get countedAt => $composableBuilder(
+    column: $table.countedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get countedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.countedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get presentUser {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.presentUser,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShiftsTableOrderingComposer get shiftId {
+    final $$ShiftsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.shiftId,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableOrderingComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DrawerEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DrawerEventsTable> {
+  $$DrawerEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get firstCount => $composableBuilder(
+    column: $table.firstCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get counted =>
+      $composableBuilder(column: $table.counted, builder: (column) => column);
+
+  GeneratedColumn<int> get expected =>
+      $composableBuilder(column: $table.expected, builder: (column) => column);
+
+  GeneratedColumn<int> get removed =>
+      $composableBuilder(column: $table.removed, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<bool> get needsReview => $composableBuilder(
+    column: $table.needsReview,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get countedAt =>
+      $composableBuilder(column: $table.countedAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get countedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.countedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get presentUser {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.presentUser,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShiftsTableAnnotationComposer get shiftId {
+    final $$ShiftsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.shiftId,
+      referencedTable: $db.shifts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShiftsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shifts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DrawerEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DrawerEventsTable,
+          DrawerEventRow,
+          $$DrawerEventsTableFilterComposer,
+          $$DrawerEventsTableOrderingComposer,
+          $$DrawerEventsTableAnnotationComposer,
+          $$DrawerEventsTableCreateCompanionBuilder,
+          $$DrawerEventsTableUpdateCompanionBuilder,
+          (DrawerEventRow, $$DrawerEventsTableReferences),
+          DrawerEventRow,
+          PrefetchHooks Function({
+            bool countedBy,
+            bool presentUser,
+            bool shiftId,
+          })
+        > {
+  $$DrawerEventsTableTableManager(_$AppDatabase db, $DrawerEventsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DrawerEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DrawerEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DrawerEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> countedBy = const Value.absent(),
+                Value<String?> presentUser = const Value.absent(),
+                Value<String?> shiftId = const Value.absent(),
+                Value<int?> firstCount = const Value.absent(),
+                Value<int> counted = const Value.absent(),
+                Value<int?> expected = const Value.absent(),
+                Value<int> removed = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> needsReview = const Value.absent(),
+                Value<DateTime> countedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DrawerEventsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                kind: kind,
+                countedBy: countedBy,
+                presentUser: presentUser,
+                shiftId: shiftId,
+                firstCount: firstCount,
+                counted: counted,
+                expected: expected,
+                removed: removed,
+                note: note,
+                needsReview: needsReview,
+                countedAt: countedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                required String kind,
+                required String countedBy,
+                Value<String?> presentUser = const Value.absent(),
+                Value<String?> shiftId = const Value.absent(),
+                Value<int?> firstCount = const Value.absent(),
+                required int counted,
+                Value<int?> expected = const Value.absent(),
+                Value<int> removed = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> needsReview = const Value.absent(),
+                required DateTime countedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DrawerEventsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                kind: kind,
+                countedBy: countedBy,
+                presentUser: presentUser,
+                shiftId: shiftId,
+                firstCount: firstCount,
+                counted: counted,
+                expected: expected,
+                removed: removed,
+                note: note,
+                needsReview: needsReview,
+                countedAt: countedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DrawerEventsTable, DrawerEventRow>(table),
+                  $$DrawerEventsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({countedBy = false, presentUser = false, shiftId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (countedBy) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.countedBy,
+                            referencedTable: $$DrawerEventsTableReferences
+                                ._countedByTable(db),
+                            referencedColumn: $$DrawerEventsTableReferences
+                                ._countedByTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (presentUser) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.presentUser,
+                            referencedTable: $$DrawerEventsTableReferences
+                                ._presentUserTable(db),
+                            referencedColumn: $$DrawerEventsTableReferences
+                                ._presentUserTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (shiftId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.shiftId,
+                            referencedTable: $$DrawerEventsTableReferences
+                                ._shiftIdTable(db),
+                            referencedColumn: $$DrawerEventsTableReferences
+                                ._shiftIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$DrawerEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DrawerEventsTable,
+      DrawerEventRow,
+      $$DrawerEventsTableFilterComposer,
+      $$DrawerEventsTableOrderingComposer,
+      $$DrawerEventsTableAnnotationComposer,
+      $$DrawerEventsTableCreateCompanionBuilder,
+      $$DrawerEventsTableUpdateCompanionBuilder,
+      (DrawerEventRow, $$DrawerEventsTableReferences),
+      DrawerEventRow,
+      PrefetchHooks Function({bool countedBy, bool presentUser, bool shiftId})
+    >;
 typedef $$AuditLogTableCreateCompanionBuilder = AuditLogCompanion Function({
   Value<String> id,
   Value<DateTime> createdAt,
@@ -29636,6 +31649,8 @@ class $AppDatabaseManager {
       $$ExpensesTableTableManager(_db, _db.expenses);
   $$RefundDecisionsTableTableManager get refundDecisions =>
       $$RefundDecisionsTableTableManager(_db, _db.refundDecisions);
+  $$DrawerEventsTableTableManager get drawerEvents =>
+      $$DrawerEventsTableTableManager(_db, _db.drawerEvents);
   $$AuditLogTableTableManager get auditLog =>
       $$AuditLogTableTableManager(_db, _db.auditLog);
   $$PriceRequestsTableTableManager get priceRequests =>

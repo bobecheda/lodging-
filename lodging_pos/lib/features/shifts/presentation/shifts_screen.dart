@@ -13,10 +13,11 @@ import '../data/shift_repository.dart';
 import '../domain/shift_close.dart';
 import 'shift_providers.dart';
 
-/// FD-11, supervisor (and later the owner): every shift on this computer, newest first, with its
-/// cash variance ("shown to the supervisor"). A variance over 1% of the shift's
-/// takings is highlighted; a recount and a close by someone else are
-/// spelled out. Open shifts can be closed from here.
+/// FD-11, supervisor and owner (`viewShiftTotals`): every shift on this
+/// computer, newest first, with its cash variance. A close that needs review
+/// (its count didn't match even on the recount, Story B) is highlighted; a
+/// recount, "matched only on recount" and a close by someone else are spelled
+/// out. Open shifts can be closed from here.
 class ShiftsScreen extends ConsumerWidget {
   const ShiftsScreen({super.key});
 
@@ -75,10 +76,16 @@ class _ShiftCard extends StatelessWidget {
     final t = LodgingType.of(context);
     final s = shift;
     final variance = s.variance;
-    final high = variance != null && highVariance(variance, takings: s.takings);
-    final recount = s.firstCount == null || s.counted == null
-        ? null
-        : recountLine(s.firstCount!, s.counted!);
+    final high = s.needsReview;
+    final closed = !s.isOpen && s.firstCount != null && s.counted != null;
+    final recount = closed ? recountLine(s.firstCount!, s.counted!) : null;
+    final onRecount =
+        closed &&
+        matchedOnRecount(
+          firstCount: s.firstCount!,
+          counted: s.counted!,
+          needsReview: s.needsReview,
+        );
     final closedBy = s.closedByName == null
         ? null
         : closedByLine(closer: s.closedByName!, owner: s.userName);
@@ -140,6 +147,18 @@ class _ShiftCard extends StatelessWidget {
                       style: t.small.copyWith(
                         color: high ? c.butterText : c.inkSoft,
                       ),
+                    ),
+                  if (s.needsReview)
+                    Text(
+                      'Needs review: the count didn’t match on the recount.',
+                      key: ValueKey('shifts.needsReview.${s.id}'),
+                      style: t.smallStrong.copyWith(color: c.butterText),
+                    ),
+                  if (onRecount)
+                    Text(
+                      'Matched only on recount.',
+                      key: ValueKey('shifts.onRecount.${s.id}'),
+                      style: t.small.copyWith(color: c.inkSoft),
                     ),
                   if (closedBy != null)
                     Text(

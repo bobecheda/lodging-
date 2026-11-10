@@ -53,9 +53,9 @@ void main() {
 
   /// Signs in as the receptionist (opening a shift) and opens Guests.
   Future<ProviderContainer> openGuests(WidgetTester tester) async {
+    await env.ensureDrawerStarted(counted: 500);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
-    await enterKey(tester, 'shift.float', '500');
     await tapKey(tester, 'shift.submit');
     await tapKey(tester, 'nav.${Routes.guests}');
     expect(locationOf(app), Routes.guests);

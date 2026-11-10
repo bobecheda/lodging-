@@ -2,6 +2,15 @@
 
 One page for the supervisor and the receptionists at UB40. It adds to what the app says on screen; when the two differ, the app is right and this sheet needs updating.
 
+## Opening and closing a shift
+
+- **Opening:** there is no float to type. The float is what the drawer held at its last count. On the very first day, the supervisor or owner counts the starting cash first (Cash → Starting cash).
+- **Closing:** count all the cash in the drawer and enter it. The screen never shows what it expects.
+  - "Your count is recorded": done, sign out.
+  - "Your count doesn't match. Count the cash again.": count once more, carefully. Your first count stays on the record.
+  - "Your count still doesn't match": say why (e.g. "gave change from my pocket"), then close. The supervisor reviews it.
+- Leaving the close screen and coming back doesn't start over: you continue where you were.
+
 ## Correcting a wrong payment method or M-Pesa code
 
 The method (Cash or M-Pesa) and the M-Pesa code can't be changed after a payment is saved. To correct them while the guest is still in the bed:

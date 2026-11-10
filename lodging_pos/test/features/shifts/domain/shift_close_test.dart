@@ -63,25 +63,65 @@ void main() {
     expect(countError(-1), 'The count cannot be negative.');
   });
 
-  group('the note', () {
-    test('needed when the cash is short or over; at most 200 characters', () {
-      expect(closeNoteError('', 0), isNull);
-      expect(closeNoteError('   ', -200), 'Say why the cash is short.');
-      expect(closeNoteError('', 50), 'Say why the cash is over.');
-      expect(closeNoteError('Gave KES 200 too much change', -200), isNull);
-      expect(closeNoteError('x' * 201, -200), 'Use at most 200 characters.');
-      expect(closeNoteError('x' * 200, -200), isNull);
+  group('the blind count (FD-11, Story B)', () {
+    test('a count matches only within the tolerance (UB40: 0, overs too)', () {
+      expect(countMatches(5000, expected: 5000), isTrue);
+      expect(countMatches(4999, expected: 5000), isFalse);
+      expect(countMatches(5001, expected: 5000), isFalse);
+      expect(countMatches(4950, expected: 5000, tolerance: 50), isTrue);
+      expect(countMatches(4949, expected: 5000, tolerance: 50), isFalse);
+      expect(countMatches(5050, expected: 5000, tolerance: 50), isTrue);
+    });
+
+    test('the stage: first count, one recount, then a reason', () {
+      expect(countStage(firstCount: null, recount: null), CountStage.first);
+      expect(countStage(firstCount: 4800, recount: null), CountStage.recount);
+      expect(countStage(firstCount: 4800, recount: 4800), CountStage.reason);
+    });
+
+    test('what the counter is told: never an amount, never short or over', () {
+      for (final message in [countAgainMessage, reasonNeededMessage]) {
+        expect(message, isNot(matches(RegExp(r'\d'))));
+        expect(message.toLowerCase(), isNot(contains('short')));
+        expect(message.toLowerCase(), isNot(contains('over')));
+        expect(message, isNot(contains('KES')));
+      }
+      expect(
+        countAgainMessage,
+        'Your count doesn’t match. Count the cash again.',
+      );
+      expect(
+        reasonNeededMessage,
+        'Your count still doesn’t match. Say why, then close the shift.',
+      );
+    });
+
+    test('the reason: required, at most 200 characters, in neutral words', () {
+      expect(closeReasonError(''), 'Say why the count may be different.');
+      expect(closeReasonError('   '), 'Say why the count may be different.');
+      expect(closeReasonError('Gave change from my pocket'), isNull);
+      expect(closeReasonError('x' * 200), isNull);
+      expect(closeReasonError('x' * 201), 'Use at most 200 characters.');
+    });
+
+    test('matched only on recount: the first count differed, the final '
+        'matched', () {
+      expect(
+        matchedOnRecount(firstCount: 4800, counted: 5000, needsReview: false),
+        isTrue,
+      );
+      expect(
+        matchedOnRecount(firstCount: 5000, counted: 5000, needsReview: false),
+        isFalse,
+      );
+      expect(
+        matchedOnRecount(firstCount: 4800, counted: 4800, needsReview: true),
+        isFalse,
+      );
     });
   });
 
-  group('the owner’s Shifts screen', () {
-    test('a variance over 1% of the shift’s takings is highlighted', () {
-      expect(highVariance(-50, takings: 5000), isFalse); // exactly 1%
-      expect(highVariance(-51, takings: 5000), isTrue);
-      expect(highVariance(0, takings: 0), isFalse);
-      expect(highVariance(20, takings: 0), isTrue);
-    });
-
+  group('the supervisor’s Shifts screen', () {
     test('a recount shows both counts', () {
       expect(recountLine(5000, 5000), isNull);
       expect(
@@ -117,14 +157,5 @@ void main() {
       expect(can(supervisor, Permission.closeOtherShifts), isTrue);
       expect(can(desk, Permission.closeOtherShifts), isFalse);
     });
-  });
-
-  test('closeChange: a payment since the review stops the close', () {
-    expect(closeChange(takings(cash: 4000), takings(cash: 4000)), isNull);
-    expect(
-      closeChange(takings(cash: 4000), takings(cash: 4700)),
-      'A payment came in since you counted. Check the figures and close '
-      'again.',
-    );
   });
 }

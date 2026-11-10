@@ -8,7 +8,6 @@ import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../helpers/fixtures.dart';
 
@@ -95,6 +94,8 @@ void main() {
   ) async {
     await env.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk', mustChangePassword: true);
+    // The supervisor counted KES 1,500 as the starting cash (Story B).
+    await env.ensureDrawerStarted(counted: 1500);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     expect(locationOf(app), Routes.changePassword);
@@ -117,9 +118,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(locationOf(app), Routes.shift);
 
-    await enterKey(tester, 'shift.float', '1500');
-    // The money input groups thousands as you type.
-    expect(find.text('1,500'), findsOneWidget);
+    // No float to type: it is the drawer's, and the receptionist never
+    // sees it.
+    expect(find.byKey(const ValueKey('shift.float')), findsNothing);
+    expect(find.textContaining('1,500'), findsNothing);
     await tapKey(tester, 'shift.submit');
     expect(locationOf(app), Routes.home);
     expect((await env.db.select(env.db.shifts).getSingle()).openingFloat, 1500);
@@ -127,13 +129,15 @@ void main() {
     expect(await env.auditFor('shift.open'), hasLength(1));
   });
 
-  testWidgets('an empty float is rejected on screen', (tester) async {
+  testWidgets('no shift opens before the starting cash is counted', (
+    tester,
+  ) async {
     await env.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk');
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
+    expect(find.byKey(const ValueKey('shift.noStartingCash')), findsOneWidget);
     await tapKey(tester, 'shift.submit');
-    expect(find.text('Enter the opening cash float'), findsOneWidget);
     expect(await env.auditFor('shift.open'), isEmpty);
   });
 
@@ -143,10 +147,7 @@ void main() {
     await env.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
     await env.addReceptionist('tom');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 1000);
+    await env.openShift(desk, startingCash: 1000);
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'tom', 'desk-pass');
     expect(locationOf(app), Routes.shift);
@@ -158,14 +159,12 @@ void main() {
   });
 
   testWidgets(
-    'the shift owner sees the resume card with takings, then continues',
+    'the shift owner sees the resume card with no figures (the close is '
+    'blind), then continues',
     (tester) async {
       final supervisor = await env.createFirstSupervisor(testSetup);
       final desk = await env.addReceptionist('desk');
-      await ShiftRepository(
-        env.db,
-        env.audit,
-      ).openShift(user: desk, openingFloat: 800);
+      await env.openShift(desk, startingCash: 800);
       // Two payments on the shift, one voided, to show takings.
       await _twoPaymentsOneVoided(env, desk.id, supervisor.id);
 
@@ -173,11 +172,8 @@ void main() {
       await signInAs(tester, 'desk', 'desk-pass');
       expect(locationOf(app), Routes.shift);
       expect(find.text('Welcome back, Desk'), findsOneWidget);
-      final total = tester.widget<Text>(
-        find.byKey(const ValueKey('shift.takenTotal')),
-      );
-      expect(total.data, 'KES 700'); // the voided 1,000 is not counted
-      expect(find.text('KES 800'), findsOneWidget); // opening float
+      expect(find.byKey(const ValueKey('shift.takenTotal')), findsNothing);
+      expect(find.textContaining('KES'), findsNothing);
 
       await tapKey(tester, 'shift.continue');
       expect(locationOf(app), Routes.home);
@@ -186,14 +182,12 @@ void main() {
     },
   );
 
-  testWidgets('the resume card shows a paid refund as received, refunded and '
-      'net', (tester) async {
+  testWidgets('the resume card shows no figures, a paid refund or not', (
+    tester,
+  ) async {
     final supervisor = await env.createFirstSupervisor(testSetup);
     final desk = await env.addReceptionist('desk');
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 800);
+    await env.openShift(desk, startingCash: 800);
     final room = await RoomsRepository(env.db, env.audit).createRoom(
       supervisor,
       const NewRoom(
@@ -210,14 +204,10 @@ void main() {
 
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
-    String textOf(String key) =>
-        tester.widget<Text>(find.byKey(ValueKey(key))).data!;
-    expect(textOf('shift.takenTotal'), 'KES 700');
-    expect(textOf('shift.net.cash'), 'KES 700');
-    expect(textOf('shift.net.paybill'), 'KES 0');
-    expect(find.text('KES 2,100'), findsOneWidget); // cash received
-    expect(find.text('KES -1,400'), findsOneWidget); // cash refunded
-    expect(find.text('M-Pesa'), findsOneWidget);
+    expect(find.text('Welcome back, Desk'), findsOneWidget);
+    for (final figure in ['700', '2,100', '1,400', '800']) {
+      expect(find.textContaining(figure), findsNothing, reason: figure);
+    }
   });
 }
 

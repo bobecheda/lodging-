@@ -59,9 +59,9 @@ void main() {
   ) async {
     await env.createFirstSupervisor(testSetup);
     await env.addReceptionist('desk');
+    await env.ensureDrawerStarted(counted: 500);
     await pumpWithSetupItem(tester);
     await signInAs(tester, 'desk', 'desk-pass');
-    await enterKey(tester, 'shift.float', '500');
     await tapKey(tester, 'shift.submit');
     expect(find.text('Bed board'), findsWidgets);
     expect(find.text('SETUP · SUPERVISOR'), findsNothing);
@@ -79,6 +79,7 @@ void main() {
       Routes.receipts,
       Routes.refunds,
       Routes.shifts,
+      Routes.cash,
       Routes.voids,
       Routes.adminRooms,
       Routes.adminPrices,

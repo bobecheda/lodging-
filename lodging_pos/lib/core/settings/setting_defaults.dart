@@ -9,6 +9,10 @@ const settingDefaults = {
   // Daily backups: an optional second folder (e.g. a USB drive) each backup
   // is also copied to. Empty: none. A path on this desk PC.
   'backup_second_folder': '',
+  // Story B: a closing count (and a drawer check) matches within this many
+  // KES either way. Owner-only (`setCashRules`); UB40 keeps 0, so overs are
+  // reviewed like shorts.
+  'shift_count_tolerance': '0',
 };
 
 abstract final class SettingKeys {
@@ -18,4 +22,5 @@ abstract final class SettingKeys {
   static const receiptPrefix = 'receipt_prefix';
   static const idleLockMinutes = 'idle_lock_minutes';
   static const backupSecondFolder = 'backup_second_folder';
+  static const shiftCountTolerance = 'shift_count_tolerance';
 }

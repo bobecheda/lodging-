@@ -8,215 +8,332 @@ import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
+import 'package:lodging_pos/features/shifts/domain/drawer.dart';
 import 'package:lodging_pos/features/shifts/domain/shift_close.dart';
-import 'package:lodging_pos/features/shifts/domain/shift_rules.dart';
 
 import '../../../helpers/fixtures.dart';
 
 void main() {
   late TestEnv env;
   late ShiftRepository shifts;
+  late UserAccount owner;
+  late UserAccount supervisor;
+  late UserAccount desk;
 
-  setUp(() {
+  setUp(() async {
     env = TestEnv();
     shifts = ShiftRepository(env.db, env.audit);
+    supervisor = await env.createFirstSupervisor(testSetup);
+    owner = env.owner!;
+    desk = await env.addReceptionist('mary');
   });
   tearDown(() => env.close());
 
+  Future<List<DrawerEventRow>> drawerRows() =>
+      env.db.select(env.db.drawerEvents).get();
+
   test('no shift is open on a fresh device', () async {
     expect(await shifts.openShiftOnThisDevice(), isNull);
+    expect(await shifts.drawerStarted(), isFalse);
   });
 
-  test('opening a shift records the float and audits shift.open', () async {
-    final desk = await env.addReceptionist('desk');
-    final opened = await shifts.openShift(user: desk, openingFloat: 1500);
-    expect(opened.openingFloat, 1500);
-    expect(opened.openedAt, env.clock.now());
-    expect(opened.userName, desk.fullName);
+  group('the starting cash (drawer.start)', () {
+    test(
+      'before it is counted, no shift opens and nothing is written',
+      () async {
+        await expectLater(
+          shifts.openShift(user: desk),
+          throwsA(isA<NoStartingCash>()),
+        );
+        expect(await shifts.openShiftOnThisDevice(), isNull);
+        expect(await env.auditFor('shift.open'), isEmpty);
+      },
+    );
 
-    final current = (await shifts.openShiftOnThisDevice())!;
-    expect(current.id, opened.id);
-    expect(current.userId, desk.id);
-    expect(current.userName, desk.fullName);
-
-    final entry = (await env.auditFor('shift.open')).single;
-    expect(entry.userId, desk.id);
-    expect(jsonDecode(entry.afterJson)['opening_float'], 1500);
-  });
-
-  test('a zero float is allowed', () async {
-    final desk = await env.addReceptionist('desk');
-    expect(
-      (await shifts.openShift(user: desk, openingFloat: 0)).openingFloat,
-      0,
+    test(
+      'counted by the supervisor or owner, once; a receptionist can’t',
+      () async {
+        await expectLater(
+          shifts.startDrawer(desk, counted: 2000),
+          throwsA(isA<NotPermitted>()),
+        );
+        await expectLater(
+          shifts.startDrawer(supervisor, counted: -1),
+          throwsA(isA<DrawerRefused>()),
+        );
+        await shifts.startDrawer(supervisor, counted: 2000);
+        final row = (await drawerRows()).single;
+        expect(
+          (row.kind, row.counted, row.countedBy, row.presentUser, row.expected),
+          ('start', 2000, supervisor.id, null, null),
+        );
+        expect(
+          (await env.auditFor('drawer.start')).single.userId,
+          supervisor.id,
+        );
+        await expectLater(
+          shifts.startDrawer(owner, counted: 5000),
+          throwsA(
+            isA<DrawerRefused>().having(
+              (e) => e.message,
+              'message',
+              'The starting cash was already counted.',
+            ),
+          ),
+        );
+      },
     );
   });
 
-  test('a negative float is rejected without writing', () async {
-    final desk = await env.addReceptionist('desk');
-    await expectLater(
-      shifts.openShift(user: desk, openingFloat: -1),
-      throwsArgumentError,
-    );
-    expect(await shifts.openShiftOnThisDevice(), isNull);
+  group('opening a shift: the float comes from the drawer', () {
+    setUp(() => shifts.startDrawer(supervisor, counted: 2000));
+
+    test('the starting cash, never typed; audited shift.open', () async {
+      final opened = await shifts.openShift(user: desk);
+      expect(opened.openingFloat, 2000);
+      expect(opened.openedAt, env.clock.now());
+      final row = await (env.db.select(
+        env.db.shifts,
+      )..where((s) => s.id.equals(opened.id))).getSingle();
+      expect(row.openedFrom, (await drawerRows()).single.id);
+      final entry = (await env.auditFor('shift.open')).single;
+      expect(jsonDecode(entry.afterJson)['opening_float'], 2000);
+    });
+
+    test('only one shift can be open on a device', () async {
+      final tom = await env.addReceptionist('tom');
+      await shifts.openShift(user: desk);
+      await expectLater(
+        shifts.openShift(user: tom),
+        throwsA(
+          isA<ShiftAlreadyOpen>().having(
+            (e) => e.shift.userId,
+            'owner',
+            desk.id,
+          ),
+        ),
+      );
+      expect(await env.auditFor('shift.open'), hasLength(1));
+    });
   });
 
-  test('only one shift can be open on a device', () async {
-    final desk = await env.addReceptionist('desk');
-    final tom = await env.addReceptionist('tom');
-    await shifts.openShift(user: desk, openingFloat: 1000);
-    await expectLater(
-      shifts.openShift(user: tom, openingFloat: 500),
-      throwsA(
-        isA<ShiftAlreadyOpen>().having((e) => e.shift.userId, 'owner', desk.id),
-      ),
-    );
-    expect(await env.auditFor('shift.open'), hasLength(1));
-  });
-
-  group('closing a shift (FD-11)', () {
-    late UserAccount supervisor;
-    late UserAccount desk;
+  group('closing a shift: the blind count (FD-11, Story B)', () {
     late String shiftId;
+    late RoomSummary room;
 
     setUp(() async {
-      supervisor = await env.createFirstSupervisor(testSetup);
-      desk = await env.addReceptionist('mary');
-      shiftId = (await shifts.openShift(user: desk, openingFloat: 1000)).id;
-      // KES 700 in cash, taken on Mary's shift.
-      final room = await RoomsRepository(env.db, env.audit).createRoom(
+      await shifts.startDrawer(supervisor, counted: 2000);
+      shiftId = (await shifts.openShift(user: desk)).id;
+      room = await RoomsRepository(env.db, env.audit).createRoom(
         supervisor,
         const NewRoom(
           number: '7',
           floor: null,
           notes: null,
           bedACategoryId: SeedIds.deluxe,
-          bedBCategoryId: null,
+          bedBCategoryId: SeedIds.comfort,
         ),
       );
-      await env.checkIn(room.beds.single.id, by: desk);
+      // KES 700 in cash on Mary's shift: the drawer should hold 2,700.
+      await env.checkIn(room.beds.first.id, by: desk);
     });
-
-    Future<CloseFigures> close({
-      UserAccount? by,
-      int first = 1700,
-      int counted = 1700,
-      String note = '',
-      ShiftTakings? shown,
-    }) async => shifts.closeShift(
-      by ?? desk,
-      shiftId,
-      firstCount: first,
-      counted: counted,
-      note: note,
-      shown: shown ?? await shifts.takings(shiftId),
-    );
 
     Future<ShiftRow> row() => (env.db.select(
       env.db.shifts,
     )..where((s) => s.id.equals(shiftId))).getSingle();
 
-    test('saves expected, both counts, the variance, the note and who '
-        'closed it; audited with both counts', () async {
-      final f = await close(first: 1500, counted: 1650, note: 'Recounted');
-      expect((f.expectedCash, f.variance), (1700, -50));
+    test('a count that matches closes the shift; no review', () async {
+      final result = await shifts.submitCount(desk, shiftId, 2700);
+      expect(result, isA<CountClosed>());
       final s = await row();
       expect(s.status, 'closed');
-      expect(s.closedAt, env.clock.now());
-      expect((s.expectedCash, s.expectedPaybill), (1700, 0));
-      expect((s.firstCount, s.countedCash, s.variance), (1500, 1650, -50));
-      expect((s.closeNote, s.closedBy), ('Recounted', desk.id));
-      final audit = (await env.auditFor('shift.close')).single;
-      final after = jsonDecode(audit.afterJson) as Map;
-      expect((after['first_count'], after['counted_cash']), (1500, 1650));
+      expect((s.expectedCash, s.expectedPaybill), (2700, 0));
+      expect((s.firstCount, s.countedCash, s.variance), (2700, 2700, 0));
+      expect((s.needsReview, s.closedBy, s.closeNote), (false, desk.id, null));
+      expect(await env.auditFor('shift.close'), hasLength(1));
       expect(await shifts.openShiftOnThisDevice(), isNull);
     });
 
-    test('exact: no note needed; short or over: a note is', () async {
+    test('a first count that doesn’t match is saved at once: leaving and '
+        'coming back goes straight to the recount', () async {
+      final result = await shifts.submitCount(desk, shiftId, 2600);
+      expect(result, isA<CountAgain>());
+      final s = await row();
+      expect((s.status, s.firstCount, s.countedCash), ('open', 2600, null));
+      final audit = (await env.auditFor('shift.count_mismatch')).single;
+      expect(audit.userId, desk.id);
+      // Another screen, another repository: still the recount.
+      expect(
+        await ShiftRepository(env.db, env.audit).countStageOf(shiftId),
+        CountStage.recount,
+      );
+    });
+
+    test('the recount matches: closed, matched only on recount', () async {
+      await shifts.submitCount(desk, shiftId, 2600);
+      final result = await shifts.submitCount(desk, shiftId, 2700);
+      expect(result, isA<CountClosed>());
+      final s = await row();
+      expect((s.firstCount, s.countedCash, s.needsReview), (2600, 2700, false));
+      expect(
+        matchedOnRecount(
+          firstCount: s.firstCount!,
+          counted: s.countedCash!,
+          needsReview: s.needsReview,
+        ),
+        isTrue,
+      );
+    });
+
+    test('the recount doesn’t match either: no third count; a reason, then '
+        'the shift closes anyway, needing review', () async {
+      await shifts.submitCount(desk, shiftId, 2600);
+      expect(
+        await shifts.submitCount(desk, shiftId, 2650),
+        isA<ReasonNeeded>(),
+      );
+      expect((await row()).countedCash, 2650);
+      expect(await shifts.countStageOf(shiftId), CountStage.reason);
       await expectLater(
-        close(counted: 1500, first: 1500),
+        shifts.submitCount(desk, shiftId, 2700),
+        throwsA(isA<ShiftCloseRefused>()),
+      );
+      await expectLater(
+        shifts.closeWithReason(desk, shiftId, '  '),
         throwsA(
           isA<ShiftCloseRefused>().having(
             (e) => e.message,
             'message',
-            'Say why the cash is short.',
+            'Say why the count may be different.',
           ),
         ),
+      );
+      await shifts.closeWithReason(desk, shiftId, 'Gave change from my pocket');
+      final s = await row();
+      expect(s.status, 'closed');
+      expect((s.firstCount, s.countedCash, s.variance), (2600, 2650, -50));
+      expect(
+        (s.needsReview, s.closeNote),
+        (true, 'Gave change from my pocket'),
+      );
+    });
+
+    test('a reason before two counts is refused', () async {
+      await expectLater(
+        shifts.closeWithReason(desk, shiftId, 'Just close it'),
+        throwsA(isA<ShiftCloseRefused>()),
       );
       expect((await row()).status, 'open');
-      await close();
-      expect((await row()).closeNote, isNull);
     });
 
-    test('a payment since the review stops the close', () async {
-      final shown = await shifts.takings(shiftId);
-      final room = await RoomsRepository(env.db, env.audit).createRoom(
-        supervisor,
-        const NewRoom(
-          number: '8',
-          floor: null,
-          notes: null,
-          bedACategoryId: SeedIds.deluxe,
-          bedBCategoryId: null,
-        ),
-      );
-      await env.checkIn(room.beds.single.id, by: desk);
+    test('over is reviewed like short (tolerance 0)', () async {
+      expect(await shifts.submitCount(desk, shiftId, 2800), isA<CountAgain>());
+    });
+
+    test('the tolerance: owner only, audited; then a count within it '
+        'matches', () async {
       await expectLater(
-        close(shown: shown),
-        throwsA(
-          isA<ShiftCloseRefused>().having(
-            (e) => e.message,
-            'message',
-            contains('A payment came in since you counted'),
-          ),
-        ),
+        shifts.setCountTolerance(supervisor, 100),
+        throwsA(isA<NotPermitted>()),
       );
+      await expectLater(
+        shifts.setCountTolerance(owner, -1),
+        throwsA(isA<ArgumentError>()),
+      );
+      await shifts.setCountTolerance(owner, 100);
+      expect((await env.auditFor('settings.update')).last.userId, owner.id);
+      expect(await shifts.submitCount(desk, shiftId, 2650), isA<CountClosed>());
+      expect((await row()).variance, -50);
     });
 
-    test('someone else’s shift: the owner may (closeOtherShifts), recorded '
-        'as theirs; a receptionist may not', () async {
+    test('the next shift’s float is this one’s closing count', () async {
+      await shifts.submitCount(desk, shiftId, 2600);
+      await shifts.submitCount(desk, shiftId, 2600);
+      await shifts.closeWithReason(desk, shiftId, 'Counted twice');
+      env.clock.advance(const Duration(hours: 1));
+      final next = await shifts.openShift(user: desk);
+      expect(next.openingFloat, 2600);
+      final r = await (env.db.select(
+        env.db.shifts,
+      )..where((s) => s.id.equals(next.id))).getSingle();
+      expect(r.openedFrom, shiftId);
+    });
+
+    test('a receptionist never gets the figures: the shift’s totals, the '
+        'drawer now or the chain', () async {
+      for (final call in <Future<Object?> Function()>[
+        () => shifts.shiftFigures(desk, shiftId),
+        () => shifts.drawerNow(desk),
+        () => shifts.drawerChain(desk),
+      ]) {
+        await expectLater(call(), throwsA(isA<NotPermitted>()));
+      }
+      expect(can(desk, Permission.viewShiftTotals), isFalse);
+      expect(
+        (await shifts.shiftFigures(supervisor, shiftId)).cash.received,
+        700,
+      );
+      expect(await shifts.drawerNow(owner), 2700);
+    });
+
+    test('someone else’s shift: the supervisor closes it blind too, recorded '
+        'as theirs; another receptionist may not', () async {
       final tom = await env.addReceptionist('tom');
-      await expectLater(close(by: tom), throwsA(isA<NotPermitted>()));
-      await close(by: supervisor);
+      await expectLater(
+        shifts.submitCount(tom, shiftId, 2700),
+        throwsA(isA<NotPermitted>()),
+      );
+      expect(
+        await shifts.submitCount(supervisor, shiftId, 2600),
+        isA<CountAgain>(),
+      );
+      await shifts.submitCount(supervisor, shiftId, 2700);
       expect((await row()).closedBy, supervisor.id);
-      final list = await shifts.watchShifts().first;
-      final s = list.single;
-      expect(s.closedByName, supervisor.fullName);
+      final s = (await shifts.watchShifts().first).single;
       expect(
         closedByLine(closer: s.closedByName!, owner: s.userName),
         'closed by Grace Supervisor for Desk MARY’s shift',
       );
     });
 
-    test(
-      'a closed shift can’t be closed again or changed (v5 trigger)',
-      () async {
-        await close();
-        await expectLater(close(), throwsA(isA<ShiftCloseRefused>()));
-        await expectLater(
-          env.db.customStatement(
-            "UPDATE shifts SET status = 'open', closed_at = NULL, "
-            "updated_at = '2030-01-01T00:00:00.000Z' WHERE id = ?",
-            [shiftId],
-          ),
-          throwsA(anything),
-        );
-        expect((await row()).status, 'closed');
-      },
-    );
+    test('a closed shift can’t be counted again or changed', () async {
+      await shifts.submitCount(desk, shiftId, 2700);
+      await expectLater(
+        shifts.submitCount(desk, shiftId, 2700),
+        throwsA(isA<ShiftCloseRefused>()),
+      );
+      await expectLater(
+        env.db.customStatement(
+          "UPDATE shifts SET status = 'open', closed_at = NULL, "
+          "updated_at = '2030-01-01T00:00:00.000Z' WHERE id = ?",
+          [shiftId],
+        ),
+        throwsA(anything),
+      );
+    });
 
-    test(
-      'the owner’s list: newest first, open and closed, with takings',
-      () async {
-        await close(first: 1600, counted: 1700);
-        final s = (await shifts.watchShifts().first).single;
-        expect(s.isOpen, isFalse);
-        expect(s.takings, 700);
-        expect(
-          recountLine(s.firstCount!, s.counted!),
-          'first count KES 1,600 → recounted KES 1,700',
-        );
-      },
-    );
+    test('the chain: starting cash, the opening, the close', () async {
+      await shifts.submitCount(desk, shiftId, 2600);
+      await shifts.submitCount(desk, shiftId, 2700);
+      final chain = await shifts.drawerChain(supervisor);
+      expect(
+        [for (final e in chain) e.runtimeType],
+        [ShiftClosedEntry, ShiftOpenedEntry, DrawerStarted],
+      );
+      final close = chain.first as ShiftClosedEntry;
+      expect((close.gap, close.matchedOnRecount), (0, true));
+      expect((chain[1] as ShiftOpenedEntry).isBreak, isFalse);
+    });
+
+    test('the list: needs review and recount shown', () async {
+      await shifts.submitCount(desk, shiftId, 2600);
+      await shifts.submitCount(desk, shiftId, 2700);
+      final s = (await shifts.watchShifts().first).single;
+      expect((s.isOpen, s.takings, s.needsReview), (false, 700, false));
+      expect(
+        recountLine(s.firstCount!, s.counted!),
+        'first count KES 2,600 → recounted KES 2,700',
+      );
+    });
   });
 }

@@ -8,7 +8,6 @@ import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
 import 'package:lodging_pos/features/receipts/data/receipts_repository.dart';
 import 'package:lodging_pos/features/setup/data/rooms_repository.dart';
 import 'package:lodging_pos/features/setup/domain/rooms.dart';
-import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 import 'package:lodging_pos/features/stays/data/check_in_repository.dart';
 import 'package:lodging_pos/features/stays/domain/check_in.dart';
 import 'package:lodging_pos/features/stays/domain/stay_rules.dart';
@@ -28,10 +27,7 @@ void main() {
     desk = await env.addReceptionist('mary');
     rooms = RoomsRepository(env.db, env.audit);
     receipts = ReceiptsRepository(env.db, env.audit);
-    await ShiftRepository(
-      env.db,
-      env.audit,
-    ).openShift(user: desk, openingFloat: 0);
+    await env.openShift(desk, startingCash: 0);
   });
   tearDown(() => env.close());
 

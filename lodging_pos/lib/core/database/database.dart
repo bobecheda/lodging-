@@ -24,6 +24,7 @@ part 'database.g.dart';
     // Front desk (desk owns)
     Guests,
     Shifts,
+    DrawerEvents,
     Stays,
     Payments,
     StayCharges,
@@ -60,7 +61,8 @@ class AppDatabase extends _$AppDatabase {
   /// v1 is frozen as of 16 Oct 2026; v2 (FD-4) adds the category to each
   /// stay charge, v3 (FD-6) the room and bed to each stay, v4 (FD-9) task
   /// cancelling, v5 (FD-11) the shift close details, v6 the roles, v7 the
-  /// refund payout phone, v8 price requests, v9 the local sync bookkeeping.
+  /// refund payout phone, v8 price requests, v9 the local sync bookkeeping,
+  /// v10 the blind close and the drawer's ledger (Story B).
   /// Snapshots:
   /// `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
@@ -69,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -287,6 +289,24 @@ class AppDatabase extends _$AppDatabase {
     // (not connected).
     from8To9: (m, schema) async {
       await m.createTable(schema.syncState);
+    },
+    // v10 (Story B): a shift may hold its first count while open (the
+    // rebuild takes the relaxed CHECK and puts back the shift triggers),
+    // says whether its close needs review and which count its float came
+    // from; and the drawer's own counts. Shifts closed before v10 need no
+    // review (they were closed under the old rules) and have no
+    // `opened_from`: the chain shows where their floats don't follow.
+    from9To10: (m, schema) async {
+      final shifts = schema.shifts;
+      await m.alterTable(
+        TableMigration(
+          shifts,
+          newColumns: [shifts.needsReview, shifts.openedFrom],
+        ),
+      );
+      await m.createTable(schema.drawerEvents);
+      await m.createTrigger(schema.drawerEventsNoUpdate);
+      await m.createTrigger(schema.drawerEventsNoDelete);
     },
   );
 

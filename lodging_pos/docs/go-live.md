@@ -78,9 +78,9 @@ npx supabase@2.121.0 db push
 ```
 
 - [ ] It lists and applies these, in this order, with no error:
-  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`.
-  (The blind count's PR adds its cloud migration here, and the desk's schema goes from v9 to v10 with it; this list and the count below are updated in that PR.)
-- [ ] Check in the SQL Editor that they're all recorded (9 rows):
+  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`.
+  The desk build at the tag is schema **v10** (the blind close and the drawer's counts). Story B3 (review decisions) adds one more cloud migration here if it makes the freeze; this list and the count below are updated in that PR.
+- [ ] Check in the SQL Editor that they're all recorded (11 rows):
 
   ```sql
   select version from supabase_migrations.schema_migrations order by version;
@@ -172,6 +172,7 @@ First run:
 - [ ] Sign in as the owner → sync pill → **Connect**: the install code, the owner's real email, the owner's desk password. Wait until the pill says **"Online · synced just now"**.
 - [ ] Owner → Staff: add the **supervisor** (they change their password at first sign-in).
 - [ ] Sign in as the supervisor → Staff: add the **receptionists** and the housekeepers.
+- [ ] **The starting cash, before the first shift:** the owner or supervisor counts all the cash actually in the drawer on the day, then Cash → **Starting cash** → enter the count → Save (`drawer.start`). Every float follows from it: no shift opens until it's saved, and the receptionist never types a float. It can be saved once; if the count was wrong, note it and correct it with the first drawer check (Story B2).
 - [ ] Supervisor → Rooms: rooms and beds (A/B, category for each).
 - [ ] Owner → Prices: the four categories' prices per night (VIP, Deluxe, Comfort, Normal; cloud-first, needs the internet).
 - [ ] Supervisor → Settings: lodging details for receipts, grace minutes, idle lock, second backup folder (USB drive) if used.
@@ -183,13 +184,13 @@ Use a test guest you will then check out; all money in this test is small and re
 
 | # | At the desk | On the owner's phone |
 |---|---|---|
-| 1 | Receptionist opens a shift (float KES 0). | More → Shifts: the shift is **OPEN**. |
+| 1 | Receptionist opens a shift: no float to type (it is the starting cash). | More → Shifts: the shift is **OPEN**. |
 | 2 | Check a test guest into a bed, 1 night, cash; receipt prints. | Beds: that bed **Occupied**. Today's money and Money: the amount, **Cash**. Audit trail: "Checked a guest in", "Took a payment", "Printed a receipt", on the desk. |
 | 3 | Check the guest out early (the night not used): a refund is requested. | Beds: the bed **Needs cleaning**. Today → Needs your attention: **Refund to approve**, the guest's name and masked phone. |
 | 4 | — | Open it → **Approve** (owner). |
 | 5 | Within a minute: Refunds → **To pay** shows it; pay it in cash from the open shift; the REFUND receipt prints with "Approved by" the owner. | Money: **Refunds paid**; the net goes down. |
 | 6 | Housekeeping: assign the bed, then mark it clean. | Beds: the bed **Ready**. Audit trail: "Assigned a cleaning", "Marked a bed clean". |
-| 7 | Receptionist closes the shift with a cash count. | More → Shifts: the shift closed, "Exact" (or "KES … short/over"); a shortage also shows under Needs your attention. |
+| 7 | Receptionist closes the shift with a blind count: the screen never shows what's expected. Count right → "Your count is recorded". (Also try a wrong first count on a test shift: "Your count doesn't match", no amount; the recount closes it.) The supervisor's Cash shows the chain: starting cash → opened → closed. | More → Shifts: the shift closed, "Exact" (or "KES … short/over"); a shortage also shows under Needs your attention. |
 | 8 | A second test guest checked in (cash) by the receptionist; then the **supervisor** voids that stay (Voids → the receipt → Void stay…, reason "Smoke test"). The receipt shows VOID; the bed needs cleaning. | Money: the amount is gone again. Beds: the bed **Needs cleaning**. Audit trail: "Voided a record". No "Void not in the cloud" under Needs your attention. |
 | 9 | Sync pill: **"Online · synced just now"**, nothing waiting (no "void not in the cloud"). | Header: "Desk online · up to date". |
 

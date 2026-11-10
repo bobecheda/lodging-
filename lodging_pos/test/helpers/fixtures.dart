@@ -26,6 +26,7 @@ import 'package:lodging_pos/features/receipts/presentation/receipts_providers.da
 import 'package:lodging_pos/features/guests/domain/guest.dart';
 import 'package:lodging_pos/features/payments/domain/payment_rules.dart';
 import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
+import 'package:lodging_pos/features/shifts/domain/shift.dart';
 import 'package:lodging_pos/features/stays/data/check_in_repository.dart';
 import 'package:lodging_pos/features/stays/data/check_out_repository.dart';
 import 'package:lodging_pos/features/stays/domain/check_out.dart';
@@ -187,6 +188,82 @@ class TestEnv {
     );
   }
 
+  /// The supervisor or owner counts the starting cash (Story B), once,
+  /// before the first shift: [counted] whole KES, by [by] (default the
+  /// owner from [createFirstSupervisor]).
+  Future<void> startDrawer({int counted = 0, UserAccount? by}) =>
+      ShiftRepository(db, audit).startDrawer(
+        by ?? owner ?? (throw StateError('createFirstSupervisor first')),
+        counted: counted,
+      );
+
+  /// Counts the starting cash ([counted]) unless the drawer was counted
+  /// already. Call it before pumping the app.
+  Future<void> ensureDrawerStarted({int counted = 0}) async {
+    if (!await ShiftRepository(db, audit).drawerStarted()) {
+      await startDrawer(counted: counted);
+    }
+  }
+
+  /// Opens [user]'s shift on this device, counting [startingCash] as the
+  /// starting cash first if nobody has yet. The float is the drawer's, never
+  /// typed.
+  Future<OpenShift> openShift(UserAccount user, {int startingCash = 0}) async {
+    final shifts = ShiftRepository(db, audit);
+    if (!await shifts.drawerStarted()) {
+      await startDrawer(counted: startingCash);
+    }
+    return shifts.openShift(user: user);
+  }
+
+  /// Closes [shiftId] through the blind count (Story B): [firstCount], then
+  /// if it didn't match [counted] (default the same), then if that didn't
+  /// match either, [reason].
+  Future<void> closeShiftWith(
+    UserAccount by,
+    String shiftId, {
+    required int firstCount,
+    int? counted,
+    String reason = 'Counted twice',
+  }) async {
+    final shifts = ShiftRepository(db, audit);
+    if (await shifts.submitCount(by, shiftId, firstCount) is CountClosed) {
+      return;
+    }
+    final second = await shifts.submitCount(by, shiftId, counted ?? firstCount);
+    if (second is ReasonNeeded) {
+      await shifts.closeWithReason(by, shiftId, reason);
+    }
+  }
+
+  /// A supervisor added directly through the writer (no first run), e.g.
+  /// to count the drawer in tests that have no owner.
+  Future<UserAccount> addSupervisor(String username) async {
+    final hash = await hasher.hash('super-pass');
+    final row = await audit.writeWithAudit(
+      action: 'user.create',
+      userId: null,
+      body: (w) => w.insert(
+        db.users,
+        UsersCompanion.insert(
+          fullName: 'Supervisor ${username.toUpperCase()}',
+          username: username,
+          passwordHash: hash,
+          role: Role.supervisor.name,
+          mustChangePassword: false,
+        ),
+      ),
+    );
+    return UserAccount(
+      id: row.id,
+      fullName: row.fullName,
+      username: row.username,
+      role: Role.supervisor,
+      isActive: row.isActive,
+      mustChangePassword: row.mustChangePassword,
+    );
+  }
+
   late final guests = GuestsRepository(db, audit);
   late final checkIns = CheckInRepository(db, audit, guests);
 
@@ -205,9 +282,7 @@ class TestEnv {
     int nights = 1,
   }) async {
     final shifts = ShiftRepository(db, audit);
-    if (await shifts.openShiftOnThisDevice() == null) {
-      await shifts.openShift(user: by, openingFloat: 0);
-    }
+    if (await shifts.openShiftOnThisDevice() == null) await openShift(by);
     final row = await (db.select(db.beds).join([
       innerJoin(
         db.bedCategories,

@@ -42,6 +42,10 @@ abstract final class Routes {
   /// AD-7: void a payment or a stay (owner and supervisor).
   static const voids = '/voids';
 
+  /// Story B: the drawer's chain and the starting cash (owner and
+  /// supervisor).
+  static const cash = '/cash';
+
   static String closeShiftFor(String shiftId) =>
       Uri(path: closeShift, queryParameters: {'shift': shiftId}).toString();
 
@@ -72,8 +76,9 @@ abstract final class Routes {
     checkIn: {Permission.checkIn},
     receipts: {Permission.printReceipts},
     closeShift: {Permission.closeShift, Permission.closeOtherShifts},
-    shifts: {Permission.viewAllReports},
+    shifts: {Permission.viewShiftTotals},
     voids: {Permission.voidRecords},
+    cash: {Permission.viewShiftTotals},
     adminRooms: {Permission.manageRooms},
     adminPrices: {
       Permission.editPrices,

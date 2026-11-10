@@ -100,8 +100,7 @@ void main() {
     ),
   );
 
-  Future<void> openDeskShift() =>
-      shifts.openShift(user: desk, openingFloat: 1000);
+  Future<void> openDeskShift() => env.openShift(desk, startingCash: 1000);
 
   Future<int> count<T extends Table, D>(TableInfo<T, D> table) async =>
       (await env.db.select(table).get()).length;

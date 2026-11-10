@@ -835,6 +835,7 @@ void main() {
           'payments_no_delete',
           'stay_charges_no_delete',
           'voids_no_delete',
+          'drawer_events_no_delete',
           'refunds_no_delete',
           'refund_decisions_no_delete',
           'price_requests_no_delete',
