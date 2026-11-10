@@ -53,15 +53,15 @@ void main() {
     });
 
     test('one or more', () {
-      expect(heldVoidsRow(1)!.title, 'Void not in the cloud');
+      expect(heldVoidsRow(1)!.title, 'Record not in the cloud');
       expect(
         heldVoidsRow(1)!.subtitle,
-        'The cloud refused a void; the phone still counts what it voids',
+        'The cloud refused a void or drawer count; the desk keeps it',
       );
-      expect(heldVoidsRow(2)!.title, '2 voids not in the cloud');
+      expect(heldVoidsRow(2)!.title, '2 records not in the cloud');
       expect(
         heldVoidsRow(2)!.subtitle,
-        'The cloud refused them; the phone still counts what they void',
+        'The cloud refused them; the desk keeps them',
       );
     });
   });

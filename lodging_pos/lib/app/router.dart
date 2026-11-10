@@ -13,7 +13,9 @@ import '../features/bed_board/presentation/bed_board_screen.dart';
 import '../features/dashboard/presentation/today_screen.dart';
 import '../features/guests/presentation/guests_screen.dart';
 import '../features/receipts/presentation/receipts_screen.dart';
+import '../features/shifts/domain/drawer.dart';
 import '../features/shifts/presentation/cash_screen.dart';
+import '../features/shifts/presentation/drawer_count_screen.dart';
 import '../features/voids/presentation/voids_screen.dart';
 import '../features/refunds/presentation/refund_detail_screen.dart';
 import '../features/refunds/presentation/refunds_screen.dart';
@@ -136,6 +138,15 @@ GoRouter router(Ref ref) {
           ),
           GoRoute(path: Routes.voids, builder: (_, _) => const VoidsScreen()),
           GoRoute(path: Routes.cash, builder: (_, _) => const CashScreen()),
+          GoRoute(
+            path: Routes.drawerCount,
+            builder: (_, state) => DrawerCountScreen(
+              key: ValueKey(state.uri.toString()),
+              kind: state.uri.queryParameters['kind'] == 'collect'
+                  ? DrawerCountKind.collect
+                  : DrawerCountKind.check,
+            ),
+          ),
           GoRoute(
             path: Routes.closeShift,
             builder: (_, state) => CloseShiftScreen(

@@ -46,6 +46,13 @@ abstract final class Routes {
   /// supervisor).
   static const cash = '/cash';
 
+  /// Story B2: a drawer check (`?kind=check`) or a collection
+  /// (`?kind=collect`), with the receptionist present.
+  static const drawerCount = '/cash/count';
+
+  static String drawerCountFor(String kind) =>
+      Uri(path: drawerCount, queryParameters: {'kind': kind}).toString();
+
   static String closeShiftFor(String shiftId) =>
       Uri(path: closeShift, queryParameters: {'shift': shiftId}).toString();
 
@@ -79,6 +86,7 @@ abstract final class Routes {
     shifts: {Permission.viewShiftTotals},
     voids: {Permission.voidRecords},
     cash: {Permission.viewShiftTotals},
+    drawerCount: {Permission.checkDrawer, Permission.collectCash},
     adminRooms: {Permission.manageRooms},
     adminPrices: {
       Permission.editPrices,

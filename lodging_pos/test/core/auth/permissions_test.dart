@@ -75,6 +75,7 @@ void main() {
       // Story B: the blind close's figures and counting the drawer.
       Permission.viewShiftTotals,
       Permission.checkDrawer,
+      Permission.collectCash,
     };
     const supervisorOnly = {
       Permission.requestPriceChange,

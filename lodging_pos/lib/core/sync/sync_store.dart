@@ -37,8 +37,11 @@ class SyncStore {
   /// The refused row stopping the queue: "table id: message".
   static const problem = 'problem';
 
-  /// A void row the cloud refused (AD-7), held aside so it never stops the
-  /// queue: `held.<seq>` = "voids id: message". Tried again at each start.
+  /// A void (AD-7) or drawer count (Story B2) row the cloud refused, held
+  /// aside so it never stops the queue: `held.<seq>` = "table id: message".
+  /// Tried again at each start.
+  static const heldTables = {'voids', 'drawer_events'};
+
   static const heldPrefix = 'held.';
   static String heldKey(int seq) => '$heldPrefix$seq';
 

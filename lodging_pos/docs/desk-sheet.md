@@ -11,6 +11,12 @@ One page for the supervisor and the receptionists at UB40. It adds to what the a
   - "Your count still doesn't match": say why (e.g. "gave change from my pocket"), then close. The supervisor reviews it.
 - Leaving the close screen and coming back doesn't start over: you continue where you were.
 
+## Drawer checks and the weekly collection
+
+- The supervisor or the owner may **check the drawer at any time**, and **collects the cash weekly**. You are there: you type **your own password** to confirm it. Nobody else may type it for you.
+- They count the drawer; the screen only says "Counted." If the count doesn't match, they count again, and if it still doesn't, they write why. It is reviewed.
+- At a collection they also record how much they take away. Your next float is what is left.
+
 ## Correcting a wrong payment method or M-Pesa code
 
 The method (Cash or M-Pesa) and the M-Pesa code can't be changed after a payment is saved. To correct them while the guest is still in the bed:

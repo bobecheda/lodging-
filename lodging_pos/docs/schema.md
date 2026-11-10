@@ -162,7 +162,7 @@ At most one open shift per device. A closed shift must have `closed_at`, `expect
 | needs_review | BOOL | |
 | counted_at | DATETIME | |
 
-The drawer's own counts. Each is an anchor of its running ledger: a shift's float is the latest anchor's balance (`counted − removed`). Never edited or deleted (triggers). The starting cash is counted once, before the first shift. Pushed insert-only; the cloud checks the counter's role (`20261110000000_cash_drawer.sql`).
+The drawer's own counts. Each is an anchor of its running ledger: a shift's float is the latest anchor's balance (`counted − removed`), and during a shift what the drawer should hold is the latest count in it plus the shift's cash since (`ShiftRepository.expectedNow`). Never edited or deleted (triggers). The starting cash is counted once, before the first shift. Checks and collections (B2, `DrawerRepository`) keep the first count always, the expected, both people, and a reason when they need review. Pushed insert-only; the cloud checks the same rules (`20261110000000_cash_drawer.sql`, `20261110000200_drawer_counts.sql`: the counter is the owner or a supervisor; someone from the desk, never the counter, present, and with a shift open its user; a first count; a reason for a gap), and a row it still refuses is held aside on the desk like a void.
 
 ### stays
 | Column | Type | Notes |

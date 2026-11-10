@@ -78,9 +78,9 @@ npx supabase@2.121.0 db push
 ```
 
 - [ ] It lists and applies these, in this order, with no error:
-  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`.
+  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`, `20261110000200_drawer_counts`.
   The desk build at the tag is schema **v10** (the blind close and the drawer's counts). Story B3 (review decisions) adds one more cloud migration here if it makes the freeze; this list and the count below are updated in that PR.
-- [ ] Check in the SQL Editor that they're all recorded (11 rows):
+- [ ] Check in the SQL Editor that they're all recorded (12 rows):
 
   ```sql
   select version from supabase_migrations.schema_migrations order by version;
@@ -191,6 +191,7 @@ Use a test guest you will then check out; all money in this test is small and re
 | 5 | Within a minute: Refunds → **To pay** shows it; pay it in cash from the open shift; the REFUND receipt prints with "Approved by" the owner. | Money: **Refunds paid**; the net goes down. |
 | 6 | Housekeeping: assign the bed, then mark it clean. | Beds: the bed **Ready**. Audit trail: "Assigned a cleaning", "Marked a bed clean". |
 | 7 | Receptionist closes the shift with a blind count: the screen never shows what's expected. Count right → "Your count is recorded". (Also try a wrong first count on a test shift: "Your count doesn't match", no amount; the recount closes it.) The supervisor's Cash shows the chain: starting cash → opened → closed. | More → Shifts: the shift closed, "Exact" (or "KES … short/over"); a shortage also shows under Needs your attention. |
+| 7b | The supervisor checks the drawer (Cash → Check the drawer): the receptionist types her own password, the supervisor counts. The screen ends on "Counted." with no figure. | Nothing new; the desk's Cash shows the check in the chain. |
 | 8 | A second test guest checked in (cash) by the receptionist; then the **supervisor** voids that stay (Voids → the receipt → Void stay…, reason "Smoke test"). The receipt shows VOID; the bed needs cleaning. | Money: the amount is gone again. Beds: the bed **Needs cleaning**. Audit trail: "Voided a record". No "Void not in the cloud" under Needs your attention. |
 | 9 | Sync pill: **"Online · synced just now"**, nothing waiting (no "void not in the cloud"). | Header: "Desk online · up to date". |
 

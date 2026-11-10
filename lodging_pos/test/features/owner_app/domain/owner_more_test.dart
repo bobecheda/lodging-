@@ -30,6 +30,10 @@ void main() {
         auditActionsOf(AuditKind.money),
         containsAll(['payment.create', 'void.create', 'shift.close']),
       );
+      // Story B: the drawer's counts.
+      expect(auditLabel('drawer.check'), 'Checked the drawer');
+      expect(auditLabel('drawer.collect'), 'Collected cash');
+      expect(auditKindOf('drawer.cosign_failed'), AuditKind.money);
     });
 
     test('details only for entities without guest data; refunds by their '

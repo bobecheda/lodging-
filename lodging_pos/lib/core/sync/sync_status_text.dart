@@ -32,12 +32,13 @@ String clockWarningText(Duration offset) =>
     'PC clock is ${clockGap(offset)}. Windows Settings → Time & language → '
     'Sync now';
 
-/// The Sync panel's words for void rows the cloud refused (AD-7).
+/// The Sync panel's words for rows the cloud refused and the desk holds:
+/// voids (AD-7) and drawer counts (Story B2).
 String heldVoidsText(int count) =>
-    '${count == 1 ? 'One void is' : '$count voids are'} kept on this desk: '
-    'everything else carries on. Until it goes up, the owner\'s phone still '
-    'counts what it voids. It is tried again each time the desk starts. Tell '
-    'the developer.';
+    '${count == 1 ? 'One record is' : '$count records are'} kept on this '
+    'desk (a void or a drawer count): everything else carries on. Until it '
+    'goes up, the owner\'s phone doesn\'t have it. It is tried again each '
+    'time the desk starts. Tell the developer.';
 
 /// `just now`, `4 min ago`, `3 h ago`, then the date (`Thu 15 Oct`).
 String syncAgo(DateTime at, DateTime now) {
@@ -53,8 +54,8 @@ String _waiting(int pending) =>
 
 /// "Online · synced 2 min ago", "Offline · 14 changes waiting",
 /// "Sync problem · details", "Uploading 3,400 of 12,880",
-/// "1 void not in the cloud · details", "PC clock 12 min slow · fix", … A
-/// sync problem outranks a held void, which outranks the clock warning,
+/// "1 record not in the cloud · details", "PC clock 12 min slow · fix", … A
+/// sync problem outranks a held record, which outranks the clock warning,
 /// which outranks online; offline keeps both for the panel.
 String syncPillText(
   SyncStatus status, {
@@ -68,8 +69,8 @@ String syncPillText(
         '${formatKesPlain(status.uploadTotal)}',
   SyncPhase.waitingForOwner => 'First upload · owner sign-in needed',
   SyncPhase.online when status.voidsHeld > 0 =>
-    '${status.voidsHeld == 1 ? '1 void' : '${status.voidsHeld} voids'} not in '
-        'the cloud · details',
+    '${status.voidsHeld == 1 ? '1 record' : '${status.voidsHeld} records'} '
+        'not in the cloud · details',
   SyncPhase.online when status.clockWarning && status.clockOffset != null =>
     'PC clock ${clockGap(status.clockOffset!)} · fix',
   SyncPhase.online =>

@@ -124,8 +124,8 @@ select is((select counted from public.drawer_events where id = 'd-1'), 2000,
   'the count never changes');
 select tests_k.act('desk');
 select lives_ok($$select tests_k.push('drawer_events',
-  tests_k.event('d-2', 'check', 'u-sup', 'u-desk', 2000, 2000)
-  - 'removed' - 'needs_review')$$,
+  (tests_k.event('d-2', 'check', 'u-sup', 'u-desk', 2000, 2000)
+   || '{"first_count":2000}') - 'removed' - 'needs_review')$$,
   'a count without removed or needs_review is accepted');
 reset role;
 select is((select removed::text || ' ' || needs_review::text

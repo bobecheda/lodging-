@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/gate.dart';
 
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/buttons.dart';
@@ -94,6 +97,30 @@ class CashScreen extends ConsumerWidget {
                         can(user, Permission.checkDrawer)) ...[
                       const SizedBox(height: Space.x16),
                       const _StartCard(),
+                    ],
+                    if (started == true && user != null) ...[
+                      if (can(user, Permission.checkDrawer)) ...[
+                        const SizedBox(height: Space.x16),
+                        AppButton.secondary(
+                          key: const ValueKey('cash.check'),
+                          label: 'Check the drawer',
+                          icon: Icons.fact_check_outlined,
+                          onPressed: () => context.go(
+                            Routes.drawerCountFor(DrawerCountKind.check.code),
+                          ),
+                        ),
+                      ],
+                      if (can(user, Permission.collectCash)) ...[
+                        const SizedBox(height: Space.x8),
+                        AppButton.secondary(
+                          key: const ValueKey('cash.collect'),
+                          label: 'Collect cash',
+                          icon: Icons.savings_outlined,
+                          onPressed: () => context.go(
+                            Routes.drawerCountFor(DrawerCountKind.collect.code),
+                          ),
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -202,11 +229,14 @@ class _EntryTile extends StatelessWidget {
     final flagged = switch (e) {
       ShiftOpenedEntry(:final isBreak) => isBreak,
       ShiftClosedEntry(:final needsReview) => needsReview,
+      DrawerCountEntry(:final needsReview) => needsReview,
       DrawerStarted() => false,
     };
     final key = switch (e) {
       ShiftOpenedEntry(:final shiftId) => 'cash.open.$shiftId',
       ShiftClosedEntry(:final shiftId) => 'cash.close.$shiftId',
+      DrawerChecked(:final record) => 'cash.check.${record.id}',
+      CashCollected(:final record) => 'cash.collect.${record.id}',
       DrawerStarted() => 'cash.start',
     };
     return Container(
@@ -235,6 +265,20 @@ class _EntryTile extends StatelessWidget {
               'Break in the chain.',
               style: t.smallStrong.copyWith(color: c.butterText),
             ),
+          if (e is DrawerCountEntry) ...[
+            if (recountLine(e.record.firstCount, e.record.counted)
+                case final line?)
+              Text(line, style: t.small.copyWith(color: c.muted)),
+            if (e.matchedOnRecount)
+              Text('Matched only on recount.', style: t.small),
+            if (e.needsReview)
+              Text(
+                'Needs review.',
+                style: t.smallStrong.copyWith(color: c.butterText),
+              ),
+            if (e.note case final note?)
+              Text('“$note”', style: t.small.copyWith(color: c.inkSoft)),
+          ],
           if (e is ShiftClosedEntry) ...[
             if (recountLine(e.firstCount, e.counted) case final line?)
               Text(line, style: t.small.copyWith(color: c.muted)),

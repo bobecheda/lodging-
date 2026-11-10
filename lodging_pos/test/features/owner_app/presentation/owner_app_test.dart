@@ -150,7 +150,7 @@ void main() {
       find.byKey(const ValueKey('today.attention.heldVoids')),
       findsOneWidget,
     );
-    expect(find.text('Void not in the cloud'), findsOneWidget);
+    expect(find.text('Record not in the cloud'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
