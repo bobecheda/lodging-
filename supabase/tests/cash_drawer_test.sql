@@ -1,8 +1,9 @@
--- Story B1 (20261110000000_cash_drawer.sql): the blind close's first count
--- while open, and the drawer's counts. Run by `supabase test db`.
+-- Story B1 (20261110000000_cash_drawer.sql, 20261110000100_cash_drawer_defaults.sql):
+-- the blind close's first count while open, the drawer's counts, and rows
+-- that arrive without the v10 columns. Run by `supabase test db`.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(18);
 
 -- ── Fixtures (as postgres) ─────────────────────────────────────────────
 
@@ -78,6 +79,18 @@ select is((select needs_review::text || ' ' || opened_from
            from public.shifts where id = 's-1'),
   'true d-1', 'needs_review and opened_from are kept');
 
+-- A shift row queued before the desk's v10 upgrade has no needs_review:
+-- it gets the default instead of stopping the queue.
+select tests_k.act('desk');
+select lives_ok($$select tests_k.push('shifts', '{"id":"s-old","user_id":"u-desk",
+  "opened_at":"2026-11-09T05:00:00Z","opening_float":0,"status":"closed",
+  "closed_at":"2026-11-09T06:00:00Z","expected_cash":0,"expected_paybill":0,
+  "counted_cash":0,"variance":0,"closed_by":"u-desk","first_count":0}')$$,
+  'a shift row from before v10 (no needs_review) is accepted');
+reset role;
+select is((select needs_review from public.shifts where id = 's-old'), false,
+  'it needs no review');
+
 -- ── 2. The drawer's counts ─────────────────────────────────────────────
 
 select tests_k.act('desk');
@@ -109,6 +122,15 @@ select lives_ok($$select tests_k.push('drawer_events',
 reset role;
 select is((select counted from public.drawer_events where id = 'd-1'), 2000,
   'the count never changes');
+select tests_k.act('desk');
+select lives_ok($$select tests_k.push('drawer_events',
+  tests_k.event('d-2', 'check', 'u-sup', 'u-desk', 2000, 2000)
+  - 'removed' - 'needs_review')$$,
+  'a count without removed or needs_review is accepted');
+reset role;
+select is((select removed::text || ' ' || needs_review::text
+           from public.drawer_events where id = 'd-2'),
+  '0 false', 'it gets their defaults');
 
 -- ── 3. Who reads them ──────────────────────────────────────────────────
 
