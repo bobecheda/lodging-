@@ -11496,6 +11496,618 @@ class RefundDecisionsCompanion extends UpdateCompanion<RefundDecisionRow> {
   }
 }
 
+class $CashReviewsTable extends CashReviews
+    with TableInfo<$CashReviewsTable, CashReviewRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CashReviewsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => throw StateError('must be stamped by writeWithAudit'),
+  );
+  static const VerificationMeta _targetTypeMeta = const VerificationMeta(
+    'targetType',
+  );
+  @override
+  late final GeneratedColumn<String> targetType = GeneratedColumn<String>(
+    'target_type',
+    aliasedName,
+    false,
+    check: () => targetType.isIn(['shift', 'drawer_event']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  @override
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _decisionMeta = const VerificationMeta(
+    'decision',
+  );
+  @override
+  late final GeneratedColumn<String> decision = GeneratedColumn<String>(
+    'decision',
+    aliasedName,
+    false,
+    check: () => decision.isIn(['approved', 'rejected']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    true,
+    check: () => ComparableExpr(reason.length).isSmallerOrEqualValue(200),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decidedByMeta = const VerificationMeta(
+    'decidedBy',
+  );
+  @override
+  late final GeneratedColumn<String> decidedBy = GeneratedColumn<String>(
+    'decided_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> decidedAt = GeneratedColumn<DateTime>(
+    'decided_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    targetType,
+    targetId,
+    decision,
+    reason,
+    decidedBy,
+    decidedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cash_reviews';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CashReviewRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('target_type')) {
+      context.handle(
+        _targetTypeMeta,
+        targetType.isAcceptableOrUnknown(data['target_type']!, _targetTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetTypeMeta);
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetIdMeta);
+    }
+    if (data.containsKey('decision')) {
+      context.handle(
+        _decisionMeta,
+        decision.isAcceptableOrUnknown(data['decision']!, _decisionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decisionMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    }
+    if (data.containsKey('decided_by')) {
+      context.handle(
+        _decidedByMeta,
+        decidedBy.isAcceptableOrUnknown(data['decided_by']!, _decidedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedByMeta);
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {targetType, targetId},
+  ];
+  @override
+  CashReviewRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CashReviewRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      targetType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_type'],
+      )!,
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      )!,
+      decision: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decision'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      ),
+      decidedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decided_by'],
+      )!,
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}decided_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CashReviewsTable createAlias(String alias) {
+    return $CashReviewsTable(attachedDatabase, alias);
+  }
+}
+
+class CashReviewRow extends DataClass implements Insertable<CashReviewRow> {
+  /// UUID v4.
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String deviceId;
+  final String targetType;
+  final String targetId;
+  final String decision;
+  final String? reason;
+  final String decidedBy;
+  final DateTime decidedAt;
+  const CashReviewRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.targetType,
+    required this.targetId,
+    required this.decision,
+    this.reason,
+    required this.decidedBy,
+    required this.decidedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['target_type'] = Variable<String>(targetType);
+    map['target_id'] = Variable<String>(targetId);
+    map['decision'] = Variable<String>(decision);
+    if (!nullToAbsent || reason != null) {
+      map['reason'] = Variable<String>(reason);
+    }
+    map['decided_by'] = Variable<String>(decidedBy);
+    map['decided_at'] = Variable<DateTime>(decidedAt);
+    return map;
+  }
+
+  CashReviewsCompanion toCompanion(bool nullToAbsent) {
+    return CashReviewsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      targetType: Value(targetType),
+      targetId: Value(targetId),
+      decision: Value(decision),
+      reason: reason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reason),
+      decidedBy: Value(decidedBy),
+      decidedAt: Value(decidedAt),
+    );
+  }
+
+  factory CashReviewRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CashReviewRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deviceId: serializer.fromJson<String>(json['device_id']),
+      targetType: serializer.fromJson<String>(json['target_type']),
+      targetId: serializer.fromJson<String>(json['target_id']),
+      decision: serializer.fromJson<String>(json['decision']),
+      reason: serializer.fromJson<String?>(json['reason']),
+      decidedBy: serializer.fromJson<String>(json['decided_by']),
+      decidedAt: serializer.fromJson<DateTime>(json['decided_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'device_id': serializer.toJson<String>(deviceId),
+      'target_type': serializer.toJson<String>(targetType),
+      'target_id': serializer.toJson<String>(targetId),
+      'decision': serializer.toJson<String>(decision),
+      'reason': serializer.toJson<String?>(reason),
+      'decided_by': serializer.toJson<String>(decidedBy),
+      'decided_at': serializer.toJson<DateTime>(decidedAt),
+    };
+  }
+
+  CashReviewRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? deviceId,
+    String? targetType,
+    String? targetId,
+    String? decision,
+    Value<String?> reason = const Value.absent(),
+    String? decidedBy,
+    DateTime? decidedAt,
+  }) => CashReviewRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    targetType: targetType ?? this.targetType,
+    targetId: targetId ?? this.targetId,
+    decision: decision ?? this.decision,
+    reason: reason.present ? reason.value : this.reason,
+    decidedBy: decidedBy ?? this.decidedBy,
+    decidedAt: decidedAt ?? this.decidedAt,
+  );
+  CashReviewRow copyWithCompanion(CashReviewsCompanion data) {
+    return CashReviewRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      targetType: data.targetType.present
+          ? data.targetType.value
+          : this.targetType,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      decision: data.decision.present ? data.decision.value : this.decision,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      decidedBy: data.decidedBy.present ? data.decidedBy.value : this.decidedBy,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CashReviewRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('targetType: $targetType, ')
+          ..write('targetId: $targetId, ')
+          ..write('decision: $decision, ')
+          ..write('reason: $reason, ')
+          ..write('decidedBy: $decidedBy, ')
+          ..write('decidedAt: $decidedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deviceId,
+    targetType,
+    targetId,
+    decision,
+    reason,
+    decidedBy,
+    decidedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CashReviewRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.targetType == this.targetType &&
+          other.targetId == this.targetId &&
+          other.decision == this.decision &&
+          other.reason == this.reason &&
+          other.decidedBy == this.decidedBy &&
+          other.decidedAt == this.decidedAt);
+}
+
+class CashReviewsCompanion extends UpdateCompanion<CashReviewRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> deviceId;
+  final Value<String> targetType;
+  final Value<String> targetId;
+  final Value<String> decision;
+  final Value<String?> reason;
+  final Value<String> decidedBy;
+  final Value<DateTime> decidedAt;
+  final Value<int> rowid;
+  const CashReviewsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.targetType = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.decision = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.decidedBy = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CashReviewsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    required String targetType,
+    required String targetId,
+    required String decision,
+    this.reason = const Value.absent(),
+    required String decidedBy,
+    required DateTime decidedAt,
+    this.rowid = const Value.absent(),
+  }) : targetType = Value(targetType),
+       targetId = Value(targetId),
+       decision = Value(decision),
+       decidedBy = Value(decidedBy),
+       decidedAt = Value(decidedAt);
+  static Insertable<CashReviewRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<String>? targetType,
+    Expression<String>? targetId,
+    Expression<String>? decision,
+    Expression<String>? reason,
+    Expression<String>? decidedBy,
+    Expression<DateTime>? decidedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (targetType != null) 'target_type': targetType,
+      if (targetId != null) 'target_id': targetId,
+      if (decision != null) 'decision': decision,
+      if (reason != null) 'reason': reason,
+      if (decidedBy != null) 'decided_by': decidedBy,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CashReviewsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? deviceId,
+    Value<String>? targetType,
+    Value<String>? targetId,
+    Value<String>? decision,
+    Value<String?>? reason,
+    Value<String>? decidedBy,
+    Value<DateTime>? decidedAt,
+    Value<int>? rowid,
+  }) {
+    return CashReviewsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      targetType: targetType ?? this.targetType,
+      targetId: targetId ?? this.targetId,
+      decision: decision ?? this.decision,
+      reason: reason ?? this.reason,
+      decidedBy: decidedBy ?? this.decidedBy,
+      decidedAt: decidedAt ?? this.decidedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (targetType.present) {
+      map['target_type'] = Variable<String>(targetType.value);
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (decision.present) {
+      map['decision'] = Variable<String>(decision.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (decidedBy.present) {
+      map['decided_by'] = Variable<String>(decidedBy.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<DateTime>(decidedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CashReviewsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('targetType: $targetType, ')
+          ..write('targetId: $targetId, ')
+          ..write('decision: $decision, ')
+          ..write('reason: $reason, ')
+          ..write('decidedBy: $decidedBy, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DrawerEventsTable extends DrawerEvents
     with TableInfo<$DrawerEventsTable, DrawerEventRow> {
   @override
@@ -15683,6 +16295,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions WHEN NEW.updated_at IS OLD.updated_at BEGIN SELECT RAISE (ABORT, \'must be stamped by writeWithAudit\');END',
     'refund_decisions_stamped_update',
   );
+  late final $CashReviewsTable cashReviews = $CashReviewsTable(this);
+  late final Trigger cashReviewsNoUpdate = Trigger(
+    'CREATE TRIGGER cash_reviews_no_update BEFORE UPDATE ON cash_reviews BEGIN SELECT RAISE (ABORT, \'cash_reviews rows are never edited\');END',
+    'cash_reviews_no_update',
+  );
+  late final Trigger cashReviewsNoDelete = Trigger(
+    'CREATE TRIGGER cash_reviews_no_delete BEFORE DELETE ON cash_reviews BEGIN SELECT RAISE (ABORT, \'cash_reviews rows are never deleted\');END',
+    'cash_reviews_no_delete',
+  );
   late final $DrawerEventsTable drawerEvents = $DrawerEventsTable(this);
   late final Trigger drawerEventsNoUpdate = Trigger(
     'CREATE TRIGGER drawer_events_no_update BEFORE UPDATE ON drawer_events BEGIN SELECT RAISE (ABORT, \'drawer_events rows are never edited\');END',
@@ -15933,6 +16554,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     inventoryItemsStampedUpdate,
     refundDecisions,
     refundDecisionsStampedUpdate,
+    cashReviews,
+    cashReviewsNoUpdate,
+    cashReviewsNoDelete,
     drawerEvents,
     drawerEventsNoUpdate,
     drawerEventsNoDelete,
@@ -16124,6 +16748,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       on: TableUpdateQuery.onTableName(
         'refund_decisions',
         limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'cash_reviews',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'cash_reviews',
+        limitUpdateKind: UpdateKind.delete,
       ),
       result: [],
     ),
@@ -16662,6 +17300,24 @@ final class $$UsersTableReferences
     final cache = $_typedResult.readTableOrNull(
       _refundDecisionsRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CashReviewsTable, List<CashReviewRow>>
+  _cashReviewsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.cashReviews,
+    aliasName: 'users__id__cash_reviews__decided_by',
+  );
+
+  $$CashReviewsTableProcessedTableManager get cashReviewsRefs {
+    final manager = $$CashReviewsTableTableManager(
+      $_db,
+      $_db.cashReviews,
+    ).filter((f) => f.decidedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_cashReviewsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -17207,6 +17863,31 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$RefundDecisionsTableFilterComposer(
             $db: $db,
             $table: $db.refundDecisions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> cashReviewsRefs(
+    Expression<bool> Function($$CashReviewsTableFilterComposer f) f,
+  ) {
+    final $$CashReviewsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cashReviews,
+      getReferencedColumn: (t) => t.decidedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CashReviewsTableFilterComposer(
+            $db: $db,
+            $table: $db.cashReviews,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -17849,6 +18530,31 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> cashReviewsRefs<T extends Object>(
+    Expression<T> Function($$CashReviewsTableAnnotationComposer a) f,
+  ) {
+    final $$CashReviewsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cashReviews,
+      getReferencedColumn: (t) => t.decidedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CashReviewsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cashReviews,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> drawerEventsCounted<T extends Object>(
     Expression<T> Function($$DrawerEventsTableAnnotationComposer a) f,
   ) {
@@ -18029,6 +18735,7 @@ class $$UsersTableTableManager
             bool voidsRefs,
             bool expensesRefs,
             bool refundDecisionsRefs,
+            bool cashReviewsRefs,
             bool drawerEventsCounted,
             bool drawerEventsPresent,
             bool auditLogRefs,
@@ -18125,6 +18832,7 @@ class $$UsersTableTableManager
                 voidsRefs = false,
                 expensesRefs = false,
                 refundDecisionsRefs = false,
+                cashReviewsRefs = false,
                 drawerEventsCounted = false,
                 drawerEventsPresent = false,
                 auditLogRefs = false,
@@ -18150,6 +18858,7 @@ class $$UsersTableTableManager
                     if (voidsRefs) db.voids,
                     if (expensesRefs) db.expenses,
                     if (refundDecisionsRefs) db.refundDecisions,
+                    if (cashReviewsRefs) db.cashReviews,
                     if (drawerEventsCounted) db.drawerEvents,
                     if (drawerEventsPresent) db.drawerEvents,
                     if (auditLogRefs) db.auditLog,
@@ -18463,6 +19172,27 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (cashReviewsRefs)
+                        await $_getPrefetchedData<
+                          UserRow,
+                          $UsersTable,
+                          CashReviewRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._cashReviewsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cashReviewsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.decidedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (drawerEventsCounted)
                         await $_getPrefetchedData<
                           UserRow,
@@ -18625,6 +19355,7 @@ typedef $$UsersTableProcessedTableManager =
         bool voidsRefs,
         bool expensesRefs,
         bool refundDecisionsRefs,
+        bool cashReviewsRefs,
         bool drawerEventsCounted,
         bool drawerEventsPresent,
         bool auditLogRefs,
@@ -28328,6 +29059,418 @@ typedef $$RefundDecisionsTableProcessedTableManager =
       RefundDecisionRow,
       PrefetchHooks Function({bool refundId, bool decidedBy})
     >;
+typedef $$CashReviewsTableCreateCompanionBuilder =
+    CashReviewsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      required String targetType,
+      required String targetId,
+      required String decision,
+      Value<String?> reason,
+      required String decidedBy,
+      required DateTime decidedAt,
+      Value<int> rowid,
+    });
+typedef $$CashReviewsTableUpdateCompanionBuilder =
+    CashReviewsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> deviceId,
+      Value<String> targetType,
+      Value<String> targetId,
+      Value<String> decision,
+      Value<String?> reason,
+      Value<String> decidedBy,
+      Value<DateTime> decidedAt,
+      Value<int> rowid,
+    });
+
+final class $$CashReviewsTableReferences
+    extends BaseReferences<_$AppDatabase, $CashReviewsTable, CashReviewRow> {
+  $$CashReviewsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $UsersTable _decidedByTable(_$AppDatabase db) =>
+      db.users.createAlias('cash_reviews__decided_by__users__id');
+
+  $$UsersTableProcessedTableManager get decidedBy {
+    final $_column = $_itemColumn<String>('decided_by')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_decidedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CashReviewsTableFilterComposer
+    extends Composer<_$AppDatabase, $CashReviewsTable> {
+  $$CashReviewsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetType => $composableBuilder(
+    column: $table.targetType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get decidedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CashReviewsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CashReviewsTable> {
+  $$CashReviewsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetType => $composableBuilder(
+    column: $table.targetType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get decidedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CashReviewsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CashReviewsTable> {
+  $$CashReviewsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get targetType => $composableBuilder(
+    column: $table.targetType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get decision =>
+      $composableBuilder(column: $table.decision, builder: (column) => column);
+
+  GeneratedColumn<String> get reason =>
+      $composableBuilder(column: $table.reason, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get decidedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.decidedBy,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CashReviewsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CashReviewsTable,
+          CashReviewRow,
+          $$CashReviewsTableFilterComposer,
+          $$CashReviewsTableOrderingComposer,
+          $$CashReviewsTableAnnotationComposer,
+          $$CashReviewsTableCreateCompanionBuilder,
+          $$CashReviewsTableUpdateCompanionBuilder,
+          (CashReviewRow, $$CashReviewsTableReferences),
+          CashReviewRow,
+          PrefetchHooks Function({bool decidedBy})
+        > {
+  $$CashReviewsTableTableManager(_$AppDatabase db, $CashReviewsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CashReviewsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CashReviewsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CashReviewsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> targetType = const Value.absent(),
+                Value<String> targetId = const Value.absent(),
+                Value<String> decision = const Value.absent(),
+                Value<String?> reason = const Value.absent(),
+                Value<String> decidedBy = const Value.absent(),
+                Value<DateTime> decidedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CashReviewsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                targetType: targetType,
+                targetId: targetId,
+                decision: decision,
+                reason: reason,
+                decidedBy: decidedBy,
+                decidedAt: decidedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                required String targetType,
+                required String targetId,
+                required String decision,
+                Value<String?> reason = const Value.absent(),
+                required String decidedBy,
+                required DateTime decidedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CashReviewsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                targetType: targetType,
+                targetId: targetId,
+                decision: decision,
+                reason: reason,
+                decidedBy: decidedBy,
+                decidedAt: decidedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CashReviewsTable, CashReviewRow>(table),
+                  $$CashReviewsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({decidedBy = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (decidedBy) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.decidedBy,
+                        referencedTable: $$CashReviewsTableReferences
+                            ._decidedByTable(db),
+                        referencedColumn: $$CashReviewsTableReferences
+                            ._decidedByTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CashReviewsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CashReviewsTable,
+      CashReviewRow,
+      $$CashReviewsTableFilterComposer,
+      $$CashReviewsTableOrderingComposer,
+      $$CashReviewsTableAnnotationComposer,
+      $$CashReviewsTableCreateCompanionBuilder,
+      $$CashReviewsTableUpdateCompanionBuilder,
+      (CashReviewRow, $$CashReviewsTableReferences),
+      CashReviewRow,
+      PrefetchHooks Function({bool decidedBy})
+    >;
 typedef $$DrawerEventsTableCreateCompanionBuilder =
     DrawerEventsCompanion Function({
       Value<String> id,
@@ -31649,6 +32792,8 @@ class $AppDatabaseManager {
       $$ExpensesTableTableManager(_db, _db.expenses);
   $$RefundDecisionsTableTableManager get refundDecisions =>
       $$RefundDecisionsTableTableManager(_db, _db.refundDecisions);
+  $$CashReviewsTableTableManager get cashReviews =>
+      $$CashReviewsTableTableManager(_db, _db.cashReviews);
   $$DrawerEventsTableTableManager get drawerEvents =>
       $$DrawerEventsTableTableManager(_db, _db.drawerEvents);
   $$AuditLogTableTableManager get auditLog =>

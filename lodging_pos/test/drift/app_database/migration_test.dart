@@ -1000,7 +1000,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      10,
+      11,
     );
   });
 
@@ -1054,7 +1054,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      10,
+      11,
     );
     final category = await db
         .customSelect('SELECT price_per_night, updated_at FROM bed_categories')
@@ -1260,8 +1260,72 @@ void main() {
     );
   });
 
+  test(
+    'migration from v10 to v11: cash reviews start empty, are final, and '
+    'a rejection needs a reason; shifts and drawer counts are untouched',
+    () async {
+      const at = "'2026-11-11T06:00:00.000Z'";
+      final db = open(
+        NativeDatabase.memory(
+          setup: (raw) {
+            appStatements(10).forEach(raw.execute);
+            raw.execute('PRAGMA user_version = 10');
+            raw.execute(
+              'INSERT INTO users (id, created_at, updated_at, device_id, '
+              'full_name, username, password_hash, role, is_active, '
+              'must_change_password) VALUES '
+              "('u-sup', $at, $at, 'dev', 'Grace', 'grace', 'x', "
+              "'supervisor', 1, 0)",
+            );
+            raw.execute(
+              'INSERT INTO drawer_events (id, created_at, updated_at, '
+              'device_id, kind, counted_by, counted, counted_at) VALUES '
+              "('d-1', $at, $at, 'dev', 'start', 'u-sup', 2000, $at)",
+            );
+          },
+        ),
+      );
+      addTearDown(db.close);
+      expect(await db.select(db.cashReviews).get(), isEmpty);
+      expect((await db.select(db.drawerEvents).getSingle()).counted, 2000);
+      await db.customStatement(
+        'INSERT INTO cash_reviews (id, created_at, updated_at, device_id, '
+        'target_type, target_id, decision, decided_by, decided_at) VALUES '
+        "('r-1', $at, $at, 'dev', 'shift', 's-1', 'approved', 'u-sup', $at)",
+      );
+      await expectLater(
+        db.customStatement(
+          'INSERT INTO cash_reviews (id, created_at, updated_at, device_id, '
+          'target_type, target_id, decision, decided_by, decided_at) VALUES '
+          "('r-2', $at, $at, 'dev', 'drawer_event', 'd-1', 'rejected', "
+          "'u-sup', $at)",
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        db.customStatement(
+          'INSERT INTO cash_reviews (id, created_at, updated_at, device_id, '
+          'target_type, target_id, decision, decided_by, decided_at) VALUES '
+          "('r-3', $at, $at, 'dev', 'shift', 's-1', 'approved', 'u-sup', $at)",
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        db.customStatement(
+          "UPDATE cash_reviews SET decision = 'rejected', reason = 'x', "
+          "updated_at = '2030-01-01T00:00:00.000Z' WHERE id = 'r-1'",
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        db.customStatement("DELETE FROM cash_reviews WHERE id = 'r-1'"),
+        throwsA(anything),
+      );
+    },
+  );
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9]) {
+    for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -1286,7 +1350,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          10,
+          11,
         );
         final objects = await db
             .customSelect(

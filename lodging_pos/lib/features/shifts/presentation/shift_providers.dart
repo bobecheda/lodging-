@@ -7,8 +7,11 @@ import '../../../core/auth/user_account.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/auth/password_hasher.dart';
 import '../../../core/clock/clock.dart';
+import '../../../core/sync/sync_providers.dart';
+import '../data/cash_reviews_repository.dart';
 import '../data/drawer_repository.dart';
 import '../data/shift_repository.dart';
+import '../domain/cash_review.dart';
 import '../domain/drawer.dart';
 import '../domain/shift.dart';
 import '../domain/shift_close.dart';
@@ -62,6 +65,30 @@ DrawerRepository drawerRepository(Ref ref) => DrawerRepository(
   ref.watch(passwordHasherProvider),
   ref.watch(clockProvider),
 );
+
+/// Cash reviews (Story B3): cloud-first once the desk is connected.
+@Riverpod(keepAlive: true)
+CashReviewsRepository cashReviewsRepository(Ref ref) => CashReviewsRepository(
+  ref.watch(appDatabaseProvider),
+  ref.watch(auditWriterProvider),
+  cloud: ref.watch(cloudWritesProvider),
+);
+
+/// One review target as the Cash screen shows it: what the rules need and
+/// its decision, if any. Read again when the chain changes.
+@riverpod
+Future<(ReviewTarget?, ReviewInfo?)> reviewPanel(
+  Ref ref,
+  ReviewTargetKind kind,
+  String id,
+) async {
+  ref.watch(drawerChainProvider);
+  final repo = ref.watch(cashReviewsRepositoryProvider);
+  return (
+    await repo.target(kind, id),
+    (await repo.decisions())['${kind.code}:$id'],
+  );
+}
 
 /// Whether the drawer has been counted at least once (the starting cash).
 @riverpod

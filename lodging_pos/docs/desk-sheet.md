@@ -16,6 +16,7 @@ One page for the supervisor and the receptionists at UB40. It adds to what the a
 - The supervisor or the owner may **check the drawer at any time**, and **collects the cash weekly**. You are there: you type **your own password** to confirm it. Nobody else may type it for you.
 - They count the drawer; the screen only says "Counted." If the count doesn't match, they count again, and if it still doesn't, they write why. It is reviewed.
 - At a collection they also record how much they take away. Your next float is what is left.
+- A count that didn't match is reviewed: the supervisor (or the owner, for a supervisor's own shift or count) approves or rejects it on Cash. Nobody reviews their own.
 
 ## Correcting a wrong payment method or M-Pesa code
 

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/theme.dart';
 import '../../../core/money/kes.dart';
+import '../../shifts/domain/cash_review.dart';
 import '../domain/dashboard.dart';
 
 /// A white card with a caps heading, like the phone design's.
@@ -224,6 +225,15 @@ class AttentionRow extends StatelessWidget {
         figure: stay.figure,
         onTap: onTap,
       );
+
+  /// A cash review rejected (Story B3): the owner follows it up.
+  factory AttentionRow.rejectedReview(RejectedReview r) => AttentionRow(
+    key: ValueKey('today.attention.rejected.${r.targetId}'),
+    kind: AttentionKind.shortage,
+    title: r.title,
+    subtitle: r.subtitle,
+    figure: r.figure,
+  );
 
   /// Void rows the cloud refused, held on the desk (AD-7); null for none.
   static AttentionRow? heldVoids(int count) => switch (heldVoidsRow(count)) {

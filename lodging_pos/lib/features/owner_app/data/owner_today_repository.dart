@@ -6,6 +6,7 @@ import '../../price_requests/domain/price_request.dart';
 import '../../setup/domain/bed_category.dart';
 import '../../setup/domain/prices_settings.dart';
 import '../../setup/domain/rooms.dart';
+import '../../shifts/domain/cash_review.dart';
 import '../domain/owner_today.dart';
 import 'owner_cloud.dart';
 import 'owner_rows.dart';
@@ -77,7 +78,80 @@ class OwnerTodayRepository {
       ],
       priceRequests: requests,
       unpaid: await _unpaid(voided),
+      rejectedReviews: await _rejectedReviews(since, name),
     );
+  }
+
+  /// Cash reviews rejected since [since], newest first (Story B3).
+  Future<List<RejectedReview>> _rejectedReviews(
+    DateTime since,
+    String Function(String id) name,
+  ) async {
+    final rows = await _cloud.rows(
+      'cash_reviews',
+      ['target_type', 'target_id', 'reason', 'decided_by', 'decided_at'],
+      where: [
+        const Eq('decision', 'rejected'),
+        Gte('decided_at', since.toIso8601String()),
+      ],
+      orderBy: 'decided_at',
+      newestFirst: true,
+    );
+    if (rows.isEmpty) return const [];
+    List<String> ids(String type) => [
+      for (final r in rows)
+        if (r.str('target_type') == type) r.str('target_id'),
+    ];
+    final shifts = {
+      for (final s
+          in ids('shift').isEmpty
+              ? const <Map<String, Object?>>[]
+              : await _cloud.rows(
+                  'shifts',
+                  ['id', 'user_id', 'variance'],
+                  where: [InList('id', ids('shift'))],
+                ))
+        s.str('id'): s,
+    };
+    final counts = {
+      for (final d
+          in ids('drawer_event').isEmpty
+              ? const <Map<String, Object?>>[]
+              : await _cloud.rows(
+                  'drawer_events',
+                  ['id', 'kind', 'counted_by', 'counted', 'expected'],
+                  where: [InList('id', ids('drawer_event'))],
+                ))
+        d.str('id'): d,
+    };
+    return [
+      for (final r in rows)
+        if (r.str('target_type') == 'shift')
+          if (shifts[r.str('target_id')] case final s?)
+            RejectedReview(
+              kind: ReviewTargetKind.shift,
+              targetId: s.str('id'),
+              whose: '${name(s.str('user_id'))}’s shift close',
+              decidedBy: name(r.str('decided_by')),
+              reason: r.strOrNull('reason') ?? '',
+              decidedAt: r.time('decided_at'),
+              gap: s.intOrNull('variance') ?? 0,
+            )
+          else
+            ...[]
+        else if (counts[r.str('target_id')] case final d?)
+          RejectedReview(
+            kind: ReviewTargetKind.drawerEvent,
+            targetId: d.str('id'),
+            whose:
+                '${name(d.str('counted_by'))}’s '
+                '${d.str('kind') == 'collect' ? 'collection' : 'drawer check'}',
+            decidedBy: name(r.str('decided_by')),
+            reason: r.strOrNull('reason') ?? '',
+            decidedAt: r.time('decided_at'),
+            gap: d.integer('counted') - (d.intOrNull('expected') ?? 0),
+          ),
+    ];
   }
 
   /// Active stays with a voided payment (AD-7); read only when a payment

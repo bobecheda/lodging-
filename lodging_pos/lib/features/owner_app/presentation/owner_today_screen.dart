@@ -82,6 +82,8 @@ class OwnerTodayScreen extends ConsumerWidget {
                   r,
                   onTap: () => context.go(OwnerRoutes.refundFor(r.refundId)),
                 ),
+              // A cash review rejected (Story B3).
+              for (final r in d.rejectedReviews) AttentionRow.rejectedReview(r),
               // A guest in a bed with no money behind the nights (AD-7).
               for (final u in d.unpaid) AttentionRow.unpaid(u),
               // Decided on Prices, in the next update.

@@ -78,9 +78,9 @@ npx supabase@2.121.0 db push
 ```
 
 - [ ] It lists and applies these, in this order, with no error:
-  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`, `20261110000200_drawer_counts`.
-  The desk build at the tag is schema **v10** (the blind close and the drawer's counts). Story B3 (review decisions) adds one more cloud migration here if it makes the freeze; this list and the count below are updated in that PR.
-- [ ] Check in the SQL Editor that they're all recorded (12 rows):
+  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`, `20261110000200_drawer_counts`, `20261111000000_cash_reviews`.
+  The desk build at the tag is schema **v11** (the blind close, the drawer's counts and the cash reviews).
+- [ ] Check in the SQL Editor that they're all recorded (13 rows):
 
   ```sql
   select version from supabase_migrations.schema_migrations order by version;

@@ -154,6 +154,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a rejected cash review needs the owner (Story B3)', (
+    tester,
+  ) async {
+    // The supervisor rejected Desk's short close (s-1) an hour ago.
+    cloud.table('cash_reviews').add({
+      'id': 'cr-1',
+      'target_type': 'shift',
+      'target_id': 's-1',
+      'decision': 'rejected',
+      'reason': 'Count it again with me',
+      'decided_by': 'u-sup',
+      'decided_at': now.subtract(const Duration(hours: 1)).toIso8601String(),
+    });
+    await pumpOwnerApp(tester, cloud, clock);
+    await signIn(tester);
+    expect(
+      find.byKey(const ValueKey('today.attention.rejected.s-1')),
+      findsOneWidget,
+    );
+    expect(find.text('Cash review rejected'), findsOneWidget);
+    expect(find.text('KES 300 short'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the refund: masked phone, the receipts, then Approve, in the '
       'cloud with its audit row', (tester) async {
     final app = await pumpOwnerApp(tester, cloud, clock);

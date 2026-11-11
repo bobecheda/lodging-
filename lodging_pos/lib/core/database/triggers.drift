@@ -87,6 +87,13 @@ CREATE TRIGGER refund_decisions_stamped_update BEFORE UPDATE ON refund_decisions
   WHEN NEW.updated_at IS OLD.updated_at
   BEGIN SELECT RAISE(ABORT, 'must be stamped by writeWithAudit'); END;
 
+-- v11 (Story B3): a cash review is final.
+CREATE TRIGGER cash_reviews_no_update BEFORE UPDATE ON cash_reviews
+  BEGIN SELECT RAISE(ABORT, 'cash_reviews rows are never edited'); END;
+
+CREATE TRIGGER cash_reviews_no_delete BEFORE DELETE ON cash_reviews
+  BEGIN SELECT RAISE(ABORT, 'cash_reviews rows are never deleted'); END;
+
 -- v10 (Story B): a drawer count is never changed or deleted.
 CREATE TRIGGER drawer_events_no_update BEFORE UPDATE ON drawer_events
   BEGIN SELECT RAISE(ABORT, 'drawer_events rows are never edited'); END;

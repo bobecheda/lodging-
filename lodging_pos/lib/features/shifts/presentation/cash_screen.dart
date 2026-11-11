@@ -6,13 +6,16 @@ import '../../../app/gate.dart';
 
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/buttons.dart';
+import '../../../app/widgets/labeled_field.dart';
 import '../../../app/widgets/money_input.dart';
 import '../../../app/widgets/notes.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
+import '../../sync/presentation/owner_cloud_prompt.dart';
 import '../data/shift_repository.dart';
+import '../domain/cash_review.dart';
 import '../domain/drawer.dart';
 import '../domain/shift_close.dart';
 import 'shift_providers.dart';
@@ -265,6 +268,10 @@ class _EntryTile extends StatelessWidget {
               'Break in the chain.',
               style: t.smallStrong.copyWith(color: c.butterText),
             ),
+          if (e is DrawerCountEntry && e.needsReview)
+            _ReviewBox(ReviewTargetKind.drawerEvent, e.record.id),
+          if (e is ShiftClosedEntry && e.needsReview)
+            _ReviewBox(ReviewTargetKind.shift, e.shiftId),
           if (e is DrawerCountEntry) ...[
             if (recountLine(e.record.firstCount, e.record.counted)
                 case final line?)
@@ -294,6 +301,185 @@ class _EntryTile extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// A close or count that needs review (Story B3): its status, and Approve
+/// or Reject for someone who may decide it, or why they can't.
+class _ReviewBox extends ConsumerStatefulWidget {
+  const _ReviewBox(this.kind, this.id);
+
+  final ReviewTargetKind kind;
+  final String id;
+
+  @override
+  ConsumerState<_ReviewBox> createState() => _ReviewBoxState();
+}
+
+class _ReviewBoxState extends ConsumerState<_ReviewBox> {
+  String? _error;
+  var _busy = false;
+
+  Future<void> _decide({required bool approve}) async {
+    final user = ref.read(sessionProvider);
+    if (user == null) return;
+    String? reason;
+    if (!approve) {
+      reason = await showDialog<String>(
+        context: context,
+        builder: (_) => const _RejectReviewDialog(),
+      );
+      if (reason == null || !mounted) return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await withOwnerCloud(
+        context,
+        ref,
+        () => ref
+            .read(cashReviewsRepositoryProvider)
+            .decide(
+              user,
+              widget.kind,
+              widget.id,
+              approve: approve,
+              reason: reason,
+            ),
+      );
+      ref.invalidate(reviewPanelProvider(widget.kind, widget.id));
+    } on CashReviewProblem catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } on NotPermitted {
+      if (mounted) setState(() => _error = 'You can’t review cash.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    final user = ref.watch(sessionProvider);
+    final panel = ref.watch(reviewPanelProvider(widget.kind, widget.id)).value;
+    if (user == null || panel == null) return const SizedBox.shrink();
+    final (target, info) = panel;
+    final key = '${widget.kind.code}.${widget.id}';
+    if (info != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: Space.x4),
+        child: Text(
+          info.line,
+          key: ValueKey('review.decided.$key'),
+          style: t.smallStrong.copyWith(
+            color: info.decision == ReviewDecision.rejected
+                ? c.redText
+                : c.marine,
+          ),
+        ),
+      );
+    }
+    final blocker = target == null ? null : reviewBlocker(target, user);
+    return Padding(
+      padding: const EdgeInsets.only(top: Space.x8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (blocker != null)
+            Text(
+              blocker,
+              key: ValueKey('review.blocked.$key'),
+              style: t.small.copyWith(color: c.inkSoft),
+            )
+          else
+            Row(
+              children: [
+                AppButton.primary(
+                  key: ValueKey('review.approve.$key'),
+                  label: 'Approve',
+                  compact: true,
+                  busy: _busy,
+                  onPressed: _busy ? null : () => _decide(approve: true),
+                ),
+                const SizedBox(width: Space.x8),
+                AppButton.secondary(
+                  key: ValueKey('review.reject.$key'),
+                  label: 'Reject…',
+                  compact: true,
+                  onPressed: _busy ? null : () => _decide(approve: false),
+                ),
+              ],
+            ),
+          if (_error != null) ...[
+            const SizedBox(height: Space.x4),
+            Note.error(_error!, key: ValueKey('review.error.$key')),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RejectReviewDialog extends StatefulWidget {
+  const _RejectReviewDialog();
+
+  @override
+  State<_RejectReviewDialog> createState() => _RejectReviewDialogState();
+}
+
+class _RejectReviewDialogState extends State<_RejectReviewDialog> {
+  final _reason = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final r = _reason.text.trim();
+    if (r.isEmpty) {
+      setState(() => _error = 'Say why you reject it.');
+      return;
+    }
+    Navigator.of(context).pop(r);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = LodgingType.of(context);
+    return AlertDialog(
+      key: const ValueKey('review.rejectDialog'),
+      title: Text('Reject this?', style: t.sectionTitle),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: LabeledField(
+          label: 'Reason',
+          controller: _reason,
+          fieldKey: const ValueKey('review.reason'),
+          errorText: _error,
+          autofocus: true,
+          helperText: 'The owner sees it.',
+          onSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        AppButton.secondary(
+          key: const ValueKey('review.reason.cancel'),
+          label: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.destructive(
+          key: const ValueKey('review.reason.reject'),
+          label: 'Reject',
+          onPressed: _submit,
+        ),
+      ],
     );
   }
 }

@@ -101,4 +101,4 @@ final class TodayDataProvider
   }
 }
 
-String _$todayDataHash() => r'c0c5afd045b9eee415b1484cb203cd7b2afab89a';
+String _$todayDataHash() => r'1ea3c303d1a31194d3bdecd5ab66a7ffd9a199f8';

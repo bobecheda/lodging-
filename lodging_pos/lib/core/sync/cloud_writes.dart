@@ -31,6 +31,20 @@ abstract interface class CloudWrites {
     required DateTime at,
   });
 
+  /// Story B3: a cash review, decided in the cloud first. [asOwner]: the
+  /// owner decides (their cloud sign-in); otherwise the supervisor
+  /// [decidedBy] through this desk's sign-in.
+  Future<void> decideCashReview({
+    required String id,
+    required String targetType,
+    required String targetId,
+    required bool approve,
+    required String? reason,
+    required String decidedBy,
+    required bool asOwner,
+    required DateTime at,
+  });
+
   /// The owner's new prices, each over the price it started from; refused
   /// with [PriceChangedElsewhere] when one moved on in the cloud.
   Future<void> changePrices(List<PriceEdit> edits, DateTime at);

@@ -2,7 +2,11 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/auth/permissions.dart';
+import '../../../core/auth/session.dart';
 import '../../../core/clock/clock.dart';
+import '../../shifts/domain/cash_review.dart';
+import '../../shifts/presentation/shift_providers.dart';
 import '../../../core/database/database_provider.dart';
 import '../data/dashboard_repository.dart';
 import '../domain/dashboard.dart';
@@ -22,6 +26,7 @@ final class TodayData {
     required this.awaiting,
     required this.prices,
     this.unpaid = const [],
+    this.rejectedReviews = const [],
   });
 
   final List<MoneyMove> moves;
@@ -33,6 +38,9 @@ final class TodayData {
 
   /// Guests in a bed whose payment was voided (AD-7).
   final List<UnpaidStay> unpaid;
+
+  /// Cash reviews rejected in the last week (Story B3), newest first.
+  final List<RejectedReview> rejectedReviews;
 }
 
 /// Read again whenever a payment, refund, void, stay, charge or price
@@ -51,5 +59,12 @@ Future<TodayData> todayData(Ref ref) async {
     awaiting: await repo.refundsAwaiting(),
     prices: await repo.pricesAwaiting(),
     unpaid: unpaidStays(await repo.activeStayCharges()),
+    rejectedReviews: switch (ref.watch(sessionProvider)) {
+      final user? when can(user, Permission.viewShiftTotals) =>
+        await ref
+            .watch(cashReviewsRepositoryProvider)
+            .rejectedSince(now.subtract(const Duration(days: 7)), by: user),
+      _ => const [],
+    },
   );
 }

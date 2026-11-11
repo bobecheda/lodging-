@@ -291,6 +291,21 @@ abstract interface class Cloud {
     required String deviceId,
   });
 
+  /// Story B3: approves or rejects a shift close or drawer count that
+  /// needs review, first decision wins. [asOwner]: with the owner's
+  /// sign-in; otherwise with the desk's, for the supervisor [decidedBy].
+  Future<CloudDecision> decideCashReview({
+    required String id,
+    required String targetType,
+    required String targetId,
+    required String decision,
+    required String? reason,
+    required String decidedBy,
+    required bool asOwner,
+    required DateTime at,
+    required String deviceId,
+  });
+
   Future<CloudDecision> decidePriceRequest({
     required String id,
     required String requestId,

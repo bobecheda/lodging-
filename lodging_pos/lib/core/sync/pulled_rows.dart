@@ -58,6 +58,9 @@ class PulledRows {
     'price_decisions' => _priceDecision(
       PriceDecisionRow.fromJson(r.row, serializer: auditJsonSerializer),
     ),
+    'cash_reviews' => _cashReview(
+      CashReviewRow.fromJson(r.row, serializer: auditJsonSerializer),
+    ),
     'bed_categories' => _price(
       r.row['id']! as String,
       (r.row['price_per_night']! as num).toInt(),
@@ -98,6 +101,27 @@ class PulledRows {
       );
     }
     await _db.into(_db.priceDecisions).insert(d);
+    return true;
+  }
+
+  /// Story B3: a cash review decided in the cloud (on the phone, another
+  /// desk, or this one first): one per target.
+  Future<bool> _cashReview(CashReviewRow r) async {
+    final here =
+        await (_db.select(_db.cashReviews)..where(
+              (x) =>
+                  x.targetType.equals(r.targetType) &
+                  x.targetId.equals(r.targetId),
+            ))
+            .getSingleOrNull();
+    if (here != null) {
+      if (here.id == r.id) return false;
+      throw PullConflict(
+        'The cloud has another review of ${r.targetType} ${r.targetId} than '
+        'this desk (${here.decision} here, ${r.decision} there).',
+      );
+    }
+    await _db.into(_db.cashReviews).insert(r);
     return true;
   }
 

@@ -62,6 +62,14 @@ enum Permission {
   /// taken away (B2).
   collectCash,
 
+  /// Approve or reject a shift close or drawer count that needs review
+  /// (B3), when it doesn't name you or a supervisor.
+  reviewCash,
+
+  /// Decide the reviews that name a supervisor, and the gaps from the
+  /// owner's own counts (B3).
+  reviewSupervisorCash,
+
   /// The cash rules: the count tolerance and (later) the reminder days.
   /// Owner only, not under `editSettings`.
   setCashRules,
@@ -109,6 +117,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.connectDesk: _ownerOnly,
   Permission.ownerCloudPassword: _ownerOnly,
   Permission.setCashRules: _ownerOnly,
+  Permission.reviewSupervisorCash: _ownerOnly,
   // Prices and adding or closing categories (BR-2); the supervisor asks.
   Permission.editPrices: _ownerOnly,
   Permission.viewAllReports: _ownerAndSupervisor,
@@ -118,6 +127,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.viewShiftTotals: _ownerAndSupervisor,
   Permission.checkDrawer: _ownerAndSupervisor,
   Permission.collectCash: _ownerAndSupervisor,
+  Permission.reviewCash: _ownerAndSupervisor,
   // The supervisor: setup, staff, settings, shift oversight.
   Permission.requestPriceChange: _supervisorOnly,
   Permission.manageRooms: _supervisorOnly,
