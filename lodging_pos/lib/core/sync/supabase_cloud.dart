@@ -316,6 +316,36 @@ class SupabaseCloud implements Cloud {
   );
 
   @override
+  Future<CloudDecision> decideCashReview({
+    required String id,
+    required String targetType,
+    required String targetId,
+    required String decision,
+    required String? reason,
+    required String decidedBy,
+    required bool asOwner,
+    required DateTime at,
+    required String deviceId,
+  }) {
+    Future<CloudDecision> call(SupabaseClient c) async => _decision(
+      await c.rpc(
+        'decide_cash_review',
+        params: {
+          'p_id': id,
+          'p_target_type': targetType,
+          'p_target_id': targetId,
+          'p_decision': decision,
+          'p_reason': reason,
+          'p_decided_by': decidedBy,
+          'p_at': _time(at),
+          'p_device_id': deviceId,
+        },
+      ),
+    );
+    return asOwner ? _asOwner(call) : _asDesk(call);
+  }
+
+  @override
   Future<CloudDecision> decidePriceRequest({
     required String id,
     required String requestId,

@@ -278,6 +278,18 @@ The supervisor's request to the owner (BR-2); the answer is a `price_decisions` 
 
 Voided payments and refund payouts are excluded from shift totals and revenue; a voided stay's nights from occupancy. Written on the desk only (`VoidsRepository`, rules in `features/voids/domain/void_rules.dart`); a stay's void writes a row for the stay, one for each payment still behind it (and the other bed's stay when one payment paid both), closes it if active and marks its bed `not_cleaned`, all as one `void.create` operation. Unique `(target_type, target_id)`: nothing is voided twice. Never deleted or edited. The cloud checks the same rules on arrival (`20261029000000_voids.sql`); a void it still refuses is held on the desk (`sync_state` `held.<seq>`) without stopping the queue (`docs/sync.md`).
 
+### cash_reviews (v11, owner's side: decided in the cloud first, pulled)
+| Column | Type | Notes |
+|---|---|---|
+| target_type | TEXT | `shift` \| `drawer_event` |
+| target_id | TEXT | a shift or `drawer_events` row with `needs_review` |
+| decision | TEXT | `approved` \| `rejected` |
+| reason | TEXT | required to reject; ≤ 200 characters |
+| decided_by | TEXT → users | the supervisor or the owner (`reviewCash`; the owner for anything naming a supervisor and for the owner's own counts) |
+| decided_at | DATETIME | |
+
+Story B3: one per target (unique `(target_type, target_id)`), never edited or deleted. Written by `decide_cash_review` in the cloud first (`CashReviewsRepository.decide`, rules in `shifts/domain/cash_review.dart`), mirrored here with its outbox row already sent, and pulled from the cloud by `PulledRows` like the other decisions. Status is derived: no review needed, awaiting, approved, rejected.
+
 ### refund_decisions
 | Column | Type | Notes |
 |---|---|---|

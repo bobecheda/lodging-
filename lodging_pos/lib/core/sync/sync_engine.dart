@@ -885,6 +885,35 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   }
 
   @override
+  Future<void> decideCashReview({
+    required String id,
+    required String targetType,
+    required String targetId,
+    required bool approve,
+    required String? reason,
+    required String decidedBy,
+    required bool asOwner,
+    required DateTime at,
+  }) async {
+    await _readyForCloudWrite(owner: asOwner);
+    _expectDecided(
+      await _call(
+        () => _cloud.decideCashReview(
+          id: id,
+          targetType: targetType,
+          targetId: targetId,
+          decision: approve ? 'approved' : 'rejected',
+          reason: reason,
+          decidedBy: decidedBy,
+          asOwner: asOwner,
+          at: at,
+          deviceId: _deviceId,
+        ),
+      ),
+    );
+  }
+
+  @override
   Future<void> decidePriceRequest({
     required String id,
     required String requestId,

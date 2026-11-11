@@ -461,6 +461,43 @@ class FakeCloud implements Cloud {
   }
 
   @override
+  Future<CloudDecision> decideCashReview({
+    required String id,
+    required String targetType,
+    required String targetId,
+    required String decision,
+    required String? reason,
+    required String decidedBy,
+    required bool asOwner,
+    required DateTime at,
+    required String deviceId,
+  }) async {
+    asOwner ? _asOwner() : _asDesk();
+    final rows = tables['cash_reviews']?.values ?? const [];
+    for (final d in rows) {
+      if (d['target_type'] == targetType && d['target_id'] == targetId) {
+        return d['id'] == id ? const Decided() : _already(d);
+      }
+    }
+    final table = targetType == 'shift' ? 'shifts' : 'drawer_events';
+    if (row(table, targetId) == null) return const MissingInCloud();
+    tables.putIfAbsent('cash_reviews', () => {})[id] = {
+      'id': id,
+      'created_at': at.toIso8601String(),
+      'updated_at': at.toIso8601String(),
+      'device_id': deviceId,
+      'target_type': targetType,
+      'target_id': targetId,
+      'decision': decision,
+      'reason': reason,
+      'decided_by': asOwner ? ownerUserId : decidedBy,
+      'decided_at': at.toIso8601String(),
+    };
+    _stamp('cash_reviews', id);
+    return const Decided();
+  }
+
+  @override
   Future<CloudDecision> decidePriceRequest({
     required String id,
     required String requestId,
@@ -569,6 +606,7 @@ class FakeCloud implements Cloud {
       switch (table) {
         case 'refund_decisions' ||
             'price_decisions' ||
+            'cash_reviews' ||
             'owner_password_changes':
           rows.add(PulledRow(table, seq, {...r}));
         case 'bed_categories' when r['price_updated_at'] != null:

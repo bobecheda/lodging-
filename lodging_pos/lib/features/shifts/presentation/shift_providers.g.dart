@@ -221,6 +221,154 @@ final class DrawerRepositoryProvider
 
 String _$drawerRepositoryHash() => r'3e8de31c6b7e5e79abf5d409d4675e6cb3498d82';
 
+/// Cash reviews (Story B3): cloud-first once the desk is connected.
+
+@ProviderFor(cashReviewsRepository)
+final cashReviewsRepositoryProvider = CashReviewsRepositoryProvider._();
+
+/// Cash reviews (Story B3): cloud-first once the desk is connected.
+
+final class CashReviewsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CashReviewsRepository,
+          CashReviewsRepository,
+          CashReviewsRepository
+        >
+    with $Provider<CashReviewsRepository> {
+  /// Cash reviews (Story B3): cloud-first once the desk is connected.
+  CashReviewsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cashReviewsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cashReviewsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CashReviewsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CashReviewsRepository create(Ref ref) {
+    return cashReviewsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CashReviewsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CashReviewsRepository>(value),
+    );
+  }
+}
+
+String _$cashReviewsRepositoryHash() =>
+    r'a6e063f7e119d4e9e5fee6ffae669f2145fe30ec';
+
+/// One review target as the Cash screen shows it: what the rules need and
+/// its decision, if any. Read again when the chain changes.
+
+@ProviderFor(reviewPanel)
+final reviewPanelProvider = ReviewPanelFamily._();
+
+/// One review target as the Cash screen shows it: what the rules need and
+/// its decision, if any. Read again when the chain changes.
+
+final class ReviewPanelProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<(ReviewTarget?, ReviewInfo?)>,
+          (ReviewTarget?, ReviewInfo?),
+          FutureOr<(ReviewTarget?, ReviewInfo?)>
+        >
+    with
+        $FutureModifier<(ReviewTarget?, ReviewInfo?)>,
+        $FutureProvider<(ReviewTarget?, ReviewInfo?)> {
+  /// One review target as the Cash screen shows it: what the rules need and
+  /// its decision, if any. Read again when the chain changes.
+  ReviewPanelProvider._({
+    required ReviewPanelFamily super.from,
+    required (ReviewTargetKind, String) super.argument,
+  }) : super(
+         retry: null,
+         name: r'reviewPanelProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$reviewPanelHash();
+
+  @override
+  String toString() {
+    return r'reviewPanelProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<(ReviewTarget?, ReviewInfo?)> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<(ReviewTarget?, ReviewInfo?)> create(Ref ref) {
+    final argument = this.argument as (ReviewTargetKind, String);
+    return reviewPanel(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ReviewPanelProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$reviewPanelHash() => r'3b3db3f1db02c83c6667034e50953bf867996d83';
+
+/// One review target as the Cash screen shows it: what the rules need and
+/// its decision, if any. Read again when the chain changes.
+
+final class ReviewPanelFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<(ReviewTarget?, ReviewInfo?)>,
+          (ReviewTargetKind, String)
+        > {
+  ReviewPanelFamily._()
+    : super(
+        retry: null,
+        name: r'reviewPanelProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// One review target as the Cash screen shows it: what the rules need and
+  /// its decision, if any. Read again when the chain changes.
+
+  ReviewPanelProvider call(ReviewTargetKind kind, String id) =>
+      ReviewPanelProvider._(argument: (kind, id), from: this);
+
+  @override
+  String toString() => r'reviewPanelProvider';
+}
+
 /// Whether the drawer has been counted at least once (the starting cash).
 
 @ProviderFor(drawerStarted)

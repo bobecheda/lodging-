@@ -65,6 +65,7 @@ void main() {
       Permission.ownerCloudPassword,
       // Story B (10 Nov 2026): the count tolerance.
       Permission.setCashRules,
+      Permission.reviewSupervisorCash,
     };
     const ownerAndSupervisor = {
       Permission.viewAllReports,
@@ -76,6 +77,7 @@ void main() {
       Permission.viewShiftTotals,
       Permission.checkDrawer,
       Permission.collectCash,
+      Permission.reviewCash,
     };
     const supervisorOnly = {
       Permission.requestPriceChange,

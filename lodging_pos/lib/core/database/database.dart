@@ -36,6 +36,7 @@ part 'database.g.dart';
     Voids,
     RefundDecisions,
     PriceDecisions,
+    CashReviews,
     Expenses,
     InventoryItems,
     // System
@@ -62,7 +63,8 @@ class AppDatabase extends _$AppDatabase {
   /// stay charge, v3 (FD-6) the room and bed to each stay, v4 (FD-9) task
   /// cancelling, v5 (FD-11) the shift close details, v6 the roles, v7 the
   /// refund payout phone, v8 price requests, v9 the local sync bookkeeping,
-  /// v10 the blind close and the drawer's ledger (Story B).
+  /// v10 the blind close and the drawer's ledger (Story B), v11 the cash
+  /// reviews (Story B3).
   /// Snapshots:
   /// `drift_schemas/app_database/`.
   /// For every schema change: bump this, change the tables, run
@@ -71,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -307,6 +309,13 @@ class AppDatabase extends _$AppDatabase {
       await m.createTable(schema.drawerEvents);
       await m.createTrigger(schema.drawerEventsNoUpdate);
       await m.createTrigger(schema.drawerEventsNoDelete);
+    },
+    // v11 (Story B3): the cash reviews, a new table that starts empty (the
+    // decisions come from the cloud or this desk), with its guards.
+    from10To11: (m, schema) async {
+      await m.createTable(schema.cashReviews);
+      await m.createTrigger(schema.cashReviewsNoUpdate);
+      await m.createTrigger(schema.cashReviewsNoDelete);
     },
   );
 

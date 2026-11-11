@@ -23,6 +23,7 @@ class DashboardRepository {
           _db.stayCharges,
           _db.priceRequests,
           _db.priceDecisions,
+          _db.cashReviews,
         ]),
       )
       .map((_) {});

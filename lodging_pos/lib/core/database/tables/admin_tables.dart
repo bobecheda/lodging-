@@ -46,6 +46,33 @@ class RefundDecisions extends Table with SyncedColumns {
   ];
 }
 
+/// v11 (Story B3): the decision on a shift close or drawer count that needs
+/// review: one per target, written once and never changed. Decided in the
+/// cloud first (`decide_cash_review`) by the supervisor or the owner and
+/// pulled; mirrored here when decided on this desk.
+@DataClassName('CashReviewRow')
+class CashReviews extends Table with SyncedColumns {
+  TextColumn get targetType =>
+      text().check(targetType.isIn(['shift', 'drawer_event']))();
+  TextColumn get targetId => text()();
+  TextColumn get decision =>
+      text().check(decision.isIn(['approved', 'rejected']))();
+  TextColumn get reason =>
+      text().nullable().check(reason.length.isSmallerOrEqualValue(200))();
+  TextColumn get decidedBy => text().references(Users, #id)();
+  DateTimeColumn get decidedAt => dateTime()();
+
+  @override
+  List<Set<Column<Object>>> get uniqueKeys => [
+    {targetType, targetId},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (decision = 'approved' OR coalesce(length(trim(reason)), 0) > 0)",
+  ];
+}
+
 /// v8: the owner's answer to a price request (BR-2): one per request, written
 /// once and never changed. Owner-owned like `refund_decisions`; an approval
 /// changes the category's price in the same transaction.

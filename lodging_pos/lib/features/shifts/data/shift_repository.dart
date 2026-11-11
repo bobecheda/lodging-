@@ -329,7 +329,7 @@ class ShiftRepository {
     return _db
         .customSelect(
           'SELECT 1',
-          readsFrom: {_db.shifts, _db.drawerEvents, _db.users},
+          readsFrom: {_db.shifts, _db.drawerEvents, _db.users, _db.cashReviews},
         )
         .watch()
         .asyncMap((_) => drawerChain(user));

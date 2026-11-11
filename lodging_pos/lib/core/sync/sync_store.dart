@@ -90,7 +90,11 @@ class SyncStore {
 
   /// The owner's tables: written in the cloud first, only through the
   /// owner's sign-in (the first upload sends the earlier ones).
-  static const ownerTables = ['refund_decisions', 'price_decisions'];
+  static const ownerTables = [
+    'refund_decisions',
+    'price_decisions',
+    'cash_reviews',
+  ];
 
   // ── Bookkeeping ────────────────────────────────────────────────────────
 

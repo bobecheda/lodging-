@@ -7,6 +7,7 @@ import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../../bed_board/domain/bed_board.dart';
 import '../../dashboard/domain/dashboard.dart';
+import '../../shifts/domain/cash_review.dart';
 import '../../price_requests/domain/price_request.dart';
 import '../../setup/domain/bed_category.dart';
 
@@ -252,6 +253,7 @@ final class OwnerToday {
     this.categories = const [],
     this.priceRequests = const [],
     this.unpaid = const [],
+    this.rejectedReviews = const [],
   });
 
   final String lodgingName;
@@ -280,6 +282,9 @@ final class OwnerToday {
 
   /// Guests in a bed whose payment was voided (AD-7).
   final List<UnpaidStay> unpaid;
+
+  /// Cash reviews rejected since [attentionSince] (Story B3).
+  final List<RejectedReview> rejectedReviews;
 
   /// Void rows the desks hold because the cloud refused them.
   int get voidsHeld => desks.fold(0, (sum, d) => sum + d.voidsHeld);

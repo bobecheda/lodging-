@@ -76,6 +76,9 @@ class TodayScreen extends ConsumerWidget {
                       onTap: () =>
                           context.go(Routes.refundDetailFor(r.refundId)),
                     ),
+                  // A cash review rejected (Story B3).
+                  for (final r in d.rejectedReviews)
+                    AttentionRow.rejectedReview(r),
                   // A guest in a bed with no money behind the nights.
                   for (final u in d.unpaid)
                     AttentionRow.unpaid(
