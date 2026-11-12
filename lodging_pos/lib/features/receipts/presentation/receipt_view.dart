@@ -189,7 +189,7 @@ class _ReceiptActionsState extends ConsumerState<ReceiptActions> {
         const SizedBox(height: Space.x8),
         Text(
           'The first print or save is the original; later ones say COPY.',
-          style: t.small,
+          style: t.secondary,
         ),
       ],
     );
@@ -222,7 +222,7 @@ class ReceiptView extends StatelessWidget {
                   value,
                   key: key,
                   textAlign: TextAlign.end,
-                  style: mono ? t.monoStrong : t.bodyStrong,
+                  style: mono ? t.moneySmall : t.bodyMedium,
                 ),
               ),
             ],
@@ -245,7 +245,7 @@ class ReceiptView extends StatelessWidget {
             Text(
               r.lodgingName,
               textAlign: TextAlign.center,
-              style: t.cardTitle.copyWith(color: c.marine),
+              style: t.pageTitle.copyWith(color: c.marine),
             ),
             const SizedBox(height: Space.x16),
             rule(),
@@ -260,12 +260,12 @@ class ReceiptView extends StatelessWidget {
                       Text(
                         r.title,
                         key: const ValueKey('receipt.title'),
-                        style: t.capsLabel.copyWith(color: c.muted),
+                        style: t.meta.copyWith(color: c.muted),
                       ),
                       Text(
                         r.receiptNumber,
                         key: const ValueKey('receipt.number'),
-                        style: t.moneyLarge,
+                        style: t.money,
                       ),
                     ],
                   ),
@@ -273,7 +273,7 @@ class ReceiptView extends StatelessWidget {
                 Text(
                   r.issued,
                   textAlign: TextAlign.end,
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
               ],
             ),
@@ -304,13 +304,13 @@ class ReceiptView extends StatelessWidget {
                     Text(
                       'VOID',
                       textAlign: TextAlign.center,
-                      style: t.moneyLarge.copyWith(color: c.redText),
+                      style: t.money.copyWith(color: c.redText),
                     ),
                     Text(
                       line,
                       key: const ValueKey('receipt.voidLine'),
                       textAlign: TextAlign.center,
-                      style: t.small.copyWith(color: c.redText),
+                      style: t.secondary.copyWith(color: c.redText),
                     ),
                   ],
                 ),
@@ -331,11 +331,11 @@ class ReceiptView extends StatelessWidget {
             const SizedBox(height: Space.x6),
             Row(
               children: [
-                Expanded(child: Text(r.totalLabel, style: t.bodyStrong)),
+                Expanded(child: Text(r.totalLabel, style: t.bodyMedium)),
                 Text(
                   r.totalText,
                   key: const ValueKey('receipt.total'),
-                  style: t.moneyLarge,
+                  style: t.money,
                 ),
               ],
             ),
@@ -348,14 +348,14 @@ class ReceiptView extends StatelessWidget {
             Text(
               r.footer.first,
               textAlign: TextAlign.center,
-              style: t.bodyStrong,
+              style: t.bodyMedium,
             ),
             for (final line in r.footer.skip(1))
               Text(
                 line,
                 key: const ValueKey('receipt.footer'),
                 textAlign: TextAlign.center,
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
           ],
         ),

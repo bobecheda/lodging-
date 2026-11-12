@@ -104,7 +104,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(ValueKey('priceRequests.status.$id')),
-          matching: find.text('WAITING FOR OWNER APPROVAL'),
+          matching: find.text('Waiting for owner approval'),
         ),
         findsOneWidget,
       );
@@ -181,7 +181,7 @@ void main() {
 
       await tapKey(tester, 'today.attention.price.$id');
       expect(locationOf(app), Routes.adminPrices);
-      expect(find.text('REQUEST FROM GRACE (SUPERVISOR)'), findsOneWidget);
+      expect(find.text('Request from Grace (supervisor)'), findsOneWidget);
       expect(text(tester, 'priceRequest.change.$id'), 'KES 700 → 750');
       expect(
         text(tester, 'priceRequest.reason.$id'),

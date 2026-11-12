@@ -101,7 +101,7 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
               Text(
                 now == null ? '' : formatDayDateTime(now),
                 key: const ValueKey('board.now'),
-                style: t.small,
+                style: t.secondary,
               ),
             ],
           ),
@@ -302,7 +302,7 @@ class _OverstayBar extends StatelessWidget {
                     text:
                         'Overstay · Room ${first.roomNumber}, Bed '
                         '${first.label.code} · ${first.guestName}',
-                    style: t.bodyStrong.copyWith(color: c.redText),
+                    style: t.bodyMedium.copyWith(color: c.redText),
                   ),
                   TextSpan(
                     text:
@@ -400,9 +400,9 @@ class _StatusChip extends StatelessWidget {
                   ),
                   const SizedBox(width: Space.x8),
                 ],
-                Text(label, style: t.bodyStrong.copyWith(color: fg)),
+                Text(label, style: t.bodyMedium.copyWith(color: fg)),
                 const SizedBox(width: Space.x8),
-                Text('$count', style: t.monoStrong.copyWith(color: fg)),
+                Text('$count', style: t.moneySmall.copyWith(color: fg)),
               ],
             ),
           ),
@@ -434,7 +434,7 @@ class _CategoryMenu extends StatelessWidget {
       child: DropdownButton<String?>(
         key: const ValueKey('board.category'),
         value: categories.containsKey(selected) ? selected : null,
-        style: t.bodyStrong.copyWith(color: c.marine),
+        style: t.bodyMedium.copyWith(color: c.marine),
         icon: Icon(Icons.expand_more_rounded, color: c.marine),
         borderRadius: BorderRadius.circular(Radii.control),
         dropdownColor: c.white,
@@ -555,14 +555,14 @@ class _RoomCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text('Room ${room.number}', style: t.bodyStrong),
+                  child: Text('Room ${room.number}', style: t.secondaryMedium),
                 ),
                 // FD-9: a room shows Not cleaned while any bed is.
                 if (roomNeedsCleaning([
                   for (final b in room.beds) b.cleanliness,
                 ])) ...[
                   StatusBadge(
-                    'TO CLEAN',
+                    'To clean',
                     key: ValueKey('board.room.${room.number}.toClean'),
                     tone: BadgeTone.warning,
                   ),
@@ -570,7 +570,7 @@ class _RoomCard extends StatelessWidget {
                 ],
                 Text(
                   beds == 1 ? '1 bed' : '$beds beds',
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
               ],
             ),

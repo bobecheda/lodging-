@@ -64,7 +64,7 @@ class MoneyInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final valueStyle = large ? t.moneyLarge : t.monoStrong;
+    final valueStyle = large ? t.money : t.moneySmall;
     return LabeledField(
       label: label,
       semanticLabel: semanticLabel,
@@ -87,7 +87,7 @@ class MoneyInput extends StatelessWidget {
         ),
         child: Text(
           'KES',
-          style: (large ? t.monoStrong : t.mono).copyWith(color: c.muted),
+          style: (large ? t.moneySmall : t.moneySmall).copyWith(color: c.muted),
         ),
       ),
     );

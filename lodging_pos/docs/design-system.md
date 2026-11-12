@@ -56,7 +56,7 @@ decide a build question:
 | `butterTint` (new) | `#FDF6DE` | Soft warning background (Figma `status/butter-tint`) |
 
 **Retired:**
-- `gold` `#C9962E` (M-Pesa on money bars). Money split bars use two shades of one hue: M-Pesa `marine`, cash `marineTint` with a marine outline.
+- `gold` `#C9962E` (M-Pesa on money bars). Money split bars use two shades of one hue: M-Pesa `marine`, cash `marineTint` with a marine outline. The phone's 14-day bars: today solid marine, earlier days `marineTint` with a marine outline (until PR 9 restyles Money).
 - `navText`, `navMuted`, `navActive` and `syncOnline` (the marine sidebar's colours) go with the sidebar in PR 3.
 - Brand colours stay for the wordmark only: `brandCream`, `brandGoldOnDark`, `brandGoldOnLight`.
 
@@ -113,12 +113,12 @@ in PR 3, when the sidebar's last 700 override goes. Minimum size 12.
 
 | v2 style (`LodgingType`) | Size / weight | Replaces |
 |---|---|---|
-| `pageTitle` | 24/600 | `pageTitle` 24/800, `heroTitle` 36/800 |
-| `sectionTitle` | 18/600 | `sectionTitle` 17/800, `cardTitle` 28/800 |
+| `pageTitle` | 24/600 | `pageTitle` 24/800, `heroTitle` 36/800, `cardTitle` 28/800 (panel and card headings) |
+| `sectionTitle` | 18/600 | `sectionTitle` 17/800 |
 | `body` | 16/400 | `body` 14/500 |
 | `bodyMedium` | 16/500 | `bodyStrong` 14/700 |
-| `secondary` | 14/400 | `small` 13/500 |
-| `secondaryMedium` | 14/500 | `fieldLabel` 13/700, `cardHeading` 13/800 caps (now sentence case) |
+| `secondary` | 14/400 | `small` 13/500, `cardHeading` 13/800 caps (card headings, now sentence case, still muted) |
+| `secondaryMedium` | 14/500 | `fieldLabel` 13/700, `button` 15/800, `nav` 14/600 |
 | `meta` | 12/500 | `capsLabel` 11/800 caps, `smallStrong` 12/700 |
 | `moneyHero` | mono 30/600 | `moneyHero` 30/600 |
 | `money` | mono 18/600 | `moneyLarge` 22/600, `stepperValue` 22/600 |
@@ -138,14 +138,19 @@ stay in `wordmark_style.dart`.
 `smallStrong`, `fieldLabel`, `cardHeading`, `capsLabel`, `button`, `nav`,
 `mono`, `monoStrong`, `moneyLarge`, `stepperValue`.
 
-**Policy tests (PR 2):** no `FontWeight` above w600 and no size below 12
-outside the wordmark and the receipt PDF (`receipt_print_style.dart`).
-Caps headings become sentence case, so tests that look for the old caps
-text change with them.
+**Policy tests (PR 2):** no `FontWeight` above w600 anywhere in `lib/`
+except the receipt PDF (`receipt_print_style.dart`); the scale itself has
+nothing below 12 and no letter-spacing (`test/app/theme/type_scale_test.dart`).
+Caps headings and status labels become sentence case ("Needs your
+attention", "Ready", "Waiting for owner approval"). Receipt marks stay in
+capitals, as on paper: RECEIPT, REFUND, VOID, COPY.
 
 ## Motion (PR 2 tokens; used from PR 3)
 
-A `LodgingMotion` `ThemeExtension`, read with `LodgingMotion.of(context)`.
+`LodgingMotion` (`lib/app/theme/lodging_motion.dart`), read with
+`LodgingMotion.of(context)`. Its tokens don't vary by theme, so it is two
+constants (`standard`, `instant`) picked by reduced motion, not a
+`ThemeExtension`.
 
 | Moment | Animation | Tokens |
 |---|---|---|

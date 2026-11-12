@@ -445,9 +445,9 @@ class _StepPill extends StatelessWidget {
             if (step == _Step.done)
               Icon(Icons.check_rounded, size: 16, color: fg)
             else
-              Text('$number', style: t.smallStrong.copyWith(color: fg)),
+              Text('$number', style: t.meta.copyWith(color: fg)),
             const SizedBox(width: Space.x6),
-            Text(label, style: t.smallStrong.copyWith(color: fg)),
+            Text(label, style: t.meta.copyWith(color: fg)),
           ],
         ),
       ),
@@ -526,12 +526,12 @@ class _BedCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Room ${r.number} · Bed ${b.label.code}',
-                          style: t.bodyStrong,
+                          style: t.bodyMedium,
                         ),
                       ),
                       Text(
                         '${b.categoryName} · ${formatKes(b.pricePerNight)}',
-                        style: t.small.copyWith(color: c.muted),
+                        style: t.secondary.copyWith(color: c.muted),
                       ),
                     ],
                   ),
@@ -570,7 +570,7 @@ class _BedCard extends StatelessWidget {
                   Text(
                     '${bed.categoryName} · ${formatKes(bed.pricePerNight)} / '
                     'night',
-                    style: t.small.copyWith(color: c.muted),
+                    style: t.secondary.copyWith(color: c.muted),
                   ),
                 ],
               ),
@@ -603,7 +603,7 @@ class _BedCard extends StatelessWidget {
                 ? Text(
                     '${other.categoryName} · ${formatKes(other.pricePerNight)}'
                     ' / night',
-                    style: t.small.copyWith(color: c.muted),
+                    style: t.secondary.copyWith(color: c.muted),
                   )
                 : null,
           ),
@@ -629,10 +629,7 @@ class _BedCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'BED',
-                    style: t.capsLabel.copyWith(color: c.muted),
-                  ),
+                  child: Text('Bed', style: t.meta.copyWith(color: c.muted)),
                 ),
                 if (bed != null)
                   TextButton(
@@ -703,8 +700,8 @@ class _StayCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: t.small.copyWith(color: c.muted)),
-          Text(value, key: key, style: t.bodyStrong),
+          Text(label, style: t.secondary.copyWith(color: c.muted)),
+          Text(value, key: key, style: t.bodyMedium),
         ],
       ),
     );
@@ -715,7 +712,7 @@ class _StayCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('STAY & PAYMENT', style: t.capsLabel.copyWith(color: c.muted)),
+            Text('Stay & payment', style: t.meta.copyWith(color: c.muted)),
             const SizedBox(height: Space.x12),
             Row(
               children: [
@@ -723,10 +720,10 @@ class _StayCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Nights', style: t.bodyStrong),
+                      Text('Nights', style: t.bodyMedium),
                       Text(
                         'Checkout is $checkoutLabel',
-                        style: t.small.copyWith(color: c.muted),
+                        style: t.secondary.copyWith(color: c.muted),
                       ),
                     ],
                   ),
@@ -745,7 +742,7 @@ class _StayCard extends StatelessWidget {
               Text(
                 nightsError!,
                 key: const ValueKey('checkIn.nightsError'),
-                style: t.small.copyWith(color: c.redText),
+                style: t.secondary.copyWith(color: c.redText),
               ),
             ],
             const SizedBox(height: Space.x12),
@@ -789,7 +786,7 @@ class _StayCard extends StatelessWidget {
                               '${s.charge.nights} × '
                                   '${formatKes(s.charge.pricePerNight)}',
                             ].join(' · '),
-                            style: t.small.copyWith(color: c.muted),
+                            style: t.secondary.copyWith(color: c.muted),
                           ),
                     ],
                   ),
@@ -797,12 +794,12 @@ class _StayCard extends StatelessWidget {
                 Text(
                   quote == null ? '—' : formatKes(quote.total),
                   key: const ValueKey('checkIn.total'),
-                  style: t.moneyLarge,
+                  style: t.money,
                 ),
               ],
             ),
             const SizedBox(height: Space.x16),
-            Text('Paid by', style: t.fieldLabel),
+            Text('Paid by', style: t.secondaryMedium),
             const SizedBox(height: Space.x6),
             SegmentedChoice<PaymentMethod>(
               options: [
@@ -817,7 +814,7 @@ class _StayCard extends StatelessWidget {
                 label: 'M-Pesa transaction code',
                 controller: code,
                 fieldKey: const ValueKey('checkIn.mpesaCode'),
-                textStyle: t.monoStrong,
+                textStyle: t.moneySmall,
                 helperText:
                     'Each code can be used once. A used code is '
                     'refused.',
@@ -846,7 +843,7 @@ class _StayCard extends StatelessWidget {
               Text(
                 'Still to choose: ${missing.join(', ')}.',
                 key: const ValueKey('checkIn.missing'),
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
               const SizedBox(height: Space.x8),
             ],
@@ -860,7 +857,7 @@ class _StayCard extends StatelessWidget {
             Text(
               'The bed becomes Occupied only after this is saved.',
               textAlign: TextAlign.center,
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
           ],
         ),
@@ -908,7 +905,7 @@ class _Done extends StatelessWidget {
             '${saved.guestName} · '
             '${checkedInSummary(roomNumber: r.roomNumber, labels: r.labels)}',
             key: const ValueKey('checkIn.done.summary'),
-            style: t.small.copyWith(color: c.inkSoft),
+            style: t.secondary.copyWith(color: c.inkSoft),
           ),
         ],
       ),

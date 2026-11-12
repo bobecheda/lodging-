@@ -25,6 +25,8 @@ A redesign (v2) is agreed but not built: decisions in `docs/ui-redesign-brief.md
 
 ## Colours
 
+> **Partly superseded (v2 PR 2):** green, green-tint, butter-tint and the room category colours are added, and the M-Pesa gold `#C9962E` is retired (M-Pesa marine, cash marine-tint with a marine outline). See design-system.md, "Colour".
+
 The owner's colours are marine blue, bright red and butter yellow. Each one has **one meaning**; never use a colour for anything outside its meaning.
 
 | Token | Hex | Used for |
@@ -69,6 +71,8 @@ Every tile shows its category; only Ready tiles show a price (the category's cur
 Overstays are also listed in a one-line red-tint alert bar, fixed above the bed board's grid: the oldest overstay and how many more. Its compact **Extend** (red filled, FD-7) and **Check out** (white, redText outline, FD-8) buttons both open the oldest overstay's bed panel.
 
 ## Typography
+
+> **Superseded (v2 PR 2)** by design-system.md, "Type": weights 400/500/600, body 16, minimum 12, no caps labels. The wordmark notes below still hold.
 
 - **Manrope** for all interface text. Weights: 800 headings and labels-in-caps, 700 labels and buttons, 600 secondary, 500 body.
 - **IBM Plex Mono** (500/600) for receipt numbers, M-Pesa codes, money totals and counts.

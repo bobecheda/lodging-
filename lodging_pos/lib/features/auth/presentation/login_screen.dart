@@ -154,10 +154,7 @@ class _LockChip extends StatelessWidget {
           Icon(Icons.lock_outline_rounded, size: 16, color: c.butterText),
           const SizedBox(width: Space.x6),
           Flexible(
-            child: Text(
-              text,
-              style: t.smallStrong.copyWith(color: c.butterText),
-            ),
+            child: Text(text, style: t.meta.copyWith(color: c.butterText)),
           ),
         ],
       ),

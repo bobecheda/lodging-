@@ -44,7 +44,7 @@ class CashScreen extends ConsumerWidget {
       ),
       AsyncData(:final value) when value.isEmpty => Text(
         'Nothing yet. The chain starts with the starting cash.',
-        style: t.small,
+        style: t.secondary,
       ),
       AsyncData(:final value) => ListView.separated(
         key: const ValueKey('cash.chain'),
@@ -62,7 +62,7 @@ class CashScreen extends ConsumerWidget {
         Text(
           'The drawer’s running ledger. A float that isn’t the count before '
           'it is a break in the chain.',
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
         const SizedBox(height: Space.x16),
         Expanded(
@@ -83,13 +83,13 @@ class CashScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'The drawer should hold now',
-                              style: t.small.copyWith(color: c.muted),
+                              style: t.secondary.copyWith(color: c.muted),
                             ),
                             const SizedBox(height: Space.x4),
                             Text(
                               now == null ? 'Not counted yet' : formatKes(now),
                               key: const ValueKey('cash.now'),
-                              style: t.moneyLarge,
+                              style: t.money,
                             ),
                           ],
                         ),
@@ -195,7 +195,7 @@ class _StartCardState extends ConsumerState<_StartCard> {
             Text(
               'Count all the cash in the drawer on the day, before the first '
               'shift. Every float follows from it.',
-              style: t.small,
+              style: t.secondary,
             ),
             const SizedBox(height: Space.x12),
             MoneyInput(
@@ -255,18 +255,18 @@ class _EntryTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(e.title, style: t.bodyStrong)),
+              Expanded(child: Text(e.title, style: t.bodyMedium)),
               Text(
                 formatDayDateTime(e.at),
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ),
-          Text(e.detail, style: t.small.copyWith(color: c.inkSoft)),
+          Text(e.detail, style: t.secondary.copyWith(color: c.inkSoft)),
           if (e is ShiftOpenedEntry && e.isBreak)
             Text(
               'Break in the chain.',
-              style: t.smallStrong.copyWith(color: c.butterText),
+              style: t.meta.copyWith(color: c.butterText),
             ),
           if (e is DrawerCountEntry && e.needsReview)
             _ReviewBox(ReviewTargetKind.drawerEvent, e.record.id),
@@ -275,29 +275,29 @@ class _EntryTile extends StatelessWidget {
           if (e is DrawerCountEntry) ...[
             if (recountLine(e.record.firstCount, e.record.counted)
                 case final line?)
-              Text(line, style: t.small.copyWith(color: c.muted)),
+              Text(line, style: t.secondary.copyWith(color: c.muted)),
             if (e.matchedOnRecount)
-              Text('Matched only on recount.', style: t.small),
+              Text('Matched only on recount.', style: t.secondary),
             if (e.needsReview)
               Text(
                 'Needs review.',
-                style: t.smallStrong.copyWith(color: c.butterText),
+                style: t.meta.copyWith(color: c.butterText),
               ),
             if (e.note case final note?)
-              Text('“$note”', style: t.small.copyWith(color: c.inkSoft)),
+              Text('“$note”', style: t.secondary.copyWith(color: c.inkSoft)),
           ],
           if (e is ShiftClosedEntry) ...[
             if (recountLine(e.firstCount, e.counted) case final line?)
-              Text(line, style: t.small.copyWith(color: c.muted)),
+              Text(line, style: t.secondary.copyWith(color: c.muted)),
             if (e.matchedOnRecount)
-              Text('Matched only on recount.', style: t.small),
+              Text('Matched only on recount.', style: t.secondary),
             if (e.needsReview)
               Text(
                 'Needs review.',
-                style: t.smallStrong.copyWith(color: c.butterText),
+                style: t.meta.copyWith(color: c.butterText),
               ),
             if (e.note case final note?)
-              Text('“$note”', style: t.small.copyWith(color: c.inkSoft)),
+              Text('“$note”', style: t.secondary.copyWith(color: c.inkSoft)),
           ],
         ],
       ),
@@ -375,7 +375,7 @@ class _ReviewBoxState extends ConsumerState<_ReviewBox> {
         child: Text(
           info.line,
           key: ValueKey('review.decided.$key'),
-          style: t.smallStrong.copyWith(
+          style: t.meta.copyWith(
             color: info.decision == ReviewDecision.rejected
                 ? c.redText
                 : c.marine,
@@ -393,7 +393,7 @@ class _ReviewBoxState extends ConsumerState<_ReviewBox> {
             Text(
               blocker,
               key: ValueKey('review.blocked.$key'),
-              style: t.small.copyWith(color: c.inkSoft),
+              style: t.secondary.copyWith(color: c.inkSoft),
             )
           else
             Row(

@@ -87,7 +87,9 @@ class AppButton extends StatelessWidget {
       _Kind.urgent => c.redDark,
       _ => c.marineTintStrong,
     };
-    final textStyle = (compact ? t.bodyStrong : t.button).copyWith(color: text);
+    final textStyle = (compact ? t.bodyMedium : t.secondaryMedium).copyWith(
+      color: text,
+    );
 
     final content = busy
         ? SizedBox.square(

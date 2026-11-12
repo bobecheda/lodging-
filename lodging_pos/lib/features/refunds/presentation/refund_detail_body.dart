@@ -54,7 +54,7 @@ class RefundDetailBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: t.cardHeading),
+            Text(title, style: t.secondary),
             const SizedBox(height: Space.x10),
             ...children,
           ],
@@ -73,7 +73,7 @@ class RefundDetailBody extends StatelessWidget {
             child: Text(
               value,
               key: key,
-              style: t.bodyStrong,
+              style: t.bodyMedium,
               textAlign: TextAlign.end,
             ),
           ),
@@ -96,18 +96,18 @@ class RefundDetailBody extends StatelessWidget {
           child: Text('Refund request', style: t.pageTitle),
         ),
         const SizedBox(height: Space.x16),
-        card('GUEST', [
+        card('Guest', [
           Text(v.guestName, style: t.sectionTitle),
           const SizedBox(height: Space.x4),
           Text(
             '$maskedPhone · Room ${v.roomNumber} · '
             'Bed ${v.bedLabel} · ${d.categoryName}',
             key: const ValueKey('refund.guest'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
         ]),
         const SizedBox(height: Space.x12),
-        card('THE STAY', [
+        card('The stay', [
           row('Checked in', formatDayDateComma(d.checkInAt)),
           for (final (i, ch) in d.charges.indexed)
             row(
@@ -139,7 +139,7 @@ class RefundDetailBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('REFUND', style: t.cardHeading.copyWith(color: c.marine)),
+              Text('Refund', style: t.secondary.copyWith(color: c.marine)),
               const SizedBox(height: Space.x8),
               Text(
                 formatKes(r.amount),
@@ -151,7 +151,7 @@ class RefundDetailBody extends StatelessWidget {
                 '${r.nights} ${r.nights == 1 ? 'night' : 'nights'} × '
                 '${formatKes(r.pricePerNight)} (check-in price). Worked out '
                 'by the system; it can’t be changed.',
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
             ],
           ),
@@ -163,7 +163,7 @@ class RefundDetailBody extends StatelessWidget {
           'pays it from the cash drawer or M-Pesa and prints a REFUND '
           'receipt.',
           key: const ValueKey('refund.requestedBy'),
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
         const SizedBox(height: Space.x20),
         if (decision != null)
@@ -262,7 +262,7 @@ class _RejectRefundDialogState extends State<RejectRefundDialog> {
             Text(
               '${widget.guestName} · ${formatKes(widget.amount)}. The desk '
               'will see your reason.',
-              style: t.small,
+              style: t.secondary,
             ),
             const SizedBox(height: Space.x12),
             LabeledField(

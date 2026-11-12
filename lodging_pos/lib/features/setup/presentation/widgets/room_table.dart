@@ -36,10 +36,10 @@ class RoomTable extends StatelessWidget {
       ),
       child: Row(
         children: [
-          cell(_room, Text('ROOM', style: t.cardHeading)),
-          cell(_floor, Text('FLOOR', style: t.cardHeading)),
-          cell(_beds, Text('BEDS', style: t.cardHeading)),
-          cell(_status, Text('STATUS', style: t.cardHeading)),
+          cell(_room, Text('Room', style: t.secondary)),
+          cell(_floor, Text('Floor', style: t.secondary)),
+          cell(_beds, Text('Beds', style: t.secondary)),
+          cell(_status, Text('Status', style: t.secondary)),
           const SizedBox(width: 64),
         ],
       ),
@@ -70,7 +70,7 @@ class RoomTable extends StatelessWidget {
                     children: [
                       cell(
                         _room,
-                        Text('Room ${room.number}', style: t.bodyStrong),
+                        Text('Room ${room.number}', style: t.bodyMedium),
                       ),
                       cell(
                         _floor,
@@ -93,11 +93,11 @@ class RoomTable extends StatelessWidget {
                           alignment: AlignmentDirectional.centerStart,
                           child: room.isActive
                               ? const StatusBadge(
-                                  'ACTIVE',
+                                  'Active',
                                   tone: BadgeTone.active,
                                 )
                               : const StatusBadge(
-                                  'CLOSED · REPAIRS',
+                                  'Closed · repairs',
                                   tone: BadgeTone.warning,
                                 ),
                         ),
@@ -149,7 +149,7 @@ class BedChip extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: t.smallStrong.copyWith(color: bed.isActive ? c.marine : c.muted),
+        style: t.meta.copyWith(color: bed.isActive ? c.marine : c.muted),
       ),
     );
   }

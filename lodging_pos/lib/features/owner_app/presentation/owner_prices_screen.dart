@@ -170,10 +170,7 @@ class _OwnerPricesState extends ConsumerState<OwnerPricesScreen> {
             ),
             const SizedBox(height: Space.x16),
           ],
-          Text(
-            'PRICE PER NIGHT',
-            style: t.cardHeading.copyWith(color: c.muted),
-          ),
+          Text('Price per night', style: t.secondary.copyWith(color: c.muted)),
           const SizedBox(height: Space.x12),
           Card(
             margin: EdgeInsets.zero,
@@ -196,7 +193,7 @@ class _OwnerPricesState extends ConsumerState<OwnerPricesScreen> {
             'A new price applies to check-ins after the desk receives it, '
             'usually within a minute. Guests already staying keep the price '
             'they checked in at.',
-            style: t.small.copyWith(color: c.inkSoft),
+            style: t.secondary.copyWith(color: c.inkSoft),
           ),
         ],
       ),
@@ -231,12 +228,12 @@ class _CategoryRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(cat.name, style: t.bodyStrong),
+                    Text(cat.name, style: t.bodyMedium),
                     Text(
                       cat.isActive
                           ? category.bedsLine
                           : 'Closed · open it again on the desk',
-                      style: t.small.copyWith(color: c.muted),
+                      style: t.secondary.copyWith(color: c.muted),
                     ),
                   ],
                 ),
@@ -245,7 +242,7 @@ class _CategoryRow extends StatelessWidget {
               Text(
                 formatKes(cat.pricePerNight),
                 key: ValueKey('owner.price.${cat.id}.value'),
-                style: t.monoStrong.copyWith(
+                style: t.moneySmall.copyWith(
                   color: cat.isActive ? c.ink : c.muted,
                 ),
               ),
@@ -384,7 +381,7 @@ class _EditPriceSheetState extends ConsumerState<EditPriceSheet> {
               Text(
                 'Now ${formatKes(_category.pricePerNight)} · '
                 '${widget.category.bedsLine}',
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
               const SizedBox(height: Space.x12),
               MoneyInput(
@@ -404,7 +401,7 @@ class _EditPriceSheetState extends ConsumerState<EditPriceSheet> {
                   '(${formatPriceChange(change.newPrice - change.oldPrice)} a '
                   'night). Applies to new check-ins only.',
                   key: const ValueKey('editPrice.change'),
-                  style: t.small.copyWith(color: c.inkSoft),
+                  style: t.secondary.copyWith(color: c.inkSoft),
                 ),
               ],
               const SizedBox(height: Space.x16),

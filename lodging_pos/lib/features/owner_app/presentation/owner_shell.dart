@@ -117,7 +117,7 @@ class _Header extends ConsumerWidget {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final snapshot = ref.watch(ownerTodayDataProvider).value;
-    final onMarine = t.small.copyWith(color: c.brandCream);
+    final onMarine = t.secondary.copyWith(color: c.brandCream);
     final desk = snapshot == null ? null : deskLine(snapshot.today.desks, now);
     return ColoredBox(
       color: c.marine,
@@ -159,7 +159,7 @@ class _Header extends ConsumerWidget {
                     offline: snapshot.offline,
                   ),
                   key: const ValueKey('owner.updated'),
-                  style: t.smallStrong.copyWith(
+                  style: t.meta.copyWith(
                     color: snapshot.offline ? c.butter : c.white,
                   ),
                 ),

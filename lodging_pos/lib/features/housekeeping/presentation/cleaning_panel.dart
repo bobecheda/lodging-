@@ -131,8 +131,8 @@ class _CleaningPanelState extends ConsumerState<CleaningPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'NEEDS CLEANING',
-                style: t.capsLabel.copyWith(color: c.butterText),
+                'Needs cleaning',
+                style: t.meta.copyWith(color: c.butterText),
               ),
               Text(switch (bed.lastCheckoutAt) {
                 final DateTime at => 'Last checkout ${formatDayDateComma(at)}.',
@@ -245,12 +245,12 @@ class _CleaningPanelState extends ConsumerState<CleaningPanel> {
                       child: Text(
                         'Room ${bed.roomNumber} · Bed ${bed.label.code}',
                         key: const ValueKey('cleaning.title'),
-                        style: t.cardTitle,
+                        style: t.pageTitle,
                       ),
                     ),
                     Text(
                       bed.categoryName,
-                      style: t.small.copyWith(color: c.muted),
+                      style: t.secondary.copyWith(color: c.muted),
                     ),
                   ],
                 ),

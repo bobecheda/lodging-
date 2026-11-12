@@ -61,10 +61,10 @@ class Note extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (title != null)
-                    Text(title!, style: t.bodyStrong.copyWith(color: fg)),
+                    Text(title!, style: t.bodyMedium.copyWith(color: fg)),
                   Text(
                     message,
-                    style: (title == null ? t.bodyStrong : t.body).copyWith(
+                    style: (title == null ? t.bodyMedium : t.body).copyWith(
                       color: fg,
                     ),
                   ),
@@ -111,7 +111,7 @@ class StatusBadge extends StatelessWidget {
               color: bg,
               borderRadius: BorderRadius.circular(Radii.badge),
             ),
-      child: Text(text, style: t.capsLabel.copyWith(color: fg)),
+      child: Text(text, style: t.meta.copyWith(color: fg)),
     );
   }
 }

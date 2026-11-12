@@ -125,7 +125,7 @@ class _EditRoomPanelState extends ConsumerState<EditRoomPanel> {
           ],
         ),
         const SizedBox(height: Space.x20),
-        Text('Beds in this room (1 or 2)', style: t.fieldLabel),
+        Text('Beds in this room (1 or 2)', style: t.secondaryMedium),
         const SizedBox(height: Space.x8),
         for (final bed in room.beds)
           _BedCard(
@@ -168,7 +168,7 @@ class _EditRoomPanelState extends ConsumerState<EditRoomPanel> {
         Text(
           'Changing a category affects new check-ins only. Guests already '
           'staying keep their price.',
-          style: t.small,
+          style: t.secondary,
         ),
         const SizedBox(height: Space.x16),
         if (_error != null) ...[
@@ -213,7 +213,7 @@ class _EditRoomPanelState extends ConsumerState<EditRoomPanel> {
                 : () => _run(() => repo.reactivateRoom(owner, room.id)),
           ),
           const SizedBox(height: Space.x8),
-          Text('Its beds come back as needing cleaning.', style: t.small),
+          Text('Its beds come back as needing cleaning.', style: t.secondary),
         ],
         if (roomBlocker != null) ...[
           const SizedBox(height: Space.x8),
@@ -295,7 +295,7 @@ class _BedCard extends StatelessWidget {
               runSpacing: Space.x8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const StatusBadge('CLOSED · REPAIRS', tone: BadgeTone.warning),
+                const StatusBadge('Closed · repairs', tone: BadgeTone.warning),
                 TextButton(
                   key: ValueKey('edit.reactivate$code'),
                   onPressed: busy ? null : onReactivate,
@@ -306,7 +306,7 @@ class _BedCard extends StatelessWidget {
           if (blocker != null)
             Note.error(blocker, key: ValueKey('edit.bedBlocker$code')),
           if (!bed.isActive)
-            Text('It comes back as needing cleaning.', style: t.small),
+            Text('It comes back as needing cleaning.', style: t.secondary),
         ],
       ),
     );

@@ -50,7 +50,7 @@ class PriceRequestCard extends StatelessWidget {
     final t = LodgingType.of(context);
     final r = request;
     final id = r.id;
-    final role = requestedByRole?.toUpperCase();
+    final role = requestedByRole;
     final when = formatWhen(r.requestedAt, now: now);
     return Container(
       key: ValueKey('priceRequest.card.$id'),
@@ -64,9 +64,9 @@ class PriceRequestCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'REQUEST FROM ${requestedByFirstName.toUpperCase()}'
+            'Request from $requestedByFirstName'
             '${role == null ? '' : ' ($role)'}',
-            style: t.cardHeading.copyWith(color: c.marine),
+            style: t.secondary.copyWith(color: c.marine),
           ),
           const SizedBox(height: Space.x10),
           Wrap(
@@ -78,7 +78,7 @@ class PriceRequestCard extends StatelessWidget {
                 'KES ${formatKesPlain(r.oldPrice)} → '
                 '${formatKesPlain(r.newPrice)}',
                 key: ValueKey('priceRequest.change.$id'),
-                style: t.moneyLarge.copyWith(color: c.marine),
+                style: t.money.copyWith(color: c.marine),
               ),
             ],
           ),
@@ -86,7 +86,7 @@ class PriceRequestCard extends StatelessWidget {
           Text(
             r.reason == null ? 'Asked $when' : '“${r.reason}” · $when',
             key: ValueKey('priceRequest.reason.$id'),
-            style: t.small.copyWith(color: c.inkSoft),
+            style: t.secondary.copyWith(color: c.inkSoft),
           ),
           if (staleMessage case final stale?) ...[
             const SizedBox(height: Space.x12),
@@ -175,7 +175,7 @@ class _RejectPriceDialogState extends State<RejectPriceDialog> {
               '${v.categoryName} · KES ${formatKesPlain(v.oldPrice)} '
               '→ ${formatKesPlain(v.newPrice)}. '
               '${v.requestedByFirstName} will see your reason.',
-              style: t.small,
+              style: t.secondary,
             ),
             const SizedBox(height: Space.x12),
             LabeledField(

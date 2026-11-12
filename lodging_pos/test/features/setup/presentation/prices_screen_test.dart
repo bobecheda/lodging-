@@ -183,9 +183,9 @@ void main() {
     );
 
     await tapKey(tester, 'categories.close.${SeedIds.vip}');
-    expect(find.text('CLOSED'), findsOneWidget);
+    expect(find.text('Closed'), findsOneWidget);
     await tapKey(tester, 'categories.reopen.${SeedIds.vip}');
-    expect(find.text('CLOSED'), findsNothing);
+    expect(find.text('Closed'), findsNothing);
     expect(await env.auditFor('category.update'), hasLength(2));
   });
 

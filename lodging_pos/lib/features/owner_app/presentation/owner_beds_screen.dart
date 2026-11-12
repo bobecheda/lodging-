@@ -90,7 +90,7 @@ class _OwnerBedsState extends ConsumerState<OwnerBedsScreen> {
                 children: [
                   Text(
                     overstayCount(all.overstays.length),
-                    style: t.bodyStrong.copyWith(color: c.redText),
+                    style: t.bodyMedium.copyWith(color: c.redText),
                   ),
                   for (final (i, a) in all.overstays.indexed)
                     Padding(
@@ -129,7 +129,7 @@ class _OwnerBedsState extends ConsumerState<OwnerBedsScreen> {
                   child: Text(
                     'Showing ${only.label} only.',
                     key: const ValueKey('owner.beds.filter'),
-                    style: t.small.copyWith(color: c.inkSoft),
+                    style: t.secondary.copyWith(color: c.inkSoft),
                   ),
                 ),
                 TextButton(
@@ -172,7 +172,7 @@ class _OwnerBedsState extends ConsumerState<OwnerBedsScreen> {
           Text(
             'Read-only. The desk changes beds; you see them within about a '
             'minute.',
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
         ],
       ),
@@ -278,8 +278,8 @@ class _CountTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$count', style: t.moneyLarge.copyWith(color: ink)),
-              Text(status.label, style: t.small.copyWith(color: ink)),
+              Text('$count', style: t.money.copyWith(color: ink)),
+              Text(status.label, style: t.secondary.copyWith(color: ink)),
             ],
           ),
         ),
@@ -307,7 +307,7 @@ class _RoomCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Room ${room.number}', style: t.bodyStrong),
+            Text('Room ${room.number}', style: t.bodyMedium),
             for (final bed in room.beds) ...[
               const SizedBox(height: Space.x6),
               () {
@@ -327,14 +327,14 @@ class _RoomCard extends StatelessWidget {
                       children: [
                         Text(
                           bed.label.code,
-                          style: t.bodyStrong.copyWith(color: ink),
+                          style: t.bodyMedium.copyWith(color: ink),
                         ),
                         const SizedBox(width: Space.x6),
                         Flexible(
                           child: Text(
                             status.label,
                             key: ValueKey('owner.beds.bed.${bed.id}'),
-                            style: t.small.copyWith(color: ink),
+                            style: t.secondary.copyWith(color: ink),
                           ),
                         ),
                       ],

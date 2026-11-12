@@ -38,7 +38,7 @@ class TodayCard extends StatelessWidget {
                 Flexible(
                   child: Semantics(
                     header: true,
-                    child: Text(title, style: t.cardHeading),
+                    child: Text(title, style: t.secondary),
                   ),
                 ),
                 if (badge != null) ...[const SizedBox(width: Space.x8), badge!],
@@ -66,7 +66,7 @@ class _ChangeLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final style = t.small.copyWith(color: c.inkSoft);
+    final style = t.secondary.copyWith(color: c.inkSoft);
     final (icon, rest) = switch (line) {
       _ when line.startsWith('▲ ') => (
         Icons.arrow_drop_up_rounded,
@@ -95,18 +95,21 @@ class _ChangeLine extends StatelessWidget {
 }
 
 /// A thin bar of coloured segments, e.g. cash and M-Pesa.
+/// A bar split by amount. Each segment is its amount, fill and, for the
+/// lighter shade of a hue, an outline (M-Pesa marine, cash marine-tint with
+/// a marine outline; docs/design-system.md, "Colour").
 class _SegmentBar extends StatelessWidget {
   const _SegmentBar(this.segments, {required this.height});
 
-  final List<(int, Color)> segments;
+  final List<(int, Color, Color?)> segments;
   final double height;
 
   @override
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final shown = [
-      for (final (n, colour) in segments)
-        if (n > 0) (n, colour),
+      for (final (n, fill, outline) in segments)
+        if (n > 0) (n, fill, outline),
     ];
     return ExcludeSemantics(
       child: ClipRRect(
@@ -119,10 +122,18 @@ class _SegmentBar extends StatelessWidget {
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final (n, colour) in shown)
+                    for (final (n, fill, outline) in shown)
                       Expanded(
                         flex: n,
-                        child: ColoredBox(color: colour),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: fill,
+                            border: outline == null
+                                ? null
+                                : Border.all(color: outline),
+                            borderRadius: BorderRadius.circular(height / 2),
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -146,7 +157,7 @@ class AttentionCard extends StatelessWidget {
     final t = LodgingType.of(context);
     return TodayCard(
       key: const ValueKey('today.attention'),
-      title: 'NEEDS YOUR ATTENTION',
+      title: 'Needs your attention',
       badge: rows.isEmpty
           ? null
           : Container(
@@ -161,7 +172,7 @@ class AttentionCard extends StatelessWidget {
               ),
               child: Text(
                 '${rows.length}',
-                style: t.smallStrong.copyWith(color: c.white),
+                style: t.meta.copyWith(color: c.white),
               ),
             ),
       child: rows.isEmpty
@@ -179,7 +190,7 @@ class AttentionCard extends StatelessWidget {
                     padding: const EdgeInsets.only(top: Space.x8),
                     child: Text(
                       'And ${rows.length - shown} more.',
-                      style: t.small.copyWith(color: c.muted),
+                      style: t.secondary.copyWith(color: c.muted),
                     ),
                   ),
               ],
@@ -301,18 +312,18 @@ class AttentionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: t.bodyStrong),
+                  Text(title, style: t.bodyMedium),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: t.small.copyWith(color: c.muted),
+                    style: t.secondary.copyWith(color: c.muted),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: Space.x12),
-            Text(figure, style: t.monoStrong),
+            Text(figure, style: t.moneySmall),
             if (onTap != null) ...[
               const SizedBox(width: Space.x8),
               Icon(Icons.chevron_right_rounded, color: c.muted),
@@ -337,23 +348,33 @@ class MoneyCard extends StatelessWidget {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final today = money.today;
-    Widget method(String label, int amount, Color dot, String key) => Row(
+    Widget method(
+      String label,
+      int amount,
+      Color dot,
+      Color? outline,
+      String key,
+    ) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: Space.x8,
           height: Space.x8,
-          decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: dot,
+            shape: BoxShape.circle,
+            border: outline == null ? null : Border.all(color: outline),
+          ),
         ),
         const SizedBox(width: Space.x6),
         Text(label, style: t.body.copyWith(color: c.inkSoft)),
         const SizedBox(width: Space.x8),
-        Text(formatKes(amount), key: ValueKey(key), style: t.monoStrong),
+        Text(formatKes(amount), key: ValueKey(key), style: t.moneySmall),
       ],
     );
     return TodayCard(
       key: const ValueKey('today.money'),
-      title: 'TODAY’S MONEY',
+      title: 'Today’s money',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -366,16 +387,28 @@ class MoneyCard extends StatelessWidget {
           _ChangeLine(vsLine, textKey: const ValueKey('today.money.vs')),
           const SizedBox(height: Space.x12),
           _SegmentBar([
-            (today.cash, c.marine),
-            (today.mpesa, c.gold),
+            (today.cash, c.marineTint, c.marine),
+            (today.mpesa, c.marine, null),
           ], height: Space.x8),
           const SizedBox(height: Space.x12),
           Wrap(
             spacing: Space.x24,
             runSpacing: Space.x6,
             children: [
-              method('Cash', today.cash, c.marine, 'today.money.cash'),
-              method('M-Pesa', today.mpesa, c.gold, 'today.money.mpesa'),
+              method(
+                'Cash',
+                today.cash,
+                c.marineTint,
+                c.marine,
+                'today.money.cash',
+              ),
+              method(
+                'M-Pesa',
+                today.mpesa,
+                c.marine,
+                null,
+                'today.money.mpesa',
+              ),
             ],
           ),
         ],
@@ -415,7 +448,7 @@ class BedsCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text('$count', style: t.monoStrong.copyWith(color: ink)),
+          Text('$count', style: t.moneySmall.copyWith(color: ink)),
           const SizedBox(width: Space.x8),
           Flexible(
             child: Text(label, style: t.body.copyWith(color: ink)),
@@ -432,7 +465,7 @@ class BedsCard extends StatelessWidget {
     );
     return TodayCard(
       key: const ValueKey('today.beds'),
-      title: 'BEDS RIGHT NOW',
+      title: 'Beds right now',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -444,7 +477,7 @@ class BedsCard extends StatelessWidget {
               Text(
                 '${beds.inUse} of ${beds.total}',
                 key: const ValueKey('today.beds.inUse'),
-                style: t.moneyLarge,
+                style: t.money,
               ),
               Text(
                 percent == null ? 'No beds yet' : '$percent% occupied',
@@ -455,10 +488,10 @@ class BedsCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.x10),
           _SegmentBar([
-            (beds.occupied, c.marine),
-            (beds.overstay, c.red),
-            (beds.toClean, c.butter),
-            (beds.ready, c.line),
+            (beds.occupied, c.marine, null),
+            (beds.overstay, c.red, null),
+            (beds.toClean, c.butter, null),
+            (beds.ready, c.line, null),
           ], height: Space.x10),
           const SizedBox(height: Space.x12),
           pair(
@@ -516,9 +549,9 @@ class MonthCard extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: t.small.copyWith(color: c.muted)),
+            Text(label, style: t.secondary.copyWith(color: c.muted)),
             const SizedBox(height: Space.x4),
-            Text(value, key: ValueKey('today.month.$key'), style: t.moneyLarge),
+            Text(value, key: ValueKey('today.month.$key'), style: t.money),
             const SizedBox(height: Space.x4),
             _ChangeLine(line, textKey: ValueKey('today.month.${key}Vs')),
           ],
@@ -526,7 +559,7 @@ class MonthCard extends StatelessWidget {
     final occupancy = month.occupancy;
     return TodayCard(
       key: const ValueKey('today.month'),
-      title: 'THIS MONTH · ${monthName(now)}',
+      title: 'This month · ${monthName(now)}',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

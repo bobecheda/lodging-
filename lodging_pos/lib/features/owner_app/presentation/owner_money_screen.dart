@@ -68,7 +68,7 @@ class _OwnerMoneyState extends ConsumerState<OwnerMoneyScreen> {
           Text(
             freshnessLine(today.desks, now),
             key: const ValueKey('owner.money.fresh'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
           const SizedBox(height: Space.x12),
           _PeriodTabs(
@@ -147,7 +147,7 @@ class _PeriodTabs extends StatelessWidget {
                     child: Text(
                       _labels[p]!,
                       textAlign: TextAlign.center,
-                      style: p == selected ? t.bodyStrong : t.body,
+                      style: p == selected ? t.bodyMedium : t.body,
                     ),
                   ),
                 ),
@@ -180,7 +180,7 @@ class _AmountRow extends StatelessWidget {
             child: Text(label, style: t.body.copyWith(color: c.inkSoft)),
           ),
           const SizedBox(width: Space.x12),
-          Text(amount, key: amountKey, style: t.monoStrong),
+          Text(amount, key: amountKey, style: t.moneySmall),
         ],
       ),
     );
@@ -228,7 +228,7 @@ class _TotalCard extends StatelessWidget {
             Text(
               '${formatKes(money.voided)} voided, not counted.',
               key: const ValueKey('owner.money.voided'),
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
           ],
         ],
@@ -237,7 +237,7 @@ class _TotalCard extends StatelessWidget {
   }
 }
 
-/// "DAILY NET · LAST 14 DAYS": a bar a day (today in gold), what they say
+/// "Daily net · last 14 days": a bar a day (today solid marine), what they say
 /// in a line, and every day as text on "Show each day".
 class _DailyCard extends StatelessWidget {
   const _DailyCard(this.days, {required this.showEach, required this.onToggle});
@@ -287,11 +287,16 @@ class _DailyCard extends StatelessWidget {
                             ? Space.x4
                             : (d.net / most * _height).clamp(Space.x4, _height),
                         decoration: BoxDecoration(
+                          // Today solid marine; earlier days the lighter
+                          // shade with a marine outline (gold is VIP only).
                           color: d.net <= 0
                               ? c.line
                               : i == days.length - 1
-                              ? c.gold
-                              : c.marine,
+                              ? c.marine
+                              : c.marineTint,
+                          border: d.net <= 0 || i == days.length - 1
+                              ? null
+                              : Border.all(color: c.marine),
                           borderRadius: BorderRadius.circular(Radii.badge),
                         ),
                       ),
@@ -307,15 +312,15 @@ class _DailyCard extends StatelessWidget {
               children: [
                 Text(
                   _short(days.first.day),
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
                 const Spacer(),
                 Text(
                   _short(days[days.length ~/ 2].day),
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
                 const Spacer(),
-                Text('Today', style: t.small.copyWith(color: c.muted)),
+                Text('Today', style: t.secondary.copyWith(color: c.muted)),
               ],
             ),
           ),
@@ -323,7 +328,7 @@ class _DailyCard extends StatelessWidget {
           Text(
             dailySummary(days),
             key: const ValueKey('owner.money.dailySummary'),
-            style: t.small.copyWith(color: c.inkSoft),
+            style: t.secondary.copyWith(color: c.inkSoft),
           ),
           Align(
             alignment: AlignmentDirectional.centerStart,
@@ -340,7 +345,7 @@ class _DailyCard extends StatelessWidget {
                 child: Text(
                   i == 0 ? 'Today so far · ${formatKes(d.net)}' : dayLine(d),
                   key: ValueKey('owner.money.day.${days.length - 1 - i}'),
-                  style: t.mono,
+                  style: t.moneySmall,
                 ),
               ),
         ],
@@ -379,12 +384,20 @@ class _SplitCard extends StatelessWidget {
                           if (takings.cash > 0)
                             Expanded(
                               flex: takings.cash,
-                              child: ColoredBox(color: c.marine),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: c.marineTint,
+                                  border: Border.all(color: c.marine),
+                                  borderRadius: BorderRadius.circular(
+                                    Space.x10 / 2,
+                                  ),
+                                ),
+                              ),
                             ),
                           if (takings.mpesa > 0)
                             Expanded(
                               flex: takings.mpesa,
-                              child: ColoredBox(color: c.gold),
+                              child: ColoredBox(color: c.marine),
                             ),
                         ],
                       ),
@@ -408,7 +421,7 @@ class _SplitCard extends StatelessWidget {
   }
 }
 
-/// "BY CATEGORY · NIGHTS LET": nights stayed in the period, by category,
+/// "By category · nights let": nights stayed in the period, by category,
 /// at each stay's locked price.
 class _CategoryCard extends StatelessWidget {
   const _CategoryCard(this.rows);
@@ -422,7 +435,7 @@ class _CategoryCard extends StatelessWidget {
     final most = rows.fold(0, (m, r) => r.value > m ? r.value : m);
     return TodayCard(
       key: const ValueKey('owner.money.categories'),
-      title: 'BY CATEGORY · NIGHTS LET',
+      title: 'By category · nights let',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -444,11 +457,11 @@ class _CategoryCard extends StatelessWidget {
                         child: Wrap(
                           spacing: Space.x8,
                           children: [
-                            Text(r.name, style: t.bodyStrong),
+                            Text(r.name, style: t.bodyMedium),
                             Text(
                               r.line,
                               key: ValueKey('owner.money.nights.${r.name}'),
-                              style: t.small.copyWith(color: c.muted),
+                              style: t.secondary.copyWith(color: c.muted),
                             ),
                           ],
                         ),
@@ -457,7 +470,7 @@ class _CategoryCard extends StatelessWidget {
                       Text(
                         formatKes(r.value),
                         key: ValueKey('owner.money.value.${r.name}'),
-                        style: t.monoStrong,
+                        style: t.moneySmall,
                       ),
                     ],
                   ),
@@ -483,7 +496,7 @@ class _CategoryCard extends StatelessWidget {
             'Value of nights stayed in this period. Net above counts money on '
             'the day it was paid, so the two won’t match.',
             key: const ValueKey('owner.money.categoriesNote'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
         ],
       ),

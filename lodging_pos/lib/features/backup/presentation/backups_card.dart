@@ -73,11 +73,11 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
     final newest = status.newest;
     final shell = ref.read(backupShellProvider);
 
-    Widget label(String text) => Text(text, style: t.fieldLabel);
+    Widget label(String text) => Text(text, style: t.secondaryMedium);
     Widget path(String text, String key) => Text(
       text,
       key: ValueKey(key),
-      style: t.mono.copyWith(color: c.inkSoft),
+      style: t.moneySmall.copyWith(color: c.inkSoft),
     );
 
     final Widget last;
@@ -94,7 +94,7 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
             TextSpan(text: 'Last backup ', style: t.body),
             TextSpan(
               text: formatBackupWhen(newest.takenAt, now),
-              style: t.bodyStrong,
+              style: t.bodyMedium,
             ),
             TextSpan(
               text: ' · ${formatBackupSize(newest.sizeBytes)} · checked',
@@ -137,7 +137,7 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
             Text(
               'Every day, after each shift close and when you ask. Each copy '
               'is checked before it counts. Kept 30 days.',
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
             const SizedBox(height: Space.x16),
             last,
@@ -185,7 +185,7 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
             Text(
               'A USB drive or external disk, so a copy survives if this PC '
               'fails.',
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
             const SizedBox(height: Space.x8),
             if (second == null)
@@ -201,7 +201,7 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
               Text(
                 secondNote,
                 key: const ValueKey('backups.second.note'),
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
             ],
             const SizedBox(height: Space.x12),
@@ -228,7 +228,7 @@ class _BackupsCardState extends ConsumerState<BackupsCard> {
                 'This drive holds guests’ phones and ID numbers. Keep it '
                 'locked away.',
                 key: const ValueKey('backups.second.privacy'),
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ],

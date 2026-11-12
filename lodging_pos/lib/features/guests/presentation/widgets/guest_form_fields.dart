@@ -141,7 +141,7 @@ class _GuestFormFieldsState extends ConsumerState<GuestFormFields> {
         const SizedBox(height: Space.x8),
         Text(
           'Full name and phone are required. ID is optional.',
-          style: t.small,
+          style: t.secondary,
         ),
       ],
     );

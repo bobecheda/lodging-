@@ -116,7 +116,7 @@ class _RequestPriceDialogState extends ConsumerState<RequestPriceDialog> {
               Text(
                 'Now ${formatKes(category.pricePerNight)} · $beds '
                 '${beds == 1 ? 'bed' : 'beds'}',
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
               const SizedBox(height: Space.x16),
               MoneyInput(
@@ -132,7 +132,7 @@ class _RequestPriceDialogState extends ConsumerState<RequestPriceDialog> {
               Text(
                 preview,
                 key: const ValueKey('priceRequest.preview'),
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
               const SizedBox(height: Space.x16),
               LabeledField(
@@ -234,7 +234,7 @@ class _SupervisorPriceRequestsCardState
           'No price requests in the last 14 days. Use “Request a change” '
           'beside a category to ask the owner.',
           key: const ValueKey('priceRequests.empty'),
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
       AsyncData(:final value) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -273,7 +273,7 @@ class _SupervisorPriceRequestsCardState
             Text(
               'The owner approves or rejects each one. Answers stay here for '
               '14 days.',
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
             const SizedBox(height: Space.x12),
             body,
@@ -312,25 +312,25 @@ class _SupervisorRow extends StatelessWidget {
     final id = view.id;
     final (badge, tone, detail) = switch (view.status) {
       PriceRequestStatus.waiting => (
-        'WAITING FOR OWNER APPROVAL',
+        'Waiting for owner approval',
         BadgeTone.warning,
         'Asked by ${view.requestedByFirstName} · '
             '${formatWhen(r.requestedAt, now: now)}',
       ),
       PriceRequestStatus.approved => (
-        'APPROVED',
+        'Approved',
         BadgeTone.active,
         'Approved by ${view.decidedByName} · '
             '${formatWhen(r.decision!.decidedAt, now: now)}',
       ),
       PriceRequestStatus.rejected => (
-        'REJECTED',
+        'Rejected',
         BadgeTone.disabled,
         'Rejected by ${view.decidedByName} · '
             '${formatWhen(r.decision!.decidedAt, now: now)}',
       ),
       PriceRequestStatus.withdrawn => (
-        'WITHDRAWN',
+        'Withdrawn',
         BadgeTone.disabled,
         'Withdrawn · category closed · '
             '${formatWhen(r.withdrawal!.at, now: now)}',
@@ -353,13 +353,13 @@ class _SupervisorRow extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: '${view.categoryName}  ',
-                        style: t.bodyStrong,
+                        style: t.bodyMedium,
                       ),
                       TextSpan(
                         text:
                             'KES ${formatKesPlain(r.oldPrice)} → '
                             '${formatKesPlain(r.newPrice)}',
-                        style: t.monoStrong,
+                        style: t.moneySmall,
                       ),
                     ],
                   ),
@@ -377,7 +377,7 @@ class _SupervisorRow extends StatelessWidget {
           Text(
             detail,
             key: ValueKey('priceRequests.detail.$id'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
           if (view.status == PriceRequestStatus.rejected)
             Padding(
@@ -385,7 +385,7 @@ class _SupervisorRow extends StatelessWidget {
               child: Text(
                 '“${r.decision!.note}”',
                 key: ValueKey('priceRequests.reason.$id'),
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
             ),
           if (view.stale) ...[

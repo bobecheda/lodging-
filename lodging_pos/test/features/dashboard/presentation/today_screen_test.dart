@@ -76,7 +76,7 @@ void main() {
     ]);
     expect(find.text('Prices'), findsOneWidget);
     expect(find.text('Staff'), findsOneWidget);
-    expect(find.text('SETUP · SUPERVISOR'), findsNothing);
+    expect(find.text('Setup · supervisor'), findsNothing);
     expect(find.text('Bed board'), findsNothing);
     expect(app.read(deskNavItemsProvider), isNotEmpty);
   });
@@ -172,7 +172,7 @@ void main() {
 
     // This month: 1,400 + 2,100 + 600 = 4,100 received; no refund paid.
     expect(text(tester, 'today.month.revenue'), 'KES 4,100');
-    expect(find.text('THIS MONTH · OCTOBER'), findsOneWidget);
+    expect(find.text('This month · October'), findsOneWidget);
   });
 
   testWidgets("the owner's Staff: adds a supervisor; receptionists aren't "

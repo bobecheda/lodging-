@@ -148,7 +148,7 @@ void main() {
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'nav.${Routes.shifts}');
-      expect(find.text('OPEN'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
       await tapKey(tester, 'shifts.close.$shiftId');
       expect(text(tester, 'closeShift.whose'), startsWith('Desk MARY'));
       expect(find.textContaining('1,700'), findsNothing);
@@ -170,7 +170,7 @@ void main() {
         'closed by Grace Supervisor for Desk MARY’s shift',
       );
       // Mary's shift no longer blocks the device.
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('Open'), findsNothing);
     },
   );
 

@@ -55,8 +55,8 @@ void main() {
       expect(m.voided, 700); // payments voided; voided payouts aren't money
       expect(m.before, 3000);
       expect(m.beforeLabel, 'Same time last Wednesday');
-      expect(m.title, 'TODAY SO FAR · NET');
-      expect(m.splitTitle, 'CASH VS M-PESA · TODAY');
+      expect(m.title, 'Today so far · net');
+      expect(m.splitTitle, 'Cash vs M-Pesa · today');
     });
 
     test('this week: from Monday, against last week to the same point', () {
@@ -65,7 +65,7 @@ void main() {
       expect(m.net, 15600);
       expect(m.before, 9000); // Mon 12 Oct 6,000 + Wed 14 Oct 3,000
       expect(m.beforeLabel, 'Same point last week');
-      expect(m.title, 'THIS WEEK SO FAR · NET');
+      expect(m.title, 'This week so far · net');
     });
 
     test('this month: from the 1st, against the same point last month', () {
@@ -73,8 +73,8 @@ void main() {
       expect(m.received, 17000 + 4000 + 3000 + 800 + 6000 + 20000);
       expect(m.before, 15000);
       expect(m.beforeLabel, 'Same point in September');
-      expect(m.title, 'OCTOBER SO FAR · NET');
-      expect(m.splitTitle, 'CASH VS M-PESA · OCTOBER');
+      expect(m.title, 'October so far · net');
+      expect(m.splitTitle, 'Cash vs M-Pesa · October');
     });
 
     test('31 Oct compares with 30 Sep, the last day of a shorter month', () {

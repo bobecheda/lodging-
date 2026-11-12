@@ -52,7 +52,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               ? 'No receipts yet. Each check-in issues one.'
               : 'No receipt matches. Search by receipt number or phone.',
           key: const ValueKey('receipts.none'),
-          style: t.small,
+          style: t.secondary,
         ),
       ),
       AsyncData(value: final receipts) => ListView.builder(
@@ -98,7 +98,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                         Text(
                           'Newest first. Showing up to '
                           '${ReceiptsRepository.listLimit}.',
-                          style: t.small.copyWith(color: c.muted),
+                          style: t.secondary.copyWith(color: c.muted),
                         ),
                       ],
                     ),
@@ -164,7 +164,7 @@ class _ReceiptTile extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(r.receiptNumber, style: t.monoStrong)),
+                  Expanded(child: Text(r.receiptNumber, style: t.moneySmall)),
                   if (r.isVoid) ...[
                     StatusBadge(
                       'VOID',
@@ -173,20 +173,20 @@ class _ReceiptTile extends StatelessWidget {
                     ),
                     const SizedBox(width: Space.x8),
                   ],
-                  Text(formatKes(r.total), style: t.monoStrong),
+                  Text(formatKes(r.total), style: t.moneySmall),
                 ],
               ),
               Text(
                 '${r.guestName} · ${maskPhone(r.guestPhone)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
               Text(
                 '${r.roomAndBed} · ${formatDayDateTime(r.receivedAt)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ),

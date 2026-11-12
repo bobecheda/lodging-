@@ -91,7 +91,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('board.bed.5A')),
-        matching: find.text('TO CLEAN'),
+        matching: find.text('To clean'),
       ),
       findsOneWidget,
     );
@@ -119,7 +119,7 @@ void main() {
     );
     await tapKey(tester, 'panel.confirm.ok');
 
-    expect(find.text('WAITING FOR OWNER APPROVAL'), findsOneWidget);
+    expect(find.text('Waiting for owner approval'), findsOneWidget);
     expect(
       text(tester, 'panel.result.refund'),
       'Refund of KES 1,400 requested (2 × KES 700).',
@@ -139,7 +139,7 @@ void main() {
     await deskOnBoard(tester);
 
     await tapKey(tester, 'board.overstay.checkOut');
-    expect(find.text('OVERSTAY · 30 min past grace'), findsOneWidget);
+    expect(find.text('Overstay · 30 min past grace'), findsOneWidget);
     expect(text(tester, 'panel.lateTotal'), 'KES 700');
     expect(buttonLabel(tester), 'Charge 1 night and check out');
 
@@ -254,8 +254,8 @@ void main() {
       await tapKey(tester, 'board.bed.5A');
 
       expect(
-        tester.getTopLeft(find.text('EXTEND STAY')).dy,
-        lessThan(tester.getTopLeft(find.text('CHECK OUT')).dy),
+        tester.getTopLeft(find.text('Extend stay')).dy,
+        lessThan(tester.getTopLeft(find.text('Check out').first).dy),
       );
       expect(find.byKey(const ValueKey('extend.minReason')), findsNothing);
       expect(

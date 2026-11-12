@@ -95,8 +95,9 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           for (final d in differences.take(_shown))
-                            Text(d, style: t.mono),
-                          if (more > 0) Text('and $more more', style: t.small),
+                            Text(d, style: t.moneySmall),
+                          if (more > 0)
+                            Text('and $more more', style: t.secondary),
                         ],
                       ),
                     ),
@@ -116,7 +117,7 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
                       Text(
                         'Only debug builds offer a reset. A release build '
                         'never throws data away.',
-                        style: t.small.copyWith(color: c.muted),
+                        style: t.secondary.copyWith(color: c.muted),
                       ),
                     ],
                   ],

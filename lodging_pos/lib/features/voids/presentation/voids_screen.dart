@@ -62,7 +62,7 @@ class _VoidsScreenState extends ConsumerState<VoidsScreen> {
           return Text(
             'No receipt matches. Search by receipt number or phone.',
             key: const ValueKey('voids.none'),
-            style: t.small,
+            style: t.secondary,
           );
         }
         return ListView.builder(
@@ -85,7 +85,7 @@ class _VoidsScreenState extends ConsumerState<VoidsScreen> {
         Text(
           'Correct a wrong payment or stay. The record stays, marked VOID, '
           'and leaves every total. A void moves no money.',
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
         const SizedBox(height: Space.x16),
         Expanded(
@@ -168,25 +168,25 @@ class _Tile extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(r.receiptNumber, style: t.monoStrong)),
+                  Expanded(child: Text(r.receiptNumber, style: t.moneySmall)),
                   if (r.isVoid) ...[
                     const StatusBadge('VOID', tone: BadgeTone.danger),
                     const SizedBox(width: Space.x8),
                   ],
-                  Text(formatKes(r.total), style: t.monoStrong),
+                  Text(formatKes(r.total), style: t.moneySmall),
                 ],
               ),
               Text(
                 '${r.guestName} · ${maskPhone(r.guestPhone)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
               Text(
                 '${r.roomAndBed} · ${formatDayDateTime(r.receivedAt)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ),
@@ -302,7 +302,7 @@ class _Actions extends ConsumerWidget {
             children: [
               Text(title, style: t.sectionTitle),
               const SizedBox(height: Space.x4),
-              Text(help, style: t.small.copyWith(color: c.inkSoft)),
+              Text(help, style: t.secondary.copyWith(color: c.inkSoft)),
               const SizedBox(height: Space.x12),
               if (blocker != null)
                 Note.info(blocker, key: ValueKey('$key.blocked'))
@@ -421,7 +421,7 @@ class _ConfirmVoidState extends State<_ConfirmVoid> {
             const SizedBox(height: Space.x8),
             Text(
               'It can’t be undone. The owner sees it with your reason.',
-              style: t.small,
+              style: t.secondary,
             ),
             const SizedBox(height: Space.x12),
             LabeledField(

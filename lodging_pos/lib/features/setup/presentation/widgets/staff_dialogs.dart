@@ -61,7 +61,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
             const SizedBox(height: Space.x12),
             Text(
               'They choose their own password the next time they sign in.',
-              style: t.small,
+              style: t.secondary,
             ),
           ],
         ),

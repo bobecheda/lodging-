@@ -39,7 +39,7 @@ void main() {
   Future<ProviderContainer> openRooms(WidgetTester tester) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    expect(find.text('SETUP · SUPERVISOR'), findsOneWidget);
+    expect(find.text('Setup · supervisor'), findsOneWidget);
     await tapKey(tester, 'nav.${Routes.adminRooms}');
     expect(locationOf(app), Routes.adminRooms);
     return app;
@@ -74,7 +74,7 @@ void main() {
     expect(find.text('Room 5'), findsOneWidget);
     expect(find.text('A · Normal'), findsOneWidget);
     expect(find.text('B · Deluxe'), findsOneWidget);
-    expect(find.text('ACTIVE'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
     expect(find.text('1 room · 2 beds active'), findsOneWidget);
     expect(await env.auditFor('room.create'), hasLength(1));
   });
@@ -142,11 +142,11 @@ void main() {
     await openRooms(tester);
     await tapKey(tester, 'rooms.edit.5');
     await tapKey(tester, 'edit.closeRoom');
-    expect(find.text('CLOSED · REPAIRS'), findsWidgets);
+    expect(find.text('Closed · repairs'), findsWidgets);
     expect(find.text('1 room · 0 beds active · 1 room closed'), findsOneWidget);
 
     await tapKey(tester, 'edit.reopenRoom');
-    expect(find.text('ACTIVE'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
     expect(await env.auditFor('room.deactivate'), hasLength(1));
     expect(await env.auditFor('room.reactivate'), isNotEmpty);
   });

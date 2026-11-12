@@ -65,7 +65,7 @@ class _RoomsScreenState extends ConsumerState<RoomsScreen> {
                   Text(
                     roomsSummary(list),
                     key: const ValueKey('rooms.summary'),
-                    style: t.small,
+                    style: t.secondary,
                   ),
                 ],
               ),

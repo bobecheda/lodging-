@@ -83,7 +83,7 @@ class _NightStepperState extends State<NightStepper> {
       ),
     );
 
-    final style = t.stepperValue.copyWith(color: c.ink);
+    final style = t.money.copyWith(color: c.ink);
     final Widget shown = widget.onTyped == null
         ? Semantics(
             value: '$value ${widget.unit}',
