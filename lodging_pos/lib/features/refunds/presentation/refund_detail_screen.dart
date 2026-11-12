@@ -99,7 +99,7 @@ class _RefundDetailState extends ConsumerState<RefundDetailScreen> {
             key: const ValueKey('refund.back'),
             onPressed: () => context.go(Routes.today),
             icon: const Icon(Icons.arrow_back_rounded, size: 18),
-            label: Text('Today', style: t.bodyStrong),
+            label: Text('Today', style: t.bodyMedium),
           ),
         ),
         const SizedBox(height: Space.x8),

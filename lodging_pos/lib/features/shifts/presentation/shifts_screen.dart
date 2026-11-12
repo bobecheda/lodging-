@@ -107,10 +107,10 @@ class _ShiftCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(s.userName, style: t.bodyStrong),
+                    Text(s.userName, style: t.bodyMedium),
                     const SizedBox(width: Space.x8),
                     if (s.isOpen)
-                      const StatusBadge('OPEN', tone: BadgeTone.neutral),
+                      const StatusBadge('Open', tone: BadgeTone.neutral),
                   ],
                 ),
                 Text(
@@ -121,7 +121,9 @@ class _ShiftCard extends StatelessWidget {
                       : '${formatDayDateTime(s.openedAt)} → '
                             '${formatDayDateTime(s.closedAt!)} · taken '
                             '${formatKes(s.takings)}',
-                  style: t.small.copyWith(color: high ? c.butterText : c.muted),
+                  style: t.secondary.copyWith(
+                    color: high ? c.butterText : c.muted,
+                  ),
                 ),
                 if (!s.isOpen) ...[
                   const SizedBox(height: Space.x6),
@@ -129,7 +131,7 @@ class _ShiftCard extends StatelessWidget {
                     'Expected ${formatKes(s.expectedCash!)} · counted '
                     '${formatKes(s.counted!)} · M-Pesa '
                     '${formatKes(s.expectedPaybill!)}',
-                    style: t.small.copyWith(
+                    style: t.secondary.copyWith(
                       color: high ? c.butterText : c.inkSoft,
                     ),
                   ),
@@ -137,14 +139,14 @@ class _ShiftCard extends StatelessWidget {
                     Text(
                       recount,
                       key: ValueKey('shifts.recount.${s.id}'),
-                      style: t.small.copyWith(
+                      style: t.secondary.copyWith(
                         color: high ? c.butterText : c.inkSoft,
                       ),
                     ),
                   if (s.note != null)
                     Text(
                       '“${s.note}”',
-                      style: t.small.copyWith(
+                      style: t.secondary.copyWith(
                         color: high ? c.butterText : c.inkSoft,
                       ),
                     ),
@@ -152,19 +154,19 @@ class _ShiftCard extends StatelessWidget {
                     Text(
                       'Needs review: the count didn’t match on the recount.',
                       key: ValueKey('shifts.needsReview.${s.id}'),
-                      style: t.smallStrong.copyWith(color: c.butterText),
+                      style: t.meta.copyWith(color: c.butterText),
                     ),
                   if (onRecount)
                     Text(
                       'Matched only on recount.',
                       key: ValueKey('shifts.onRecount.${s.id}'),
-                      style: t.small.copyWith(color: c.inkSoft),
+                      style: t.secondary.copyWith(color: c.inkSoft),
                     ),
                   if (closedBy != null)
                     Text(
                       closedBy,
                       key: ValueKey('shifts.closedBy.${s.id}'),
-                      style: t.small.copyWith(
+                      style: t.secondary.copyWith(
                         color: high ? c.butterText : c.muted,
                       ),
                     ),
@@ -173,7 +175,7 @@ class _ShiftCard extends StatelessWidget {
                       '${s.voidedAfterClose.line} After the voids: '
                       '${varianceLabel(s.voidedAfterClose.varianceAfter(variance))}.',
                       key: ValueKey('shifts.voided.${s.id}'),
-                      style: t.small.copyWith(color: c.redText),
+                      style: t.secondary.copyWith(color: c.redText),
                     ),
                 ],
               ],
@@ -184,7 +186,7 @@ class _ShiftCard extends StatelessWidget {
             Text(
               varianceLabel(variance),
               key: ValueKey('shifts.variance.${s.id}'),
-              style: t.monoStrong.copyWith(color: high ? c.butterText : c.ink),
+              style: t.moneySmall.copyWith(color: high ? c.butterText : c.ink),
             )
           else if (canClose)
             AppButton.secondary(

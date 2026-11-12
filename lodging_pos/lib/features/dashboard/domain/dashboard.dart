@@ -60,9 +60,8 @@ String formatLongDate(DateTime utc) {
   return '${_weekdays[t.weekday - 1]} ${t.day} ${_months[t.month - 1]}';
 }
 
-/// "OCTOBER": the This month card's heading.
-String monthName(DateTime utc) =>
-    _months[toNairobi(utc).month - 1].toUpperCase();
+/// "October": in the This month card's heading.
+String monthName(DateTime utc) => _months[toNairobi(utc).month - 1];
 
 // ── Money ────────────────────────────────────────────────────────────────
 
@@ -198,11 +197,11 @@ final class PeriodMoney {
 
   int get net => takings.net;
 
-  /// "OCTOBER SO FAR · NET".
+  /// "October so far · net".
   String get title => switch (period) {
-    MoneyPeriod.today => 'TODAY SO FAR · NET',
-    MoneyPeriod.week => 'THIS WEEK SO FAR · NET',
-    MoneyPeriod.month => '${monthName(now)} SO FAR · NET',
+    MoneyPeriod.today => 'Today so far · net',
+    MoneyPeriod.week => 'This week so far · net',
+    MoneyPeriod.month => '${monthName(now)} so far · net',
   };
 
   /// "Same point in September".
@@ -215,14 +214,14 @@ final class PeriodMoney {
     };
   }
 
-  /// "CASH VS M-PESA · OCTOBER".
+  /// "Cash vs M-Pesa · October".
   String get splitTitle {
     final when = switch (period) {
-      MoneyPeriod.today => 'TODAY',
-      MoneyPeriod.week => 'THIS WEEK',
+      MoneyPeriod.today => 'today',
+      MoneyPeriod.week => 'this week',
       MoneyPeriod.month => monthName(now),
     };
-    return 'CASH VS M-PESA · $when';
+    return 'Cash vs M-Pesa · $when';
   }
 
   /// Whole percent of the net taken in cash; null with no net to share.

@@ -186,7 +186,7 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
     Widget head(String text, {TextAlign align = TextAlign.start}) => Text(
       text,
       textAlign: align,
-      style: t.capsLabel.copyWith(color: c.muted),
+      style: t.meta.copyWith(color: c.muted),
     );
 
     return Card(
@@ -219,12 +219,12 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
               padding: const EdgeInsets.symmetric(horizontal: Space.x12),
               child: Row(
                 children: [
-                  Expanded(child: head('CATEGORY')),
-                  SizedBox(width: _Cols.price, child: head('PRICE PER NIGHT')),
+                  Expanded(child: head('Category')),
+                  SizedBox(width: _Cols.price, child: head('Price per night')),
                   if (canEdit) const SizedBox(width: _Cols.was),
                   SizedBox(
                     width: _Cols.beds,
-                    child: head('BEDS', align: TextAlign.end),
+                    child: head('Beds', align: TextAlign.end),
                   ),
                   SizedBox(width: canEdit ? _Cols.action : _Cols.request),
                 ],
@@ -301,7 +301,7 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                     Text(
                       _saved!,
                       key: const ValueKey('prices.saved'),
-                      style: t.small,
+                      style: t.secondary,
                     ),
                 ],
               )
@@ -313,7 +313,7 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                           'to ask; the owner approves or rejects it.'
                     : 'Only the owner changes prices.',
                 key: const ValueKey('prices.readOnly'),
-                style: t.small,
+                style: t.secondary,
               ),
           ],
         ),
@@ -435,12 +435,12 @@ class _CategoryRow extends StatelessWidget {
               children: [
                 Text(
                   category.name,
-                  style: t.bodyStrong.copyWith(
+                  style: t.bodyMedium.copyWith(
                     color: category.isActive ? null : c.muted,
                   ),
                 ),
                 if (!category.isActive)
-                  const StatusBadge('CLOSED', tone: BadgeTone.warning),
+                  const StatusBadge('Closed', tone: BadgeTone.warning),
               ],
             ),
           ),
@@ -467,7 +467,7 @@ class _CategoryRow extends StatelessWidget {
                       child: Text(
                         'was ${_plain(category.pricePerNight)}',
                         key: ValueKey('price.was.$id'),
-                        style: t.smallStrong.copyWith(color: c.marine),
+                        style: t.meta.copyWith(color: c.marine),
                       ),
                     )
                   : null,
@@ -478,7 +478,7 @@ class _CategoryRow extends StatelessWidget {
               '${usage.activeBeds}',
               key: ValueKey('categories.beds.$id'),
               textAlign: TextAlign.end,
-              style: t.mono,
+              style: t.moneySmall,
             ),
           ),
           SizedBox(

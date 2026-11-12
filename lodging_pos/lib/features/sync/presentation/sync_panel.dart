@@ -168,9 +168,9 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: t.small.copyWith(color: c.muted)),
+            child: Text(label, style: t.secondary.copyWith(color: c.muted)),
           ),
-          Text(value, key: key, style: t.monoStrong),
+          Text(value, key: key, style: t.moneySmall),
         ],
       ),
     );
@@ -209,7 +209,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
         Text(
           'Keep this desk on. After a power cut or a lost connection it '
           'carries on where it stopped.',
-          style: t.small.copyWith(color: c.inkSoft),
+          style: t.secondary.copyWith(color: c.inkSoft),
         ),
       ],
       SyncPhase.waitingForOwner when isOwner => [
@@ -270,7 +270,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
         Text(
           'Nothing is skipped: later changes wait behind it. Tell the '
           'supervisor; once it’s fixed, sync carries on.',
-          style: t.small.copyWith(color: c.inkSoft),
+          style: t.secondary.copyWith(color: c.inkSoft),
         ),
         const SizedBox(height: Space.x16),
         retry,
@@ -298,7 +298,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
             Text(
               syncPillText(status, pending: pending, now: now),
               key: const ValueKey('sync.state'),
-              style: t.bodyStrong,
+              style: t.bodyMedium,
             ),
             const SizedBox(height: Space.x12),
             row(
@@ -333,7 +333,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
               Text(
                 'Checkout times and late charges use this PC’s clock. Nothing '
                 'is blocked meanwhile.',
-                style: t.small.copyWith(color: c.inkSoft),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
             ],
             const SizedBox(height: Space.x20),
@@ -368,7 +368,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
             : 'Connecting sends everything on this desk to the cloud, then '
                   'keeps it up to date. Your phone will sign in with this '
                   'email and your desk password.',
-        style: t.small.copyWith(color: c.inkSoft),
+        style: t.secondary.copyWith(color: c.inkSoft),
       ),
       const SizedBox(height: Space.x16),
       if (!reconnect) ...[

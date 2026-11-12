@@ -5,10 +5,10 @@ import 'dashed_border.dart';
 
 /// How a bed looks on the board (docs/design.md, "Bed status styles").
 enum BedTileStatus {
-  ready('READY', 'Ready'),
-  occupied('IN USE', 'In use'),
-  overstay('OVERSTAY', 'Overstay'),
-  toClean('TO CLEAN', 'Needs cleaning');
+  ready('Ready', 'Ready'),
+  occupied('In use', 'In use'),
+  overstay('Overstay', 'Overstay'),
+  toClean('To clean', 'Needs cleaning');
 
   const BedTileStatus(this.badge, this.spoken);
 
@@ -78,14 +78,11 @@ class BedStatusTile extends StatelessWidget {
               color: c.white,
               borderRadius: BorderRadius.circular(Radii.badge),
             ),
-            child: Text(
-              status.badge,
-              style: t.capsLabel.copyWith(color: c.redDark),
-            ),
+            child: Text(status.badge, style: t.meta.copyWith(color: c.redDark)),
           )
         : Text(
             status.badge,
-            style: t.capsLabel.copyWith(
+            style: t.meta.copyWith(
               color: status == BedTileStatus.ready ? c.marine : fg,
             ),
           );
@@ -116,7 +113,10 @@ class BedStatusTile extends StatelessWidget {
               color: letterBg,
               borderRadius: BorderRadius.circular(Radii.badge),
             ),
-            child: Text(label, style: t.bodyStrong.copyWith(color: letterFg)),
+            child: Text(
+              label,
+              style: t.secondaryMedium.copyWith(color: letterFg),
+            ),
           ),
           const SizedBox(width: Space.x12),
           // The label sits on the title line so the second line gets the
@@ -133,7 +133,7 @@ class BedStatusTile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: t.bodyStrong.copyWith(color: fg),
+                        style: t.secondaryMedium.copyWith(color: fg),
                       ),
                     ),
                     const SizedBox(width: Space.x8),
@@ -144,7 +144,7 @@ class BedStatusTile extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: t.small.copyWith(color: subtitleColor),
+                  style: t.meta.copyWith(color: subtitleColor),
                 ),
               ],
             ),

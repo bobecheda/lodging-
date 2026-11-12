@@ -135,7 +135,7 @@ class _AddRoomPanelState extends ConsumerState<AddRoomPanel> {
           ],
         ),
         const SizedBox(height: Space.x20),
-        Text('Beds in this room', style: t.fieldLabel),
+        Text('Beds in this room', style: t.secondaryMedium),
         const SizedBox(height: Space.x6),
         SegmentedChoice<int>(
           options: const [ChoiceOption(1, '1 bed'), ChoiceOption(2, '2 beds')],
@@ -145,7 +145,7 @@ class _AddRoomPanelState extends ConsumerState<AddRoomPanel> {
         const SizedBox(height: Space.x16),
         bedRow(BedLabel.a, _bedA, (v) => _bedA = v),
         if (_bedCount == 2) bedRow(BedLabel.b, _bedB, (v) => _bedB = v),
-        Text('New beds start as ready to let (clean).', style: t.small),
+        Text('New beds start as ready to let (clean).', style: t.secondary),
         const SizedBox(height: Space.x16),
         if (_error != null) ...[
           Note.error(_error!),

@@ -5,6 +5,7 @@ import 'lodging_type.dart';
 import 'spacing.dart';
 
 export 'lodging_colors.dart';
+export 'lodging_motion.dart';
 export 'lodging_type.dart';
 export 'spacing.dart';
 export 'wordmark_style.dart';
@@ -68,13 +69,13 @@ ThemeData buildLodgingTheme() {
       headlineSmall: type.pageTitle,
       titleLarge: type.pageTitle,
       titleMedium: type.sectionTitle,
-      titleSmall: type.bodyStrong,
+      titleSmall: type.bodyMedium,
       bodyLarge: type.body,
       bodyMedium: type.body,
-      bodySmall: type.small,
-      labelLarge: type.button,
-      labelMedium: type.fieldLabel,
-      labelSmall: type.capsLabel,
+      bodySmall: type.secondary,
+      labelLarge: type.secondaryMedium,
+      labelMedium: type.secondaryMedium,
+      labelSmall: type.meta,
     ),
     filledButtonTheme: FilledButtonThemeData(
       style:
@@ -84,9 +85,9 @@ ThemeData buildLodgingTheme() {
             disabledBackgroundColor: c.line,
             disabledForegroundColor: c.disabled,
             minimumSize: const Size(Sizes.target, Sizes.target),
-            padding: const EdgeInsets.symmetric(horizontal: Space.x20),
+            padding: const EdgeInsets.symmetric(horizontal: Space.x16),
             shape: controlShape,
-            textStyle: type.button,
+            textStyle: type.secondaryMedium.copyWith(color: c.white),
             elevation: 0,
           ).copyWith(
             overlayColor: WidgetStatePropertyAll(
@@ -100,17 +101,17 @@ ThemeData buildLodgingTheme() {
         foregroundColor: c.marine,
         disabledForegroundColor: c.disabled,
         minimumSize: const Size(Sizes.target, Sizes.target),
-        padding: const EdgeInsets.symmetric(horizontal: Space.x20),
+        padding: const EdgeInsets.symmetric(horizontal: Space.x16),
         shape: controlShape,
         side: BorderSide(color: c.fieldBorder),
-        textStyle: type.button.copyWith(color: c.marine),
+        textStyle: type.secondaryMedium.copyWith(color: c.marine),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: c.marine,
         minimumSize: const Size(Sizes.targetCompact, Sizes.targetCompact),
-        textStyle: type.bodyStrong,
+        textStyle: type.secondaryMedium,
         shape: controlShape,
       ),
     ),
@@ -123,8 +124,8 @@ ThemeData buildLodgingTheme() {
         vertical: Space.x14,
       ),
       hintStyle: type.body.copyWith(color: c.disabled),
-      errorStyle: type.small.copyWith(color: c.redDark),
-      helperStyle: type.small,
+      errorStyle: type.secondary.copyWith(color: c.redDark),
+      helperStyle: type.secondary,
       border: border(c.fieldBorder, Sizes.borderThin),
       enabledBorder: border(c.fieldBorder, Sizes.borderThin),
       focusedBorder: border(c.marine, Sizes.borderStrong),
@@ -159,7 +160,7 @@ ThemeData buildLodgingTheme() {
         color: c.ink,
         borderRadius: BorderRadius.circular(Radii.badge),
       ),
-      textStyle: type.small.copyWith(color: c.white),
+      textStyle: type.secondary.copyWith(color: c.white),
     ),
   );
 }

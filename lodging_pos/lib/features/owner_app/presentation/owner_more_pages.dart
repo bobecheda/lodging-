@@ -59,7 +59,7 @@ class _MorePage extends StatelessWidget {
               key: const ValueKey('more.back'),
               onPressed: () => context.go(OwnerRoutes.more),
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: Text('More', style: t.bodyStrong),
+              label: Text('More', style: t.bodyMedium),
             ),
           ),
         ),
@@ -109,7 +109,7 @@ class _Line extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Text(label, style: t.small.copyWith(color: c.inkSoft)),
+            child: Text(label, style: t.secondary.copyWith(color: c.inkSoft)),
           ),
           const SizedBox(width: Space.x8),
           Flexible(
@@ -117,7 +117,7 @@ class _Line extends StatelessWidget {
               value,
               key: valueKey,
               textAlign: TextAlign.end,
-              style: t.mono,
+              style: t.moneySmall,
             ),
           ),
         ],
@@ -186,7 +186,7 @@ class _ShiftCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(s.userName, style: t.bodyStrong)),
+                Expanded(child: Text(s.userName, style: t.bodyMedium)),
                 if (s.open)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -198,8 +198,8 @@ class _ShiftCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(Radii.badge),
                     ),
                     child: Text(
-                      'OPEN',
-                      style: t.smallStrong.copyWith(color: c.marine),
+                      'Open',
+                      style: t.meta.copyWith(color: c.marine),
                     ),
                   ),
               ],
@@ -209,7 +209,7 @@ class _ShiftCard extends StatelessWidget {
                   ? 'Since ${formatWhen(s.openedAt, now: now)}'
                   : '${formatWhen(s.openedAt, now: now)} – '
                         '${formatWhen(s.closedAt!, now: now)}',
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
             const SizedBox(height: Space.x8),
             if (takings != null) ...[
@@ -238,17 +238,20 @@ class _ShiftCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: Space.x4),
                   child: Text(
                     '“$note”',
-                    style: t.small.copyWith(color: c.inkSoft),
+                    style: t.secondary.copyWith(color: c.inkSoft),
                   ),
                 ),
               if (s.closedBy case final by? when by != s.userName)
-                Text('Closed by $by', style: t.small.copyWith(color: c.muted)),
+                Text(
+                  'Closed by $by',
+                  style: t.secondary.copyWith(color: c.muted),
+                ),
               if (!s.voidedAfterClose.isEmpty) ...[
                 const SizedBox(height: Space.x8),
                 Text(
                   s.voidedAfterClose.line,
                   key: ValueKey('owner.shift.${s.id}.voided'),
-                  style: t.small.copyWith(color: c.redText),
+                  style: t.secondary.copyWith(color: c.redText),
                 ),
                 if (variance != null)
                   _Line(
@@ -384,18 +387,18 @@ class _OwnerAuditState extends ConsumerState<OwnerAuditScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(e.action, style: t.bodyStrong),
+                              Text(e.action, style: t.bodyMedium),
                               if (e.detail case final d?)
                                 Text(
                                   d,
                                   key: ValueKey('audit.entry.$i.detail'),
-                                  style: t.small.copyWith(color: c.inkSoft),
+                                  style: t.secondary.copyWith(color: c.inkSoft),
                                 ),
                               Text(
                                 '${e.who} · ${e.where} · '
                                 '${formatWhen(e.at, now: now)}',
                                 key: ValueKey('audit.entry.$i.who'),
-                                style: t.small.copyWith(color: c.muted),
+                                style: t.secondary.copyWith(color: c.muted),
                               ),
                             ],
                           ),
@@ -409,7 +412,7 @@ class _OwnerAuditState extends ConsumerState<OwnerAuditScreen> {
         Text(
           'The latest ${OwnerMoreRepository.auditShown} entries. Guests’ '
           'details are never shown here.',
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
       ],
     );
@@ -464,14 +467,14 @@ class OwnerStaffScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 s.name,
-                                style: t.bodyStrong.copyWith(
+                                style: t.bodyMedium.copyWith(
                                   color: s.active ? c.ink : c.muted,
                                 ),
                               ),
                               Text(
                                 '${_role(s.role)} · ${s.username}'
                                 '${s.active ? '' : ' · Disabled'}',
-                                style: t.small.copyWith(color: c.muted),
+                                style: t.secondary.copyWith(color: c.muted),
                               ),
                             ],
                           ),
@@ -488,7 +491,7 @@ class OwnerStaffScreen extends ConsumerWidget {
         Text(
           'Adding staff, resetting passwords and disabling are done at the '
           'desk.',
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
       ],
     );
@@ -579,7 +582,7 @@ class _OwnerPasswordState extends ConsumerState<OwnerPasswordScreen> {
           'It is also your password at the desk: the desk asks for the new '
           'one, once, the next time you sign in there (it needs the '
           'internet then).',
-          style: t.small.copyWith(color: c.inkSoft),
+          style: t.secondary.copyWith(color: c.inkSoft),
         ),
         const SizedBox(height: Space.x12),
         if (_done) ...[

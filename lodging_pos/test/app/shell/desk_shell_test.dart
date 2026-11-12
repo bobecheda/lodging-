@@ -50,7 +50,7 @@ void main() {
     await env.createFirstSupervisor(testSetup);
     await pumpWithSetupItem(tester);
     await signInAs(tester, 'supervisor', 'super-pass');
-    expect(find.text('SETUP · SUPERVISOR'), findsOneWidget);
+    expect(find.text('Setup · supervisor'), findsOneWidget);
     expect(find.text('Rooms & beds'), findsOneWidget);
   });
 
@@ -64,7 +64,7 @@ void main() {
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.submit');
     expect(find.text('Bed board'), findsWidgets);
-    expect(find.text('SETUP · SUPERVISOR'), findsNothing);
+    expect(find.text('Setup · supervisor'), findsNothing);
     expect(find.text('Rooms & beds'), findsNothing);
   });
 
@@ -85,7 +85,7 @@ void main() {
       Routes.adminPrices,
       Routes.adminStaff,
     ]);
-    expect(find.text('SETUP · SUPERVISOR'), findsOneWidget);
+    expect(find.text('Setup · supervisor'), findsOneWidget);
   });
 
   testWidgets('sync pill: not set up yet, counting changes waiting', (

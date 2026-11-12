@@ -38,7 +38,7 @@ class GateTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 children: [
                   TextSpan(
                     text: user.fullName,
-                    style: t.bodyStrong.copyWith(color: c.white),
+                    style: t.bodyMedium.copyWith(color: c.white),
                   ),
                 ],
               ),
@@ -55,7 +55,7 @@ class GateTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
               child: Text(
                 'Sign out',
-                style: t.bodyStrong.copyWith(color: c.white),
+                style: t.bodyMedium.copyWith(color: c.white),
               ),
             ),
           ],

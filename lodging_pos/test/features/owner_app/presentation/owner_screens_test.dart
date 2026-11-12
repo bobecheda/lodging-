@@ -68,7 +68,7 @@ void main() {
       tester,
     ) async {
       await open(tester);
-      expect(find.text('REQUEST FROM GRACE (SUPERVISOR)'), findsOneWidget);
+      expect(find.text('Request from Grace (supervisor)'), findsOneWidget);
       expect(
         text(tester, 'priceRequest.reason.pr-1'),
         '“Other lodgings nearby charge 800.” · today 09:15',
@@ -263,7 +263,7 @@ void main() {
         text(tester, 'owner.money.fresh'),
         'Up to the desk’s last sync, 09:27 · 3 changes not sent yet.',
       );
-      expect(find.text('OCTOBER SO FAR · NET'), findsOneWidget);
+      expect(find.text('October so far · net'), findsOneWidget);
       expect(text(tester, 'owner.money.net'), 'KES 4,200');
       expect(text(tester, 'owner.money.received'), 'KES 4,200');
       expect(text(tester, 'owner.money.refunds'), '− KES 0');
@@ -295,14 +295,14 @@ void main() {
       final semantics = tester.ensureSemantics();
       await open(tester);
       await tapKey(tester, 'owner.money.period.today');
-      expect(find.text('TODAY SO FAR · NET'), findsOneWidget);
+      expect(find.text('Today so far · net'), findsOneWidget);
       expect(text(tester, 'owner.money.net'), 'KES 1,400');
       expect(find.text('Same time last Saturday'), findsOneWidget);
       await reveal(tester, 'owner.money.nights.Deluxe', 'owner.money');
       expect(text(tester, 'owner.money.nights.Deluxe'), '1 bed-night');
       await toTop(tester, 'owner.money');
       await tapKey(tester, 'owner.money.period.week');
-      expect(find.text('THIS WEEK SO FAR · NET'), findsOneWidget);
+      expect(find.text('This week so far · net'), findsOneWidget);
       expect(find.text('Same point last week'), findsOneWidget);
 
       await reveal(tester, 'owner.money.eachDay', 'owner.money');

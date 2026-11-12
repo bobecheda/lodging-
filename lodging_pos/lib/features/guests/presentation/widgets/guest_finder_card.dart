@@ -129,7 +129,7 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
     final fill = widget.showRecent;
 
     final header = <Widget>[
-      Text('GUEST', style: t.capsLabel.copyWith(color: c.muted)),
+      Text('Guest', style: t.meta.copyWith(color: c.muted)),
       const SizedBox(height: Space.x12),
       LabeledField(
         label: 'Find by phone or ID number',
@@ -142,7 +142,7 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
     ];
 
     final registerForm = <Widget>[
-      Text('Register a new guest', style: t.bodyStrong),
+      Text('Register a new guest', style: t.bodyMedium),
       const SizedBox(height: Space.x12),
       GuestFormFields(
         controllers: _new,
@@ -196,7 +196,7 @@ class _GuestFinderCardState extends ConsumerState<GuestFinderCard> {
         const SizedBox(height: Space.x4),
         Text(
           'New guests: full name and phone required. ID is optional.',
-          style: t.small,
+          style: t.secondary,
         ),
       ],
     ];
@@ -303,7 +303,7 @@ class _GuestList extends ConsumerWidget {
             'Keep typing: at least 3 digits of a phone, or 3 characters of an '
             'ID number.',
             key: const ValueKey('guests.keepTyping'),
-            style: t.small,
+            style: t.secondary,
           ),
         ),
       );
@@ -328,7 +328,7 @@ class _GuestList extends ConsumerWidget {
                   'No guests yet. Register one with the form, or during '
                   'check-in.',
                   key: const ValueKey('guests.empty'),
-                  style: t.small,
+                  style: t.secondary,
                 ),
               ),
             );
@@ -341,7 +341,7 @@ class _GuestList extends ConsumerWidget {
           Text(
             'Recent guests',
             key: const ValueKey('guests.recentTitle'),
-            style: t.smallStrong,
+            style: t.meta,
           ),
           const SizedBox(height: Space.x4),
         ],
@@ -363,7 +363,7 @@ class _GuestList extends ConsumerWidget {
             'Showing the ${GuestsRepository.recentLimit} most recent. Search '
             'by phone or ID to find others.',
             key: const ValueKey('guests.recentNote'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
         ],
       ],
@@ -380,7 +380,7 @@ class _NoMatch extends StatelessWidget {
     child: Text(
       'No guest found.',
       key: const ValueKey('guests.none'),
-      style: LodgingType.of(context).small,
+      style: LodgingType.of(context).secondary,
     ),
   );
 }
@@ -424,10 +424,10 @@ class GuestTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(guest.fullName, style: t.bodyStrong),
+                    Text(guest.fullName, style: t.bodyMedium),
                     Text(
                       [maskPhone(guest.phone), ?id].join(' · '),
-                      style: t.small.copyWith(color: c.muted),
+                      style: t.secondary.copyWith(color: c.muted),
                     ),
                   ],
                 ),
@@ -436,7 +436,7 @@ class GuestTile extends StatelessWidget {
                 const SizedBox(width: Space.x8),
                 Text(
                   'Registered ${formatDayDate(guest.registeredAt)}',
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
               ],
               Icon(Icons.chevron_right_rounded, color: c.muted),
@@ -507,7 +507,7 @@ class SelectedGuestCard extends StatelessWidget {
               Expanded(child: Text(fullName, style: t.sectionTitle)),
               if (showBadge)
                 StatusBadge(
-                  isNew ? 'NEW' : 'RETURNING',
+                  isNew ? 'New' : 'Returning',
                   key: const ValueKey('guests.selected.badge'),
                   tone: isNew ? BadgeTone.neutral : BadgeTone.active,
                 ),
@@ -523,7 +523,7 @@ class SelectedGuestCard extends StatelessWidget {
             Text(
               detail!,
               key: const ValueKey('guests.selected.detail'),
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
           ],
         ],

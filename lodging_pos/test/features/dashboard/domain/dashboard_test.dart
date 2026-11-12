@@ -60,7 +60,7 @@ void main() {
 
     test('names', () {
       expect(formatLongDate(oct(21, 9)), 'Wednesday 21 October');
-      expect(monthName(oct(21, 9)), 'OCTOBER');
+      expect(monthName(oct(21, 9)), 'October');
     });
   });
 

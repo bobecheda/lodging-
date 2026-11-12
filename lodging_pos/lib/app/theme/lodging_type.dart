@@ -7,34 +7,28 @@ const manrope = 'Manrope';
 const plexMono = 'IBMPlexMono';
 
 /// The wordmark: the lodging name in Pirata One, "Lodging" under it in
-/// IM Fell English SC.
+/// IM Fell English SC. A logo, not interface text: outside the type scale.
 const pirataOne = 'PirataOne';
 const imFellEnglishSc = 'IMFellEnglishSC';
 
-/// Type scale (docs/design.md, "Typography"): Manrope for the interface,
-/// IBM Plex Mono for receipt numbers, M-Pesa codes, money and counts. Font
-/// sizes live only in this file. Minimum 12, except caps labels at 11.
+/// The v2 type scale (docs/design-system.md, "Type"): Manrope for the
+/// interface, IBM Plex Mono for money, receipt numbers, M-Pesa codes and
+/// counts. Hierarchy comes from size and space, not boldness: weights 400,
+/// 500 and 600 only, nothing below 12, no caps labels (sentence case).
+/// Font sizes live only in this file.
 @immutable
 class LodgingType extends ThemeExtension<LodgingType> {
   const LodgingType({
     required this.pageTitle,
-    required this.heroTitle,
-    required this.cardTitle,
     required this.sectionTitle,
-    required this.cardHeading,
-    required this.capsLabel,
     required this.body,
-    required this.bodyStrong,
-    required this.small,
-    required this.smallStrong,
-    required this.fieldLabel,
-    required this.button,
-    required this.nav,
-    required this.mono,
-    required this.monoStrong,
-    required this.moneyLarge,
+    required this.bodyMedium,
+    required this.secondary,
+    required this.secondaryMedium,
+    required this.meta,
     required this.moneyHero,
-    required this.stepperValue,
+    required this.money,
+    required this.moneySmall,
   });
 
   factory LodgingType.from(LodgingColors c) {
@@ -53,74 +47,48 @@ class LodgingType extends ThemeExtension<LodgingType> {
       color: c.ink,
     );
     return LodgingType(
-      pageTitle: ui(24, FontWeight.w800, c.ink, h: 1.2),
-      heroTitle: ui(36, FontWeight.w800, c.ink, h: 1.15),
-      cardTitle: ui(28, FontWeight.w800, c.ink, h: 1.2),
-      sectionTitle: ui(17, FontWeight.w800, c.ink, h: 1.3),
-      cardHeading: ui(
-        13,
-        FontWeight.w800,
-        c.muted,
-      ).copyWith(letterSpacing: 13 * 0.06),
-      capsLabel: ui(
-        11,
-        FontWeight.w800,
-        c.muted,
-      ).copyWith(letterSpacing: 11 * 0.06),
-      body: ui(14, FontWeight.w500, c.ink, h: 1.45),
-      bodyStrong: ui(14, FontWeight.w700, c.ink, h: 1.45),
-      small: ui(13, FontWeight.w500, c.muted, h: 1.4),
-      smallStrong: ui(12, FontWeight.w700, c.muted, h: 1.4),
-      fieldLabel: ui(13, FontWeight.w700, c.ink),
-      button: ui(15, FontWeight.w800, c.white),
-      nav: ui(14, FontWeight.w600, c.navText),
-      mono: mono(13, FontWeight.w500),
-      monoStrong: mono(14, FontWeight.w600),
-      moneyLarge: mono(22, FontWeight.w600),
+      pageTitle: ui(24, FontWeight.w600, c.ink, h: 1.2),
+      sectionTitle: ui(18, FontWeight.w600, c.ink, h: 1.3),
+      body: ui(16, FontWeight.w400, c.ink, h: 1.45),
+      bodyMedium: ui(16, FontWeight.w500, c.ink, h: 1.45),
+      secondary: ui(14, FontWeight.w400, c.muted, h: 1.4),
+      secondaryMedium: ui(14, FontWeight.w500, c.ink, h: 1.4),
+      meta: ui(12, FontWeight.w500, c.muted, h: 1.4),
       moneyHero: mono(30, FontWeight.w600),
-      stepperValue: mono(22, FontWeight.w600),
+      money: mono(18, FontWeight.w600),
+      moneySmall: mono(14, FontWeight.w500),
     );
   }
 
-  /// 24/800. One per page.
+  /// 24/600. The page's one heading, only when it doesn't repeat the tab.
   final TextStyle pageTitle;
 
-  /// Large brand-panel heading ("Front desk").
-  final TextStyle heroTitle;
-
-  /// Greeting on a centred card ("Good morning, Mary").
-  final TextStyle cardTitle;
-
-  /// 17/800.
+  /// 18/600. Card and section headings.
   final TextStyle sectionTitle;
 
-  /// 13/800 caps, 0.06em tracking, muted. Pass text already in capitals.
-  final TextStyle cardHeading;
-
-  /// 11/800 caps for status labels (READY, IN USE…).
-  final TextStyle capsLabel;
+  /// 16/400. Values and running text.
   final TextStyle body;
-  final TextStyle bodyStrong;
 
-  /// 13/500 muted: captions, helper text.
-  final TextStyle small;
-  final TextStyle smallStrong;
+  /// 16/500. Names and values that lead a row.
+  final TextStyle bodyMedium;
 
-  /// 13/700, above inputs.
-  final TextStyle fieldLabel;
-  final TextStyle button;
-  final TextStyle nav;
+  /// 14/400 muted. Secondary text and captions.
+  final TextStyle secondary;
 
-  /// Receipt numbers, M-Pesa codes, small counts.
-  final TextStyle mono;
-  final TextStyle monoStrong;
+  /// 14/500. Field labels, buttons, tabs, small headings.
+  final TextStyle secondaryMedium;
 
-  /// Money in inputs and totals (22).
-  final TextStyle moneyLarge;
+  /// 12/500 muted. Meta only: times, counts, status labels.
+  final TextStyle meta;
 
-  /// The biggest money figure on a screen (30).
+  /// Mono 30/600. The one hero figure on a screen.
   final TextStyle moneyHero;
-  final TextStyle stepperValue;
+
+  /// Mono 18/600. Money in inputs and totals.
+  final TextStyle money;
+
+  /// Mono 14/500. Receipt numbers, M-Pesa codes, money in rows.
+  final TextStyle moneySmall;
 
   static LodgingType of(BuildContext context) {
     final type = Theme.of(context).extension<LodgingType>();

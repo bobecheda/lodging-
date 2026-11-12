@@ -76,7 +76,7 @@ class _ChangeMyPasswordState extends ConsumerState<ChangeMyPasswordDialog> {
             Text(
               'It is also your sign-in on the phone, so it changes there too '
               '(needs internet).',
-              style: t.small.copyWith(color: c.inkSoft),
+              style: t.secondary.copyWith(color: c.inkSoft),
             ),
             const SizedBox(height: Space.x12),
             LabeledField(

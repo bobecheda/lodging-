@@ -73,7 +73,7 @@ class OwnerMoreScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('SIGNED IN AS', style: t.cardHeading),
+                Text('Signed in as', style: t.secondary),
                 const SizedBox(height: Space.x12),
                 Text(
                   [
@@ -81,7 +81,7 @@ class OwnerMoreScreen extends ConsumerWidget {
                     if (today != null && today.lodgingName.isNotEmpty)
                       today.lodgingName,
                   ].join(' · '),
-                  style: t.bodyStrong,
+                  style: t.bodyMedium,
                 ),
                 Text(
                   signedIn?.email ?? '',
@@ -92,7 +92,7 @@ class OwnerMoreScreen extends ConsumerWidget {
                 Text(
                   today == null ? '' : deskSyncedLine(today.desks, now),
                   key: const ValueKey('owner.more.desk'),
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
               ],
             ),
@@ -162,8 +162,8 @@ class _MenuRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: t.bodyStrong.copyWith(color: ink)),
-                  Text(subtitle, style: t.small.copyWith(color: c.muted)),
+                  Text(title, style: t.bodyMedium.copyWith(color: ink)),
+                  Text(subtitle, style: t.secondary.copyWith(color: c.muted)),
                 ],
               ),
             ),

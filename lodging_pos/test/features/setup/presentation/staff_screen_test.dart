@@ -36,7 +36,7 @@ void main() {
     await openStaff(tester);
     expect(find.text('Users and staff'), findsOneWidget);
     expect(inRow('supervisor', find.textContaining('(you)')), findsOneWidget);
-    expect(inRow('supervisor', find.text('ACTIVE')), findsOneWidget);
+    expect(inRow('supervisor', find.text('Active')), findsOneWidget);
     expect(inRow('supervisor', find.byType(OutlinedButton)), findsNothing);
     expect(find.byKey(const ValueKey('users.disable.owner')), findsNothing);
     expect(find.text('No housekeepers yet.'), findsOneWidget);
@@ -51,7 +51,7 @@ void main() {
     await tapKey(tester, 'addUser.save');
 
     expect(find.text('Mary Wanjiku added.'), findsOneWidget);
-    expect(inRow('mary', find.text('MUST SET PASSWORD')), findsOneWidget);
+    expect(inRow('mary', find.text('Must set password')), findsOneWidget);
     expect(inRow('mary', find.text('mary · Receptionist')), findsOneWidget);
 
     await enterKey(tester, 'addUser.fullName', 'Mary Two');
@@ -72,7 +72,7 @@ void main() {
     await enterKey(tester, 'reset.password', 'new-temp-pass');
     await tapKey(tester, 'reset.ok');
     expect(find.textContaining('Password reset for'), findsOneWidget);
-    expect(inRow('mary', find.text('MUST SET PASSWORD')), findsOneWidget);
+    expect(inRow('mary', find.text('Must set password')), findsOneWidget);
     final row = (await staff().users()).firstWhere(
       (u) => u.account.id == mary.id,
     );
@@ -99,11 +99,11 @@ void main() {
     );
     expect(warning, findsOneWidget);
     await tapKey(tester, 'disable.ok');
-    expect(inRow('mary', find.text('DISABLED')), findsOneWidget);
+    expect(inRow('mary', find.text('Disabled')), findsOneWidget);
     expect(find.byKey(const ValueKey('users.reset.mary')), findsNothing);
 
     await tapKey(tester, 'users.enable.mary');
-    expect(inRow('mary', find.text('ACTIVE')), findsOneWidget);
+    expect(inRow('mary', find.text('Active')), findsOneWidget);
   });
 
   testWidgets('no open shift, no warning; Cancel keeps the account', (
@@ -114,7 +114,7 @@ void main() {
     await tapKey(tester, 'users.disable.mary');
     expect(find.byKey(const ValueKey('disable.warning')), findsNothing);
     await tapKey(tester, 'disable.cancel');
-    expect(inRow('mary', find.text('ACTIVE')), findsOneWidget);
+    expect(inRow('mary', find.text('Active')), findsOneWidget);
   });
 
   testWidgets('housekeepers: add with a masked phone, edit, deactivate and '
@@ -146,10 +146,10 @@ void main() {
 
     await tapKey(tester, 'hk.edit.${rose.id}');
     await tapKey(tester, 'hk.deactivate');
-    expect(find.text('INACTIVE'), findsOneWidget);
+    expect(find.text('Inactive'), findsOneWidget);
     await tapKey(tester, 'hk.edit.${rose.id}');
     await tapKey(tester, 'hk.reactivate');
-    expect(find.text('INACTIVE'), findsNothing);
+    expect(find.text('Inactive'), findsNothing);
     expect(await env.auditFor('housekeeper.reactivate'), hasLength(1));
   });
 

@@ -59,7 +59,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
           children: [
             _Section(
               key: const ValueKey('refunds.toPay'),
-              title: 'TO PAY',
+              title: 'To pay',
               empty: 'Nothing to pay.',
               rows: [
                 for (final v in value.toPay)
@@ -80,7 +80,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
             const SizedBox(height: Space.x20),
             _Section(
               key: const ValueKey('refunds.waiting'),
-              title: 'WAITING FOR OWNER APPROVAL',
+              title: 'Waiting for owner approval',
               empty: 'No refunds waiting for the owner.',
               rows: [
                 for (final v in value.waiting)
@@ -90,7 +90,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
                         'Requested by ${v.requestedByName} · '
                         '${formatDayDateComma(v.refund.requestedAt)}',
                     trailing: const StatusBadge(
-                      'WAITING FOR OWNER APPROVAL',
+                      'Waiting for owner approval',
                       tone: BadgeTone.warning,
                     ),
                   ),
@@ -99,7 +99,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
             const SizedBox(height: Space.x20),
             _Section(
               key: const ValueKey('refunds.rejected'),
-              title: 'REJECTED · LAST 14 DAYS',
+              title: 'Rejected · last 14 days',
               empty: 'No refunds rejected lately.',
               rows: [
                 for (final v in value.rejected)
@@ -110,7 +110,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
                         '${formatDayDateComma(v.refund.decision!.decidedAt)}',
                     reason: v.refund.decision!.note,
                     trailing: const StatusBadge(
-                      'REJECTED',
+                      'Rejected',
                       tone: BadgeTone.disabled,
                     ),
                   ),
@@ -132,7 +132,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
         Text(
           'Refunds the owner approved are paid here, in full, from your own '
           'shift.',
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
         const SizedBox(height: Space.x20),
         Expanded(child: body),
@@ -166,7 +166,7 @@ class _Section extends StatelessWidget {
           children: [
             Text(
               rows.isEmpty ? title : '$title · ${rows.length}',
-              style: t.cardHeading,
+              style: t.secondary,
             ),
             const SizedBox(height: Space.x8),
             if (rows.isEmpty)
@@ -210,14 +210,14 @@ class _RefundRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(v.guestName, style: t.bodyStrong),
+                Text(v.guestName, style: t.bodyMedium),
                 Text(
                   '${maskPhone(v.guestPhone)} · Room ${v.roomNumber} · '
                   'Bed ${v.bedLabel} · ${v.refund.nights} '
                   '${v.refund.nights == 1 ? 'night' : 'nights'}',
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
-                Text(detail, style: t.small.copyWith(color: c.muted)),
+                Text(detail, style: t.secondary.copyWith(color: c.muted)),
                 if (reason != null)
                   Text(
                     '“$reason”',
@@ -228,7 +228,7 @@ class _RefundRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Space.x12),
-          Text(formatKes(v.refund.amount), style: t.monoStrong),
+          Text(formatKes(v.refund.amount), style: t.moneySmall),
           const SizedBox(width: Space.x16),
           trailing,
         ],
@@ -409,7 +409,7 @@ class _PayRefundPanelState extends ConsumerState<PayRefundPanel> {
       Text(
         'Room ${v.roomNumber} · Bed ${v.bedLabel} · approved by '
         '${v.decidedByName}',
-        style: t.small.copyWith(color: c.muted),
+        style: t.secondary.copyWith(color: c.muted),
       ),
       const SizedBox(height: Space.x16),
       Container(
@@ -431,13 +431,13 @@ class _PayRefundPanelState extends ConsumerState<PayRefundPanel> {
               '${r.nights} ${r.nights == 1 ? 'night' : 'nights'} × '
               '${formatKes(r.pricePerNight)} (check-in price). Paid in full; '
               'it can’t be changed.',
-              style: t.small.copyWith(color: c.inkSoft),
+              style: t.secondary.copyWith(color: c.inkSoft),
             ),
           ],
         ),
       ),
       const SizedBox(height: Space.x16),
-      Text('Paid back from', style: t.fieldLabel),
+      Text('Paid back from', style: t.secondaryMedium),
       const SizedBox(height: Space.x6),
       SegmentedChoice<PaymentMethod>(
         key: const ValueKey('pay.method'),
@@ -460,7 +460,7 @@ class _PayRefundPanelState extends ConsumerState<PayRefundPanel> {
         Text(
           _methodError!,
           key: const ValueKey('pay.methodError'),
-          style: t.small.copyWith(color: c.redText),
+          style: t.secondary.copyWith(color: c.redText),
         ),
       ],
       if (_method == PaymentMethod.paybill) ...[
@@ -469,7 +469,7 @@ class _PayRefundPanelState extends ConsumerState<PayRefundPanel> {
           label: 'Send to',
           controller: _sendTo,
           fieldKey: const ValueKey('pay.sendTo'),
-          textStyle: t.monoStrong,
+          textStyle: t.moneySmall,
           helperText:
               'The guest’s phone. Change it if they asked for another '
               'number.',
@@ -480,7 +480,7 @@ class _PayRefundPanelState extends ConsumerState<PayRefundPanel> {
           label: 'M-Pesa transaction code',
           controller: _code,
           fieldKey: const ValueKey('pay.mpesaCode'),
-          textStyle: t.monoStrong,
+          textStyle: t.moneySmall,
           helperText:
               'The code of the money you sent. Each code can be used '
               'once.',

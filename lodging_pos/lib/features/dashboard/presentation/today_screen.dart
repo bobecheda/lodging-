@@ -113,7 +113,7 @@ class TodayScreen extends ConsumerWidget {
           Text(
             formatLongDate(now),
             key: const ValueKey('today.date'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
         const SizedBox(height: Space.x20),
         Expanded(child: body),

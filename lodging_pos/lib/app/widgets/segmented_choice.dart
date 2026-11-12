@@ -96,15 +96,15 @@ class _Card<T> extends StatelessWidget {
                   children: [
                     Text(
                       option.label,
-                      style: t.bodyStrong.copyWith(
+                      style: t.bodyMedium.copyWith(
                         color: textColor,
                         fontWeight: isSelected
-                            ? FontWeight.w800
-                            : FontWeight.w700,
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                     if (option.caption != null)
-                      Text(option.caption!, style: t.small),
+                      Text(option.caption!, style: t.secondary),
                   ],
                 ),
               ),

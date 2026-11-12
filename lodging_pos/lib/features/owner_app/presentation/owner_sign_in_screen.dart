@@ -125,7 +125,7 @@ class _OwnerSignInState extends ConsumerState<OwnerSignInScreen> {
                     Text(
                       'Forgot your password? Ask whoever set up the cloud to '
                       'reset it.',
-                      style: t.small.copyWith(color: c.muted),
+                      style: t.secondary.copyWith(color: c.muted),
                     ),
                   ],
                 ),

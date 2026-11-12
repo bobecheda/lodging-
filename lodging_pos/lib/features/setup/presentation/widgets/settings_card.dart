@@ -224,7 +224,7 @@ class _SettingsCardState extends ConsumerState<SettingsCard> {
                   Text(
                     _saved!,
                     key: const ValueKey('settings.saved'),
-                    style: t.small,
+                    style: t.secondary,
                   ),
               ],
             ),
@@ -234,7 +234,7 @@ class _SettingsCardState extends ConsumerState<SettingsCard> {
                 ? 'Every change is recorded in the audit trail with the old '
                       'and new value.'
                 : 'Only users who can edit settings can change these.',
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
         ],
       );

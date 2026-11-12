@@ -180,13 +180,13 @@ void main() {
           Note.info('Info'),
           Note.warning('Warning'),
           Note.error('Error'),
-          StatusBadge('CLOSED · REPAIRS', tone: BadgeTone.warning),
+          StatusBadge('Closed · repairs', tone: BadgeTone.warning),
         ],
       ),
     );
     expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
     expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
-    expect(find.text('CLOSED · REPAIRS'), findsOneWidget);
+    expect(find.text('Closed · repairs'), findsOneWidget);
   });
 }

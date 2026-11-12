@@ -67,7 +67,7 @@ class LabeledField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(label!, style: t.fieldLabel),
+          Text(label!, style: t.secondaryMedium),
           const SizedBox(height: Space.x6),
         ],
         Semantics(

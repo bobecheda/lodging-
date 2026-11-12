@@ -172,7 +172,11 @@ class _UsersCardState extends ConsumerState<UsersCard> {
             ],
             if (_done != null) ...[
               const SizedBox(height: Space.x12),
-              Text(_done!, key: const ValueKey('users.done'), style: t.small),
+              Text(
+                _done!,
+                key: const ValueKey('users.done'),
+                style: t.secondary,
+              ),
             ],
             const SizedBox(height: Space.x20),
             if (canManage)
@@ -188,7 +192,7 @@ class _UsersCardState extends ConsumerState<UsersCard> {
             else
               Text(
                 'Only users who can manage users can change these.',
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
           ],
         ),
@@ -261,57 +265,59 @@ class _UserRow extends StatelessWidget {
                         ),
                     ],
                   ),
-                  style: t.bodyStrong.copyWith(
+                  style: t.bodyMedium.copyWith(
                     color: disabled ? c.muted : null,
                   ),
                 ),
                 const SizedBox(height: Space.x4),
-                Text(details, style: t.small.copyWith(color: c.muted)),
+                Text(details, style: t.secondary.copyWith(color: c.muted)),
               ],
             ),
           ),
           const SizedBox(width: Space.x12),
-          Wrap(
-            spacing: Space.x8,
-            runSpacing: Space.x8,
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              StatusBadge(
-                key: ValueKey('users.status.$name'),
-                switch (status) {
-                  UserStatus.active => 'ACTIVE',
-                  UserStatus.mustSetPassword => 'MUST SET PASSWORD',
-                  UserStatus.disabled => 'DISABLED',
-                },
-                tone: switch (status) {
-                  UserStatus.active => BadgeTone.active,
-                  UserStatus.mustSetPassword => BadgeTone.warning,
-                  UserStatus.disabled => BadgeTone.disabled,
-                },
-              ),
-              if (manageable && !disabled) ...[
-                AppButton.secondary(
-                  key: ValueKey('users.reset.$name'),
-                  label: 'Reset password',
-                  compact: true,
-                  onPressed: busy ? null : onReset,
+          Flexible(
+            child: Wrap(
+              spacing: Space.x8,
+              runSpacing: Space.x8,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                StatusBadge(
+                  key: ValueKey('users.status.$name'),
+                  switch (status) {
+                    UserStatus.active => 'Active',
+                    UserStatus.mustSetPassword => 'Must set password',
+                    UserStatus.disabled => 'Disabled',
+                  },
+                  tone: switch (status) {
+                    UserStatus.active => BadgeTone.active,
+                    UserStatus.mustSetPassword => BadgeTone.warning,
+                    UserStatus.disabled => BadgeTone.disabled,
+                  },
                 ),
-                AppButton.destructive(
-                  key: ValueKey('users.disable.$name'),
-                  label: 'Disable',
-                  compact: true,
-                  onPressed: busy ? null : onDisable,
-                ),
+                if (manageable && !disabled) ...[
+                  AppButton.secondary(
+                    key: ValueKey('users.reset.$name'),
+                    label: 'Reset password',
+                    compact: true,
+                    onPressed: busy ? null : onReset,
+                  ),
+                  AppButton.destructive(
+                    key: ValueKey('users.disable.$name'),
+                    label: 'Disable',
+                    compact: true,
+                    onPressed: busy ? null : onDisable,
+                  ),
+                ],
+                if (manageable && disabled)
+                  AppButton.secondary(
+                    key: ValueKey('users.enable.$name'),
+                    label: 'Enable',
+                    compact: true,
+                    onPressed: busy ? null : onEnable,
+                  ),
               ],
-              if (manageable && disabled)
-                AppButton.secondary(
-                  key: ValueKey('users.enable.$name'),
-                  label: 'Enable',
-                  compact: true,
-                  onPressed: busy ? null : onEnable,
-                ),
-            ],
+            ),
           ),
         ],
       ),
@@ -354,7 +360,7 @@ class _AddReceptionist extends StatelessWidget {
         children: [
           Text(
             supervisor ? 'Add a supervisor' : 'Add a receptionist',
-            style: t.bodyStrong,
+            style: t.bodyMedium,
           ),
           const SizedBox(height: Space.x12),
           Row(
@@ -402,7 +408,7 @@ class _AddReceptionist extends StatelessWidget {
               ),
               Text(
                 'They choose their own password the first time they sign in.',
-                style: t.small,
+                style: t.secondary,
               ),
             ],
           ),

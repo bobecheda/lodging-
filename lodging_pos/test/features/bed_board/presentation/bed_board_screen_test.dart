@@ -112,18 +112,18 @@ void main() {
     expect(r1.beds, hasLength(1));
 
     await openBoard(tester);
-    expect(tileText('1A', 'READY'), findsOneWidget);
+    expect(tileText('1A', 'Ready'), findsOneWidget);
     expect(tileText('1A', 'Deluxe'), findsOneWidget);
     expect(tileText('1A', 'KES 700 / night'), findsOneWidget);
 
-    expect(tileText('2A', 'IN USE'), findsOneWidget);
+    expect(tileText('2A', 'In use'), findsOneWidget);
     expect(tileText('2A', 'Grace Achieng'), findsOneWidget);
     expect(tileText('2A', 'until Sat 10:00 · Deluxe'), findsOneWidget);
 
-    expect(tileText('3A', 'TO CLEAN'), findsOneWidget);
+    expect(tileText('3A', 'To clean'), findsOneWidget);
     expect(tileText('3A', 'Needs cleaning · assign'), findsOneWidget);
 
-    expect(tileText('5A', 'OVERSTAY'), findsOneWidget);
+    expect(tileText('5A', 'Overstay'), findsOneWidget);
     expect(tileText('5A', 'paid to Thu 10:00 · Deluxe'), findsOneWidget);
     expect(
       find.descendant(
@@ -229,11 +229,11 @@ void main() {
     // it forever.
     await env.openShift(supervisor, startingCash: 0);
     await openBoard(tester);
-    expect(tileText('4A', 'READY'), findsOneWidget);
+    expect(tileText('4A', 'Ready'), findsOneWidget);
 
     await tester.runAsync(() => env.checkIn(r4.beds.single.id, by: supervisor));
     await tester.pumpAndSettle();
-    expect(tileText('4A', 'IN USE'), findsOneWidget);
+    expect(tileText('4A', 'In use'), findsOneWidget);
   });
 
   testWidgets('a bed turns Overstay on its own after paid_until + grace', (
@@ -244,12 +244,12 @@ void main() {
     await env.checkIn(r5.beds.single.id, by: supervisor);
     env.clock.set(nairobiInstant(2026, 10, 15, 10, 59, 45));
     await openBoard(tester, tick: const Duration(seconds: 30));
-    expect(tileText('5A', 'IN USE'), findsOneWidget);
+    expect(tileText('5A', 'In use'), findsOneWidget);
     expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
 
     env.clock.advance(const Duration(seconds: 30)); // 11:00:15
     await tester.pump(const Duration(seconds: 30));
-    expect(tileText('5A', 'OVERSTAY'), findsOneWidget);
+    expect(tileText('5A', 'Overstay'), findsOneWidget);
     expect(find.byKey(const ValueKey('board.overstayBar')), findsOneWidget);
 
     // Leave the board so its ticker stops before the test ends.

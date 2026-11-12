@@ -144,7 +144,7 @@ class _CorrectDetailsState extends ConsumerState<_CorrectDetails> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('DETAILS', style: t.capsLabel.copyWith(color: c.muted)),
+            Text('Details', style: t.meta.copyWith(color: c.muted)),
             const SizedBox(height: Space.x12),
             if (form == null) ...[
               SelectedGuestCard(guest: widget.guest, showBadge: false),
@@ -153,7 +153,7 @@ class _CorrectDetailsState extends ConsumerState<_CorrectDetails> {
                 Text(
                   _saved!,
                   key: const ValueKey('correct.saved'),
-                  style: t.small,
+                  style: t.secondary,
                 ),
               ],
               if (canEdit) ...[
@@ -206,7 +206,7 @@ class _CorrectDetailsState extends ConsumerState<_CorrectDetails> {
               const SizedBox(height: Space.x12),
               Text(
                 'Every change is recorded in the audit trail.',
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ],

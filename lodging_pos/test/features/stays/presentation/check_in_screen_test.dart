@@ -107,7 +107,7 @@ void main() {
 
     await findGuest(tester, g);
     expect(find.byKey(const ValueKey('guests.selected')), findsOneWidget);
-    expect(find.text('RETURNING'), findsOneWidget);
+    expect(find.text('Returning'), findsOneWidget);
     expect(find.text('No earlier stays'), findsOneWidget);
 
     await tapKey(tester, 'stepper.plus');
@@ -136,7 +136,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('board.bed.7A')),
-        matching: find.text('IN USE'),
+        matching: find.text('In use'),
       ),
       findsOneWidget,
     );
@@ -156,7 +156,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('board.bed.7A')),
-        matching: find.text('READY'),
+        matching: find.text('Ready'),
       ),
       findsOneWidget,
     );
@@ -232,7 +232,7 @@ void main() {
     await tester.pumpAndSettle();
     await tapKey(tester, 'newGuest.save'); // "Use this guest"
 
-    expect(find.text('NEW'), findsOneWidget);
+    expect(find.text('New'), findsOneWidget);
     expect(find.text('Registered when the check-in is saved'), findsOneWidget);
     expect(await env.db.select(env.db.guests).get(), isEmpty);
 

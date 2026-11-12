@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// The owner's palette (docs/design.md, "Colours"). Each colour has one
-/// meaning: marine = navigation, primary actions and occupied beds; red =
-/// overstay and urgent alerts only; butter = needs cleaning, offline and
-/// warnings. Raw colour values live only in this file.
+/// The palette (docs/design-system.md, "Colour"; v2). Each colour has one
+/// meaning: marine = brand and action; marine-tint = occupied (quiet) and
+/// selected; red = overstay and urgent only; butter = needs cleaning,
+/// warnings, count badges and offline; green = good; each room category
+/// has its own colour key ([categories]). Raw colour values live only in
+/// this file.
 @immutable
 class LodgingColors extends ThemeExtension<LodgingColors> {
   const LodgingColors({
@@ -37,7 +39,10 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     required this.brandCream,
     required this.brandGoldOnDark,
     required this.brandGoldOnLight,
-    required this.gold,
+    required this.green,
+    required this.greenTint,
+    required this.butterTint,
+    required this.categories,
   });
 
   static const light = LodgingColors(
@@ -75,8 +80,45 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     brandCream: Color(0xFFF5EDD8),
     brandGoldOnDark: Color(0xFFC9962E),
     brandGoldOnLight: Color(0xFFE9B53F),
-    // The brand gold: M-Pesa in the owner's money bars (Figma "01 Today").
-    gold: Color(0xFFC9962E),
+    // Good: online, money up, count matched, saved.
+    green: Color(0xFF1E7B4F),
+    greenTint: Color(0xFFE6F4EC),
+    // Soft warning background (Figma status/butter-tint).
+    butterTint: Color(0xFFFDF6DE),
+    // Room categories, in the order new categories take them. The stripe
+    // needs 3:1 on white, the label text 4.5:1.
+    categories: [
+      CategorySwatch(
+        'gold',
+        stripe: Color(0xFFB8862B),
+        text: Color(0xFF7A5A12),
+      ),
+      CategorySwatch(
+        'violet',
+        stripe: Color(0xFF5B4B9A),
+        text: Color(0xFF5B4B9A),
+      ),
+      CategorySwatch(
+        'teal',
+        stripe: Color(0xFF1F7A86),
+        text: Color(0xFF1F7A86),
+      ),
+      CategorySwatch(
+        'slate',
+        stripe: Color(0xFF6B7A90),
+        text: Color(0xFF4A5568),
+      ),
+      CategorySwatch(
+        'plum',
+        stripe: Color(0xFF8A3F7A),
+        text: Color(0xFF8A3F7A),
+      ),
+      CategorySwatch(
+        'bronze',
+        stripe: Color(0xFF6E5B3E),
+        text: Color(0xFF6E5B3E),
+      ),
+    ],
   );
 
   final Color marine;
@@ -114,8 +156,22 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
   final Color brandGoldOnDark;
   final Color brandGoldOnLight;
 
-  /// The brand gold, for M-Pesa in money bars (cash is marine).
-  final Color gold;
+  /// Good: online, money up, count matched, saved.
+  final Color green;
+  final Color greenTint;
+
+  /// Soft warning background.
+  final Color butterTint;
+
+  /// Room category colours, in palette order (gold, violet, teal, slate,
+  /// plum, bronze).
+  final List<CategorySwatch> categories;
+
+  /// The swatch for a category's colour key; an unknown key is slate.
+  CategorySwatch category(String key) => categories.firstWhere(
+    (s) => s.key == key,
+    orElse: () => categories.firstWhere((s) => s.key == 'slate'),
+  );
 
   static LodgingColors of(BuildContext context) {
     final colors = Theme.of(context).extension<LodgingColors>();
@@ -129,4 +185,17 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
 
   @override
   LodgingColors lerp(LodgingColors? other, double t) => this;
+}
+
+/// One room category colour: a 4 px stripe on the room card and the
+/// category label's text colour. Category is never shown by colour alone:
+/// the label always stays.
+@immutable
+class CategorySwatch {
+  const CategorySwatch(this.key, {required this.stripe, required this.text});
+
+  /// The palette key stored on `bed_categories.colour` (PR 4).
+  final String key;
+  final Color stripe;
+  final Color text;
 }

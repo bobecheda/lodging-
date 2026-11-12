@@ -44,7 +44,7 @@ class LabeledDropdown<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: t.fieldLabel),
+        Text(label, style: t.secondaryMedium),
         const SizedBox(height: Space.x6),
         DropdownButtonFormField<T>(
           // Rebuild when the value changes from outside.

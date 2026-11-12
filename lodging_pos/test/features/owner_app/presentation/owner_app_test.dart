@@ -117,6 +117,14 @@ void main() {
     expect(find.text('Payment voided · R-000043'), findsOneWidget);
     // Today: 1,400 by M-Pesa; the voided 700 doesn't count.
     expect(text(tester, 'today.money.total'), 'KES 1,400');
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('today.beds.inUse')),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('owner.today')),
+        matching: find.byType(Scrollable),
+      ),
+    );
     expect(text(tester, 'today.beds.inUse'), '1 of 2');
 
     // Between reloads the header says how old the figures are.

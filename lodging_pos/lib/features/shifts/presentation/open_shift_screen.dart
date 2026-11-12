@@ -89,13 +89,13 @@ class _Heading extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(formatDayDateTime(now), style: t.smallStrong),
+        Text(formatDayDateTime(now), style: t.meta),
         const SizedBox(height: Space.x8),
         Semantics(
           header: true,
           child: Text(
             title ?? '${greetingFor(now)}, $firstName',
-            style: t.cardTitle,
+            style: t.pageTitle,
           ),
         ),
         const SizedBox(height: Space.x8),

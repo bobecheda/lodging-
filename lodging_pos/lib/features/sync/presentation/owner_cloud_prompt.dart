@@ -108,7 +108,7 @@ class _OwnerCloudSignInDialogState
             Text(
               'Decisions and prices go to the cloud first, so your phone and '
               'this desk agree. Enter your password once for this session.',
-              style: t.small,
+              style: t.secondary,
             ),
             const SizedBox(height: Space.x12),
             LabeledField(

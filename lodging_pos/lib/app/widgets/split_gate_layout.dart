@@ -50,7 +50,7 @@ class SplitGateLayout extends ConsumerWidget {
                     const Spacer(),
                     Text(
                       'Front desk',
-                      style: t.heroTitle.copyWith(color: c.white),
+                      style: t.pageTitle.copyWith(color: c.white),
                     ),
                     const SizedBox(height: Space.x12),
                     Text(
@@ -73,7 +73,7 @@ class SplitGateLayout extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             'Sign-in works without internet',
-                            style: t.smallStrong.copyWith(color: c.navText),
+                            style: t.meta.copyWith(color: c.navText),
                           ),
                         ),
                       ],
@@ -105,7 +105,7 @@ class SplitGateLayout extends ConsumerWidget {
                           ],
                           Semantics(
                             header: true,
-                            child: Text(title, style: t.cardTitle),
+                            child: Text(title, style: t.pageTitle),
                           ),
                           if (subtitle != null) ...[
                             const SizedBox(height: Space.x8),
@@ -121,7 +121,7 @@ class SplitGateLayout extends ConsumerWidget {
                             Text(
                               footer!,
                               textAlign: TextAlign.center,
-                              style: t.small,
+                              style: t.secondary,
                             ),
                           ],
                         ],

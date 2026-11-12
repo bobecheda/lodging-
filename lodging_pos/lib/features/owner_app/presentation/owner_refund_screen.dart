@@ -112,7 +112,7 @@ class _OwnerRefundState extends ConsumerState<OwnerRefundScreen> {
               key: const ValueKey('refund.back'),
               onPressed: () => context.go(OwnerRoutes.today),
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: Text('Today', style: t.bodyStrong),
+              label: Text('Today', style: t.bodyMedium),
             ),
           ),
         ),

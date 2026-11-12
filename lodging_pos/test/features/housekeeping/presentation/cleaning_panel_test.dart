@@ -89,7 +89,7 @@ void main() {
     await tapKey(tester, 'cleaning.markClean');
     expect(find.byKey(const ValueKey('cleaning.done')), findsOneWidget);
     await tapKey(tester, 'cleaning.close');
-    expect(tileText('READY'), findsOneWidget);
+    expect(tileText('Ready'), findsOneWidget);
     expect(find.byKey(const ValueKey('board.room.7.toClean')), findsNothing);
   });
 

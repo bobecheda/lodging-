@@ -139,7 +139,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('refunds.waiting')),
-          matching: find.text('WAITING FOR OWNER APPROVAL'),
+          matching: find.text('Waiting for owner approval'),
         ),
         findsOneWidget,
       );

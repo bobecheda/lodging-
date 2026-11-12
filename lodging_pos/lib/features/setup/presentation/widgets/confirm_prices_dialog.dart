@@ -34,7 +34,7 @@ class ConfirmPricesDialog extends StatelessWidget {
                 child: Text(
                   change.label,
                   key: ValueKey('confirm.change.${change.categoryId}'),
-                  style: t.monoStrong,
+                  style: t.moneySmall,
                 ),
               ),
             for (final change in changes)

@@ -62,7 +62,7 @@ class NavItem {
   /// the same through `Routes.permissions`.
   final Set<Permission> permissions;
 
-  /// Listed under "SETUP · SUPERVISOR" for the supervisor; the owner's few
+  /// Listed under "Setup · supervisor" for the supervisor; the owner's few
   /// setup screens (Prices, Staff) are listed with the rest.
   final bool setup;
 
@@ -206,7 +206,7 @@ class DeskShell extends ConsumerWidget {
         children: [
           const LodgingWordmark(),
           const SizedBox(height: Space.x6),
-          Text('Front desk', style: t.small.copyWith(color: c.navMuted)),
+          Text('Front desk', style: t.secondary.copyWith(color: c.navMuted)),
           const SizedBox(height: Space.x16),
           // Every item built (not lazy), scrolling only if the desk's
           // warnings push it past a 768-high screen.
@@ -224,9 +224,9 @@ class DeskShell extends ConsumerWidget {
                         vertical: Space.x6,
                       ),
                       child: Text(
-                        'SETUP · SUPERVISOR',
+                        'Setup · supervisor',
                         key: const ValueKey('shell.setupGroup'),
-                        style: t.capsLabel.copyWith(color: c.navMuted),
+                        style: t.meta.copyWith(color: c.navMuted),
                       ),
                     ),
                     for (final item in setup) _NavTile(item, location, user),
@@ -312,11 +312,11 @@ class _NavTile extends ConsumerWidget {
                     child: Text(
                       item.labelFor(user),
                       style: isActive
-                          ? t.nav.copyWith(
+                          ? t.secondaryMedium.copyWith(
                               color: c.white,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             )
-                          : t.nav,
+                          : t.secondaryMedium.copyWith(color: c.navText),
                     ),
                   ),
                   if (item.badge == NavBadge.refundsToPay)
@@ -359,7 +359,7 @@ class _CountBadge extends StatelessWidget {
         color: c.butter,
         borderRadius: BorderRadius.circular(Radii.pill),
       ),
-      child: Text('$count', style: t.smallStrong.copyWith(color: c.butterText)),
+      child: Text('$count', style: t.meta.copyWith(color: c.butterText)),
     );
   }
 }
@@ -421,10 +421,7 @@ class _SyncPill extends ConsumerWidget {
               Icon(icon, size: 18, color: foreground),
               const SizedBox(width: Space.x8),
               Expanded(
-                child: Text(
-                  text,
-                  style: t.smallStrong.copyWith(color: foreground),
-                ),
+                child: Text(text, style: t.meta.copyWith(color: foreground)),
               ),
             ],
           ),
@@ -480,7 +477,7 @@ class _BackupPill extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     text,
-                    style: t.smallStrong.copyWith(color: c.butterText),
+                    style: t.meta.copyWith(color: c.butterText),
                   ),
                 ),
               ],
@@ -517,12 +514,12 @@ class _UserBlock extends ConsumerWidget {
         Text(
           user.fullName,
           key: const ValueKey('shell.userName'),
-          style: t.bodyStrong.copyWith(color: c.white),
+          style: t.bodyMedium.copyWith(color: c.white),
         ),
         Text(
           role,
           key: const ValueKey('shell.userRole'),
-          style: t.small.copyWith(color: c.navMuted),
+          style: t.secondary.copyWith(color: c.navMuted),
         ),
         const SizedBox(height: Space.x12),
         // FD-11: close your own shift (count the cash, then sign out).
@@ -533,7 +530,7 @@ class _UserBlock extends ConsumerWidget {
             icon: Icon(Icons.point_of_sale_outlined, size: 18, color: c.white),
             label: Text(
               'Close shift',
-              style: t.bodyStrong.copyWith(color: c.white),
+              style: t.bodyMedium.copyWith(color: c.white),
             ),
             style: OutlinedButton.styleFrom(
               backgroundColor: c.marine,
@@ -549,7 +546,7 @@ class _UserBlock extends ConsumerWidget {
           icon: Icon(Icons.lock_outline_rounded, size: 18, color: c.white),
           label: Text(
             'Lock screen',
-            style: t.bodyStrong.copyWith(color: c.white),
+            style: t.bodyMedium.copyWith(color: c.white),
           ),
           style: OutlinedButton.styleFrom(
             backgroundColor: c.marine,
@@ -567,7 +564,7 @@ class _UserBlock extends ConsumerWidget {
             ),
             child: Text(
               'Change my password',
-              style: t.small.copyWith(color: c.navText),
+              style: t.secondary.copyWith(color: c.navText),
             ),
           ),
       ],

@@ -122,7 +122,7 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Nights', style: t.bodyStrong)),
+              Expanded(child: Text('Nights', style: t.bodyMedium)),
               NightStepper(
                 value: stepped,
                 min: min,
@@ -144,7 +144,7 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
             Text(
               reason,
               key: const ValueKey('extend.minReason'),
-              style: t.small.copyWith(color: c.inkSoft),
+              style: t.secondary.copyWith(color: c.inkSoft),
             ),
           ],
           if (nightsProblem != null) ...[
@@ -152,7 +152,7 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
             Text(
               nightsProblem,
               key: const ValueKey('extend.nightsError'),
-              style: t.small.copyWith(color: c.redText),
+              style: t.secondary.copyWith(color: c.redText),
             ),
           ],
           if (quote != null) ...[
@@ -161,7 +161,7 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
               TextSpan(
                 children: [
                   TextSpan(text: 'New checkout ', style: t.body),
-                  TextSpan(text: quote.newCheckoutText, style: t.bodyStrong),
+                  TextSpan(text: quote.newCheckoutText, style: t.bodyMedium),
                   TextSpan(text: '.', style: t.body),
                 ],
               ),
@@ -174,19 +174,19 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
                 Expanded(
                   child: Text(
                     quote.priceLine,
-                    style: t.small.copyWith(color: c.muted),
+                    style: t.secondary.copyWith(color: c.muted),
                   ),
                 ),
                 Text(
                   formatKes(quote.total),
                   key: const ValueKey('extend.total'),
-                  style: t.moneyLarge,
+                  style: t.money,
                 ),
               ],
             ),
           ],
           const SizedBox(height: Space.x12),
-          Text('Paid by', style: t.fieldLabel),
+          Text('Paid by', style: t.secondaryMedium),
           const SizedBox(height: Space.x6),
           SegmentedChoice<PaymentMethod>(
             key: const ValueKey('extend.method'),
@@ -205,7 +205,7 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
               label: 'M-Pesa transaction code',
               controller: _code,
               fieldKey: const ValueKey('extend.mpesaCode'),
-              textStyle: t.monoStrong,
+              textStyle: t.moneySmall,
               helperText: 'Each code can be used once. A used code is refused.',
               errorText: _codeError,
             ),
@@ -214,7 +214,7 @@ class _ExtendCardState extends ConsumerState<ExtendCard> {
             Text(
               _codeError!,
               key: const ValueKey('extend.paymentError'),
-              style: t.small.copyWith(color: c.redText),
+              style: t.secondary.copyWith(color: c.redText),
             ),
           ],
           if (_problem != null) ...[

@@ -71,7 +71,7 @@ void main() {
       'with short or over in words', (tester) async {
     await open(tester, 'shifts');
     // Grace's open shift took KES 1,400 by M-Pesa and 700 cash, voided.
-    expect(find.text('OPEN'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
     expect(text(tester, 'owner.shift.s-3.cash'), 'KES 0');
     expect(find.text('KES 1,400'), findsWidgets);
     expect(text(tester, 'owner.shift.s-1.variance'), 'KES 300 short');

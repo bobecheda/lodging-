@@ -3,7 +3,8 @@
 Bundled as assets so the desk renders correctly offline (no `google_fonts`).
 Every family is licensed under the SIL Open Font License 1.1; each folder
 keeps its `OFL.txt` beside the font files. Manrope and IBM Plex Mono were
-downloaded 2026-10-15; Pirata One and IM Fell English SC 2026-10-20.
+downloaded 2026-10-15 (Manrope Regular 2026-11-12, for the v2 type scale);
+Pirata One and IM Fell English SC 2026-10-20.
 
 ## Manrope (interface text)
 
@@ -14,6 +15,7 @@ downloaded 2026-10-15; Pirata One and IM Fell English SC 2026-10-20.
 
 | File | Weight | SHA-256 |
 |---|---|---|
+| `manrope/manrope-regular.ttf` | 400 | `d23d6eedf51dd495138aa1a83588027d4a63549cdfcc2fa5e0d8e84e09cf4cb1` |
 | `manrope/manrope-medium.ttf` | 500 | `502ee33a6e140ad6ef10ef8b762a8e5cf01f33316f318800795725f4cfd539d9` |
 | `manrope/manrope-semibold.ttf` | 600 | `f43edb46a08e1538413ea2383ef01ed93cdab191a2c57d2489d9590985858cf7` |
 | `manrope/manrope-bold.ttf` | 700 | `484d10f0683e9e9f588de978f70cd3ad17cb3522bc0ca6efc4491c83429d323c` |

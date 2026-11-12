@@ -143,7 +143,7 @@ class _HousekeepersCardState extends ConsumerState<HousekeepersCard> {
             Text(
               'Picked from this list when a bed is assigned. They don’t sign '
               'in.',
-              style: t.small.copyWith(color: c.muted),
+              style: t.secondary.copyWith(color: c.muted),
             ),
             const SizedBox(height: Space.x12),
             if (list case AsyncError(:final error))
@@ -151,7 +151,7 @@ class _HousekeepersCardState extends ConsumerState<HousekeepersCard> {
             else if (list.value case final items? when items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: Space.x8),
-                child: Text('No housekeepers yet.', style: t.small),
+                child: Text('No housekeepers yet.', style: t.secondary),
               )
             else
               for (final h in list.value ?? const <Housekeeper>[]) ...[
@@ -208,7 +208,7 @@ class _HousekeepersCardState extends ConsumerState<HousekeepersCard> {
               const SizedBox(height: Space.x16),
               Text(
                 'Only users who can manage housekeepers can change these.',
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ],
@@ -250,19 +250,19 @@ class _HousekeeperRow extends StatelessWidget {
                   children: [
                     Text(
                       h.fullName,
-                      style: t.bodyStrong.copyWith(
+                      style: t.bodyMedium.copyWith(
                         color: h.isActive ? null : c.muted,
                       ),
                     ),
                     if (!h.isActive)
-                      const StatusBadge('INACTIVE', tone: BadgeTone.disabled),
+                      const StatusBadge('Inactive', tone: BadgeTone.disabled),
                   ],
                 ),
                 const SizedBox(height: Space.x4),
                 Text(
                   phone == null ? 'No phone recorded' : maskPhone(phone),
                   key: ValueKey('hk.phone.${h.id}'),
-                  style: t.small.copyWith(color: c.muted),
+                  style: t.secondary.copyWith(color: c.muted),
                 ),
               ],
             ),

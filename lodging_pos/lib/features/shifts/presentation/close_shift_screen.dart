@@ -147,7 +147,7 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
             '${shift.userName} · shift since '
             '${formatDayDateTime(shift.openedAt)}',
             key: const ValueKey('closeShift.whose'),
-            style: t.small.copyWith(color: c.muted),
+            style: t.secondary.copyWith(color: c.muted),
           ),
       ],
     );
@@ -248,7 +248,7 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
         Text(
           'A closed shift can’t be reopened.',
           textAlign: TextAlign.center,
-          style: t.small,
+          style: t.secondary,
         ),
       ],
     );
@@ -288,7 +288,7 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
         Text(
           'A closed shift can’t be reopened.',
           textAlign: TextAlign.center,
-          style: t.small,
+          style: t.secondary,
         ),
       ],
     );
@@ -324,7 +324,7 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
           _Row('Expected cash', formatKes(f.expectedCash)),
           _Row('Counted', formatKes(f.counted)),
           if (recountLine(f.firstCount, f.counted) case final line?)
-            Text(line, style: t.small.copyWith(color: c.muted)),
+            Text(line, style: t.secondary.copyWith(color: c.muted)),
           _Row(
             'Variance',
             varianceLabel(f.variance),
@@ -370,7 +370,7 @@ class _Row extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: (strong ? t.bodyStrong : t.body).copyWith(
+              style: (strong ? t.bodyMedium : t.body).copyWith(
                 color: strong ? c.ink : c.inkSoft,
               ),
             ),
@@ -381,7 +381,7 @@ class _Row extends StatelessWidget {
               final String k => ValueKey<String>(k),
               null => null,
             },
-            style: strong ? t.monoStrong : t.mono,
+            style: strong ? t.moneySmall : t.moneySmall,
           ),
         ],
       ),

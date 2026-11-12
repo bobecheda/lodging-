@@ -579,7 +579,7 @@ void main() {
           tester,
           app,
           Routes.adminPrices,
-          'REQUEST FROM GRACE (SUPERVISOR)',
+          'Request from Grace (supervisor)',
         );
         expect(
           find.textContaining('VIP is now KES 1,100, not 1,000.'),
@@ -734,7 +734,7 @@ void main() {
       await withOwner();
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'owner', 'owner-pass');
-      await expectCleanLayout(tester, app, Routes.today, 'TODAY’S MONEY');
+      await expectCleanLayout(tester, app, Routes.today, 'Today’s money');
       expect(
         find.byKey(const ValueKey('today.attention.empty')),
         findsOneWidget,
@@ -863,8 +863,8 @@ void main() {
       await signInAs(tester, 'desk', 'desk-pass');
       await tapKey(tester, 'shift.continue');
       await tapKey(tester, 'nav.${Routes.refunds}');
-      await expectCleanLayout(tester, app, Routes.refunds, 'TO PAY · 1');
-      expect(find.text('WAITING FOR OWNER APPROVAL · 1'), findsOneWidget);
+      await expectCleanLayout(tester, app, Routes.refunds, 'To pay · 1');
+      expect(find.text('Waiting for owner approval · 1'), findsOneWidget);
     });
 
     testWidgets('the pay panel with every error, then the REFUND receipt', (

@@ -222,10 +222,9 @@ final class OwnerPriceRequest {
   /// ([staleError]).
   String? get staleMessage => staleError(request, category);
 
-  /// "REQUEST FROM GRACE (SUPERVISOR)".
+  /// "Request from Grace (supervisor)".
   String get heading =>
-      'REQUEST FROM ${requestedByName.split(' ').first.toUpperCase()} '
-      '(${requestedByRole.toUpperCase()})';
+      'Request from ${requestedByName.split(' ').first} ($requestedByRole)';
 
   /// "“Other lodgings nearby charge 800.” · today 09:15".
   String reasonLine(DateTime now) {

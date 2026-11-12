@@ -231,7 +231,7 @@ class _DrawerCountScreenState extends ConsumerState<DrawerCountScreen> {
                     'receptionist co-signs first.'
               : 'Count the drawer with the receptionist present. They '
                     'co-sign first.',
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
         const SizedBox(height: Space.x20),
         Expanded(
@@ -465,7 +465,11 @@ class _WeekFigures extends ConsumerWidget {
           Expanded(
             child: Text(label, style: t.body.copyWith(color: c.inkSoft)),
           ),
-          Text(value, key: key == null ? null : ValueKey(key), style: t.mono),
+          Text(
+            value,
+            key: key == null ? null : ValueKey(key),
+            style: t.moneySmall,
+          ),
         ],
       ),
     );
@@ -484,7 +488,7 @@ class _WeekFigures extends ConsumerWidget {
         row('Taken away', formatKes(saved.removed)),
         row('Left in the drawer', formatKes(saved.counted - saved.removed)),
         Divider(color: c.lineSoft),
-        Text('Since the last collection', style: t.smallStrong),
+        Text('Since the last collection', style: t.meta),
         row('Shift closes', '${week.closes}'),
         row('Drawer checks', '${week.checks}'),
         row('Needing review', '${week.reviews}', key: 'drawer.week.reviews'),

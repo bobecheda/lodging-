@@ -144,13 +144,13 @@ class _BedPanelState extends ConsumerState<BedPanel> {
                 child: Text(
                   'Room ${detail.roomNumber} · Bed ${detail.bedLabel}',
                   key: const ValueKey('panel.title'),
-                  style: t.cardTitle,
+                  style: t.pageTitle,
                 ),
               ),
               Text(
                 '${first.categoryName} · ${formatKes(first.pricePerNight)} / '
                 'night (check-in price)',
-                style: t.small.copyWith(color: c.muted),
+                style: t.secondary.copyWith(color: c.muted),
               ),
             ],
           ),
@@ -191,22 +191,22 @@ class _BedPanelState extends ConsumerState<BedPanel> {
           ),
           const SizedBox(height: Space.x20),
         ],
-        _caps(context, 'GUEST'),
+        _caps(context, 'Guest'),
         Text(detail.guest.fullName, style: t.sectionTitle),
         Text(
           [
             maskPhone(detail.guest.phone),
             detail.guest.maskedId ?? 'no ID recorded',
           ].join(' · '),
-          style: t.small.copyWith(color: c.inkSoft),
+          style: t.secondary.copyWith(color: c.inkSoft),
         ),
         const SizedBox(height: Space.x20),
-        _caps(context, 'PAID SO FAR'),
+        _caps(context, 'Paid so far'),
         for (final paid in detail.charges) _PaidRow(paid),
         const SizedBox(height: Space.x20),
         // FD-7: Extend first, then Check out (artboard order).
         if (can(user, Permission.extendStay)) ...[
-          _caps(context, 'EXTEND STAY'),
+          _caps(context, 'Extend stay'),
           ExtendCard(
             key: ValueKey('extend.${detail.id}.${detail.stay.paidUntil}'),
             detail: detail,
@@ -217,7 +217,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
           ),
           const SizedBox(height: Space.x20),
         ],
-        _caps(context, 'CHECK OUT'),
+        _caps(context, 'Check out'),
         ..._checkoutSection(context, terms),
         if (!ownShift) ...[
           const SizedBox(height: Space.x12),
@@ -263,7 +263,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
                     'The bed then needs cleaning.'
               : 'The bed then needs cleaning.',
           textAlign: TextAlign.center,
-          style: t.small.copyWith(color: c.muted),
+          style: t.secondary.copyWith(color: c.muted),
         ),
       ];
     }
@@ -308,7 +308,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
           Expanded(
             child: Text(label, style: t.body.copyWith(color: c.muted)),
           ),
-          Text(value, key: key, style: t.monoStrong),
+          Text(value, key: key, style: t.moneySmall),
         ],
       ),
     );
@@ -342,7 +342,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
           key: const ValueKey('panel.lateTotal'),
         ),
         const SizedBox(height: Space.x12),
-        Text('Paid by', style: t.fieldLabel),
+        Text('Paid by', style: t.secondaryMedium),
         const SizedBox(height: Space.x6),
         SegmentedChoice<PaymentMethod>(
           key: const ValueKey('panel.method'),
@@ -361,7 +361,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
             label: 'M-Pesa transaction code',
             controller: _code,
             fieldKey: const ValueKey('panel.mpesaCode'),
-            textStyle: t.monoStrong,
+            textStyle: t.moneySmall,
             helperText: 'Each code can be used once. A used code is refused.',
             errorText: _codeError,
           ),
@@ -370,7 +370,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
           Text(
             _codeError!,
             key: const ValueKey('panel.paymentError'),
-            style: t.small.copyWith(color: c.redText),
+            style: t.secondary.copyWith(color: c.redText),
           ),
         ],
       ],
@@ -381,7 +381,7 @@ class _BedPanelState extends ConsumerState<BedPanel> {
     padding: const EdgeInsets.only(bottom: Space.x6),
     child: Text(
       text,
-      style: LodgingType.of(context).capsLabel
+      style: LodgingType.of(context).meta
           .copyWith(color: LodgingColors.of(context).muted),
     ),
   );
@@ -417,13 +417,13 @@ class _OverstayBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'OVERSTAY · $past past grace',
-            style: t.bodyStrong.copyWith(color: c.white),
+            'Overstay · $past past grace',
+            style: t.bodyMedium.copyWith(color: c.white),
           ),
           Text(
             'Paid until ${formatWeekdayTime(paidUntil)}. Grace ended '
             '${formatTime(graceEnded)}.',
-            style: t.small.copyWith(color: c.white),
+            style: t.secondary.copyWith(color: c.white),
           ),
         ],
       ),
@@ -460,10 +460,10 @@ class _PaidRow extends StatelessWidget {
               '${formatWeekdayTime(ch.periodStart)} → '
               '${formatWeekdayTime(ch.periodEnd)} · $nights'
               '${ch.kind == ChargeKind.lateCheckout ? ' · late' : ''}',
-              style: t.small.copyWith(color: c.ink),
+              style: t.secondary.copyWith(color: c.ink),
             ),
           ),
-          Text(paid.receiptNumber, style: t.monoStrong),
+          Text(paid.receiptNumber, style: t.moneySmall),
         ],
       ),
     );
@@ -511,7 +511,7 @@ class _Result extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: StatusBadge(
-              'WAITING FOR OWNER APPROVAL',
+              'Waiting for owner approval',
               key: const ValueKey('panel.result.refundBadge'),
               tone: BadgeTone.warning,
             ),
@@ -521,13 +521,13 @@ class _Result extends StatelessWidget {
             'Refund of ${formatKes(refund.amount)} requested '
             '(${refund.nights} × ${formatKes(refund.pricePerNight)}).',
             key: const ValueKey('panel.result.refund'),
-            style: t.bodyStrong,
+            style: t.bodyMedium,
           ),
           Text(
             'The guest’s phone ${maskPhone(r.guestPhone)} is saved for the '
             'refund.',
             key: const ValueKey('panel.result.phone'),
-            style: t.small.copyWith(color: c.inkSoft),
+            style: t.secondary.copyWith(color: c.inkSoft),
           ),
         ],
         if (r.paymentId case final paymentId?) ...[
