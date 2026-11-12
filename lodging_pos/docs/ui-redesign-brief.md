@@ -1,6 +1,6 @@
 # UI redesign brief — lodging_pos (v2)
 
-Status: designed in Figma, awaiting owner review and staff test. Build plan agreed with Claude Code 12 Nov 2026 (9 PRs, story/ui-1 … ui-9).
+Status: designed in Figma, awaiting owner review and staff test. Build plan agreed with Claude Code 12 Nov 2026 (9 PRs, story/ui-1 … ui-9). UB40 goes live after the redesign (decided 12 Nov 2026; see Timeline).
 Figma: file CVc42Uc4UyoQr366bP3Bca, page "Redesign v2 — Nov 2026" (node 22:447). The old screens on Page 1 are kept for comparison.
 Prototype flows on that page: "Receptionist" (Bed board ↔ Receipts tabs; New check-in → Check-in → Cancel) and "Supervisor" (Cash: Setup menu opens/closes).
 
@@ -113,8 +113,12 @@ The board filters in memory as today (room number exact, occupant name part, pho
 
 ## Open decisions
 - Owner to confirm: quieter occupied tile (changes his original "occupied = solid marine" rule) and the category colours (gold / violet / teal / slate). PR 5 waits on this; PR 1–4 don't.
-- When the redesign ships relative to go-live — Bobe/owner to decide (see the build plan's timing).
-- AD-11 in or after go-live — owner to decide.
+
+## Timeline (decided 12 Nov 2026)
+- UB40 goes live after the redesign, so the staff are trained once, on v2. The Tue 17 Nov freeze is cancelled.
+- PRs 2–9 in order, one at a time, all merged by about Mon 7 Dec 2026; then a staff test on the v2 build, fixes, regression, the release tag and docs/go-live.md. Go-live about mid-December 2026.
+- AD-11 comes after go-live.
+- Design gates: the 768 menu drawer and the top bar's offline/hover/focus states before PR 3; the bed panel states (and the owner's OK on the occupied tile and category colours) before PR 5; the full check-in before PR 6. A PR reached before its design arrives stops until it does; no layout is invented.
 
 ## Next
 1. Owner review; clickable test with receptionist and supervisor (5 tasks: check in, extend, check out, close shift, find a receipt).

@@ -20,7 +20,7 @@ Three roles sign in. Housekeepers and guests appear in the data but never use th
 
 A front desk and owner system for a lodging that charges **per bed, per night, checkout 10:00**. Every bed that is let is tied to a guest, a payment, a receptionist and a shift, so the owner can see occupancy and takings from anywhere and catch missing money.
 
-Success, over the first three months after go-live (planned for 20 Nov 2026; the owner is confirming whether go-live or the v2 redesign comes first), is measured in `lodging_pos/docs/prd.md`:
+Success, over the first three months after go-live (about mid-December 2026, after the v2 redesign; see Timeline), is measured in `lodging_pos/docs/prd.md`:
 - no unexplained lets;
 - shift cash variance under 1% of takings;
 - every overstay charged;
@@ -45,12 +45,22 @@ A money-control system disguised as a simple front desk. Prices, refunds and sta
 - **Navigation:** today the desk uses a fixed 232 px sidebar with role-filtered items; the phone has a five-tab bottom bar (Today, Money, Beds, Prices, More). The v2 redesign (`lodging_pos/docs/ui-redesign-brief.md`, `lodging_pos/docs/design-system.md`) replaces the sidebar with a light top bar that collapses into a menu when the tabs don't fit, merges Shifts into Cash, moves voiding onto the receipt and the bed panel, and hides the phone's Reports placeholder. Every desk screen must then work from 768 to 1920 px wide.
 - **Desk input:** mouse-and-keyboard only is **not confirmed**. Don't assume the desk has no touchscreen.
 
+## Timeline
+
+Decided 12 Nov 2026: UB40 goes live **after** the v2 redesign, so the staff are trained once, on v2. The Tue 17 Nov freeze is cancelled.
+
+1. Redesign PRs 2–9 (`story/ui-2-tokens` … `story/ui-9-owner-phone`), in order, one at a time, all merged by about **Mon 7 Dec 2026**.
+2. A staff test on the v2 build, then fixes.
+3. Full regression, the release tag, and `lodging_pos/docs/go-live.md` updated.
+4. Go-live at about **mid-December 2026**.
+5. After go-live: AD-11 (the supervisor's Decisions queue), then expenses, monthly reports and inventory.
+
 ## Capabilities and Constraints
 
 - **Built:**
   - Desk: bed board, check-in with payment, extend, checkout, refund requests and payouts, receipts and REFUND receipts, guests, housekeeping assignment, shifts with a blind close, drawer ledger, checks and collections, cash reviews, voids, setup (rooms and beds, prices and settings, users and staff), daily local backup, cloud sync, owner's Today.
   - Phone: Today, Money, Beds, Prices, and under More: Shifts, Audit trail, Staff, Change password.
-- **Not built yet (after go-live):** expenses, monthly reports (Reports is a placeholder row on the phone), inventory, reservations, automatic M-Pesa confirmation, thermal printer.
+- **Not built yet (after go-live):** AD-11 (the supervisor's Decisions queue), expenses, monthly reports (Reports is a placeholder row on the phone, hidden in v2), inventory, reservations, automatic M-Pesa confirmation, thermal printer.
 - **Permissions:** every screen and action is gated by one permission map, never by comparing roles. Hiding a screen is never the only lock.
 - **A receptionist never sees a total:** no shift figures, drawer balances or review outcomes on any receptionist screen, receipt list or PDF.
 - **Privacy:**
