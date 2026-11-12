@@ -2,6 +2,27 @@
 
 Source of truth: the "Lodging POS — Key Screens" design canvas (screenshots in `docs/design/`). The owner's screens (phone, and the desk's Today) follow the owner-app Figma: https://www.figma.com/design/CVc42Uc4UyoQr366bP3Bca (screen "01 Today" for Today). This file is the part Claude Code builds from. Target screen: laptop, 1366×768. Admin phone app: 390 wide.
 
+## v2 redesign: what changes
+
+A redesign (v2) is agreed but not built: decisions in `docs/ui-redesign-brief.md`, build spec in `docs/design-system.md` (Figma page "Redesign v2 — Nov 2026"). **Until each v2 PR merges, this file describes what is built.** When a PR ships its part, the matching section below is marked "Superseded by design-system.md". The brief overrides this spec on:
+
+| Topic | This spec (built today) | v2 (design-system.md) | PR |
+|---|---|---|---|
+| Weights | Manrope 800 headings and caps labels, 700 labels and buttons | 400 / 500 / 600 only, none above 600; Manrope 400 added | 2 |
+| Caps labels | Card headings 13/800 caps, labels 11/800 caps | Gone: sentence case; Meta 12/500 | 2 |
+| Body and minimum size | Body 14; minimum 11 for caps labels | Body 16; minimum 12 everywhere | 2 |
+| Occupied bed tile | Solid marine, white text | Marine-tint with a field border (quiet); owner to confirm | 5 |
+| Navigation | 232 px marine sidebar, `SETUP · SUPERVISOR` group | 64 px white top bar, icon tabs, sliding indicator, Setup ▾ menu, collapses to a menu when tabs don't fit | 3 |
+| M-Pesa colour | `gold` #C9962E in money bars | Retired: M-Pesa marine, cash marine-tint with marine outline; gold = VIP only | 2 |
+| Category | Text only | Colour key per category (stripe + label), stored on `bed_categories.colour` | 4, 5 |
+| Green | Not used | Good: online, money up, count matched, saved | 2 |
+| Count badges | Butter; red on Today's attention count | Butter only, never red | 3 |
+| Comparison lines | Ink-soft, never red or green | ▲ green / ▼ red-text, always with the arrow and number | 9 |
+| Page titles | Every screen has a title | No visible title that repeats the active tab (semantic heading kept) | 3 |
+| Destinations | Shifts, Voids; phone Reports placeholder | Shifts merged into Cash; Voids an action on the receipt and bed panel; Reports hidden; owner desk gains Receipts (view and void) | 7, 8, 3 |
+| Widths | 1366×768 only | Every desk screen 768–1920 wide; breakpoints 768 / 1280 | 3 |
+| Motion | None | `LodgingMotion` tokens, honouring reduced motion | 2, 3 |
+
 ## Colours
 
 The owner's colours are marine blue, bright red and butter yellow. Each one has **one meaning**; never use a colour for anything outside its meaning.
