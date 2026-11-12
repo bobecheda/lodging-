@@ -53,7 +53,7 @@ decide a build question:
 | `butter` | `#F7E3A1` | Needs cleaning, warnings, count badges, offline |
 | `green` (new) | `#1E7B4F` | Good: online, money up, count matched, saved |
 | `greenTint` (new) | `#E6F4EC` | Background for good notes |
-| `butterTint` (new) | to be read from Figma in PR 2 | Soft warning background |
+| `butterTint` (new) | `#FDF6DE` | Soft warning background (Figma `status/butter-tint`) |
 
 **Retired:**
 - `gold` `#C9962E` (M-Pesa on money bars). Money split bars use two shades of one hue: M-Pesa `marine`, cash `marineTint` with a marine outline.
@@ -124,8 +124,15 @@ in PR 3, when the sidebar's last 700 override goes. Minimum size 12.
 | `money` | mono 18/600 | `moneyLarge` 22/600, `stepperValue` 22/600 |
 | `moneySmall` | mono 14/500 | `mono` 13/500, `monoStrong` 14/600 |
 
-`button` 15/800 and `nav` 14/600 are replaced by the sizes on the Figma
-components `v2/Button` (22:621) and `v2/Top tab` (30:960), read in PR 2.
+`button` 15/800 and `nav` 14/600 are replaced by `secondaryMedium`
+(14/500) on buttons and tabs:
+- Buttons (`v2/Button`): 44 px tall, 16 px horizontal padding.
+- Top tabs (`v2/Top tab`): 64 px tall, 12 px padding, 18 px icon, 8 px gap
+  between icon and label.
+
+**The wordmark is a logo, not UI text.** Pirata One and IM Fell English SC
+stay exempt from the three-weight rule and the type scale; their sizes
+stay in `wordmark_style.dart`.
 
 **Removed names:** `heroTitle`, `cardTitle`, `bodyStrong`, `small`,
 `smallStrong`, `fieldLabel`, `cardHeading`, `capsLabel`, `button`, `nav`,
@@ -197,7 +204,7 @@ Breakpoints come from one pure function, unit-tested at 767, 768, 1279 and 1280:
 
 **The top bar:**
 - 64 px, white, with a 1 px `line` bottom border.
-- Left: the lodging name in marine with the role subtitle in muted ("Front desk", "Supervisor" or "Owner").
+- Left: the UB40 wordmark (`LodgingWordmark`, Pirata One, the lodging name from settings) in marine, about 22 px tall, with the role subtitle under it in `meta` (12/500), muted: "Front desk", "Supervisor" or "Owner". A new `WordmarkSize` for the top bar replaces the sidebar's 30.
 - Tabs:
   - Each tab has an icon and a label.
   - Default: ink-soft text, muted icon. Active: marine, with a 3 px marine indicator.
@@ -297,8 +304,3 @@ Not designed yet:
 
 - The "Due out by 10:00" card and its rule. Occupied tiles still show the guest and paid-until.
 - The receptionist's monthly takings PDF (FD-12): it breaks the blind count.
-
-## Open questions for the build
-
-- **Top bar name:** the Figma bar shows the lodging name as plain text, not the Pirata One wordmark. To confirm in PR 3; the wordmark stays on sign-in, lock and receipts either way.
-- **`butterTint` and the button and tab sizes:** to be read from Figma in PR 2.
