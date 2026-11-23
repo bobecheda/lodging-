@@ -68,7 +68,7 @@ void main() {
     env.cloud = null;
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', testOwner.password);
-    await tapKey(tester, 'shell.changeMyPassword');
+    await tapUserMenu(tester, 'shell.changeMyPassword');
     await enterKey(tester, 'myPassword.current', testOwner.password);
     await enterKey(tester, 'myPassword.new', 'set-at-desk-1');
     await enterKey(tester, 'myPassword.repeat', 'set-at-desk-2');

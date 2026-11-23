@@ -122,6 +122,17 @@ Stream<List<ChainEntry>> drawerChain(Ref ref) {
   return ref.watch(shiftRepositoryProvider).watchDrawerChain(user);
 }
 
+/// The Cash tab's badge: reviews awaiting a decision the signed-in user may
+/// make (v2 PR 3). Zero for anyone without `reviewCash`.
+@riverpod
+Stream<int> cashReviewsToDecide(Ref ref) {
+  final user = ref.watch(sessionProvider);
+  if (user == null || !can(user, Permission.reviewCash)) {
+    return Stream.value(0);
+  }
+  return ref.watch(cashReviewsRepositoryProvider).watchAwaitingDecisionBy(user);
+}
+
 /// The supervisor's list of shifts (FD-11), watched.
 @riverpod
 Stream<List<ShiftSummary>> shiftList(Ref ref) =>

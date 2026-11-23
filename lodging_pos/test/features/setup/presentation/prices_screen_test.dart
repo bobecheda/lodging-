@@ -36,7 +36,7 @@ void main() {
     } else {
       await signInAs(tester, 'supervisor', 'super-pass');
     }
-    await tapKey(tester, 'nav.${Routes.adminPrices}');
+    await tapNav(tester, Routes.adminPrices);
     expect(locationOf(app), Routes.adminPrices);
     return app;
   }

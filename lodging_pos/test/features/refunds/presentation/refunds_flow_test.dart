@@ -134,7 +134,7 @@ void main() {
         'reason', (tester) async {
       final app = await pumpDeskApp(tester, env);
       await deskSignsIn(tester);
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       expect(locationOf(app), Routes.refunds);
       expect(
         find.descendant(
@@ -156,7 +156,7 @@ void main() {
       );
       await pumpDeskApp(tester, env);
       await deskSignsIn(tester);
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       expect(text(tester, 'refunds.reason.$refundId'), '“Guest stays on”');
     });
 
@@ -172,7 +172,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       await tapKey(tester, 'refunds.pay.$refundId');
       expect(text(tester, 'pay.amount'), 'KES 1,400');
 
@@ -200,7 +200,7 @@ void main() {
       await refunds.decide(owner, refundId, approve: true);
       await pumpDeskApp(tester, env);
       await deskSignsIn(tester);
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       await tapKey(tester, 'refunds.pay.$refundId');
       await tapKeyIn(tester, 'pay.method', 'choice.PaymentMethod.paybill');
       final sendTo = tester.widget<TextField>(
@@ -226,7 +226,7 @@ void main() {
       await refunds.decide(owner, refundId, approve: true);
       await pumpDeskApp(tester, env);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       await tapKey(tester, 'refunds.pay.$refundId');
       expect(find.byKey(const ValueKey('pay.noShift')), findsOneWidget);
       final pay = tester.widget<TextButton>(
@@ -248,7 +248,7 @@ void main() {
     );
     final app = await pumpDeskApp(tester, env);
     await deskSignsIn(tester);
-    await tapKey(tester, 'nav.${Routes.receipts}');
+    await tapNav(tester, Routes.receipts);
     expect(locationOf(app), Routes.receipts);
     expect(find.text('R-000002'), findsWidgets);
   });

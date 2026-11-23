@@ -30,12 +30,19 @@ import 'package:lodging_pos/features/setup/presentation/widgets/room_table.dart'
 import '../helpers/fake_cloud.dart';
 import '../helpers/fixtures.dart';
 
-/// Every restyled screen at the front-desk laptop's size (1366×768) with the
-/// real fonts: any overflow is reported as an error and fails the test.
+/// Every screen at each desk width (1366×768, 1024×768 and 768×1024; v2
+/// PR 3) with the real fonts: any overflow is reported as an error and
+/// fails the test.
 void main() {
+  setUpAll(loadAppFonts);
+  for (final size in deskSizes) {
+    group('${size.width.toInt()}×${size.height.toInt()}', () => screens(size));
+  }
+}
+
+void screens(Size size) {
   late TestEnv env;
 
-  setUpAll(loadAppFonts);
   setUp(() => env = TestEnv());
   tearDown(() => env.close());
 
@@ -49,19 +56,19 @@ void main() {
     expect(locationOf(app), route);
     expect(find.text(visibleText), findsWidgets);
     expect(tester.takeException(), isNull);
-    expect(tester.view.physicalSize, deskSize);
+    expect(tester.view.physicalSize, size);
   }
 
   Future<void> withOwner() async =>
       env.createFirstSupervisor(testSetup).then((_) {});
 
   testWidgets('first-run setup', (tester) async {
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await expectCleanLayout(tester, app, Routes.setup, 'Set up this lodging');
   });
 
   testWidgets('first-run setup with every field error', (tester) async {
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await tapKey(tester, 'setup.submit');
     await expectCleanLayout(
       tester,
@@ -73,13 +80,13 @@ void main() {
 
   testWidgets('sign in', (tester) async {
     await withOwner();
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await expectCleanLayout(tester, app, Routes.login, 'Sign in');
   });
 
   testWidgets('sign in with a wrong password', (tester) async {
     await withOwner();
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'supervisor', 'wrong-pass');
     await expectCleanLayout(
       tester,
@@ -93,7 +100,7 @@ void main() {
     await withOwner();
     final desk = await env.addReceptionist('desk');
     await env.openShift(desk, startingCash: 1000);
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
     env.clock.advance(const Duration(minutes: 10));
@@ -108,7 +115,7 @@ void main() {
 
   testWidgets('lock screen after Lock screen', (tester) async {
     await withOwner();
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'supervisor', 'super-pass');
     await tapKey(tester, 'shell.lock');
     await expectCleanLayout(tester, app, Routes.login, 'Screen locked');
@@ -117,7 +124,7 @@ void main() {
   testWidgets('change password', (tester) async {
     await withOwner();
     await env.addReceptionist('fresh', mustChangePassword: true);
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'fresh', 'desk-pass');
     await expectCleanLayout(
       tester,
@@ -132,7 +139,7 @@ void main() {
   ) async {
     await withOwner();
     await env.addReceptionist('desk');
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.submit');
     await expectCleanLayout(
@@ -148,7 +155,7 @@ void main() {
     await withOwner();
     final desk = await env.addReceptionist('desk');
     await env.openShift(desk, startingCash: 2000);
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'desk', 'desk-pass');
     await expectCleanLayout(tester, app, Routes.shift, 'Continue my shift');
   });
@@ -158,7 +165,7 @@ void main() {
     final desk = await env.addReceptionist('desk');
     await env.addReceptionist('tom');
     await env.openShift(desk, startingCash: 2000);
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'tom', 'desk-pass');
     await expectCleanLayout(
       tester,
@@ -170,7 +177,7 @@ void main() {
 
   testWidgets('desk shell: supervisor', (tester) async {
     await withOwner();
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'supervisor', 'super-pass');
     await expectCleanLayout(tester, app, Routes.home, 'Supervisor');
   });
@@ -196,31 +203,34 @@ void main() {
 
     testWidgets('sign in: the brand panel', (tester) async {
       await withLongName();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await expectCleanLayout(tester, app, Routes.login, 'Sign in');
       expect(wordmark(), findsOne);
       expect(find.text('Lodging'), findsOne);
       expect(find.text('LOGO'), findsNothing);
     });
 
-    testWidgets('the sidebar', (tester) async {
+    testWidgets('the top bar (v2): the name alone, on one line, with the '
+        'role under it', (tester) async {
       await withLongName();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
       await expectCleanLayout(tester, app, Routes.home, 'Supervisor');
       expect(
         find.descendant(of: wordmark(), matching: find.text(longName)),
         findsOne,
       );
-      expect(find.text('Front desk'), findsOne);
-      // Inside the 232-wide sidebar, its padding included.
-      expect(tester.getRect(wordmark()).right, lessThanOrEqualTo(232 - 16));
+      // Inside the 64 px bar, at most 200 wide after its 24 px padding
+      // (and the menu button when the tabs don't fit).
+      final rect = tester.getRect(wordmark());
+      expect(rect.bottom, lessThanOrEqualTo(64));
+      expect(rect.right, lessThanOrEqualTo(24 + 44 + 8 + 200));
     });
 
     testWidgets('the shift screen\'s top bar', (tester) async {
       await withLongName();
       await env.addReceptionist('desk');
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'desk', 'desk-pass');
       await expectCleanLayout(tester, app, Routes.shift, 'Open shift');
       expect(wordmark(), findsOne);
@@ -231,14 +241,18 @@ void main() {
     await withOwner();
     final desk = await env.addReceptionist('desk');
     await env.openShift(desk, startingCash: 1000);
-    final app = await pumpDeskApp(tester, env);
+    final app = await pumpDeskApp(tester, env, size: size);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
-    await expectCleanLayout(
-      tester,
-      app,
-      Routes.home,
-      'Receptionist · shift since 22:00',
+    await expectCleanLayout(tester, app, Routes.home, 'Front desk');
+    // The name and shift show beside the avatar unless the tabs collapsed.
+    final collapsed = find
+        .byKey(const ValueKey('shell.menu'))
+        .evaluate()
+        .isNotEmpty;
+    expect(
+      find.text('Shift since 22:00'),
+      collapsed ? findsNothing : findsOneWidget,
     );
   });
 
@@ -278,9 +292,9 @@ void main() {
     Future<ProviderContainer> openRooms(WidgetTester tester) async {
       await withOwner();
       await seedTwelveRooms();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.adminRooms}');
+      await tapNav(tester, Routes.adminRooms);
       return app;
     }
 
@@ -370,13 +384,13 @@ void main() {
         ),
       );
       await before?.call(supervisor);
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       if (asOwner) {
         await signInAs(tester, 'owner', 'owner-pass');
       } else {
         await signInAs(tester, 'supervisor', 'super-pass');
       }
-      await tapKey(tester, 'nav.${Routes.adminPrices}');
+      await tapNav(tester, Routes.adminPrices);
       return app;
     }
 
@@ -611,7 +625,7 @@ void main() {
             newPrice: price,
           );
         }
-        final app = await pumpDeskApp(tester, env);
+        final app = await pumpDeskApp(tester, env, size: size);
         await signInAs(tester, 'owner', 'owner-pass');
         await expectCleanLayout(tester, app, Routes.today, 'Deluxe: 700 → 750');
         expect(find.text('−50'), findsOne);
@@ -623,7 +637,7 @@ void main() {
     testWidgets("the owner's Connect form with every error", (tester) async {
       await withOwner();
       env.cloud = FakeCloud(serverNow: () => env.clock.now());
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'owner', 'owner-pass');
       await tapKey(tester, 'shell.syncPill');
       await tapKey(tester, 'sync.connect');
@@ -658,14 +672,9 @@ void main() {
       );
       await engine.ownerLeft();
       cloud.dropDeskSession();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await expectCleanLayout(
-        tester,
-        app,
-        Routes.home,
-        'PC clock 12 min slow · fix',
-      );
+      await expectCleanLayout(tester, app, Routes.home, 'PC clock 12 min slow');
       await tapKey(tester, 'shell.syncPill');
       await expectCleanLayout(tester, app, Routes.home, 'Check the PC’s clock');
     });
@@ -692,7 +701,7 @@ void main() {
       await engine.ownerLeft();
       cloud.dropDeskSession();
       env.deskSecrets.credentials = null;
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'owner', 'owner-pass');
       await tapKey(tester, 'shell.syncPill');
       await expectCleanLayout(
@@ -720,7 +729,7 @@ void main() {
           ),
         ),
       );
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await tapKey(tester, 'setup.submit'); // every error
       await expectCleanLayout(
         tester,
@@ -732,7 +741,7 @@ void main() {
 
     testWidgets('Today, a new lodging: nothing yet', (tester) async {
       await withOwner();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'owner', 'owner-pass');
       await expectCleanLayout(tester, app, Routes.today, 'Today’s money');
       expect(
@@ -770,7 +779,7 @@ void main() {
       for (final stay in early) {
         await env.checkOut(stay, by: supervisor);
       }
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'owner', 'owner-pass');
       await expectCleanLayout(tester, app, Routes.today, 'Refund to approve');
       expect(find.text('And 2 more.'), findsOneWidget);
@@ -778,9 +787,9 @@ void main() {
 
     testWidgets("the owner's Staff with an error", (tester) async {
       await withOwner();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'owner', 'owner-pass');
-      await tapKey(tester, 'nav.${Routes.adminStaff}');
+      await tapNav(tester, Routes.adminStaff);
       await tapKey(tester, 'addUser.save');
       await expectCleanLayout(tester, app, Routes.adminStaff, 'Add supervisor');
     });
@@ -838,7 +847,7 @@ void main() {
       tester,
     ) async {
       final ids = await threeRefunds();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'owner', 'owner-pass');
       await tapKey(tester, 'today.attention.refund.${ids[0]}');
       await expectCleanLayout(
@@ -859,10 +868,10 @@ void main() {
 
     testWidgets('the desk: to pay, waiting and rejected', (tester) async {
       await threeRefunds();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'desk', 'desk-pass');
       await tapKey(tester, 'shift.continue');
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       await expectCleanLayout(tester, app, Routes.refunds, 'To pay · 1');
       expect(find.text('Waiting for owner approval · 1'), findsOneWidget);
     });
@@ -871,10 +880,10 @@ void main() {
       tester,
     ) async {
       final ids = await threeRefunds();
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'desk', 'desk-pass');
       await tapKey(tester, 'shift.continue');
-      await tapKey(tester, 'nav.${Routes.refunds}');
+      await tapNav(tester, Routes.refunds);
       await tapKey(tester, 'refunds.pay.${ids[1]}');
       await tapKeyIn(tester, 'pay.method', 'choice.PaymentMethod.paybill');
       await enterKey(tester, 'pay.sendTo', '0722');
@@ -916,9 +925,9 @@ void main() {
         phone: '0110234567',
       );
       await staff.deactivateHousekeeper(supervisor, old.id);
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.adminStaff}');
+      await tapNav(tester, Routes.adminStaff);
       return (app, rose.id);
     }
 
@@ -972,9 +981,9 @@ void main() {
           ),
         );
       }
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.guests}');
+      await tapNav(tester, Routes.guests);
       return app;
     }
 
@@ -1054,7 +1063,7 @@ void main() {
         by: supervisor,
       );
       await env.checkOut(gone, by: supervisor);
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
       return app;
     }
@@ -1077,8 +1086,11 @@ void main() {
       final app = await openBoard(tester, overstay: false);
       await expectCleanLayout(tester, app, Routes.home, 'Bed board');
       expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
-      expect(find.byKey(const ValueKey('board.room.12')), findsOneWidget);
-      expect(gridOverflow(tester), 0);
+      if (size == deskSize) {
+        expect(find.byKey(const ValueKey('board.room.12')), findsOneWidget);
+      }
+      // At the laptop's width; PR 5 sets the columns for narrower ones.
+      if (size == deskSize) expect(gridOverflow(tester), 0);
     });
 
     testWidgets('12 rooms with the overstay bar: no overflow', (tester) async {
@@ -1147,7 +1159,7 @@ void main() {
           idNumber: '12343921',
         ),
       );
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
       return app;
     }
@@ -1238,9 +1250,9 @@ void main() {
         );
         await env.checkIn(room.beds.first.id, by: supervisor, nights: n);
       }
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.receipts}');
+      await tapNav(tester, Routes.receipts);
       await tapKey(tester, 'receipts.item.R-000012');
       await tapKey(tester, 'receipt.save');
       await expectCleanLayout(tester, app, Routes.receipts, 'Receipts');
@@ -1274,7 +1286,7 @@ void main() {
       );
       await env.checkIn(room.beds.first.id, by: supervisor, nights: nights);
       env.clock.set(now);
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(
         tester,
@@ -1381,7 +1393,7 @@ void main() {
       await staff.addHousekeeper(supervisor, name: 'Rose Mutua', phone: '');
       final stay = await env.checkIn(room.beds.first.id, by: supervisor);
       await env.checkOut(stay, by: supervisor);
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'board.bed.7A');
       await tapKey(tester, 'cleaning.housekeeper');
@@ -1420,7 +1432,7 @@ void main() {
       );
       await env.checkIn(room.beds.single.id, by: mary, nights: 3);
       await before?.call(supervisor, shift.id);
-      final app = await pumpDeskApp(tester, env);
+      final app = await pumpDeskApp(tester, env, size: size);
       await signInAs(
         tester,
         signIn,
@@ -1434,7 +1446,7 @@ void main() {
     ) async {
       final (app, _) = await withMaryShift(tester, signIn: 'mary');
       await tapKey(tester, 'shift.continue');
-      await tapKey(tester, 'shell.closeShift');
+      await tapUserMenu(tester, 'shell.closeShift');
       await enterKey(tester, 'closeShift.count', '2000');
       await tapKey(tester, 'closeShift.submit');
       await expectCleanLayout(
@@ -1464,7 +1476,7 @@ void main() {
           reason: 'Change for a large note was given from the float twice',
         ),
       );
-      await tapKey(tester, 'nav.${Routes.shifts}');
+      await tapNav(tester, Routes.shifts);
       await expectCleanLayout(tester, app, Routes.shifts, 'Shifts');
       expect(find.byKey(ValueKey('shifts.recount.$shiftId')), findsOneWidget);
       expect(find.byKey(ValueKey('shifts.closedBy.$shiftId')), findsOneWidget);

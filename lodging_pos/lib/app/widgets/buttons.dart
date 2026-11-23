@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
+import 'focus_ring.dart';
 
 enum _Kind { primary, secondary, destructive, urgent }
 
@@ -87,9 +88,8 @@ class AppButton extends StatelessWidget {
       _Kind.urgent => c.redDark,
       _ => c.marineTintStrong,
     };
-    final textStyle = (compact ? t.bodyMedium : t.secondaryMedium).copyWith(
-      color: text,
-    );
+    // v2: button labels are Secondary medium (14/500) at every size.
+    final textStyle = t.secondaryMedium.copyWith(color: text);
 
     final content = busy
         ? SizedBox.square(
@@ -111,41 +111,44 @@ class AppButton extends StatelessWidget {
       button: true,
       enabled: onPressed != null && !busy,
       label: busy ? '$label, working' : null,
-      child: TextButton(
-        onPressed: busy ? null : onPressed,
-        style: ButtonStyle(
-          minimumSize: WidgetStatePropertyAll(Size(height, height)),
-          padding: WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: compact ? Space.x12 : Space.x20),
-          ),
-          textStyle: WidgetStatePropertyAll(textStyle),
-          foregroundColor: WidgetStateProperty.resolveWith(
-            (s) =>
-                s.contains(WidgetState.disabled) && !busy ? c.disabled : text,
-          ),
-          backgroundColor: WidgetStateProperty.resolveWith((s) {
-            if (s.contains(WidgetState.disabled) && !busy) {
-              return _kind == _Kind.primary || _kind == _Kind.urgent
-                  ? c.line
-                  : c.white;
-            }
-            if (s.contains(WidgetState.hovered) ||
-                s.contains(WidgetState.pressed)) {
-              return hover;
-            }
-            return fill;
-          }),
-          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Radii.control),
-              side: border == null
-                  ? BorderSide.none
-                  : BorderSide(color: border),
+      child: FocusRing(
+        radius: Radii.control,
+        child: TextButton(
+          onPressed: busy ? null : onPressed,
+          style: ButtonStyle(
+            minimumSize: WidgetStatePropertyAll(Size(height, height)),
+            padding: WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: compact ? Space.x12 : Space.x16),
+            ),
+            textStyle: WidgetStatePropertyAll(textStyle),
+            foregroundColor: WidgetStateProperty.resolveWith(
+              (s) =>
+                  s.contains(WidgetState.disabled) && !busy ? c.disabled : text,
+            ),
+            backgroundColor: WidgetStateProperty.resolveWith((s) {
+              if (s.contains(WidgetState.disabled) && !busy) {
+                return _kind == _Kind.primary || _kind == _Kind.urgent
+                    ? c.line
+                    : c.white;
+              }
+              if (s.contains(WidgetState.hovered) ||
+                  s.contains(WidgetState.pressed)) {
+                return hover;
+              }
+              return fill;
+            }),
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(Radii.control),
+                side: border == null
+                    ? BorderSide.none
+                    : BorderSide(color: border),
+              ),
             ),
           ),
+          child: content,
         ),
-        child: content,
       ),
     );
   }

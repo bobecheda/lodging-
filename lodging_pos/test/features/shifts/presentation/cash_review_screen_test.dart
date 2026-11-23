@@ -62,7 +62,7 @@ void main() {
       'says the owner decides', (tester) async {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.cash}');
+    await tapNav(tester, Routes.cash);
     expect(
       find.byKey(ValueKey('review.blocked.shift.$graceShift')),
       findsOneWidget,
@@ -88,7 +88,7 @@ void main() {
       'shows on the owner’s Today', (tester) async {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    await tapKey(tester, 'nav.${Routes.cash}');
+    await tapNav(tester, Routes.cash);
     await tapKey(tester, 'review.reject.shift.$graceShift');
     await tapKey(tester, 'review.reason.reject');
     expect(find.text('Say why you reject it.'), findsOneWidget);
@@ -98,7 +98,7 @@ void main() {
       find.text('Rejected by Amina Owner: Count it with me tomorrow'),
       findsOneWidget,
     );
-    await tapKey(tester, 'nav.${Routes.today}');
+    await tapNav(tester, Routes.today);
     expect(
       find.byKey(ValueKey('today.attention.rejected.$graceShift')),
       findsOneWidget,

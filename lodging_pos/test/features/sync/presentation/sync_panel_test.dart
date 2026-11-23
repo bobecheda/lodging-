@@ -58,7 +58,7 @@ void main() {
       'checked here first; then everything goes up', (tester) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    expect(find.textContaining('Not connected ·'), findsOneWidget);
+    expect(find.text('Not connected'), findsOneWidget);
     await tapKey(tester, 'shell.syncPill');
     expect(find.text('Cloud sync'), findsOneWidget);
 
@@ -114,7 +114,12 @@ void main() {
     await connectedBefore();
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    expect(find.text('Online · synced just now'), findsOneWidget);
+    // Online; signing in queues its own audit row, which may still be
+    // going up ("Syncing · 1").
+    expect(
+      find.textContaining(RegExp(r'^(Online|Syncing · \d+)$')),
+      findsOneWidget,
+    );
 
     cloud.offline = true;
     await RoomsRepository(env.db, env.audit).createRoom(
@@ -138,7 +143,7 @@ void main() {
     env.deskSecrets.credentials = null;
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    expect(find.text('Sync problem · details'), findsOneWidget);
+    expect(find.text('Sync problem'), findsOneWidget);
     await tapKey(tester, 'shell.syncPill');
     expect(find.text('This desk needs reconnecting.'), findsOneWidget);
     await enterKey(tester, 'sync.email', testOwnerEmail);

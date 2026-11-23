@@ -22,7 +22,7 @@ void main() {
   Future<ProviderContainer> openStaff(WidgetTester tester) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.adminStaff}');
+    await tapNav(tester, Routes.adminStaff);
     expect(locationOf(app), Routes.adminStaff);
     return app;
   }

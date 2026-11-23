@@ -4,7 +4,13 @@ Bundled as assets so the desk renders correctly offline (no `google_fonts`).
 Every family is licensed under the SIL Open Font License 1.1; each folder
 keeps its `OFL.txt` beside the font files. Manrope and IBM Plex Mono were
 downloaded 2026-10-15 (Manrope Regular 2026-11-12, for the v2 type scale);
-Pirata One and IM Fell English SC 2026-10-20.
+Pirata One and IM Fell English SC 2026-10-20. Since v2 PR 3 the
+700 and 800 Manrope files are plain assets for the receipt PDF only
+(`receipt_print_style.dart`), not part of the app's Manrope family: the
+interface stops at 600.
+
+Icons come from the `lucide_icons_flutter` package (MIT; the Lucide icon
+font itself is ISC, https://lucide.dev), bundled by the package.
 
 ## Manrope (interface text)
 
@@ -18,8 +24,8 @@ Pirata One and IM Fell English SC 2026-10-20.
 | `manrope/manrope-regular.ttf` | 400 | `d23d6eedf51dd495138aa1a83588027d4a63549cdfcc2fa5e0d8e84e09cf4cb1` |
 | `manrope/manrope-medium.ttf` | 500 | `502ee33a6e140ad6ef10ef8b762a8e5cf01f33316f318800795725f4cfd539d9` |
 | `manrope/manrope-semibold.ttf` | 600 | `f43edb46a08e1538413ea2383ef01ed93cdab191a2c57d2489d9590985858cf7` |
-| `manrope/manrope-bold.ttf` | 700 | `484d10f0683e9e9f588de978f70cd3ad17cb3522bc0ca6efc4491c83429d323c` |
-| `manrope/manrope-extrabold.ttf` | 800 | `c5c0faa3c3a1b1a184f6bb2e405931bdbf51d21c72d8162309118e91304988e0` |
+| `manrope/manrope-bold.ttf` | 700, receipt PDF only | `484d10f0683e9e9f588de978f70cd3ad17cb3522bc0ca6efc4491c83429d323c` |
+| `manrope/manrope-extrabold.ttf` | 800, receipt PDF only | `c5c0faa3c3a1b1a184f6bb2e405931bdbf51d21c72d8162309118e91304988e0` |
 | `manrope/OFL.txt` | licence | `58172e0c0fac2cda8a37b348164bb55e44b0e69051e557e92b1d3f6910141f7b` |
 
 ## IBM Plex Mono (receipt numbers, M-Pesa codes, money, counts)

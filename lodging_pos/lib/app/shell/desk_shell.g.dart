@@ -8,20 +8,20 @@ part of 'desk_shell.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Sidebar destinations. Only screens that exist are listed; each story
-/// adds its own entry.
+/// The desk's destinations, in tab order. Only screens that exist are
+/// listed; each story adds its own entry.
 
 @ProviderFor(deskNavItems)
 final deskNavItemsProvider = DeskNavItemsProvider._();
 
-/// Sidebar destinations. Only screens that exist are listed; each story
-/// adds its own entry.
+/// The desk's destinations, in tab order. Only screens that exist are
+/// listed; each story adds its own entry.
 
 final class DeskNavItemsProvider
     extends $FunctionalProvider<List<NavItem>, List<NavItem>, List<NavItem>>
     with $Provider<List<NavItem>> {
-  /// Sidebar destinations. Only screens that exist are listed; each story
-  /// adds its own entry.
+  /// The desk's destinations, in tab order. Only screens that exist are
+  /// listed; each story adds its own entry.
   DeskNavItemsProvider._()
     : super(
         from: null,
@@ -55,4 +55,4 @@ final class DeskNavItemsProvider
   }
 }
 
-String _$deskNavItemsHash() => r'70878a31a0294e1fd7e067395587c7e0f20e8d47';
+String _$deskNavItemsHash() => r'a2ccc45636c4e2305c9b1f6d1b4d718bf36b874a';

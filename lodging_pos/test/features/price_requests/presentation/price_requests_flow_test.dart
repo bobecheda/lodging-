@@ -65,7 +65,7 @@ void main() {
     ) async {
       await pumpDeskApp(tester, env);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.adminPrices}');
+      await tapNav(tester, Routes.adminPrices);
       expect(
         text(tester, 'prices.readOnly'),
         startsWith('Only the owner changes prices.'),
@@ -137,7 +137,7 @@ void main() {
 
       await pumpDeskApp(tester, env);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.adminPrices}');
+      await tapNav(tester, Routes.adminPrices);
       expect(
         text(tester, 'priceRequests.reason.$rejected'),
         '“Not this month”',
@@ -215,7 +215,7 @@ void main() {
       final id = await askDeluxe();
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'owner', 'owner-pass');
-      await tapKey(tester, 'nav.${Routes.adminPrices}');
+      await tapNav(tester, Routes.adminPrices);
       expect(locationOf(app), Routes.adminPrices);
 
       await tapKey(tester, 'priceRequest.reject.$id');
@@ -252,7 +252,7 @@ void main() {
       await prices.savePrices(owner, {deluxe: 720});
       await pumpDeskApp(tester, env);
       await signInAs(tester, 'owner', 'owner-pass');
-      await tapKey(tester, 'nav.${Routes.adminPrices}');
+      await tapNav(tester, Routes.adminPrices);
 
       expect(
         find.descendant(

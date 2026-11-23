@@ -8,8 +8,8 @@ import '../domain/owner_more.dart';
 import 'owner_app.dart';
 import 'owner_providers.dart';
 
-/// More (Figma "07 More"): Shifts, the Audit trail, Reports (coming next)
-/// and Staff, all read-only; who is signed in, Change password and Sign
+/// More (Figma "07 More"): Shifts, the Audit trail and Staff (Reports is
+/// hidden until AD-9), all read-only; who is signed in, Change password and Sign
 /// out.
 class OwnerMoreScreen extends ConsumerWidget {
   const OwnerMoreScreen({super.key});
@@ -47,13 +47,7 @@ class OwnerMoreScreen extends ConsumerWidget {
                 onTap: () => context.go(OwnerRoutes.audit),
               ),
               Divider(height: 1, color: c.lineSoft),
-              const _MenuRow(
-                keyName: 'reports',
-                icon: Icons.bar_chart_rounded,
-                title: 'Reports',
-                subtitle: 'Monthly report (PDF) · coming next',
-                onTap: null,
-              ),
+              // Reports is hidden until AD-9 builds it (v2 PR 3).
               Divider(height: 1, color: c.lineSoft),
               _MenuRow(
                 keyName: 'staff',

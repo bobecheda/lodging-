@@ -8,6 +8,7 @@ import '../../backup/presentation/backup_providers.dart';
 import '../../backup/presentation/backups_card.dart';
 import '../../price_requests/presentation/price_request_widgets.dart';
 import 'widgets/category_prices_card.dart';
+import 'widgets/reduce_motion_card.dart';
 import 'widgets/settings_card.dart';
 
 /// AD-3 "Prices and settings": bed category prices beside the lodging's
@@ -43,35 +44,55 @@ class PricesScreen extends ConsumerWidget {
         ),
         const SizedBox(height: Space.x20),
         Expanded(
-          child: SingleChildScrollView(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Expanded(flex: 5, child: CategoryPricesCard()),
-                const SizedBox(width: Space.x24),
-                Expanded(
-                  flex: 4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (decides) const OwnerPriceRequests(),
-                      if (asks) ...[
-                        const SupervisorPriceRequestsCard(),
-                        const SizedBox(height: Space.x24),
-                      ],
-                      if (settings) const SettingsCard(),
-                      if (backups) ...[
-                        const SizedBox(height: Space.x24),
-                        const BackupsCard(),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final side = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (decides) const OwnerPriceRequests(),
+                  if (asks) ...[
+                    const SupervisorPriceRequestsCard(),
+                    const SizedBox(height: Space.x24),
+                  ],
+                  if (settings) ...[
+                    const SettingsCard(),
+                    const SizedBox(height: Space.x24),
+                    const ReduceMotionCard(),
+                  ],
+                  if (backups) ...[
+                    const SizedBox(height: Space.x24),
+                    const BackupsCard(),
+                  ],
+                ],
+              );
+              // Side by side when there's room; stacked when narrow (768
+              // portrait; v2 responsive rule).
+              return SingleChildScrollView(
+                child: box.maxWidth < _sideBySide
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const CategoryPricesCard(),
+                          const SizedBox(height: Space.x24),
+                          side,
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Expanded(flex: 5, child: CategoryPricesCard()),
+                          const SizedBox(width: Space.x24),
+                          Expanded(flex: 4, child: side),
+                        ],
+                      ),
+              );
+            },
           ),
         ),
       ],
     );
   }
 }
+
+/// Below this content width the two columns stack.
+const _sideBySide = 900.0;

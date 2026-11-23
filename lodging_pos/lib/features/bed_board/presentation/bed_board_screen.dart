@@ -449,7 +449,8 @@ class _CategoryMenu extends StatelessWidget {
   }
 }
 
-/// Room cards in columns of at least 250px; cards in a row share a height.
+/// Room cards in columns of at least 190px (6 at 1366, 4 at 1024, 3 at
+/// 768, 2 narrower; v2); cards in a row share a height.
 class _RoomGrid extends StatelessWidget {
   const _RoomGrid({
     required this.rooms,
@@ -473,7 +474,7 @@ class _RoomGrid extends StatelessWidget {
   /// Opens a To clean bed's cleaning panel with its bed id (FD-9).
   final ValueChanged<String>? onClean;
 
-  static const _minCard = 250.0;
+  static const _minCard = 190.0;
   static const _gap = Space.x12;
 
   @override
@@ -552,27 +553,53 @@ class _RoomCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Room ${room.number}', style: t.secondaryMedium),
-                ),
-                // FD-9: a room shows Not cleaned while any bed is.
-                if (roomNeedsCleaning([
-                  for (final b in room.beds) b.cleanliness,
-                ])) ...[
-                  StatusBadge(
-                    'To clean',
-                    key: ValueKey('board.room.${room.number}.toClean'),
-                    tone: BadgeTone.warning,
+            // The room's badge and bed count take at most 120 px (they wrap
+            // beyond), so a narrow card never overflows. No LayoutBuilder:
+            // the rows measure their height.
+            Builder(
+              builder: (context) => Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Room ${room.number}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.secondaryMedium,
+                    ),
                   ),
-                  const SizedBox(width: Space.x8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // FD-9: a room shows Not cleaned while any bed is.
+                        if (roomNeedsCleaning([
+                          for (final b in room.beds) b.cleanliness,
+                        ])) ...[
+                          Flexible(
+                            child: StatusBadge(
+                              'To clean',
+                              key: ValueKey(
+                                'board.room.${room.number}.toClean',
+                              ),
+                              tone: BadgeTone.warning,
+                            ),
+                          ),
+                          const SizedBox(width: Space.x8),
+                        ],
+                        Flexible(
+                          child: Text(
+                            beds == 1 ? '1 bed' : '$beds beds',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.secondary.copyWith(color: c.muted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                Text(
-                  beds == 1 ? '1 bed' : '$beds beds',
-                  style: t.secondary.copyWith(color: c.muted),
-                ),
-              ],
+              ),
             ),
             for (final bed in room.beds) ...[
               const SizedBox(height: Space.x8),

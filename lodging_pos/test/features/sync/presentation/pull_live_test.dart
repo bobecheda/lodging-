@@ -80,7 +80,7 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
-    await tapKey(tester, 'nav.${Routes.refunds}');
+    await tapNav(tester, Routes.refunds);
     expect(find.byKey(ValueKey('refunds.pay.$refundId')), findsNothing);
 
     cloud.decideElsewhere(
@@ -105,7 +105,7 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
-    await tapKey(tester, 'nav.${Routes.refunds}');
+    await tapNav(tester, Routes.refunds);
     cloud.decideElsewhere(
       'refund_decisions',
       'refund_id',
@@ -127,7 +127,7 @@ void main() {
   ) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    await tapKey(tester, 'nav.${Routes.adminPrices}');
+    await tapNav(tester, Routes.adminPrices);
     await enterKey(tester, 'price.${SeedIds.vip}', '1050');
     await tester.pump();
 
@@ -151,7 +151,7 @@ void main() {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.continue');
-    expect(find.text('PC clock 12 min slow · fix'), findsOneWidget);
+    expect(find.text('PC clock 12 min slow'), findsOneWidget);
     await tapKey(tester, 'shell.syncPill');
     expect(
       find.descendant(

@@ -29,6 +29,8 @@ class LodgingMotion {
     required this.menuOpen,
     required this.menuClose,
     required this.menuDrop,
+    required this.drawerIn,
+    required this.drawerOut,
     required this.panel,
     required this.scrim,
     required this.count,
@@ -47,6 +49,8 @@ class LodgingMotion {
     menuOpen: MotionStep(Duration(milliseconds: 150), Curves.easeOut),
     menuClose: MotionStep(Duration(milliseconds: 120), Curves.easeIn),
     menuDrop: 4,
+    drawerIn: MotionStep(Duration(milliseconds: 220), Curves.easeOut),
+    drawerOut: MotionStep(Duration(milliseconds: 200), Curves.easeIn),
     panel: MotionStep(Duration(milliseconds: 220), Curves.easeOut),
     scrim: MotionStep(Duration(milliseconds: 150), Curves.linear),
     count: MotionStep(Duration(milliseconds: 150), Curves.linear),
@@ -65,6 +69,8 @@ class LodgingMotion {
     menuOpen: MotionStep(Duration.zero, Curves.linear),
     menuClose: MotionStep(Duration.zero, Curves.linear),
     menuDrop: 0,
+    drawerIn: MotionStep(Duration.zero, Curves.linear),
+    drawerOut: MotionStep(Duration.zero, Curves.linear),
     panel: MotionStep(Duration.zero, Curves.linear),
     scrim: MotionStep(Duration.zero, Curves.linear),
     count: MotionStep(Duration.zero, Curves.linear),
@@ -96,6 +102,11 @@ class LodgingMotion {
 
   /// How far a menu drops from its tab (px).
   final double menuDrop;
+
+  /// The menu drawer (tabs that don't fit) sliding in from the left and
+  /// out again; its scrim fades with [scrim].
+  final MotionStep drawerIn;
+  final MotionStep drawerOut;
 
   /// The bed panel sliding in from the right, and its scrim fading.
   final MotionStep panel;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
+import 'focus_ring.dart';
 
 /// One option of a [SegmentedChoice].
 class ChoiceOption<T> {
@@ -57,58 +58,61 @@ class _Card<T> extends StatelessWidget {
       button: true,
       label: option.label,
       excludeSemantics: true,
-      child: InkWell(
-        key: ValueKey('choice.${option.value}'),
-        borderRadius: BorderRadius.circular(Radii.control),
-        onTap: onChanged == null ? null : () => onChanged!(option.value),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: Sizes.targetLarge),
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.x14,
-            vertical: Space.x10,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected ? c.marineTintStrong : c.white,
-            borderRadius: BorderRadius.circular(Radii.control),
-            border: Border.all(
-              color: isSelected ? c.marine : c.fieldBorder,
-              width: isSelected ? Sizes.borderStrong : Sizes.borderThin,
+      child: FocusRing(
+        radius: Radii.control,
+        child: InkWell(
+          key: ValueKey('choice.${option.value}'),
+          borderRadius: BorderRadius.circular(Radii.control),
+          onTap: onChanged == null ? null : () => onChanged!(option.value),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: Sizes.targetLarge),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.x14,
+              vertical: Space.x10,
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                size: 20,
-                color: isSelected ? c.marine : c.muted,
+            decoration: BoxDecoration(
+              color: isSelected ? c.marineTintStrong : c.white,
+              borderRadius: BorderRadius.circular(Radii.control),
+              border: Border.all(
+                color: isSelected ? c.marine : c.fieldBorder,
+                width: isSelected ? Sizes.borderStrong : Sizes.borderThin,
               ),
-              const SizedBox(width: Space.x10),
-              if (option.icon != null) ...[
-                Icon(option.icon, size: 20, color: textColor),
-                const SizedBox(width: Space.x8),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      option.label,
-                      style: t.bodyMedium.copyWith(
-                        color: textColor,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
-                    ),
-                    if (option.caption != null)
-                      Text(option.caption!, style: t.secondary),
-                  ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isSelected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 20,
+                  color: isSelected ? c.marine : c.muted,
                 ),
-              ),
-            ],
+                const SizedBox(width: Space.x10),
+                if (option.icon != null) ...[
+                  Icon(option.icon, size: 20, color: textColor),
+                  const SizedBox(width: Space.x8),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        option.label,
+                        style: t.bodyMedium.copyWith(
+                          color: textColor,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      if (option.caption != null)
+                        Text(option.caption!, style: t.secondary),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

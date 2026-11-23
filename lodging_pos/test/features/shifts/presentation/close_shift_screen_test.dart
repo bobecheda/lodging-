@@ -67,7 +67,7 @@ void main() {
     expectNothingGivenAway(tester);
     await tapKey(tester, 'shift.continue');
 
-    await tapKey(tester, 'shell.closeShift');
+    await tapUserMenu(tester, 'shell.closeShift');
     expect(locationOf(app), Routes.closeShift);
     expectNothingGivenAway(tester);
 
@@ -75,9 +75,11 @@ void main() {
     expect(find.byKey(const ValueKey('closeShift.countAgain')), findsOneWidget);
     expectNothingGivenAway(tester);
 
-    // Leave and come back: still the recount, never a new first count.
-    await tapKey(tester, 'nav.${Routes.home}');
-    await tapKey(tester, 'shell.closeShift');
+    // Leave (Close shift is a focused flow: its own Back) and come back:
+    // still the recount, never a new first count.
+    await tapKey(tester, 'closeShift.back');
+    expect(locationOf(app), Routes.home);
+    await tapUserMenu(tester, 'shell.closeShift');
     expect(find.byKey(const ValueKey('closeShift.countAgain')), findsOneWidget);
 
     await count(tester, '1600');
@@ -121,7 +123,7 @@ void main() {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'mary', 'desk-pass');
     await tapKey(tester, 'shift.continue');
-    await tapKey(tester, 'shell.closeShift');
+    await tapUserMenu(tester, 'shell.closeShift');
     await count(tester, '1,700');
     expect(find.text('Your count is recorded.'), findsOneWidget);
     expect(find.textContaining('Expected'), findsNothing);
@@ -147,7 +149,7 @@ void main() {
     (tester) async {
       final app = await pumpDeskApp(tester, env);
       await signInAs(tester, 'supervisor', 'super-pass');
-      await tapKey(tester, 'nav.${Routes.shifts}');
+      await tapNav(tester, Routes.shifts);
       expect(find.text('Open'), findsOneWidget);
       await tapKey(tester, 'shifts.close.$shiftId');
       expect(text(tester, 'closeShift.whose'), startsWith('Desk MARY'));
@@ -202,7 +204,7 @@ void main() {
       'chain', (tester) async {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.cash}');
+    await tapNav(tester, Routes.cash);
     expect(text(tester, 'cash.now'), 'KES 1,700');
     expect(find.byKey(ValueKey('cash.open.$shiftId')), findsOneWidget);
     expect(find.byKey(const ValueKey('cash.start')), findsOneWidget);

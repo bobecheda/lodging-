@@ -97,7 +97,7 @@ void main() {
   }) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, user, password);
-    await tapKey(tester, 'nav.${Routes.voids}');
+    await tapNav(tester, Routes.voids);
     expect(locationOf(app), Routes.voids);
     return app;
   }

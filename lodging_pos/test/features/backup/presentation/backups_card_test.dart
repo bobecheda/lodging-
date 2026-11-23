@@ -58,7 +58,7 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await settleRealIo(tester, () => status(app).newest != null);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.adminPrices}');
+    await tapNav(tester, Routes.adminPrices);
 
     expect(richText('backups.last', 'Last backup Today 09:00 · '), findsOne);
     expect(richText('backups.last', ' · checked'), findsOne);
@@ -104,10 +104,14 @@ void main() {
       ),
       findsOne,
     );
-    final pill = tester.widget<InkWell>(
-      find.byKey(const ValueKey('shell.backupPill')),
+    // Not a button for a receptionist: nothing to tap.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('shell.backupPill')),
+        matching: find.byType(InkWell),
+      ),
+      findsNothing,
     );
-    expect(pill.onTap, isNull);
     expect(find.byKey(ValueKey('nav.${Routes.adminPrices}')), findsNothing);
   });
 
@@ -139,7 +143,7 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await settleRealIo(tester, () => status(app).newest != null);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.adminPrices}');
+    await tapNav(tester, Routes.adminPrices);
     expect(text(tester, 'backups.second.none'), 'Not set.');
 
     env.backupShell.pick = usb.path;
@@ -184,7 +188,7 @@ void main() {
     env.backupFolder = null;
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.adminPrices}');
+    await tapNav(tester, Routes.adminPrices);
     expect(find.byKey(const ValueKey('backups.card')), findsNothing);
     expect(find.byKey(const ValueKey('shell.backupPill')), findsNothing);
   });

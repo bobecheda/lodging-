@@ -74,7 +74,8 @@ void main() {
     await signInAs(tester, 'SUPERVISOR', 'super-pass');
     expect(locationOf(app), Routes.home);
     expect(find.text('Grace Supervisor'), findsOneWidget);
-    expect(find.text('Supervisor'), findsOneWidget);
+    // The role under the wordmark, and beside the name (no shift).
+    expect(find.text('Supervisor'), findsWidgets);
     expect(find.text('Bed board'), findsWidgets);
     expect(await env.db.select(env.db.shifts).get(), isEmpty);
   });
@@ -125,7 +126,7 @@ void main() {
     await tapKey(tester, 'shift.submit');
     expect(locationOf(app), Routes.home);
     expect((await env.db.select(env.db.shifts).getSingle()).openingFloat, 1500);
-    expect(find.text('Receptionist · shift since 22:00'), findsOneWidget);
+    expect(find.text('Shift since 22:00'), findsOneWidget);
     expect(await env.auditFor('shift.open'), hasLength(1));
   });
 
@@ -178,7 +179,7 @@ void main() {
       await tapKey(tester, 'shift.continue');
       expect(locationOf(app), Routes.home);
       expect(find.text('Bed board'), findsWidgets);
-      expect(find.text('Receptionist · shift since 22:00'), findsOneWidget);
+      expect(find.text('Shift since 22:00'), findsOneWidget);
     },
   );
 

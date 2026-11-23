@@ -47,6 +47,7 @@ dependencies:
   file_selector: ^1.1.0
   supabase_flutter: ^2.18.3
   flutter_secure_storage: ^11.2.0
+  lucide_icons_flutter: 4.0.1
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # The receipt PDF embeds Manrope Bold and ExtraBold for its headings
+  # (receipt_print_style.dart). They are plain assets, not part of the
+  # Manrope family, so the app's text stops at 600 (v2 PR 3).
+  assets:
+    - assets/fonts/manrope/manrope-bold.ttf
+    - assets/fonts/manrope/manrope-extrabold.ttf
+
   # Bundled so the desk renders offline. Sources and hashes:
   # assets/fonts/README.md. Family names are used only in lib/app/theme/.
   fonts:
@@ -84,10 +92,6 @@ flutter:
           weight: 500
         - asset: assets/fonts/manrope/manrope-semibold.ttf
           weight: 600
-        - asset: assets/fonts/manrope/manrope-bold.ttf
-          weight: 700
-        - asset: assets/fonts/manrope/manrope-extrabold.ttf
-          weight: 800
     - family: IBMPlexMono
       fonts:
         - asset: assets/fonts/ibm_plex_mono/IBMPlexMono-Medium.ttf
