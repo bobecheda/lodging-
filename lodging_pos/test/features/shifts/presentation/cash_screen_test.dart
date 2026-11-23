@@ -30,7 +30,7 @@ void main() {
       'the chain starts with it', (tester) async {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.cash}');
+    await tapNav(tester, Routes.cash);
     expect(find.text('Not counted yet'), findsOneWidget);
     await tapKey(tester, 'cash.startSave');
     expect(find.text('Enter the cash you counted.'), findsOneWidget);

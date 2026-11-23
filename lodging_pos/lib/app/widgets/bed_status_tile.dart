@@ -126,6 +126,9 @@ class BedStatusTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // The label is at most 72 px wide (it wraps beyond that),
+                // so a narrow tile or large text never overflows. No
+                // LayoutBuilder: the board's rows measure their height.
                 Row(
                   children: [
                     Expanded(
@@ -137,7 +140,10 @@ class BedStatusTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: Space.x8),
-                    badge,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 72),
+                      child: badge,
+                    ),
                   ],
                 ),
                 Text(

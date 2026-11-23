@@ -58,7 +58,9 @@ class VoidsRepository {
   /// (here or in another window) shows at once.
   Stream<VoidView> watchView(String paymentId) => _db
       .customSelect(
-        'SELECT 1',
+        // Its own SQL text: drift shares one stream between watches with
+        // the same SQL (whatever their readsFrom).
+        'SELECT 1 AS watch_void_view',
         readsFrom: {_db.voids, _db.stays, _db.payments, _db.refunds},
       )
       .watch()

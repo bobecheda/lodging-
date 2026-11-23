@@ -9,8 +9,8 @@ enum WordmarkSize {
   /// The marine top bar of the shift screen (68 high).
   bar(24),
 
-  /// The desk sidebar (232 wide).
-  sidebar(30),
+  /// The desk's top bar (v2): the name only, about 22 px tall.
+  topBar(22),
 
   /// The brand panel of sign in, lock, change password and first-run setup.
   panel(56);

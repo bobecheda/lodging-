@@ -118,6 +118,57 @@ class CashReviewsRepository {
     };
   }
 
+  /// How many closes and counts await a decision that [user] may make
+  /// ([reviewBlocker] says nothing): the Cash tab's badge. Zero for anyone
+  /// without [Permission.reviewCash], so a receptionist never gets one.
+  Future<int> awaitingDecisionBy(UserAccount user) async {
+    if (!can(user, Permission.reviewCash)) return 0;
+    final users = await _users();
+    final decided = {
+      for (final r in await _db.select(_db.cashReviews).get())
+        '${r.targetType}:${r.targetId}',
+    };
+    final targets = [
+      for (final s
+          in await (_db.select(_db.shifts)..where(
+                (s) => s.status.equals('closed') & s.needsReview.equals(true),
+              ))
+              .get())
+        ReviewTarget(
+          kind: ReviewTargetKind.shift,
+          id: s.id,
+          needsReview: true,
+          named: [?users[s.userId], ?users[s.closedBy]],
+        ),
+      for (final d in await (_db.select(
+        _db.drawerEvents,
+      )..where((d) => d.needsReview.equals(true))).get())
+        ReviewTarget(
+          kind: ReviewTargetKind.drawerEvent,
+          id: d.id,
+          needsReview: true,
+          named: [?users[d.countedBy], ?users[d.presentUser]],
+          counter: users[d.countedBy],
+        ),
+    ];
+    return targets
+        .where((t) => !decided.contains('${t.kind.code}:${t.id}'))
+        .where((t) => reviewBlocker(t, user) == null)
+        .length;
+  }
+
+  /// [awaitingDecisionBy], again whenever a shift, count or decision
+  /// changes.
+  Stream<int> watchAwaitingDecisionBy(UserAccount user) => _db
+      .customSelect(
+        // Its own SQL text: drift shares one stream between watches with
+        // the same SQL (whatever their readsFrom).
+        'SELECT 1 AS watch_reviews_to_decide',
+        readsFrom: {_db.shifts, _db.drawerEvents, _db.cashReviews, _db.users},
+      )
+      .watch()
+      .asyncMap((_) => awaitingDecisionBy(user));
+
   /// [user] approves or rejects [id] ([reason] required to reject). Throws
   /// [NotPermitted], [CashReviewProblem] or [OwnerCloudSignInNeeded] (the
   /// owner's cloud sign-in lapsed: the screen asks for the password).

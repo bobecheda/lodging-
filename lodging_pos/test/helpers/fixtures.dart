@@ -357,15 +357,20 @@ class TestEnv {
 /// The front-desk laptop: 1366×768 at 1:1.
 const deskSize = Size(1366, 768);
 
+/// The desk widths every screen must work at (v2 PR 3): the laptop, a
+/// landscape 1024 and a portrait 768.
+const deskSizes = [deskSize, Size(1024, 768), Size(768, 1024)];
+
 /// Runs the real app on [env] at the desk's screen size, with any
 /// [extraOverrides] on top.
 Future<ProviderContainer> pumpDeskApp(
   WidgetTester tester,
   TestEnv env, {
   List<Override> extraOverrides = const [],
+  Size size = deskSize,
 }) async {
   tester.view
-    ..physicalSize = deskSize
+    ..physicalSize = size
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final container = ProviderContainer(
@@ -400,6 +405,41 @@ Future<void> tapKey(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
+  // A page leaving after its transition (v2 PR 3) closes its database
+  // streams in the last frame, which queues a zero-length timer; run it.
+  await tester.pump(Duration.zero);
+}
+
+/// Goes to [route] through the desk's navigation (v2 PR 3): its tab, or
+/// the row in Setup ▾ / More ▾, or the drawer when the tabs don't fit
+/// (they always collapse with the tests' wide placeholder font).
+Future<void> tapNav(WidgetTester tester, String route) async {
+  final row = find.byKey(ValueKey('nav.$route'));
+  if (row.evaluate().isEmpty) {
+    final menu = find.byKey(const ValueKey('shell.menu'));
+    if (menu.evaluate().isNotEmpty) {
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+    } else {
+      for (final group in ['group.setup', 'group.more']) {
+        final tab = find.byKey(ValueKey('nav.$group'));
+        if (tab.evaluate().isEmpty) continue;
+        await tester.tap(tab);
+        await tester.pumpAndSettle();
+        if (row.evaluate().isNotEmpty) break;
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
+    }
+  }
+  await tapKey(tester, 'nav.$route');
+}
+
+/// Opens the user menu (avatar and name) and taps [key] in it: Close shift
+/// (`shell.closeShift`), Change my password (`shell.changeMyPassword`).
+Future<void> tapUserMenu(WidgetTester tester, String key) async {
+  await tapKey(tester, 'shell.user');
+  await tapKey(tester, key);
 }
 
 /// Taps [key] inside [scope], where the same key appears more than once
@@ -434,15 +474,19 @@ Future<void> signInAs(
 String locationOf(ProviderContainer app) =>
     app.read(routerProvider).routerDelegate.currentConfiguration.uri.path;
 
-/// Loads the bundled fonts so layout tests measure real text widths
-/// (by default, widget tests use a wide placeholder font).
-Future<void> loadAppFonts() async {
+/// Loads the bundled fonts so tests measure real text widths (by default,
+/// widget tests use a wide placeholder font, which would collapse the top
+/// bar's tabs at 1366). `test/flutter_test_config.dart` calls it once per
+/// test file, before any test runs; later calls reuse it.
+Future<void> loadAppFonts() => _appFonts ??= _loadAppFonts();
+Future<void>? _appFonts;
+
+Future<void> _loadAppFonts() async {
   const families = {
     'Manrope': [
+      'assets/fonts/manrope/manrope-regular.ttf',
       'assets/fonts/manrope/manrope-medium.ttf',
       'assets/fonts/manrope/manrope-semibold.ttf',
-      'assets/fonts/manrope/manrope-bold.ttf',
-      'assets/fonts/manrope/manrope-extrabold.ttf',
     ],
     'IBMPlexMono': [
       'assets/fonts/ibm_plex_mono/IBMPlexMono-Medium.ttf',

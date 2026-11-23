@@ -328,7 +328,9 @@ class ShiftRepository {
     requirePermission(user, Permission.viewShiftTotals);
     return _db
         .customSelect(
-          'SELECT 1',
+          // Its own SQL text: drift shares one stream between watches with
+          // the same SQL (whatever their readsFrom).
+          'SELECT 1 AS watch_drawer_chain',
           readsFrom: {_db.shifts, _db.drawerEvents, _db.users, _db.cashReviews},
         )
         .watch()
@@ -647,7 +649,9 @@ class ShiftRepository {
 
     return _db
         .customSelect(
-          'SELECT 1',
+          // Its own SQL text: drift shares one stream between watches with
+          // the same SQL (whatever their readsFrom).
+          'SELECT 1 AS watch_shift_list',
           readsFrom: {_db.shifts, _db.voids, _db.payments},
         )
         .watch()

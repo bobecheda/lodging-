@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/auth/permissions.dart';
@@ -8,6 +11,7 @@ import '../../core/auth/session.dart';
 import '../../core/auth/user_account.dart';
 import '../../core/clock/clock.dart';
 import '../../core/clock/nairobi.dart';
+import '../../core/settings/settings_repository.dart';
 import '../../core/sync/outbox_status.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/sync/sync_providers.dart';
@@ -22,18 +26,24 @@ import '../../features/shifts/presentation/shift_providers.dart';
 import '../../features/sync/presentation/sync_panel.dart';
 import '../gate.dart';
 import '../theme/theme.dart';
+import '../widgets/focus_ring.dart';
+import '../widgets/overlay_route.dart';
 import '../widgets/wordmark.dart';
+import 'shell_layout.dart';
 
 part 'desk_shell.g.dart';
+part 'nav_drawer.dart';
+part 'shell_menus.dart';
+part 'top_bar.dart';
 
-/// A sidebar destination.
+/// A desk destination: a top tab, a row in a tab's menu, or a drawer row.
 class NavItem {
   const NavItem({
     required this.route,
     required this.label,
     required this.icon,
     this.permissions = const {},
-    this.setup = false,
+    this.group,
     this.shortLabel,
     this.fullLabelNeeds = const {},
     this.badge,
@@ -62,201 +72,216 @@ class NavItem {
   /// the same through `Routes.permissions`.
   final Set<Permission> permissions;
 
-  /// Listed under "Setup · supervisor" for the supervisor; the owner's few
-  /// setup screens (Prices, Staff) are listed with the rest.
-  final bool setup;
+  /// Listed in a tab's menu ([NavGroup]) rather than as a tab of its own.
+  final NavGroup? group;
 
   bool visibleTo(UserAccount? user) =>
       permissions.isEmpty ||
       (user != null && permissions.any((p) => can(user, p)));
 }
 
-/// A live count beside a sidebar item.
+/// Rarely used pages, gathered under one tab with a menu (brief, "Desk
+/// navigation"); a section of the drawer.
+enum NavGroup {
+  /// The supervisor's setup pages. The owner's few (Prices, Staff) are tabs
+  /// of their own.
+  setup('Setup', LucideIcons.slidersHorizontal),
+
+  /// Shifts and Voids, until Cash takes over Shifts (PR 7) and voiding
+  /// moves onto the receipt (PR 8). Temporary: removed in PR 8.
+  more('More', LucideIcons.ellipsis);
+
+  const NavGroup(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+/// A live count beside a destination.
 enum NavBadge {
   /// Approved refunds not yet paid (AD-7).
   refundsToPay,
 
   /// Price requests waiting for the owner; shown to the owner only.
   priceRequests,
+
+  /// Cash reviews awaiting a decision this user may make (B3).
+  cashReviews,
 }
 
-/// Sidebar destinations. Only screens that exist are listed; each story
-/// adds its own entry.
+/// The desk's destinations, in tab order. Only screens that exist are
+/// listed; each story adds its own entry.
 @Riverpod(keepAlive: true)
 List<NavItem> deskNavItems(Ref ref) => const [
   NavItem(
     route: Routes.today,
     label: 'Today',
-    icon: Icons.today_outlined,
+    icon: LucideIcons.house,
     permissions: {Permission.viewBusinessDashboard},
   ),
   NavItem(
     route: Routes.home,
-    label: 'Bed board',
-    icon: Icons.grid_view_rounded,
+    label: 'Beds',
+    icon: LucideIcons.bed,
     permissions: {Permission.checkIn},
-  ),
-  NavItem(
-    route: Routes.guests,
-    label: 'Guests',
-    icon: Icons.person_search_outlined,
-    permissions: {Permission.registerGuests},
   ),
   NavItem(
     route: Routes.receipts,
     label: 'Receipts',
-    icon: Icons.receipt_long_outlined,
+    icon: LucideIcons.receipt,
     permissions: {Permission.printReceipts},
+  ),
+  NavItem(
+    route: Routes.guests,
+    label: 'Guests',
+    icon: LucideIcons.users,
+    permissions: {Permission.registerGuests},
   ),
   NavItem(
     route: Routes.refunds,
     label: 'Refunds',
-    icon: Icons.replay_rounded,
+    icon: LucideIcons.rotateCcw,
     permissions: {Permission.payRefund},
     badge: NavBadge.refundsToPay,
   ),
   NavItem(
-    route: Routes.shifts,
-    label: 'Shifts',
-    icon: Icons.point_of_sale_outlined,
-    permissions: {Permission.viewShiftTotals},
-  ),
-  NavItem(
     route: Routes.cash,
     label: 'Cash',
-    icon: Icons.payments_outlined,
+    icon: LucideIcons.banknote,
     permissions: {Permission.viewShiftTotals},
-  ),
-  NavItem(
-    route: Routes.voids,
-    label: 'Voids',
-    icon: Icons.block_rounded,
-    permissions: {Permission.voidRecords},
+    badge: NavBadge.cashReviews,
   ),
   NavItem(
     route: Routes.adminRooms,
     label: 'Rooms & beds',
-    icon: Icons.bed_outlined,
+    icon: LucideIcons.house,
     permissions: {Permission.manageRooms},
-    setup: true,
+    group: NavGroup.setup,
   ),
   NavItem(
     route: Routes.adminPrices,
     label: 'Prices & settings',
-    icon: Icons.sell_outlined,
+    icon: LucideIcons.slidersHorizontal,
     permissions: {
       Permission.editPrices,
       Permission.editSettings,
       Permission.manageBackups,
     },
-    setup: true,
+    group: NavGroup.setup,
     shortLabel: 'Prices',
     fullLabelNeeds: {Permission.editSettings},
     badge: NavBadge.priceRequests,
   ),
   NavItem(
     route: Routes.adminStaff,
-    label: 'Users & staff',
-    icon: Icons.people_outline_rounded,
+    label: 'Staff',
+    icon: LucideIcons.users,
     permissions: {
       Permission.manageUsers,
       Permission.manageHousekeepers,
       Permission.manageSupervisors,
     },
-    setup: true,
-    shortLabel: 'Staff',
-    fullLabelNeeds: {Permission.manageHousekeepers},
+    group: NavGroup.setup,
+  ),
+  NavItem(
+    route: Routes.shifts,
+    label: 'Shifts',
+    icon: LucideIcons.clock,
+    permissions: {Permission.viewShiftTotals},
+    group: NavGroup.more,
+  ),
+  NavItem(
+    route: Routes.voids,
+    label: 'Voids',
+    icon: LucideIcons.ban,
+    permissions: {Permission.voidRecords},
+    group: NavGroup.more,
   ),
 ];
 
-/// The desk layout (docs/design.md, "Desk shell"): a 232px marine sidebar
-/// and the content area on `surface`.
+/// A tab: one destination, or a group's menu.
+sealed class NavEntry {
+  const NavEntry();
+}
+
+final class NavLink extends NavEntry {
+  const NavLink(this.item);
+  final NavItem item;
+}
+
+final class NavMenu extends NavEntry {
+  const NavMenu(this.group, this.items);
+  final NavGroup group;
+  final List<NavItem> items;
+}
+
+/// [user]'s tabs, in order: their destinations, then More ▾, then Setup ▾.
+/// The setup group is the supervisor's (`manageRooms`); for anyone else
+/// its pages they may open are tabs of their own (the owner's Prices and
+/// Staff).
+List<NavEntry> navEntriesFor(UserAccount? user, List<NavItem> items) {
+  final visible = items.where((i) => i.visibleTo(user)).toList();
+  final setupGrouped = user != null && can(user, Permission.manageRooms);
+  NavGroup? groupOf(NavItem i) =>
+      i.group == NavGroup.setup && !setupGrouped ? null : i.group;
+  return [
+    for (final i in visible)
+      if (groupOf(i) == null) NavLink(i),
+    for (final g in const [NavGroup.more, NavGroup.setup])
+      if (visible.where((i) => groupOf(i) == g).toList() case final rows
+          when rows.isNotEmpty)
+        NavMenu(g, rows),
+  ];
+}
+
+/// Pages that open from a tab's screen and belong to it: check-in is the
+/// bed board's.
+const navFlows = {Routes.checkIn: Routes.home};
+
+/// The role subtitle under the wordmark (brief, "Desk navigation").
+String roleSubtitle(Role role) => switch (role) {
+  Role.owner => 'Owner',
+  Role.supervisor => 'Supervisor',
+  Role.receptionist => 'Front desk',
+};
+
+/// The desk layout (docs/design-system.md, "Desk navigation"): a 64 px
+/// white top bar with icon tabs, and the page under it on `surface`,
+/// capped at 1280 px wide and centred. When the tabs don't fit, they
+/// collapse into a menu button that opens the drawer.
 class DeskShell extends ConsumerWidget {
   const DeskShell({super.key, required this.location, required this.child});
 
-  /// The current route, to highlight its nav item.
+  /// The current route, to mark its tab.
   final String location;
   final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
     final user = ref.watch(sessionProvider);
-    final items = ref
-        .watch(deskNavItemsProvider)
-        .where((i) => i.visibleTo(user));
-    // The setup group is the supervisor's; the owner's setup screens sit
-    // with the rest.
-    final grouped = user != null && can(user, Permission.manageRooms);
-    final desk = items.where((i) => !grouped || !i.setup).toList();
-    final setup = items.where((i) => grouped && i.setup).toList();
-
-    final sidebar = Container(
-      width: Sizes.sidebarWidth,
-      color: c.marine,
-      padding: const EdgeInsets.fromLTRB(
-        Space.x16,
-        Space.x24,
-        Space.x16,
-        Space.x20,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const LodgingWordmark(),
-          const SizedBox(height: Space.x6),
-          Text('Front desk', style: t.secondary.copyWith(color: c.navMuted)),
-          const SizedBox(height: Space.x16),
-          // Every item built (not lazy), scrolling only if the desk's
-          // warnings push it past a 768-high screen.
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final item in desk) _NavTile(item, location, user),
-                  if (setup.isNotEmpty) ...[
-                    const SizedBox(height: Space.x10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Space.x12,
-                        vertical: Space.x6,
-                      ),
-                      child: Text(
-                        'Setup · supervisor',
-                        key: const ValueKey('shell.setupGroup'),
-                        style: t.meta.copyWith(color: c.navMuted),
-                      ),
-                    ),
-                    for (final item in setup) _NavTile(item, location, user),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const _BackupPill(),
-          const _SyncPill(),
-          const SizedBox(height: Space.x12),
-          if (user != null) _UserBlock(user),
-        ],
-      ),
-    );
-
+    final entries = navEntriesFor(user, ref.watch(deskNavItemsProvider));
     return Scaffold(
-      body: Row(
+      backgroundColor: c.surface,
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          sidebar,
+          TopBar(location: location, entries: entries, user: user),
           Expanded(
-            child: ColoredBox(
-              color: c.surface,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Space.x28,
-                  vertical: Space.x24,
+            child: LayoutBuilder(
+              builder: (context, box) => Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: math.min(box.maxWidth, Sizes.contentMax),
+                  height: box.maxHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Space.x28,
+                      vertical: Space.x24,
+                    ),
+                    child: child,
+                  ),
                 ),
-                child: child,
               ),
             ),
           ),
@@ -266,308 +291,71 @@ class DeskShell extends ConsumerWidget {
   }
 }
 
-class _NavTile extends ConsumerWidget {
-  const _NavTile(this.item, this.location, this.user);
+// ── Badges ─────────────────────────────────────────────────────────────
 
-  final NavItem item;
-  final String location;
-  final UserAccount? user;
+int _badgeCount(WidgetRef ref, UserAccount? user, NavBadge? badge) =>
+    switch (badge) {
+      null => 0,
+      NavBadge.refundsToPay => ref.watch(refundsToPayProvider).value ?? 0,
+      NavBadge.priceRequests =>
+        user != null && can(user, Permission.decidePriceChange)
+            ? ref.watch(waitingPriceRequestsProvider).value?.length ?? 0
+            : 0,
+      NavBadge.cashReviews => ref.watch(cashReviewsToDecideProvider).value ?? 0,
+    };
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final isActive =
-        location == item.route || location.startsWith('${item.route}/');
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Semantics(
-        selected: isActive,
-        button: true,
-        child: Material(
-          color: isActive ? c.navActive : Colors.transparent,
-          borderRadius: BorderRadius.circular(Radii.control),
-          child: InkWell(
-            key: ValueKey('nav.${item.route}'),
-            borderRadius: BorderRadius.circular(Radii.control),
-            onTap: isActive ? null : () => context.go(item.route),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: Sizes.target),
-              padding: const EdgeInsets.symmetric(horizontal: Space.x12),
-              child: Row(
-                children: [
-                  if (isActive)
-                    Container(
-                      width: Space.x8,
-                      height: Space.x8,
-                      margin: const EdgeInsetsDirectional.only(end: Space.x10),
-                      decoration: BoxDecoration(
-                        color: c.butter,
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                  else
-                    const SizedBox(width: Space.x8 + Space.x10),
-                  Expanded(
-                    child: Text(
-                      item.labelFor(user),
-                      style: isActive
-                          ? t.secondaryMedium.copyWith(
-                              color: c.white,
-                              fontWeight: FontWeight.w600,
-                            )
-                          : t.secondaryMedium.copyWith(color: c.navText),
-                    ),
-                  ),
-                  if (item.badge == NavBadge.refundsToPay)
-                    _CountBadge(
-                      ref.watch(refundsToPayProvider).value ?? 0,
-                      key: ValueKey('nav.badge.${item.route}'),
-                    )
-                  else if (item.badge == NavBadge.priceRequests &&
-                      user != null &&
-                      can(user!, Permission.decidePriceChange))
-                    _CountBadge(
-                      ref.watch(waitingPriceRequestsProvider).value?.length ??
-                          0,
-                      key: ValueKey('nav.badge.${item.route}'),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+int _entryCount(WidgetRef ref, UserAccount? user, NavEntry e) => switch (e) {
+  NavLink(:final item) => _badgeCount(ref, user, item.badge),
+  NavMenu(:final items) => items.fold(
+    0,
+    (n, i) => n + _badgeCount(ref, user, i.badge),
+  ),
+};
 
-/// A small butter count beside a sidebar label; nothing at zero.
-class _CountBadge extends StatelessWidget {
-  const _CountBadge(this.count, {super.key});
+/// A small butter count; nothing at zero. The number cross-fades when it
+/// changes.
+class CountBadge extends StatelessWidget {
+  const CountBadge(this.count, {super.key});
 
   final int count;
 
+  /// Its width for [count] in [style] (no badge at zero).
+  static double widthOf(int count, TextStyle style, TextScaler scaler) =>
+      count == 0 ? 0 : _textWidth('$count', style, scaler) + 2 * 7;
+
   @override
   Widget build(BuildContext context) {
-    if (count == 0) return const SizedBox.shrink();
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Space.x8, vertical: 1),
-      decoration: BoxDecoration(
-        color: c.butter,
-        borderRadius: BorderRadius.circular(Radii.pill),
-      ),
-      child: Text('$count', style: t.meta.copyWith(color: c.butterText)),
-    );
-  }
-}
-
-/// Until sync exists (sprint 2), say so honestly and count what's waiting.
-class _SyncPill extends ConsumerWidget {
-  const _SyncPill();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final waiting = ref.watch(pendingChangesProvider).value;
-    final status =
-        ref.watch(syncStatusProvider).value ??
-        const SyncStatus(phase: SyncPhase.notConfigured);
-    final text = waiting == null
-        ? '…'
-        : syncPillText(
-            status,
-            pending: waiting,
-            now: ref.watch(clockProvider).now(),
-          );
-    final (background, foreground, icon) = switch (syncTone(
-      status.phase,
-      clockWarning: status.clockWarning,
-      voidsHeld: status.voidsHeld,
-    )) {
-      SyncTone.calm => (
-        c.marineTint,
-        c.marine,
-        status.phase == SyncPhase.uploading
-            ? Icons.cloud_upload_outlined
-            : Icons.cloud_done_outlined,
-      ),
-      SyncTone.waiting => (
-        c.butter,
-        c.butterText,
-        status.clockWarning && status.phase == SyncPhase.online
-            ? Icons.schedule_rounded
-            : Icons.cloud_off_outlined,
-      ),
-      SyncTone.problem => (c.redTint, c.redText, Icons.error_outline_rounded),
-    };
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(Radii.control),
-      child: InkWell(
-        key: const ValueKey('shell.syncPill'),
-        borderRadius: BorderRadius.circular(Radii.control),
-        onTap: () => showSyncPanel(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.x12,
-            vertical: Space.x10,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: foreground),
-              const SizedBox(width: Space.x8),
-              Expanded(
-                child: Text(text, style: t.meta.copyWith(color: foreground)),
+    final m = LodgingMotion.of(context);
+    return AnimatedSwitcher(
+      duration: m.count.duration,
+      child: count == 0
+          ? const SizedBox.shrink()
+          : Container(
+              key: ValueKey(count),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: c.butter,
+                borderRadius: BorderRadius.circular(Radii.pill),
               ),
-            ],
-          ),
-        ),
-      ),
+              child: Text(
+                '$count',
+                style: t.meta.copyWith(color: c.butterText),
+              ),
+            ),
     );
   }
 }
 
-/// Only when the main backup failed or yesterday and today have none
-/// ([backupOverdue]); everyone sees it, so a receptionist can tell the
-/// supervisor. A supervisor's tap opens the Backups card. A missing second copy is
-/// never shown here.
-class _BackupPill extends ConsumerWidget {
-  const _BackupPill();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final status = ref.watch(backupsProvider);
-    if (!status.overdueAt(ref.watch(clockProvider).now())) {
-      return const SizedBox.shrink();
-    }
-    final user = ref.watch(sessionProvider);
-    final canFix = user != null && can(user, Permission.manageBackups);
-    final text = backupOverdueText(
-      newest: status.newest?.takenAt,
-      failed: status.lastFailure != null,
-    );
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Space.x8),
-      child: Material(
-        color: c.butter,
-        borderRadius: BorderRadius.circular(Radii.control),
-        child: InkWell(
-          key: const ValueKey('shell.backupPill'),
-          borderRadius: BorderRadius.circular(Radii.control),
-          onTap: canFix ? () => context.go(Routes.adminPrices) : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Space.x12,
-              vertical: Space.x10,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 18,
-                  color: c.butterText,
-                ),
-                const SizedBox(width: Space.x8),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: t.meta.copyWith(color: c.butterText),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UserBlock extends ConsumerWidget {
-  const _UserBlock(this.user);
-
-  final UserAccount user;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final shift = ref.watch(currentShiftProvider).value;
-    final ownShift = shift != null && shift.userId == user.id;
-    final role = [
-      switch (user.role) {
-        Role.owner => 'Owner',
-        Role.supervisor => 'Supervisor',
-        Role.receptionist => 'Receptionist',
-      },
-      if (ownShift) 'shift since ${formatTime(shift.openedAt)}',
-    ].join(' · ');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          user.fullName,
-          key: const ValueKey('shell.userName'),
-          style: t.bodyMedium.copyWith(color: c.white),
-        ),
-        Text(
-          role,
-          key: const ValueKey('shell.userRole'),
-          style: t.secondary.copyWith(color: c.navMuted),
-        ),
-        const SizedBox(height: Space.x12),
-        // FD-11: close your own shift (count the cash, then sign out).
-        if (ownShift && can(user, Permission.closeShift)) ...[
-          OutlinedButton.icon(
-            key: const ValueKey('shell.closeShift'),
-            onPressed: () => context.go(Routes.closeShift),
-            icon: Icon(Icons.point_of_sale_outlined, size: 18, color: c.white),
-            label: Text(
-              'Close shift',
-              style: t.bodyMedium.copyWith(color: c.white),
-            ),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: c.marine,
-              side: BorderSide(color: c.navMuted),
-              minimumSize: const Size(Sizes.target, Sizes.targetCompact),
-            ),
-          ),
-          const SizedBox(height: Space.x8),
-        ],
-        OutlinedButton.icon(
-          key: const ValueKey('shell.lock'),
-          onPressed: () => ref.read(idleLockProvider.notifier).lockNow(),
-          icon: Icon(Icons.lock_outline_rounded, size: 18, color: c.white),
-          label: Text(
-            'Lock screen',
-            style: t.bodyMedium.copyWith(color: c.white),
-          ),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: c.marine,
-            side: BorderSide(color: c.navMuted),
-            minimumSize: const Size(Sizes.target, Sizes.targetCompact),
-          ),
-        ),
-        // The owner's password is also their cloud sign-in (owner-app-3).
-        if (can(user, Permission.ownerCloudPassword))
-          TextButton(
-            key: const ValueKey('shell.changeMyPassword'),
-            onPressed: () => showDialog<bool>(
-              context: context,
-              builder: (_) => const ChangeMyPasswordDialog(),
-            ),
-            child: Text(
-              'Change my password',
-              style: t.secondary.copyWith(color: c.navText),
-            ),
-          ),
-      ],
-    );
-  }
+double _textWidth(String text, TextStyle style, TextScaler scaler) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: scaler,
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
 }

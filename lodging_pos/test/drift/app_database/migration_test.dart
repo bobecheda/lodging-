@@ -168,6 +168,13 @@ void main() {
         updatedAt: '2026-10-14T19:00:00.000Z',
         deviceId: 'seed',
       ),
+      const v5.SettingsData(
+        key: 'reduce_motion',
+        value: 'false',
+        createdAt: '2026-10-14T19:00:00.000Z',
+        updatedAt: '2026-10-14T19:00:00.000Z',
+        deviceId: 'seed',
+      ),
     ];
 
     final oldBedCategoriesData = <v1.BedCategoriesData>[

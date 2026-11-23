@@ -580,6 +580,48 @@ final class DrawerChainProvider
 
 String _$drawerChainHash() => r'93f10763fa6a8fdc0f8f8bbf8658cb1ab3dd0a71';
 
+/// The Cash tab's badge: reviews awaiting a decision the signed-in user may
+/// make (v2 PR 3). Zero for anyone without `reviewCash`.
+
+@ProviderFor(cashReviewsToDecide)
+final cashReviewsToDecideProvider = CashReviewsToDecideProvider._();
+
+/// The Cash tab's badge: reviews awaiting a decision the signed-in user may
+/// make (v2 PR 3). Zero for anyone without `reviewCash`.
+
+final class CashReviewsToDecideProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, Stream<int>>
+    with $FutureModifier<int>, $StreamProvider<int> {
+  /// The Cash tab's badge: reviews awaiting a decision the signed-in user may
+  /// make (v2 PR 3). Zero for anyone without `reviewCash`.
+  CashReviewsToDecideProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cashReviewsToDecideProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cashReviewsToDecideHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<int> create(Ref ref) {
+    return cashReviewsToDecide(ref);
+  }
+}
+
+String _$cashReviewsToDecideHash() =>
+    r'5d82b66f089cf4fe4d4ae97729b562478172e13b';
+
 /// The supervisor's list of shifts (FD-11), watched.
 
 @ProviderFor(shiftList)

@@ -55,12 +55,12 @@ void main() {
     if (item.isNotEmpty) await tapKey(tester, 'owner.more.$item');
   }
 
-  testWidgets('More: the menu, Reports not yet, who is signed in and the '
-      'desk’s last sync', (tester) async {
+  testWidgets('More: the menu (no Reports until AD-9), who is signed in and '
+      'the desk’s last sync', (tester) async {
     await open(tester, '');
     expect(find.text('Shifts'), findsOneWidget);
-    expect(find.text('Monthly report (PDF) · coming next'), findsOneWidget);
-    await tapKey(tester, 'owner.more.reports');
+    expect(find.text('Reports'), findsNothing);
+    expect(find.byKey(const ValueKey('owner.more.reports')), findsNothing);
     expect(find.byKey(const ValueKey('owner.more')), findsOneWidget);
     expect(find.text('Owner · UB40'), findsOneWidget);
     expect(text(tester, 'owner.more.email'), testOwnerEmail);

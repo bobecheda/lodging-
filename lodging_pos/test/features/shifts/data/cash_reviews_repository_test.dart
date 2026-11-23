@@ -247,6 +247,27 @@ void main() {
       );
     });
 
+    test('the Cash badge: reviews awaiting a decision this user may make '
+        '(v2 PR 3)', () async {
+      // Mary's close (setUp) and the supervisor's own close, both short.
+      final own = (await env.openShift(supervisor)).id;
+      await env.closeShiftWith(supervisor, own, firstCount: 0, reason: 'x');
+      // The supervisor may decide Mary's, never their own; the owner both.
+      expect(await reviews.awaitingDecisionBy(supervisor), 1);
+      expect(await reviews.awaitingDecisionBy(owner), 2);
+      // A receptionist never gets a count.
+      expect(await reviews.awaitingDecisionBy(mary), 0);
+      // Decided once: no longer counted for anyone.
+      await reviews.decide(
+        supervisor,
+        ReviewTargetKind.shift,
+        maryShift,
+        approve: true,
+      );
+      expect(await reviews.awaitingDecisionBy(supervisor), 0);
+      expect(await reviews.awaitingDecisionBy(owner), 1);
+    });
+
     test('only viewShiftTotals users read the reviews', () async {
       await expectLater(
         reviews.rejectedSince(DateTime.utc(2026), by: mary),

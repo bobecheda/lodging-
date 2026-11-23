@@ -1,6 +1,7 @@
 # UI redesign brief — lodging_pos (v2)
 
-Status: designed in Figma, awaiting owner review and staff test. Build plan agreed with Claude Code 12 Nov 2026 (9 PRs, story/ui-1 … ui-9). UB40 goes live after the redesign (decided 12 Nov 2026; see Timeline).
+Status: designed in Figma; build plan agreed with Claude Code 12 Nov 2026 (9 PRs, story/ui-1 … ui-9). PR 1 (docs, #38) and PR 2 (tokens, #39) merged.
+Decided 12 Nov 2026: UB40 goes live AFTER the redesign. Staff are trained once, on v2. The Tue 17 Nov freeze is cancelled; the go-live runbook (docs/go-live.md) still applies, run from the tag cut after PR 9.
 Figma: file CVc42Uc4UyoQr366bP3Bca, page "Redesign v2 — Nov 2026" (node 22:447). The old screens on Page 1 are kept for comparison.
 Prototype flows on that page: "Receptionist" (Bed board ↔ Receipts tabs; New check-in → Check-in → Cancel) and "Supervisor" (Cash: Setup menu opens/closes).
 
@@ -22,21 +23,64 @@ Prototype flows on that page: "Receptionist" (Bed board ↔ Receipts tabs; New c
 
 ## Desk navigation: light top bar (decided 11–12 Nov 2026; colour decided by the owner 12 Nov)
 - 64 px white bar with a 1 px line border at the bottom.
-- Left: wordmark "UB40" in marine + role subtitle in muted ("Front desk" / "Supervisor" / "Owner").
-- Tabs: icon + label; default = ink-soft text, muted icon; active = marine text and icon, plus a 3 px marine indicator under the tab (the indicator slides between tabs). Count badges in butter. Hover = surface/app background. Keyboard focus = 2 px marine outline.
+- Left: the UB40 wordmark (Pirata One, marine, ~22 px tall; a logo, exempt from the 3-weight rule) + subtitle in Meta 12/500 muted showing the signed-in ROLE: "Front desk" (receptionist), "Supervisor", "Owner". Same in the drawer head.
+- Tabs: a 44 px tall pill (radius 8) centred in the 64 px bar; icon 18 + label Secondary medium 14/500, padding 12, gap 8. Default = ink-soft text, muted icon; active = marine text and icon, plus a 3 px marine indicator at the bottom edge of the bar under the tab (the indicator slides between tabs). Count badges in butter.
+- Icons: Lucide (the Figma v2/Icon set is Lucide), from a bundled icon-font package that works offline.
 - Groups of rarely used pages are a tab with a dropdown menu (Setup ▾). Future pages (reports, expenses, stock) go into a dropdown group, not new tabs, once a role passes ~6 tabs.
-- Right: online dot (green) + "Online" muted — offline shows a butter label "Offline · N waiting"; divider; initials avatar (36 px circle: marine-tint for receptionists, butter for the supervisor) + user name + shift/role; Lock button (surface background, marine icon).
-- Tabs collapse into the menu button whenever they don't fit (not only below 768) — e.g. the supervisor's six tabs at 1024.
+- Right, in order: status slot (backup warning, then sync); divider; user button (36 px initials avatar + name + shift/role); Lock button (44 px, surface background, marine icon).
+- Avatars: receptionist = marine-tint with marine initials; supervisor = butter with butter-text; owner = marine with white initials.
+- Tabs collapse into the menu button whenever they don't fit (not only below 768) — e.g. the supervisor's tabs at 1024.
 - Focused flows (close shift, sign-in) have no navigation. Phone keeps its bottom bar.
+- Buttons: Secondary medium 14/500, height 44, horizontal padding 16.
 - The sidebar option is kept in Figma under "Not chosen — sidebar option" for reference only.
+
+## Shell states (PR 3) — Figma "Shell · Top bar states" (node 37:1558) and "Shell · 768 menu open (supervisor)" (node 39:1798)
+Top bar:
+| State | Look |
+|---|---|
+| Online (default) | Green dot + "Online" (Meta, muted) |
+| Hover (mouse only) | Tab pill gets surface/app background; label turns ink. Never the only cue for anything |
+| Keyboard focus | 2 px marine ring outside the pill (radius 8). Same ring on every focusable control, incl. Lock, the user button and the menu button. Parents must not clip it |
+| Offline | Sync area becomes a butter pill: dot + "Offline · N waiting" in butter-text (N = outbox rows not yet pushed). Nothing else on the bar changes; work continues |
+| Syncing | Muted dot + "Syncing · N", N counting down; back to Online at 0 |
+Top tab component (v2/Top tab) has variants Default, Active, Hover, Focus.
+
+Status slot — other states (same slot, today's wording kept short; all open the Cloud sync panel when tapped):
+- Warnings (butter pill): not set up, not connected, owner sign-in needed, records not in the cloud, PC clock wrong.
+- Uploading: muted, like Syncing.
+- Sync problem (rows refused/stuck): red-tint pill with red-text — the one urgent sync state.
+- Backup failed or overdue: a separate butter pill to the LEFT of sync ("Backup failed · last Sun 18 Oct"), shown only then; a supervisor's tap opens Prices & settings (Backups); for others it is not tappable.
+
+User button (replaces the sidebar user block): clicking the avatar + name opens a small menu in the Setup ▾ style (white card, 44 px rows):
+- "Close shift" — only when this user has an open shift.
+- "Change my password" — for users who can change it today (owner).
+The drawer footer gets the same rows above "Lock screen".
+
+Menu drawer (when tabs don't fit; drawn at 768 for the supervisor):
+- Opens from the menu button (left of the wordmark); slides in from the left, 304 px wide, full height; white, 1 px line border on the right, soft shadow; scrim ink 35% over the page.
+- Head: wordmark + role subtitle, Close (X, 44 px).
+- Rows: 48 px, icon 20 + Body medium 16/500, radius 8. Active row = marine-tint background, marine text and icon, 3 px marine bar on its left edge. Badges in butter at the row's right.
+- Groups (Setup, temporary More) are plain sections in the drawer: Meta label, then its pages as rows (no dropdown inside the drawer).
+- Footer (above a 1 px line): status ("Online · synced 1 min ago" / the offline pill), avatar + name + role, then Close shift / Change my password rows when they apply, then full-width Secondary "Lock screen".
+- Per role: receptionist = Beds, Receipts, Guests, Refunds; supervisor = Beds, Receipts, Guests, Refunds, Cash, Setup (Rooms & beds, Prices & settings, Staff); owner desk = Today, Cash, Receipts, Prices, Staff. Plus the temporary More section below while it exists.
+- Motion: drawer 220 ms ease-out in, 200 ms ease-in out; scrim fades 150 ms. Closes on X, scrim tap, Esc, or choosing a page. Focus is trapped inside while open and returns to the menu button on close.
+- While the drawer is used, the top bar keeps: menu button, wordmark, status, avatar, Lock. User name hidden.
+
+Badges:
+- Refunds: refunds to pay (as today). Owner's Prices: price requests (as today).
+- Cash: reviews still awaiting a decision that THIS user is allowed to decide (so the supervisor never counts his own shifts). Never shown to a receptionist.
+
+Temporary "More ▾" (PR 3 → removed in PR 8): for the supervisor and the owner, holds Shifts and Voids until PR 7 merges Shifts into Cash and PR 8 moves voiding onto the receipt view. Same dropdown style as Setup ▾.
+
+Reduced motion fallback: if Windows "Show animations" doesn't reach Flutter, add a "Reduce motion" switch in Prices & settings (supervisor only), stored per desk PC, applying app-wide.
 
 ## Colour system (v2)
 | Colour | Token | Meaning |
 |---|---|---|
-| Marine #0B2E59 | brand/marine | Brand and action only: primary buttons, active tab, Ready border, hero card background, links, focus |
-| Light blue #EAF1FA | brand/marine-tint | Occupied bed (quiet), selected chip |
-| Red #D62839 | status/red | Overstay and urgent only |
-| Butter #F7E3A1 | status/butter | Needs cleaning, warnings, count badges, offline |
+| Marine #0B2E59 | brand/marine | Brand and action only: primary buttons, active tab, Ready border, hero card background, links, focus, owner avatar |
+| Light blue #EAF1FA | brand/marine-tint | Occupied bed (quiet), selected chip, active drawer row, receptionist avatar |
+| Red #D62839 | status/red | Overstay and urgent only (incl. the sync-problem pill, as red-tint) |
+| Butter #F7E3A1 (tint #FDF6DE) | status/butter, status/butter-tint | Needs cleaning, warnings, count badges, offline, backup warning, supervisor avatar |
 | Green #1E7B4F (tint #E6F4EC) | status/green, status/green-tint | Good: online, money up, count matched, saved |
 
 Room category colours (palette keys, stored on bed_categories.colour; stripe needs 3:1, text needs 4.5:1 on white):
@@ -64,29 +108,30 @@ Other colour rules:
 |---|---|---|
 | Tab change | Indicator slides to the new tab; content fades out, new content fades in and rises 8 px | Indicator 200 ms ease-out; content out 120 ms ease-in, in 180 ms ease-out |
 | Open a flow (New check-in, a decision, drawer count) | Fade + 16 px slide in the direction of travel; back reverses it | 250 ms ease-out / 200 ms ease-in |
-| Dropdown menu (Setup ▾, 768 menu) | Fade + 4 px drop from the tab | Open 150 ms ease-out, close 120 ms ease-in |
+| Dropdown menu (Setup ▾, More ▾, user menu) | Fade + 4 px drop | Open 150 ms ease-out, close 120 ms ease-in |
+| Menu drawer (narrow) | Slides in from the left; scrim fades | 220 ms ease-out in, 200 ms ease-in out; scrim 150 ms |
 | Bed panel (dialog) | Slides in from the right; scrim fades | 220 ms ease-out; scrim 150 ms |
 | Counts and badges | New number cross-fades | 150 ms |
-Rules: only opacity and transform animate (never width, height or layout). The top bar never moves (DeskShell stays a ShellRoute). Input is never blocked during an animation. No bounce, no counting-up money. Reduced motion (Windows "Show animations" off → MediaQuery.disableAnimations; if Windows doesn't pass it through, a desk setting): switch instantly, opacity only. Esc closes menus and panels and returns focus to the control that opened them.
+Rules: only opacity and transform animate (never width, height or layout). The top bar never moves (DeskShell stays a ShellRoute). Input is never blocked during an animation. No bounce, no counting-up money. Reduced motion (Windows "Show animations" off → MediaQuery.disableAnimations; fallback: the "Reduce motion" desk setting above): switch instantly, opacity only. Esc closes menus, the drawer and panels and returns focus to the control that opened them.
 
 ## Responsive (desk app window; also the web/PC builds)
 Breakpoints: narrow < 768, medium 768–1279, wide ≥ 1280.
 - Wide (≥ 1280): full top bar; room grid 6 columns; Now strip = Overstay and To clean side by side. On very wide screens the page content is capped at 1280 px and centred; the top bar stays full width.
 - Medium, landscape (~1024): room grid 4 columns; the overstay card stacks guest above its buttons; tabs keep labels if they fit.
-- Medium, portrait (768): tabs collapse into a menu button (same destinations in a drawer); user name hidden, avatar and Lock stay; Now strip = Overstay full width, To clean below it; room grid 3 columns.
+- Medium, portrait (768): tabs collapse into the menu button and drawer (see Shell states); Now strip = Overstay full width, To clean below it; room grid 3 columns.
 - Narrow (< 768, not drawn): room grid 2 columns, Now strip stacked, search becomes an icon button.
 - Never: horizontal page scroll, text below 12 px, hit targets below 44 px. Wide tables scroll inside their card.
 
 ## Navigation (end state, includes AD-11)
 | Role | Where | Home | Rest |
 |---|---|---|---|
-| Receptionist | Desk | Beds | Receipts, Guests, Refunds. Shift controls in the user area. |
+| Receptionist | Desk | Beds | Receipts, Guests, Refunds. Close shift in the user menu. |
 | Supervisor | Own phone/PC (owner app, supervisor role) | Decisions | Beds, Cash, Staff (read-only), Audit |
 | Supervisor | Desk, on site | Beds | Receipts, Guests, Refunds, Cash, Setup ▾ (Rooms & beds, Prices & settings, Staff) |
 | Owner | Phone | Today | Money, Beds, Prices, More (Cash, Audit, Staff, Password) |
 | Owner | Desk | Today | Cash, Receipts (view and void; no printing), Prices, Staff |
 
-Removed as destinations: Shifts (merged into Cash), Voids (action on the receipt view and the bed panel), phone Reports placeholder (hidden until AD-9).
+Removed as destinations: Shifts (merged into Cash in PR 7), Voids (action on the receipt view and the bed panel in PR 8), phone Reports placeholder (hidden until AD-9). Until then they sit in the temporary More ▾.
 "Decisions" is one shared queue, filtered by permission (supervisor and owner). Until AD-11, Cash "Review" opens the existing approve/reject box.
 
 ## Screens designed (Figma frame names)
@@ -97,6 +142,7 @@ Removed as destinations: Shifts (merged into Cash), Voids (action on the receipt
 - Desk · Cash — top nav (supervisor) and "…, Setup open": marine drawer hero (should hold / last check / last collection + Collect cash / Count drawer); To review; History (drawer chain). Takes over Shifts: open shifts with Close, needs-review rows, voided-after-close marks.
 - PC · Needs your decision (supervisor): split pane queue + detail; Approve refund / Reject. (Built with AD-11.)
 - Phone · Owner Today: Needs you → Collected today (marine hero) → Beds now → Drawer should hold (new: computed on the phone with the desk's drawer rules, tested to match) → This month.
+- Shell · Top bar states; Shell · 768 menu open (supervisor).
 
 ## Bed-board search ("Guest or receipt")
 The board filters in memory as today (room number exact, occupant name part, phone start). Under the box, up to 5 matching receipts (existing receipts query). A name never searches receipts. Digits alone = room; a receipt needs the prefix (R-418) or 5+ digits.
@@ -106,21 +152,16 @@ The board filters in memory as today (room number exact, occupant name part, pho
 - Receptionist monthly takings PDF (FD-12) — breaks the blind count.
 
 ## Type and components (v2 tokens in Figma)
-- Text styles v2/*: Page title 24/600, Section title 18/600, Body 16/400, Body medium 16/500, Secondary 14/400, Secondary medium 14/500, Meta 12/500 (meta only), Money hero 30 mono/600, Money 18 mono/600, Money small 14 mono/500. Manrope (add the 400 file) + IBM Plex Mono.
+- Text styles v2/*: Page title 24/600, Section title 18/600, Body 16/400, Body medium 16/500, Secondary 14/400, Secondary medium 14/500, Meta 12/500 (meta only), Money hero 30 mono/600, Money 18 mono/600, Money small 14 mono/500. Manrope (incl. 400) + IBM Plex Mono.
 - Bed tiles: Ready = white + 1.5 marine border; Occupied = marine-tint + field border (quiet); Overstay = red; To clean = butter, dashed.
 - Menus: white card, 1 px line border, soft shadow (alpha ≤ 0.08), 44 px rows, hovered row marine-tint.
-- Components: v2/Icon/* (incl. menu), v2/Top tab (Default/Active; Label, Icon, Badge, Count, Dropdown), v2/Bed tile, v2/Button (Primary/Secondary/Danger), v2/Filter chip, v2/Field. (v2/Nav item and v2/Nav group belong to the archived sidebar option.)
+- Components: v2/Icon/* (incl. menu, x), v2/Top tab (Default/Active/Hover/Focus; Label, Icon, Badge, Count, Dropdown), v2/Bed tile, v2/Button (Primary/Secondary/Danger), v2/Filter chip, v2/Field. (v2/Nav item and v2/Nav group belong to the archived sidebar option.)
 
 ## Open decisions
-- Owner to confirm: quieter occupied tile (changes his original "occupied = solid marine" rule) and the category colours (gold / violet / teal / slate). PR 5 waits on this; PR 1–4 don't.
-
-## Timeline (decided 12 Nov 2026)
-- UB40 goes live after the redesign, so the staff are trained once, on v2. The Tue 17 Nov freeze is cancelled.
-- PRs 2–9 in order, one at a time, all merged by about Mon 7 Dec 2026; then a staff test on the v2 build, fixes, regression, the release tag and docs/go-live.md. Go-live about mid-December 2026.
-- AD-11 comes after go-live.
-- Design gates: the 768 menu drawer and the top bar's offline/hover/focus states before PR 3; the bed panel states (and the owner's OK on the occupied tile and category colours) before PR 5; the full check-in before PR 6. A PR reached before its design arrives stops until it does; no layout is invented.
+- Owner to confirm: quieter occupied tile (changes his original "occupied = solid marine" rule) and the category colours (gold / violet / teal / slate). PR 5 waits on this; PR 3–4 don't.
+- AD-11 after go-live (recommended; adding it first pushes go-live into the Christmas period) — owner to confirm.
 
 ## Next
-1. Owner review; clickable test with receptionist and supervisor (5 tasks: check in, extend, check out, close shift, find a receipt).
-2. Design the remaining screens in this style: bed panel states (incl. Void stay), full check-in (bed chooser, whole room, ID search), refunds, guests, setup screens, owner desk Today, owner phone Money/Beds/Prices/More, supervisor Beds/Staff/Audit; the 768 menu drawer; offline, hover and focus states of the bar.
-3. Build: story/ui-1-docs → ui-2-tokens → ui-3-shell → ui-4-category-colours → ui-5-bed-board → ui-6-check-in → ui-7-cash → ui-8-receipts-voids → ui-9-owner-phone (~16 working days).
+1. Build in order, one PR at a time: story/ui-3-shell → ui-4-category-colours → ui-5-bed-board → ui-6-check-in → ui-7-cash → ui-8-receipts-voids → ui-9-owner-phone.
+2. Designs still needed before their PR: bed panel states incl. Void stay (before PR 5), full check-in with bed chooser / whole room / ID search (before PR 6); then refunds, guests, setup screens, owner desk Today, owner phone Money/Beds/Prices/More.
+3. Before go-live (~mid-December): clickable test with the receptionist and supervisor on the v2 build (5 tasks), fixes, regression, tag, then docs/go-live.md.

@@ -58,7 +58,7 @@ void main() {
       'ends on "Counted." and no figure ever shows', (tester) async {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    await tapKey(tester, 'nav.${Routes.cash}');
+    await tapNav(tester, Routes.cash);
     await tapKey(tester, 'cash.check');
     expect(find.byKey(const ValueKey('drawer.present')), findsOneWidget);
     expectNoFigure(tester, 'co-sign');
@@ -114,7 +114,7 @@ void main() {
       'week’s figures only behind the button', (tester) async {
     await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    await tapKey(tester, 'nav.${Routes.cash}');
+    await tapNav(tester, Routes.cash);
     await tapKey(tester, 'cash.collect');
     await enterKey(tester, 'drawer.password', 'desk-pass');
     await tapKey(tester, 'drawer.cosign');

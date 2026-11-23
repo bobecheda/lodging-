@@ -30,6 +30,7 @@ import '../features/setup/presentation/prices_screen.dart';
 import '../features/setup/presentation/rooms_screen.dart';
 import '../features/setup/presentation/staff_screen.dart';
 import 'old_database_screen.dart';
+import 'page_transitions.dart';
 import 'shell/desk_shell.dart';
 import 'splash_screen.dart';
 
@@ -100,72 +101,106 @@ GoRouter router(Ref ref) {
         builder: (_, state) =>
             OpenShiftScreen(returnTo: state.uri.queryParameters['then']),
       ),
-      // Working screens live inside the desk shell (sidebar + content).
+      // Close shift is a focused flow: no navigation (v2 PR 3).
+      GoRoute(
+        path: Routes.closeShift,
+        builder: (_, state) => FocusedFlow(
+          child: CloseShiftScreen(
+            key: ValueKey(state.uri.toString()),
+            shiftId: state.uri.queryParameters['shift'],
+          ),
+        ),
+      ),
+      // Working screens live inside the desk shell (top bar + content).
       ShellRoute(
         builder: (context, state, child) =>
             DeskShell(location: state.matchedLocation, child: child),
         routes: [
           GoRoute(
             path: Routes.home,
-            builder: (_, state) =>
-                BedBoardScreen(openStayId: state.uri.queryParameters['stay']),
+            pageBuilder: (_, state) => deskPage(
+              state,
+              BedBoardScreen(openStayId: state.uri.queryParameters['stay']),
+            ),
           ),
-          GoRoute(path: Routes.today, builder: (_, _) => const TodayScreen()),
+          GoRoute(
+            path: Routes.today,
+            pageBuilder: (_, state) => deskPage(state, const TodayScreen()),
+          ),
           GoRoute(
             path: Routes.refundDetail,
-            builder: (_, state) => RefundDetailScreen(
-              key: ValueKey(state.uri.toString()),
-              refundId: state.uri.queryParameters['id'] ?? '',
+            pageBuilder: (_, state) => deskPage(
+              state,
+              RefundDetailScreen(
+                key: ValueKey(state.uri.toString()),
+                refundId: state.uri.queryParameters['id'] ?? '',
+              ),
+              kind: PageKind.flow,
             ),
           ),
           GoRoute(
             path: Routes.refunds,
-            builder: (_, state) =>
-                RefundsScreen(openRefundId: state.uri.queryParameters['pay']),
+            pageBuilder: (_, state) => deskPage(
+              state,
+              RefundsScreen(openRefundId: state.uri.queryParameters['pay']),
+            ),
           ),
-          GoRoute(path: Routes.guests, builder: (_, _) => const GuestsScreen()),
+          GoRoute(
+            path: Routes.guests,
+            pageBuilder: (_, state) => deskPage(state, const GuestsScreen()),
+          ),
           GoRoute(
             path: Routes.checkIn,
             // A new state per address, so each bed starts fresh.
-            builder: (_, state) => CheckInScreen(
-              key: ValueKey(state.uri.toString()),
-              bedId: state.uri.queryParameters['bed'],
+            pageBuilder: (_, state) => deskPage(
+              state,
+              CheckInScreen(
+                key: ValueKey(state.uri.toString()),
+                bedId: state.uri.queryParameters['bed'],
+              ),
+              kind: PageKind.flow,
             ),
           ),
           GoRoute(
             path: Routes.receipts,
-            builder: (_, _) => const ReceiptsScreen(),
+            pageBuilder: (_, state) => deskPage(state, const ReceiptsScreen()),
           ),
-          GoRoute(path: Routes.voids, builder: (_, _) => const VoidsScreen()),
-          GoRoute(path: Routes.cash, builder: (_, _) => const CashScreen()),
+          GoRoute(
+            path: Routes.voids,
+            pageBuilder: (_, state) => deskPage(state, const VoidsScreen()),
+          ),
+          GoRoute(
+            path: Routes.cash,
+            pageBuilder: (_, state) => deskPage(state, const CashScreen()),
+          ),
           GoRoute(
             path: Routes.drawerCount,
-            builder: (_, state) => DrawerCountScreen(
-              key: ValueKey(state.uri.toString()),
-              kind: state.uri.queryParameters['kind'] == 'collect'
-                  ? DrawerCountKind.collect
-                  : DrawerCountKind.check,
+            pageBuilder: (_, state) => deskPage(
+              state,
+              DrawerCountScreen(
+                key: ValueKey(state.uri.toString()),
+                kind: state.uri.queryParameters['kind'] == 'collect'
+                    ? DrawerCountKind.collect
+                    : DrawerCountKind.check,
+              ),
+              kind: PageKind.flow,
             ),
           ),
           GoRoute(
-            path: Routes.closeShift,
-            builder: (_, state) => CloseShiftScreen(
-              key: ValueKey(state.uri.toString()),
-              shiftId: state.uri.queryParameters['shift'],
-            ),
+            path: Routes.shifts,
+            pageBuilder: (_, state) => deskPage(state, const ShiftsScreen()),
           ),
-          GoRoute(path: Routes.shifts, builder: (_, _) => const ShiftsScreen()),
           GoRoute(
             path: Routes.adminRooms,
-            builder: (_, _) => const RoomsScreen(),
+            pageBuilder: (_, state) => deskPage(state, const RoomsScreen()),
           ),
           GoRoute(
             path: Routes.adminPrices,
-            builder: (_, _) => const PricesScreen(),
+            pageBuilder: (_, state) => deskPage(state, const PricesScreen()),
           ),
           GoRoute(
             path: Routes.adminStaff,
-            builder: (_, _) => const StaffScreen(),
+            pageBuilder: (_, state) => deskPage(state, const StaffScreen()),
           ),
         ],
       ),

@@ -79,3 +79,44 @@ String syncPillText(
   SyncPhase.offline => 'Offline · ${_waiting(pending)}',
   SyncPhase.problem => 'Sync problem · details',
 };
+
+/// How the top bar shows the sync state (docs/ui-redesign-brief.md, "Shell
+/// states"): a green dot, a muted dot, a butter pill, or the red-tint pill
+/// for the one urgent state.
+enum SyncBarTone { online, muted, warning, problem }
+
+/// The top bar's short words and tone: "Online", "Syncing · 3",
+/// "Offline · 3 waiting", "Sync problem", … Pending changes while online
+/// count down as they go up. The full sentence stays in the drawer and the
+/// Cloud sync panel ([syncPillText]).
+(String, SyncBarTone) syncBarText(SyncStatus status, {required int pending}) =>
+    switch (status.phase) {
+      SyncPhase.notConfigured => ('Sync not set up', SyncBarTone.warning),
+      SyncPhase.notConnected => ('Not connected', SyncBarTone.warning),
+      SyncPhase.uploading => (
+        'Uploading ${formatKesPlain(status.uploadSent)} of '
+            '${formatKesPlain(status.uploadTotal)}',
+        SyncBarTone.muted,
+      ),
+      SyncPhase.waitingForOwner => (
+        'Owner sign-in needed',
+        SyncBarTone.warning,
+      ),
+      SyncPhase.online when status.voidsHeld > 0 => (
+        '${status.voidsHeld == 1 ? '1 record' : '${status.voidsHeld} records'} '
+            'not in the cloud',
+        SyncBarTone.warning,
+      ),
+      SyncPhase.online when status.clockWarning && status.clockOffset != null =>
+        ('PC clock ${clockGap(status.clockOffset!)}', SyncBarTone.warning),
+      SyncPhase.online when pending > 0 => (
+        'Syncing · ${formatKesPlain(pending)}',
+        SyncBarTone.muted,
+      ),
+      SyncPhase.online => ('Online', SyncBarTone.online),
+      SyncPhase.offline => (
+        'Offline · ${formatKesPlain(pending)} waiting',
+        SyncBarTone.warning,
+      ),
+      SyncPhase.problem => ('Sync problem', SyncBarTone.problem),
+    };

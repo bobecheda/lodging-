@@ -19,3 +19,6 @@ supabase/.temp/
 
 # Impeccable design-skill config (local tooling, not used by the Flutter apps).
 .impeccable/
+
+# Claude Code personal settings (permission rules for this PC); never shared.
+**/.claude/settings.local.json

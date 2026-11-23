@@ -65,7 +65,9 @@ class ReceiptsRepository {
   /// VOID.
   Stream<Receipt> watchReceipt(String key) => _db
       .customSelect(
-        'SELECT 1',
+        // Its own SQL text: drift shares one stream between watches with
+        // the same SQL (whatever their readsFrom).
+        'SELECT 1 AS watch_receipt',
         readsFrom: {_db.payments, _db.refunds, _db.voids},
       )
       .watch()

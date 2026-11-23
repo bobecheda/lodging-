@@ -20,14 +20,14 @@ void main() {
   String text(WidgetTester tester, String key) =>
       tester.widget<Text>(find.byKey(ValueKey(key))).data!;
 
-  /// The sidebar's item labels, in order.
+  /// The top bar's tabs, in order (`nav.<route>`, `nav.group.<name>`).
   List<String> navLabels(WidgetTester tester) => [
-    for (final e in tester.widgetList<InkWell>(
+    for (final e in tester.widgetList(
       find.byWidgetPredicate(
         (w) =>
-            w is InkWell &&
             w.key is ValueKey<String> &&
-            (w.key! as ValueKey<String>).value.startsWith('nav.'),
+            (w.key! as ValueKey<String>).value.startsWith('nav.') &&
+            !(w.key! as ValueKey<String>).value.startsWith('nav.badge'),
       ),
     ))
       (e.key! as ValueKey<String>).value.substring('nav.'.length),
@@ -68,15 +68,14 @@ void main() {
     expect(locationOf(app), Routes.today); // no shift screen
     expect(navLabels(tester), [
       Routes.today,
-      Routes.shifts,
       Routes.cash, // Story B: the drawer's chain
-      Routes.voids, // AD-7: the owner voids on the desk
       Routes.adminPrices,
       Routes.adminStaff,
+      'group.more', // Shifts, and Voids (AD-7: the owner voids on the desk)
     ]);
     expect(find.text('Prices'), findsOneWidget);
     expect(find.text('Staff'), findsOneWidget);
-    expect(find.text('Setup · supervisor'), findsNothing);
+    expect(find.byKey(const ValueKey('nav.group.setup')), findsNothing);
     expect(find.text('Bed board'), findsNothing);
     expect(app.read(deskNavItemsProvider), isNotEmpty);
   });
@@ -181,7 +180,7 @@ void main() {
     await env.addReceptionist('desk');
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'owner', 'owner-pass');
-    await tapKey(tester, 'nav.${Routes.adminStaff}');
+    await tapNav(tester, Routes.adminStaff);
     expect(locationOf(app), Routes.adminStaff);
     expect(find.text('Staff'), findsWidgets);
     expect(find.byKey(const ValueKey('users.row.desk')), findsNothing);

@@ -13,6 +13,10 @@ const settingDefaults = {
   // KES either way. Owner-only (`setCashRules`); UB40 keeps 0, so overs are
   // reviewed like shorts.
   'shift_count_tolerance': '0',
+  // v2 PR 3: animations off on this desk PC ('true'), set by the supervisor
+  // in Prices & settings, because Windows' "Show animations" doesn't reach
+  // the app. Settings are never pulled, so it stays per PC.
+  'reduce_motion': 'false',
 };
 
 abstract final class SettingKeys {
@@ -23,4 +27,5 @@ abstract final class SettingKeys {
   static const idleLockMinutes = 'idle_lock_minutes';
   static const backupSecondFolder = 'backup_second_folder';
   static const shiftCountTolerance = 'shift_count_tolerance';
+  static const reduceMotion = 'reduce_motion';
 }

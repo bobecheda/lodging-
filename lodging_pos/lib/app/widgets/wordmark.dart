@@ -11,17 +11,20 @@ import 'brand_wordmark.dart';
 class LodgingWordmark extends ConsumerWidget {
   const LodgingWordmark({
     super.key,
-    this.size = WordmarkSize.sidebar,
+    this.size = WordmarkSize.topBar,
     this.onDark = true,
+    this.showWord = true,
   });
 
   final WordmarkSize size;
   final bool onDark;
+  final bool showWord;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => BrandWordmark(
     name: ref.watch(lodgingNameProvider).value ?? '',
     size: size,
     onDark: onDark,
+    showWord: showWord,
   );
 }

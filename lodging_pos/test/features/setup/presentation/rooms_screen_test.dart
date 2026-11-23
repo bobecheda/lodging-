@@ -35,12 +35,12 @@ void main() {
         ),
       );
 
-  /// Signs in as the owner and opens Rooms & beds from the sidebar.
+  /// Signs in as the supervisor and opens Rooms & beds from Setup ▾.
   Future<ProviderContainer> openRooms(WidgetTester tester) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'supervisor', 'super-pass');
-    expect(find.text('Setup · supervisor'), findsOneWidget);
-    await tapKey(tester, 'nav.${Routes.adminRooms}');
+    expect(find.byKey(const ValueKey('nav.group.setup')), findsOneWidget);
+    await tapNav(tester, Routes.adminRooms);
     expect(locationOf(app), Routes.adminRooms);
     return app;
   }

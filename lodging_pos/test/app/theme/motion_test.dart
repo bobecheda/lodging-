@@ -44,6 +44,10 @@ void main() {
     expect(m.menuOpen.duration, const Duration(milliseconds: 150));
     expect(m.menuClose.duration, const Duration(milliseconds: 120));
     expect(m.menuDrop, 4);
+    expect(m.drawerIn.duration, const Duration(milliseconds: 220));
+    expect(m.drawerIn.curve, Curves.easeOut);
+    expect(m.drawerOut.duration, const Duration(milliseconds: 200));
+    expect(m.drawerOut.curve, Curves.easeIn);
     expect(m.panel.duration, const Duration(milliseconds: 220));
     expect(m.scrim.duration, const Duration(milliseconds: 150));
     expect(m.count.duration, const Duration(milliseconds: 150));
@@ -60,6 +64,8 @@ void main() {
       m.flowBack,
       m.menuOpen,
       m.menuClose,
+      m.drawerIn,
+      m.drawerOut,
       m.panel,
       m.scrim,
       m.count,

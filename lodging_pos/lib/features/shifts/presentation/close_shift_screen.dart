@@ -163,9 +163,16 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
         seesFigures: seesFigures,
       );
     } else if (shift == null || (id == null && shift.userId != user.id)) {
-      body = const Note.info(
-        'You have no open shift on this computer.',
-        key: ValueKey('closeShift.none'),
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Note.info(
+            'You have no open shift on this computer.',
+            key: ValueKey('closeShift.none'),
+          ),
+          const SizedBox(height: Space.x16),
+          _back(),
+        ],
       );
     } else {
       body = switch (ref.watch(closeStageProvider(shift.id)).value) {
@@ -201,6 +208,20 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Close shift is a focused flow with no navigation (v2 PR 3), so it
+  /// has its own way back: to the beds, or to Shifts when closing someone
+  /// else's shift.
+  Widget _back() {
+    final user = ref.read(sessionProvider);
+    final toShifts = widget.shiftId != null;
+    return AppButton.secondary(
+      key: const ValueKey('closeShift.back'),
+      label: toShifts ? 'Back to Shifts' : 'Back to beds',
+      onPressed: () =>
+          context.go(toShifts ? Routes.shifts : Routes.homeFor(user)),
     );
   }
 
@@ -250,6 +271,8 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
           textAlign: TextAlign.center,
           style: t.secondary,
         ),
+        const SizedBox(height: Space.x16),
+        _back(),
       ],
     );
   }
@@ -290,6 +313,8 @@ class _CloseShiftScreenState extends ConsumerState<CloseShiftScreen> {
           textAlign: TextAlign.center,
           style: t.secondary,
         ),
+        const SizedBox(height: Space.x16),
+        _back(),
       ],
     );
   }

@@ -68,4 +68,62 @@ void main() {
     expect(syncTone(SyncPhase.notConnected), SyncTone.waiting);
     expect(syncTone(SyncPhase.problem), SyncTone.problem);
   });
+
+  test('the top bar’s short words and tone (v2 PR 3)', () {
+    (String, SyncBarTone) bar(SyncStatus s, {int pending = 0}) =>
+        syncBarText(s, pending: pending);
+    expect(bar(const SyncStatus(phase: SyncPhase.online)), (
+      'Online',
+      SyncBarTone.online,
+    ));
+    expect(bar(const SyncStatus(phase: SyncPhase.online), pending: 3), (
+      'Syncing · 3',
+      SyncBarTone.muted,
+    ));
+    expect(bar(const SyncStatus(phase: SyncPhase.offline), pending: 1200), (
+      'Offline · 1,200 waiting',
+      SyncBarTone.warning,
+    ));
+    expect(bar(const SyncStatus(phase: SyncPhase.notConfigured)), (
+      'Sync not set up',
+      SyncBarTone.warning,
+    ));
+    expect(bar(const SyncStatus(phase: SyncPhase.notConnected)), (
+      'Not connected',
+      SyncBarTone.warning,
+    ));
+    expect(bar(const SyncStatus(phase: SyncPhase.waitingForOwner)), (
+      'Owner sign-in needed',
+      SyncBarTone.warning,
+    ));
+    expect(
+      bar(
+        const SyncStatus(
+          phase: SyncPhase.uploading,
+          uploadSent: 3400,
+          uploadTotal: 12880,
+        ),
+      ),
+      ('Uploading 3,400 of 12,880', SyncBarTone.muted),
+    );
+    expect(bar(const SyncStatus(phase: SyncPhase.online, voidsHeld: 2)), (
+      '2 records not in the cloud',
+      SyncBarTone.warning,
+    ));
+    expect(
+      bar(
+        const SyncStatus(
+          phase: SyncPhase.online,
+          clockWarning: true,
+          clockOffset: Duration(minutes: -12),
+        ),
+        pending: 4,
+      ),
+      ('PC clock 12 min slow', SyncBarTone.warning),
+    );
+    expect(bar(const SyncStatus(phase: SyncPhase.problem), pending: 9), (
+      'Sync problem',
+      SyncBarTone.problem,
+    ));
+  });
 }

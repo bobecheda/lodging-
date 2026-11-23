@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth/session.dart';
+import '../core/settings/reduce_motion.dart';
 import '../core/sync/sync_providers.dart';
 import '../features/backup/presentation/backup_providers.dart';
 import 'activity_detector.dart';
@@ -33,7 +34,16 @@ class App extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       routerConfig: ref.watch(routerProvider),
       // Above the navigator, so activity on every screen and dialog counts.
-      builder: (context, child) => ActivityDetector(child: child!),
+      // "Reduce motion" on this desk turns animations off as the system
+      // setting would (v2 PR 3).
+      builder: (context, child) => ActivityDetector(
+        child: ref.watch(reduceMotionProvider).value ?? false
+            ? MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: child!,
+              )
+            : child!,
+      ),
     );
   }
 }

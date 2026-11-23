@@ -33,7 +33,6 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     required this.white,
     required this.navText,
     required this.navMuted,
-    required this.navActive,
     required this.syncOnline,
     required this.scrim,
     required this.brandCream,
@@ -70,8 +69,7 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
     white: Color(0xFFFFFFFF),
     navText: Color(0xFFE4ECF7),
     navMuted: Color(0xFFC9D8EC),
-    // White at 14% (active nav item) and 12% (online sync pill).
-    navActive: Color(0x24FFFFFF),
+    // White at 12%: the phone header's online desk dot.
     syncOnline: Color(0x1FFFFFFF),
     // ink at 35%: dims the board behind the bed panel.
     scrim: Color(0x590F1B2D),
@@ -145,7 +143,6 @@ class LodgingColors extends ThemeExtension<LodgingColors> {
   final Color white;
   final Color navText;
   final Color navMuted;
-  final Color navActive;
   final Color syncOnline;
   final Color scrim;
 

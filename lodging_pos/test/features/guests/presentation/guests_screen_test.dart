@@ -57,7 +57,7 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
     await tapKey(tester, 'shift.submit');
-    await tapKey(tester, 'nav.${Routes.guests}');
+    await tapNav(tester, Routes.guests);
     expect(locationOf(app), Routes.guests);
     return app;
   }

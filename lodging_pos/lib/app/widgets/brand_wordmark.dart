@@ -10,14 +10,19 @@ class BrandWordmark extends StatelessWidget {
   const BrandWordmark({
     super.key,
     required this.name,
-    this.size = WordmarkSize.sidebar,
+    this.size = WordmarkSize.topBar,
     this.onDark = true,
+    this.showWord = true,
   });
 
   /// The lodging's name; "[LODGING NAME]" while it's empty.
   final String name;
   final WordmarkSize size;
   final bool onDark;
+
+  /// "Lodging" under the name; the top bar shows the name alone, on one
+  /// line.
+  final bool showWord;
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +41,14 @@ class BrandWordmark extends StatelessWidget {
           Text(
             shown,
             key: const ValueKey('brand.name'),
-            maxLines: 2,
+            maxLines: showWord ? 2 : 1,
             overflow: TextOverflow.ellipsis,
             style: style.name,
           ),
-          SizedBox(height: style.gap),
-          Text('Lodging', style: style.word),
+          if (showWord) ...[
+            SizedBox(height: style.gap),
+            Text('Lodging', style: style.word),
+          ],
         ],
       ),
     );

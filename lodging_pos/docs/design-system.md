@@ -57,7 +57,7 @@ decide a build question:
 
 **Retired:**
 - `gold` `#C9962E` (M-Pesa on money bars). Money split bars use two shades of one hue: M-Pesa `marine`, cash `marineTint` with a marine outline. The phone's 14-day bars: today solid marine, earlier days `marineTint` with a marine outline (until PR 9 restyles Money).
-- `navText`, `navMuted`, `navActive` and `syncOnline` (the marine sidebar's colours) go with the sidebar in PR 3.
+- `navActive` (the sidebar's active row) went with the sidebar in PR 3. `navText` and `navMuted` stay for text on the marine gate panels; `syncOnline` for the phone's header.
 - Brand colours stay for the wordmark only: `brandCream`, `brandGoldOnDark`, `brandGoldOnLight`.
 
 **Never used:**
@@ -109,7 +109,8 @@ category charts. The label always stays: colour is never the only signal.
 Manrope (interface) and IBM Plex Mono (money, receipt numbers, codes).
 Weights 400, 500 and 600 only. PR 2 adds `manrope-regular.ttf` (400) with
 its source in `assets/fonts/README.md`. The 700 and 800 files are removed
-in PR 3, when the sidebar's last 700 override goes. Minimum size 12.
+in PR 3 from the app's Manrope family (done); they stay as plain assets for
+the receipt PDF's headings. Minimum size 12.
 
 | v2 style (`LodgingType`) | Size / weight | Replaces |
 |---|---|---|
@@ -195,46 +196,73 @@ Breakpoints come from one pure function, unit-tested at 767, 768, 1279 and 1280:
 - targets below 44 px (36 px for compact table actions and chips).
 
 **Tests:**
-- `screen_layout_test.dart` runs every screen at 1366×768, 1024×768 and 768×1024, using `ValueVariant` and `tester.view.physicalSize` with a pixel ratio of 1.
-- The narrow layout is checked for overflow only.
+- `screen_layout_test.dart` runs every screen at 1366×768, 1024×768 and 768×1024 (`deskSizes`), with the real fonts and a pixel ratio of 1. Bed board column counts per width come with PR 5.
+- The narrow layout (below 768, not drawn) isn't tested yet.
 
-**Spacing, radii and targets** are unchanged (`Space`, `Radii`, `Sizes`). `Sizes.sidebarWidth` is removed in PR 3; new tokens:
-- the 64 px top bar;
-- the 3 px indicator;
-- the 36 px avatar;
-- the 4 px category stripe;
-- the 1280 px content cap.
+**Tokens (built in PR 3):** `Sizes.topBar` 64, `tabIndicator` 3, `tabIcon` 18, `avatar` 36, `menuWidth` 240, `menuIcon` 20, `drawerWidth` 304, `drawerRow` 48, `focusRing` 2 and `focusGap` 2, `contentMax` 1280; `Radii.tab` 8; `WordmarkSize.topBar` 22 (the sidebar's 30 is gone, with `Sizes.sidebarWidth`). The category stripe (4 px) comes with PR 5.
 
-## Desk navigation (PR 3)
+## Desk navigation (built in PR 3)
+
+Code: `lib/app/shell/` (`desk_shell.dart` with its parts `top_bar.dart`, `shell_menus.dart`, `nav_drawer.dart`; the pure rules in `shell_layout.dart`).
 
 **The top bar:**
-- 64 px, white, with a 1 px `line` bottom border.
-- Left: the UB40 wordmark (`LodgingWordmark`, Pirata One, the lodging name from settings) in marine, about 22 px tall, with the role subtitle under it in `meta` (12/500), muted: "Front desk", "Supervisor" or "Owner". A new `WordmarkSize` for the top bar replaces the sidebar's 30.
-- Tabs:
-  - Each tab has an icon and a label.
-  - Default: ink-soft text, muted icon. Active: marine, with a 3 px marine indicator.
-  - Count badges in butter.
-  - Hover is `surface`; keyboard focus is a 2 px marine outline.
-- Right:
-  - online dot (green) with "Online" in muted, or a butter "Offline · N waiting";
+- 64 px, white, with a 1 px `line` bottom border. It never moves; pages change under it.
+- Left: the UB40 wordmark (`LodgingWordmark`, Pirata One, the lodging name from settings, name only) in marine, about 22 px tall, with the role subtitle under it in `meta`, muted: "Front desk", "Supervisor" or "Owner". The wordmark is a logo, exempt from the type rules.
+- Tabs (Figma `v2/Top tab`): 44 px pills, radius 8, centred in the bar; 12 px padding, an 18 px Lucide icon, 8 px gaps, the label in `secondaryMedium`, then a butter count badge and, for a menu tab, a 16 px chevron.
+  - Default: ink-soft text, muted icon. Active: marine text and icon, and the 3 px marine indicator that slides between tabs (`tabIndicator`, 200 ms).
+  - Hover (mouse only): the app background, ink text.
+- Right, in order:
+  - the backup pill (butter, only when the main backup failed or is overdue; a supervisor's tap opens Prices & settings);
+  - the sync status (below);
   - a divider;
-  - initials avatar: marine-tint for a receptionist, butter for the supervisor;
-  - the user's name, with their shift or role;
-  - Lock.
+  - the user button: initials avatar (marine-tint for a receptionist, butter for the supervisor, marine with white initials for the owner), the name and "Shift since 07:02" or the role;
+  - Lock (44 px, the app background, a marine lock).
 
-**Collapsing:** tabs collapse into a menu button (the same destinations in a drawer) **whenever they don't fit**, not only below 768. At 768 the user name hides; the avatar and Lock stay.
+**Sync status** (`syncBarText` in `core/sync/sync_status_text.dart`), all opening the Cloud sync panel:
 
-**Groups:** rarely used pages sit under a tab with a menu (Setup ▾). Future pages (reports, expenses, stock) join a menu group once a role passes about 6 tabs.
+| State | Look |
+|---|---|
+| Online | Green dot, "Online" |
+| Syncing (online, changes still waiting) | Muted dot, "Syncing · 3", counting down |
+| Uploading | Muted dot, "Uploading 3,400 of 12,880" |
+| Offline | Butter pill, "Offline · 3 waiting" |
+| Sync not set up, Not connected, Owner sign-in needed, N records not in the cloud, PC clock 12 min slow | Butter pill |
+| Sync problem | Red-tint pill, red text: the one urgent sync state |
 
-**Focused flows** (close shift, sign-in, change password, first run) have no navigation and sit outside the shell. The phone keeps its bottom bar.
+The full sentence ("Online · synced 2 min ago") stays in the drawer and the Cloud sync panel.
 
-**Permissions** still drive every item (`NavItem`, `Routes.permissions`). Tabs, menu rows and the drawer keep the `nav.<route>` keys, and a test helper opens Setup or the menu when needed.
+**The user menu:** clicking the avatar and name opens a menu in the Setup ▾ style with Close shift (only with this user's own shift open) and Change my password (the owner). A supervisor without a shift of their own has nothing to open.
+
+**Menus** (Setup ▾, More ▾, the user menu; `showShellMenu`): a 240 px white card, 1 px line border, soft shadow (alpha 0.08), 44 px rows with 20 px icons, the hovered row marine-tint, the current page's row marine-tint with marine text. They drop 4 px as they fade in (150 ms) and fade out (120 ms). Escape or a tap outside closes them; focus goes back to the tab.
+
+**Collapsing:** the tabs collapse into a menu button left of the wordmark **whenever they don't fit** (`tabsFit`, measured with the real text widths). Then the user's name hides; the avatar, the status and Lock stay.
+
+**The drawer** (`showNavDrawer`): 304 px from the left, full height, white, a 1 px line on its right and a soft shadow, over the 35% ink scrim.
+- Head: the wordmark and role, and Close (X, 44 px).
+- Rows: 48 px, a 20 px icon and `bodyMedium`, radius 8; the active row marine-tint with marine text and a 3 px marine bar on its left; badges at the right.
+- Groups (Setup, the temporary More) are plain sections: a `meta` label, then their pages.
+- Foot (above a 1 px line): the full sync sentence, the avatar, name and shift or role, the user menu's rows, then a full-width "Lock screen".
+- It slides in (220 ms) and out (200 ms) as the scrim fades (150 ms). It closes on X, the scrim, Escape or choosing a page; focus stays inside while it's open and returns to the menu button.
+
+**Groups:** rarely used pages sit under a tab with a menu (`NavGroup`). Future pages (reports, expenses, stock) join a group once a role passes about 6 tabs. **More ▾** (Shifts, Voids) is temporary, for the supervisor and the owner, and goes in PR 8.
+
+**Focused flows** (close shift, sign-in, change password, first run) have no navigation and sit outside the shell (`FocusedFlow`). Close shift has its own way back: "Back to beds", or "Back to Shifts" when closing someone else's shift.
+
+**Keyboard focus:** a 2 px marine ring, 2 px outside the control (`FocusRing`), shown only for the keyboard. In PR 3 it is on the tabs, Lock, the user and menu buttons, the menus and drawer rows, the status pills, `AppButton` and `SegmentedChoice`; each screen's own controls get it when the screen is restyled.
+
+**Motion between pages** (`deskPage` in `lib/app/page_transitions.dart`): a tab's page fades out, then the new one fades in rising 8 px; a flow (check-in, a drawer count, a refund decision) slides 16 px in from the right and back. Side panels (`showSidePanel`) slide in from the right over the scrim.
+
+**Reduce motion:** Windows' "Show animations" doesn't reach Flutter, so the supervisor has a "Reduce motion" switch in Prices & settings (`reduce_motion`, stored on this desk PC; settings are never pulled). On, the app runs as if the system asked for reduced motion: everything switches at once.
+
+**Icons:** Lucide (`lucide_icons_flutter` 4.0.1, MIT; the font is ISC), bundled and offline.
+
+**Permissions** still drive every item (`NavItem.permissions`, `Routes.permissions`). Tabs, menu rows and drawer rows keep the `nav.<route>` keys; tests use `tapNav` and `tapUserMenu`.
 
 | Role | Desk tabs (home first) | Built in |
 |---|---|---|
 | Receptionist | Beds, Receipts, Guests, Refunds | PR 3 |
-| Supervisor | Beds, Receipts, Guests, Refunds, Cash, Setup ▾ (Rooms & beds, Prices & settings, Staff) | PR 3; Shifts and Voids leave in PR 7 and PR 8 |
-| Owner | Today, Cash, Receipts (view and void; no printing), Prices, Staff | Receipts in PR 8 (new permission and tests) |
+| Supervisor | Beds, Receipts, Guests, Refunds, Cash, More ▾ (Shifts, Voids), Setup ▾ (Rooms & beds, Prices & settings, Staff) | PR 3; More ▾ goes in PR 8 |
+| Owner | Today, Cash, Prices, Staff, More ▾ (Shifts, Voids); Receipts (view and void; no printing) comes in PR 8 | PR 3; Receipts in PR 8 |
 
 **Removed as destinations:**
 - Shifts, merged into Cash (PR 7). Cash takes its open shifts with Close, its needs-review rows and its voided-after-close marks.
