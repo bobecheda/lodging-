@@ -1,3 +1,4 @@
+import 'package:lodging_pos/core/database/desk_startup.dart' show receiptSerial;
 import 'package:lodging_pos/core/sync/cloud.dart';
 import 'package:lodging_pos/core/sync/sync_store.dart';
 
@@ -270,6 +271,28 @@ class FakeCloud implements Cloud {
 
   @override
   Future<void> signOutOwner() async => _ownerSignedIn = false;
+
+  @override
+  Future<DeskInCloud> deskInCloud(String deviceId) async {
+    _online();
+    if (!_ownerSignedIn) throw const CloudSignInRefused('owner not signed in');
+    Iterable<Map<String, Object?>> from(String table) =>
+        (tables[table]?.values ?? const <Map<String, Object?>>[]).where(
+          (r) => r['device_id'] == deviceId,
+        );
+    final audits = [
+      for (final r in from('audit_log'))
+        DateTime.parse(r['created_at']! as String).toUtc(),
+    ]..sort();
+    final receipts = [
+      for (final r in [...from('payments'), ...from('refunds')])
+        if (r['receipt_number'] case final String n) n,
+    ]..sort((a, b) => receiptSerial(b).compareTo(receiptSerial(a)));
+    return DeskInCloud(
+      lastAuditAt: audits.lastOrNull,
+      lastReceipt: receipts.firstOrNull,
+    );
+  }
 
   /// The next password update fails (after the change was recorded).
   var failPasswordUpdate = false;

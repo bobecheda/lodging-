@@ -179,6 +179,48 @@ void main() {
     expect(retried, 1);
   });
 
+  testWidgets('a synced desk whose file doesn’t know the owner’s email: the '
+      'form asks for it, then passes it on (story/restore-cloud-check)', (
+    tester,
+  ) async {
+    final acceptance = _FakeAcceptance((_, _) async {});
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [restoreAcceptanceProvider.overrideWithValue(acceptance)],
+        child: MaterialApp(
+          theme: buildLodgingTheme(),
+          home: StartupRefusalScreen(
+            startup: DeskStartup(folder: 'C:/data', verdict: older),
+            onRetry: () async {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('refusal.email')), findsNothing);
+    await tester.enterText(
+      find.byKey(const ValueKey('refusal.password')),
+      'needs-email',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('refusal.lastReceipt')),
+      '64',
+    );
+    await tapKey(tester, 'refusal.acceptRestore');
+    expect(find.byKey(const ValueKey('refusal.email')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('refusal.email')),
+      'owner@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('refusal.password')),
+      'needs-email',
+    );
+    await tapKey(tester, 'refusal.acceptRestore');
+    expect(acceptance.emails, [null, 'owner@example.com']);
+  });
+
   group('the unusual start', () {
     const usb = UnusualLocation(
       path: r'D:\Release',
@@ -310,12 +352,22 @@ class _FakeAcceptance implements RestoreAcceptance {
 
   final Future<void> Function(String password, String receipt) _accept;
 
+  /// The emails the screen passed.
+  final emails = <String?>[];
+
   @override
   Future<void> accept(
     OlderThanBackup refused, {
     required String password,
     required String lastPaperReceipt,
-  }) => _accept(password, lastPaperReceipt);
+    String? ownerEmail,
+  }) {
+    emails.add(ownerEmail);
+    if (password == 'needs-email' && ownerEmail == null) {
+      throw const RestoreNeedsEmail();
+    }
+    return _accept(password, lastPaperReceipt);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

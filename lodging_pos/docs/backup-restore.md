@@ -78,7 +78,15 @@ Restoring is always deliberate. A backup older than the last one taken is refuse
 2. **When the cloud has nothing newer, or the desk never connected,** the owner also types the number on the last receipt printed. Before the first sale, the counter moves past the highest of: the restored file's next number and last receipt, the last backup's last receipt (from the mark), the cloud's highest number for this device, and the paper receipt. The accept is audited as `database.restore_accepted` (the restored and the previous figures, the counter before and after).
 3. **The pull cursor is left as it is.** Rule 1 guarantees nothing in the cloud refers to rows the desk lost.
 
-**What is built.** story/desk-db-guards builds rule 2 for a desk that has never connected to the cloud: the owner's password (checked against the restored file, read-only), the paper receipt number, then the mark is reset to the restored file with the restore pending, and once the file opens (before anyone signs in) the counter is raised and `database.restore_accepted` audited. On a desk that has synced (the restored file says so, or the desk still holds its cloud key), the screen says the cloud check is needed and doesn't accept the restore: the desk waits; it never jams. The cloud check itself (rule 1 and the cloud's highest receipt number) is the follow-up story `story/restore-cloud-check`. Until it ships, a synced desk that needs a restore is a support call.
+**What is built.**
+
+- **A desk that never connected** (story/desk-db-guards): the owner's password is checked against the restored file (read-only); then the paper receipt number; then the mark is reset to the restored file with the restore pending. Once the file opens, before anyone signs in, the counter is raised and `database.restore_accepted` audited.
+- **A desk that has synced** (the restored file says so, or the desk still holds its cloud key; story/restore-cloud-check): the owner's password is checked by the cloud instead, by signing in as the owner with the email the file knows (`sync_state` `owner_email`; the screen asks for it when the file doesn't). The desk reads what the cloud holds from its own `device_id` (`Cloud.deskInCloud`: the newest `audit_log` entry and the highest receipt number in `payments` and `refunds`), then signs the owner out again.
+  - Anything newer than the restored file's last audit entry refuses the restore: "The cloud has newer records from this desk …". Nothing is written; this is a support call.
+  - Otherwise the counter floor also passes the cloud's highest number for this desk, and the audit says `cloud_checked: true`.
+  - Offline, a build without cloud keys, or an account that isn't the owner's: the restore waits, and nothing is written.
+
+The cloud check needs no cloud migration: the owner can already read every synced table.
 
 The automated test `test/features/backup/data/backup_service_test.dart` restores a backup this way (opens it as the app's database) and checks that the schema matches and the stays, payments, receipt counter and audit log came through.
 

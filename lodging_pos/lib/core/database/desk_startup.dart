@@ -166,6 +166,7 @@ final class PendingRestore {
     required this.acceptedAt,
     required this.counterFloor,
     required this.previous,
+    this.cloudChecked = false,
   });
 
   factory PendingRestore.fromJson(Map<String, Object?> json) => PendingRestore(
@@ -175,7 +176,12 @@ final class PendingRestore {
     previous: DatabaseFigures.fromJson(
       (json['previous']! as Map).cast<String, Object?>(),
     ),
+    cloudChecked: json['cloud_checked'] == true,
   );
+
+  /// The cloud was checked first (a desk that has synced;
+  /// story/restore-cloud-check).
+  final bool cloudChecked;
 
   /// The owner's user id.
   final String acceptedBy;
@@ -192,6 +198,7 @@ final class PendingRestore {
     'accepted_at': acceptedAt.toUtc().toIso8601String(),
     'counter_floor': counterFloor,
     'previous': previous.toJson(),
+    'cloud_checked': cloudChecked,
   };
 }
 
@@ -285,9 +292,19 @@ final class LiveFile {
     this.installPath,
     this.everConnected = false,
     this.nextReceiptNumber = 1,
+    this.deviceId,
+    this.ownerEmail,
   });
 
   final DatabaseFigures figures;
+
+  /// This install's device id (the `device` table): what the cloud's rows
+  /// from this desk carry.
+  final String? deviceId;
+
+  /// The owner's cloud email as the file last knew it (`sync_state`
+  /// `owner_email`); null if the file never connected.
+  final String? ownerEmail;
 
   /// The highest build that opened it (`sync_state` `desk.build`); null
   /// before this story.

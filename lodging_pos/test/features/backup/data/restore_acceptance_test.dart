@@ -4,6 +4,7 @@ import 'package:lodging_pos/core/database/desk_meta.dart';
 import 'package:lodging_pos/core/database/desk_startup.dart';
 import 'package:lodging_pos/features/backup/data/restore_acceptance.dart';
 
+import '../../../helpers/fake_cloud.dart';
 import '../../../helpers/fixtures.dart';
 
 /// Accepting an older backup as the live database (story/desk-db-guards,
@@ -107,26 +108,177 @@ void main() {
       );
     });
 
-    test('a desk that has synced waits for the cloud check: the restored '
-        'file says so, or the desk still has its cloud key', () async {
-      await expectLater(
-        acceptance.accept(
-          refusal(connected: true),
-          password: 'owner-pass',
-          lastPaperReceipt: '64',
+    test(
+      'a build without cloud keys can’t check the cloud: a desk that '
+      'has synced waits (the file says so, or the desk has its key)',
+      () async {
+        await expectLater(
+          acceptance.accept(
+            refusal(connected: true),
+            password: 'owner-pass',
+            lastPaperReceipt: '64',
+          ),
+          throwsA(isA<RestoreNeedsCloud>()),
+        );
+        deskConnected = true;
+        await expectLater(
+          acceptance.accept(
+            refusal(),
+            password: 'owner-pass',
+            lastPaperReceipt: '64',
+          ),
+          throwsA(isA<RestoreNeedsCloud>()),
+        );
+        expect(written, isEmpty);
+      },
+    );
+  });
+
+  group('a desk that has synced: the cloud check (story/restore-cloud-'
+      'check)', () {
+    late FakeCloud cloud;
+    late List<HighWaterMark> written;
+    late RestoreAcceptance acceptance;
+    const device = 'desk-device-1';
+
+    setUp(() async {
+      await env.createFirstSupervisor(testSetup);
+      final owner = await env.users.findByUsername('owner');
+      cloud = FakeCloud()
+        ..ownerEmail = 'owner@example.com'
+        ..ownerPassword = 'cloud-pass';
+      written = [];
+      acceptance = RestoreAcceptance(
+        readOwner: () async => RestoreOwner(
+          id: owner!.account.id,
+          passwordHash: owner.passwordHash,
+          isActive: true,
         ),
-        throwsA(isA<RestoreNeedsCloud>()),
+        hasher: env.hasher,
+        deskConnected: () async => true,
+        writeMark: (m) async => written.add(m),
+        clock: env.clock,
+        cloud: cloud,
       );
-      deskConnected = true;
+    });
+
+    OlderThanBackup synced({String? ownerEmail = 'owner@example.com'}) =>
+        OlderThanBackup(
+          LiveFile(
+            figures: figures(),
+            everConnected: true,
+            nextReceiptNumber: 51,
+            deviceId: device,
+            ownerEmail: ownerEmail,
+          ),
+          HighWaterMark(
+            backupName: 'lodging_pos-2026-11-24-0720.sqlite',
+            takenAt: t0,
+            figures: figures(stays: 42, receipt: 'R-000061'),
+            build: AppBuild.current.stamp,
+          ),
+        );
+
+    void inCloud(String table, Map<String, Object?> row) =>
+        cloud.tables.putIfAbsent(table, () => {})[row['id']! as String] = row;
+
+    test('nothing newer in the cloud: accepted with the cloud password; the '
+        'counter passes the cloud’s highest number for this desk', () async {
+      inCloud('audit_log', {
+        'id': 'a1',
+        'device_id': device,
+        'created_at': t0.toIso8601String(),
+      });
+      inCloud('payments', {
+        'id': 'p1',
+        'device_id': device,
+        'receipt_number': 'R-000070',
+      });
+      // Another desk's numbers don't count.
+      inCloud('payments', {
+        'id': 'p2',
+        'device_id': 'other-desk',
+        'receipt_number': 'R-000900',
+      });
+      await acceptance.accept(
+        synced(),
+        password: 'cloud-pass',
+        lastPaperReceipt: 'R-000064',
+      );
+      final pending = written.single.pendingRestore!;
+      expect(pending.counterFloor, 71);
+      expect(pending.cloudChecked, isTrue);
+      expect(cloud.ownerSignedIn, isFalse, reason: 'signed out again');
+    });
+
+    test('the cloud has an entry from this desk after the backup: refused, '
+        'nothing written', () async {
+      inCloud('audit_log', {
+        'id': 'a2',
+        'device_id': device,
+        'created_at': t0.add(const Duration(minutes: 5)).toIso8601String(),
+      });
       await expectLater(
         acceptance.accept(
-          refusal(),
-          password: 'owner-pass',
+          synced(),
+          password: 'cloud-pass',
           lastPaperReceipt: '64',
         ),
-        throwsA(isA<RestoreNeedsCloud>()),
+        throwsA(
+          isA<RestoreRefused>().having(
+            (e) => e.message,
+            'message',
+            contains('newer'),
+          ),
+        ),
       );
       expect(written, isEmpty);
+    });
+
+    test('offline: it waits; a wrong password: refused', () async {
+      cloud.offline = true;
+      await expectLater(
+        acceptance.accept(
+          synced(),
+          password: 'cloud-pass',
+          lastPaperReceipt: '64',
+        ),
+        throwsA(
+          isA<RestoreRefused>().having(
+            (e) => e.message,
+            'message',
+            contains('internet'),
+          ),
+        ),
+      );
+      cloud.offline = false;
+      await expectLater(
+        acceptance.accept(
+          synced(),
+          password: 'owner-pass',
+          lastPaperReceipt: '64',
+        ),
+        throwsA(isA<RestoreRefused>()),
+      );
+      expect(written, isEmpty);
+    });
+
+    test('the file doesn’t know the owner’s email: it asks for it', () async {
+      await expectLater(
+        acceptance.accept(
+          synced(ownerEmail: null),
+          password: 'cloud-pass',
+          lastPaperReceipt: '64',
+        ),
+        throwsA(isA<RestoreNeedsEmail>()),
+      );
+      await acceptance.accept(
+        synced(ownerEmail: null),
+        password: 'cloud-pass',
+        lastPaperReceipt: '64',
+        ownerEmail: 'owner@example.com',
+      );
+      expect(written, hasLength(1));
     });
   });
 

@@ -36,13 +36,18 @@ class StartupRefusalScreen extends ConsumerStatefulWidget {
 class _StartupRefusalScreenState extends ConsumerState<StartupRefusalScreen> {
   final _password = TextEditingController();
   final _receipt = TextEditingController();
+  final _email = TextEditingController();
   var _busy = false;
   String? _error;
+
+  /// The restored file doesn't know the owner's cloud email.
+  var _askEmail = false;
 
   @override
   void dispose() {
     _password.dispose();
     _receipt.dispose();
+    _email.dispose();
     super.dispose();
   }
 
@@ -55,7 +60,12 @@ class _StartupRefusalScreenState extends ConsumerState<StartupRefusalScreen> {
       await action();
     } on RestoreRefused catch (e) {
       _password.clear();
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) {
+        setState(() {
+          _error = e.message;
+          if (e is RestoreNeedsEmail) _askEmail = true;
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -68,6 +78,7 @@ class _StartupRefusalScreenState extends ConsumerState<StartupRefusalScreen> {
           refused,
           password: _password.text,
           lastPaperReceipt: _receipt.text,
+          ownerEmail: _askEmail ? _email.text : null,
         );
     await widget.onRetry();
   });
@@ -153,6 +164,15 @@ class _StartupRefusalScreenState extends ConsumerState<StartupRefusalScreen> {
                         style: t.bodyMedium,
                       ),
                       const SizedBox(height: Space.x12),
+                      if (_askEmail) ...[
+                        LabeledField(
+                          label: 'Owner’s email',
+                          controller: _email,
+                          fieldKey: const ValueKey('refusal.email'),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: Space.x16),
+                      ],
                       LabeledField(
                         label: 'Owner’s password',
                         controller: _password,
