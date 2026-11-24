@@ -7,15 +7,19 @@ part of 'desk_shell.dart';
 class ShellMenuRow {
   const ShellMenuRow({
     required this.key,
-    required this.icon,
     required this.label,
     required this.value,
+    this.icon,
+    this.leading,
     this.active = false,
     this.badge = 0,
-  });
+  }) : assert(icon != null || leading != null, 'an icon or a leading widget');
 
   final Key key;
-  final IconData icon;
+  final IconData? icon;
+
+  /// Shown instead of [icon], e.g. a category's colour swatch (v2 PR 4).
+  final Widget? leading;
   final String label;
 
   /// What choosing it returns.
@@ -182,11 +186,12 @@ class _MenuRow extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: Space.x12),
                     child: Row(
                       children: [
-                        Icon(
-                          row.icon,
-                          size: Sizes.menuIcon,
-                          color: row.active ? c.marine : c.inkSoft,
-                        ),
+                        row.leading ??
+                            Icon(
+                              row.icon,
+                              size: Sizes.menuIcon,
+                              color: row.active ? c.marine : c.inkSoft,
+                            ),
                         const SizedBox(width: Space.x12),
                         Expanded(
                           child: Text(

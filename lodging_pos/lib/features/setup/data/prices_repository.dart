@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
+import '../../../core/database/category_colours.dart';
 import '../../../core/database/database.dart';
 import '../../../core/sync/cloud_writes.dart';
 import '../../price_requests/data/price_requests_repository.dart';
@@ -183,11 +184,43 @@ class PricesRepository {
             name: normalizeCategoryName(name),
             pricePerNight: pricePerNight,
             sortOrder: lastSort + 1,
+            // v2 PR 4: the first colour no category has yet.
+            colour: Value(
+              nextCategoryColour([for (final c in current) c.colour]),
+            ),
           ),
         );
       },
     );
     return _toCategory(row);
+  }
+
+  /// Gives a category another colour from the palette (v2 PR 4,
+  /// `category.update`). The owner's ([Permission.editPrices]); through the
+  /// outbox, not cloud-first: a colour needs no clash check, and only the
+  /// desk writes it.
+  Future<void> setColour(
+    UserAccount user,
+    String categoryId,
+    String colour,
+  ) async {
+    requirePermission(user, Permission.editPrices);
+    if (!categoryColourKeys.contains(colour)) {
+      throw ArgumentError.value(colour, 'colour', 'not a palette key');
+    }
+    final current = await (_db.select(
+      _db.bedCategories,
+    )..where((c) => c.id.equals(categoryId))).getSingle();
+    if (current.colour == colour) return;
+    await _audit.writeWithAudit(
+      action: 'category.update',
+      userId: user.id,
+      body: (w) => w.update(
+        _db.bedCategories,
+        categoryId,
+        BedCategoriesCompanion(colour: Value(colour)),
+      ),
+    );
   }
 
   /// Closes a category so new beds can't use it (`category.update`). Refused
@@ -342,5 +375,6 @@ class PricesRepository {
     pricePerNight: r.pricePerNight,
     sortOrder: r.sortOrder,
     isActive: r.isActive,
+    colour: r.colour,
   );
 }

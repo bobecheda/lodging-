@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../settings/setting_defaults.dart';
+import 'category_colours.dart';
 import 'database.dart';
 
 /// `device_id` stamped on seed rows. The cloud seeds the same rows with the
@@ -91,6 +92,9 @@ Future<void> seedV1(
           name: name,
           pricePerNight: price,
           sortOrder: i + 1,
+          // v2 PR 4: the seeded colours (VIP gold, Deluxe violet, Comfort
+          // teal, Normal slate).
+          colour: Value(seedCategoryColours[id]!),
         ),
     ]);
   });

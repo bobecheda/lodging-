@@ -58,6 +58,24 @@ class BedCategories extends Table with SyncedColumns {
       integer().check(pricePerNight.isBetweenValues(1, 100000))();
   IntColumn get sortOrder => integer()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+
+  /// The category's colour key on room cards and charts (v2 PR 4, schema
+  /// v12): one of `categoryColourKeys`, default `defaultCategoryColour`.
+  /// Literals here, because drift copies them into the generated schema
+  /// snapshots; `test/core/database/category_colours_test.dart` keeps them
+  /// equal to the constants.
+  TextColumn get colour => text()
+      .withDefault(const Constant('slate'))
+      .check(
+        colour.isIn(const [
+          'gold',
+          'violet',
+          'teal',
+          'slate',
+          'plum',
+          'bronze',
+        ]),
+      )();
 }
 
 @DataClassName('RoomRow')

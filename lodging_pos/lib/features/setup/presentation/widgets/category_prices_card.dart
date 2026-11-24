@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/shell/desk_shell.dart';
 import '../../../../app/theme/theme.dart';
 import '../../../../app/widgets/buttons.dart';
+import '../../../../app/widgets/focus_ring.dart';
 import '../../../../app/widgets/labeled_field.dart';
 import '../../../../app/widgets/money_input.dart';
 import '../../../../app/widgets/notes.dart';
 import '../../../../core/auth/permissions.dart';
 import '../../../../core/auth/session.dart';
+import '../../../../core/category_colour_keys.dart';
 import '../../../../core/money/kes.dart';
 import '../../../price_requests/data/price_requests_repository.dart';
 import '../../../price_requests/presentation/price_request_widgets.dart';
@@ -257,6 +260,14 @@ class _CategoryPricesCardState extends ConsumerState<CategoryPricesCard> {
                         .read(pricesRepositoryProvider)
                         .reopenCategory(user!, u.category.id),
                   ),
+                  onColour: canEdit && !_busy
+                      ? (key) => _run(
+                          () => ref
+                              .read(pricesRepositoryProvider)
+                              .setColour(user, u.category.id, key),
+                          done: 'Colour saved.',
+                        )
+                      : null,
                 ),
             if (_adding) ...[
               const SizedBox(height: Space.x16),
@@ -350,9 +361,13 @@ class _CategoryRow extends StatelessWidget {
     required this.onRequest,
     required this.onClose,
     required this.onReopen,
+    required this.onColour,
   });
 
   final CategoryUsage usage;
+
+  /// The owner picks another colour; null for everyone else.
+  final ValueChanged<String>? onColour;
   final TextEditingController controller;
   final int? typed;
   final String? error;
@@ -433,6 +448,7 @@ class _CategoryRow extends StatelessWidget {
               runSpacing: Space.x4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
+                _ColourSwatch(category: category, onPick: onColour),
                 Text(
                   category.name,
                   style: t.bodyMedium.copyWith(
@@ -486,6 +502,90 @@ class _CategoryRow extends StatelessWidget {
             child: Align(alignment: Alignment.centerRight, child: action),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A category's colour (v2 PR 4): a swatch beside its name. For the owner it
+/// opens the swatch menu (the Setup ▾ menu style, one row per palette key,
+/// the current one marked); for everyone else it only shows the colour. The
+/// name always stays, so colour is never the only signal.
+class _ColourSwatch extends StatelessWidget {
+  const _ColourSwatch({required this.category, required this.onPick});
+
+  final BedCategory category;
+  final ValueChanged<String>? onPick;
+
+  static const _size = 20.0;
+
+  static Widget chip(CategorySwatch swatch) => Container(
+    width: _size,
+    height: _size,
+    decoration: BoxDecoration(
+      color: swatch.stripe,
+      borderRadius: BorderRadius.circular(Radii.control / 2),
+    ),
+  );
+
+  Future<void> _open(BuildContext context) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final pick = onPick;
+    if (box == null || pick == null) return;
+    final colors = LodgingColors.of(context);
+    final key = await showShellMenu<String>(
+      context,
+      anchor: box.localToGlobal(Offset.zero) & box.size,
+      label: '${category.name} colour menu',
+      rows: [
+        for (final s in colors.categories)
+          ShellMenuRow(
+            key: ValueKey('categories.colour.${category.id}.${s.key}'),
+            leading: chip(s),
+            label: categoryColourLabel(s.key),
+            value: s.key,
+            active: s.key == category.colour,
+          ),
+      ],
+    );
+    if (key != null && key != category.colour) pick(key);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final swatch = chip(c.category(category.colour));
+    final label =
+        '${category.name} colour: ${categoryColourLabel(category.colour)}';
+    if (onPick == null) {
+      return Semantics(
+        container: true,
+        label: label,
+        child: ExcludeSemantics(child: swatch),
+      );
+    }
+    return Semantics(
+      button: true,
+      label: '$label. Change colour',
+      child: ExcludeSemantics(
+        child: FocusRing(
+          radius: Radii.tab,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Builder(
+              builder: (context) => InkWell(
+                key: ValueKey('categories.colour.${category.id}'),
+                borderRadius: BorderRadius.circular(Radii.tab),
+                hoverColor: c.surface,
+                onTap: () => _open(context),
+                child: SizedBox.square(
+                  dimension: Sizes.target,
+                  child: Center(child: swatch),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
