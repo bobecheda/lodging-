@@ -41,7 +41,9 @@ void main() {
     tester,
   ) async {
     final app = await signedInApp(tester);
-    final centre = tester.getCenter(find.text('Bed board').last);
+    final centre = tester.getCenter(
+      find.byKey(const ValueKey('board.now')).last,
+    );
 
     // Click.
     await expectActivity(tester, app, () => tester.tapAt(centre));
@@ -97,7 +99,7 @@ void main() {
       expect(locationOf(app), Routes.shift);
       await tapKey(tester, 'shift.continue');
       expect(locationOf(app), Routes.home);
-      expect(find.text('Bed board'), findsWidgets);
+      expect(find.byKey(const ValueKey('board.now')), findsWidgets);
       expect(
         (await env.db.select(env.db.shifts).getSingle()).openingFloat,
         1000,

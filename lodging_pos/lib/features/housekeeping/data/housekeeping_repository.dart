@@ -36,7 +36,14 @@ final class BedCleaning {
     required this.cleanliness,
     required this.openTask,
     required this.lastCheckoutAt,
+    this.pricePerNight = 0,
+    this.categoryColour = 'slate',
   });
+
+  /// The category's price now, whole KES, and its colour key (v2 PR 5's
+  /// panel head).
+  final int pricePerNight;
+  final String categoryColour;
 
   final String bedId;
   final String roomNumber;
@@ -133,6 +140,8 @@ class HousekeepingRepository {
         roomNumber: row.readTable(_db.rooms).roomNumber,
         label: BedLabel.parse(bed.label),
         categoryName: row.readTable(_db.bedCategories).name,
+        pricePerNight: row.readTable(_db.bedCategories).pricePerNight,
+        categoryColour: row.readTable(_db.bedCategories).colour,
         cleanliness: Cleanliness.parse(bed.cleanliness),
         openTask: task == null
             ? null
@@ -147,6 +156,25 @@ class HousekeepingRepository {
         lastCheckoutAt: lastCheckout,
       );
     });
+  }
+
+  /// When [bedId] was last cleaned and by whom (the newest completed task),
+  /// or null if never: the check-in header's "Cleaned 08:15 · Mary" (v2 PR
+  /// 5).
+  Future<({DateTime at, String by})?> lastCleaned(String bedId) async {
+    final task =
+        await (_db.select(_db.housekeepingTasks)
+              ..where((t) => t.bedId.equals(bedId) & t.completedAt.isNotNull())
+              ..orderBy([(t) => OrderingTerm.desc(t.completedAt)])
+              ..limit(1))
+            .getSingleOrNull();
+    if (task == null) return null;
+    return (
+      at: task.completedAt!,
+      by:
+          (await names())[task.housekeeperId] ??
+          await _fullName(task.housekeeperId),
+    );
   }
 
   /// Every active housekeeper's display name ([activeHousekeeperNames]).

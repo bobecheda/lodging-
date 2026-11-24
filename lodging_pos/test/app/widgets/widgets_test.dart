@@ -107,9 +107,8 @@ void main() {
     expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
   });
 
-  testWidgets('every bed status has its own label and spoken text', (
-    tester,
-  ) async {
+  testWidgets('every bed status is spoken; the tile is a 44 px target '
+      '(v2 PR 5)', (tester) async {
     final handle = tester.ensureSemantics();
     await pump(
       tester,
@@ -117,23 +116,26 @@ void main() {
         children: [
           for (final status in BedTileStatus.values)
             BedStatusTile(
+              key: ValueKey(status),
               label: 'A',
-              title: 'Deluxe · KES 700',
-              subtitle: 'line two',
+              text: 'Kamau · 2 h',
+              semanticLabel: 'Peter Kamau, paid to Wed 10:00',
               status: status,
+              onTap: () {},
             ),
         ],
       ),
     );
     for (final status in BedTileStatus.values) {
-      expect(find.text(status.badge), findsOneWidget);
       expect(
         find.bySemanticsLabel(
-          'Bed A, Deluxe · KES 700. ${status.spoken}. line two',
+          'Bed A. ${status.spoken}. Peter Kamau, paid to Wed 10:00',
         ),
         findsOneWidget,
       );
+      expect(tester.getSize(find.byKey(ValueKey(status))).height, 44);
     }
+    expect(find.text('Kamau · 2 h'), findsNWidgets(4));
     handle.dispose();
   });
 

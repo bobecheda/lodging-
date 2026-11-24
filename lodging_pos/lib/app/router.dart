@@ -177,7 +177,14 @@ GoRouter router(Ref ref) {
           ),
           GoRoute(
             path: Routes.receipts,
-            pageBuilder: (_, state) => deskPage(state, const ReceiptsScreen()),
+            pageBuilder: (_, state) => deskPage(
+              state,
+              ReceiptsScreen(
+                key: ValueKey(state.uri.toString()),
+                query: state.uri.queryParameters['q'],
+                receiptId: state.uri.queryParameters['receipt'],
+              ),
+            ),
           ),
           GoRoute(
             path: Routes.voids,

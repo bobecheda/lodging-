@@ -141,6 +141,101 @@ final class BedCleaningFamily extends $Family
   String toString() => r'bedCleaningProvider';
 }
 
+/// When a bed was last cleaned and by whom, for the check-in header (v2 PR
+/// 5); null if never.
+
+@ProviderFor(lastCleaned)
+final lastCleanedProvider = LastCleanedFamily._();
+
+/// When a bed was last cleaned and by whom, for the check-in header (v2 PR
+/// 5); null if never.
+
+final class LastCleanedProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<({DateTime at, String by})?>,
+          ({DateTime at, String by})?,
+          FutureOr<({DateTime at, String by})?>
+        >
+    with
+        $FutureModifier<({DateTime at, String by})?>,
+        $FutureProvider<({DateTime at, String by})?> {
+  /// When a bed was last cleaned and by whom, for the check-in header (v2 PR
+  /// 5); null if never.
+  LastCleanedProvider._({
+    required LastCleanedFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'lastCleanedProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$lastCleanedHash();
+
+  @override
+  String toString() {
+    return r'lastCleanedProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<({DateTime at, String by})?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<({DateTime at, String by})?> create(Ref ref) {
+    final argument = this.argument as String;
+    return lastCleaned(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LastCleanedProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$lastCleanedHash() => r'a823301e742cd78a5a712ae37e75dde96d472739';
+
+/// When a bed was last cleaned and by whom, for the check-in header (v2 PR
+/// 5); null if never.
+
+final class LastCleanedFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<({DateTime at, String by})?>,
+          String
+        > {
+  LastCleanedFamily._()
+    : super(
+        retry: null,
+        name: r'lastCleanedProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// When a bed was last cleaned and by whom, for the check-in header (v2 PR
+  /// 5); null if never.
+
+  LastCleanedProvider call(String bedId) =>
+      LastCleanedProvider._(argument: bedId, from: this);
+
+  @override
+  String toString() => r'lastCleanedProvider';
+}
+
 /// Active housekeepers, for the dropdown.
 
 @ProviderFor(activeHousekeepers)

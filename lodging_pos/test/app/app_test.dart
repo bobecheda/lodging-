@@ -76,7 +76,7 @@ void main() {
     expect(find.text('Grace Supervisor'), findsOneWidget);
     // The role under the wordmark, and beside the name (no shift).
     expect(find.text('Supervisor'), findsWidgets);
-    expect(find.text('Bed board'), findsWidgets);
+    expect(find.byKey(const ValueKey('board.now')), findsWidgets);
     expect(await env.db.select(env.db.shifts).get(), isEmpty);
   });
 
@@ -178,7 +178,7 @@ void main() {
 
       await tapKey(tester, 'shift.continue');
       expect(locationOf(app), Routes.home);
-      expect(find.text('Bed board'), findsWidgets);
+      expect(find.byKey(const ValueKey('board.now')), findsWidgets);
       expect(find.text('Shift since 22:00'), findsOneWidget);
     },
   );

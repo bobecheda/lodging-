@@ -6,6 +6,7 @@
 /// stays not cleaned). At most one open task per bed.
 library;
 
+import '../../../core/clock/nairobi.dart';
 import '../../setup/domain/rooms.dart';
 
 /// An active housekeeper, as the dropdown lists them.
@@ -34,6 +35,17 @@ Map<String, String> housekeeperNames(Iterable<HousekeeperOption> all) {
 /// `Needs cleaning · Rose` once someone has it.
 String cleaningLine(String? assignee) =>
     'Needs cleaning · ${assignee ?? 'assign'}';
+
+/// The check-in header's line for a Ready bed (v2 PR 5): `Cleaned 08:15 ·
+/// Mary` when it was today (Nairobi), `Cleaned Tue 10 Nov, 08:15 · Mary`
+/// before.
+String cleanedLine(DateTime at, String by, {required DateTime now}) {
+  final today = formatDayDate(at) == formatDayDate(now);
+  final when = today
+      ? formatTime(at)
+      : '${formatDayDate(at)}, ${formatTime(at)}';
+  return 'Cleaned $when · $by';
+}
 
 /// A room shows Not cleaned while any of its (active) beds is.
 bool roomNeedsCleaning(Iterable<Cleanliness> beds) =>

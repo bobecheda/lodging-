@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
+import 'package:lodging_pos/app/widgets/bed_status_tile.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/core/database/database.dart';
@@ -69,6 +71,10 @@ void main() {
     matching: find.text(text),
   );
 
+  BedTileStatus tileStatus(WidgetTester tester, String bed) => tester
+      .widget<BedStatusTile>(find.byKey(ValueKey('board.bed.$bed')))
+      .status;
+
   String chip(WidgetTester tester, String status) => tester
       .widget<Semantics>(
         find
@@ -84,7 +90,7 @@ void main() {
   testWidgets('no rooms yet says where to add them; New check-in opens '
       'check-in', (tester) async {
     final app = await openBoard(tester);
-    expect(find.text('Bed board'), findsWidgets);
+    expect(find.bySemanticsLabel(RegExp('^Bed board, ')), findsOneWidget);
     expect(find.textContaining('No rooms yet'), findsOneWidget);
     await tapKey(tester, 'board.newCheckIn');
     expect(locationOf(app), Routes.checkIn);
@@ -112,35 +118,32 @@ void main() {
     expect(r1.beds, hasLength(1));
 
     await openBoard(tester);
+    // One line per tile (v2 PR 5): the surname and the paid-until weekday,
+    // or how long past checkout.
     expect(tileText('1A', 'Ready'), findsOneWidget);
-    expect(tileText('1A', 'Deluxe'), findsOneWidget);
-    expect(tileText('1A', 'KES 700 / night'), findsOneWidget);
-
-    expect(tileText('2A', 'In use'), findsOneWidget);
-    expect(tileText('2A', 'Grace Achieng'), findsOneWidget);
-    expect(tileText('2A', 'until Sat 10:00 · Deluxe'), findsOneWidget);
-
+    expect(tileText('2A', 'Achieng · Sat'), findsOneWidget);
+    expect(tileStatus(tester, '2A'), BedTileStatus.occupied);
     expect(tileText('3A', 'To clean'), findsOneWidget);
-    expect(tileText('3A', 'Needs cleaning · assign'), findsOneWidget);
+    expect(tileText('5A', 'Kamau · 1 h'), findsOneWidget);
+    expect(tileStatus(tester, '5A'), BedTileStatus.overstay);
 
-    expect(tileText('5A', 'Overstay'), findsOneWidget);
-    expect(tileText('5A', 'paid to Thu 10:00 · Deluxe'), findsOneWidget);
+    // The Now strip: the oldest overstay, and the beds to clean.
+    final card = find.byKey(const ValueKey('board.overstayBar'));
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('board.overstayBar')),
-        matching: find.textContaining(
-          'Overstay · Room 5, Bed A · Peter Kamau',
-          findRichText: true,
-        ),
-      ),
+      find.descendant(of: card, matching: find.text('5 A · Kamau')),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: card, matching: find.text('1 h past 10:00')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('board.toClean.3A')), findsOneWidget);
 
-    expect(chip(tester, 'all'), 'All beds, 4');
+    expect(chip(tester, 'all'), 'All, 4');
     expect(chip(tester, 'ready'), 'Ready, 1');
     expect(chip(tester, 'occupied'), 'Occupied, 1');
     expect(chip(tester, 'overstay'), 'Overstay, 1');
-    expect(chip(tester, 'toClean'), 'Needs cleaning, 1');
+    expect(chip(tester, 'toClean'), 'To clean, 1');
   });
 
   testWidgets('a Ready tile starts a check-in on that bed; an In use tile '
@@ -192,14 +195,12 @@ void main() {
     await tapKey(tester, 'board.chip.all');
 
     await tapKey(tester, 'board.category');
-    await tester.tap(find.text('Normal').last);
-    await tester.pumpAndSettle();
+    await tapKey(tester, 'board.category.${SeedIds.normal}');
     expect(find.byKey(const ValueKey('board.bed.1B')), findsOneWidget);
     expect(find.byKey(const ValueKey('board.bed.1A')), findsNothing);
-    expect(chip(tester, 'all'), 'All beds, 1');
+    expect(chip(tester, 'all'), 'All, 1');
     await tapKey(tester, 'board.category');
-    await tester.tap(find.text('All categories').last);
-    await tester.pumpAndSettle();
+    await tapKey(tester, 'board.category.all');
 
     Future<List<String>> roomsFor(String q) async {
       await enterKey(tester, 'board.search', q);
@@ -221,6 +222,49 @@ void main() {
     expect(find.textContaining('0722'), findsNothing);
   });
 
+  testWidgets('"Guest or receipt": a receipt number lists the receipt under '
+      'the box and opens it in Receipts; a name never does; "/" goes to the '
+      'box (v2 PR 5)', (tester) async {
+    final r2 = await room('2');
+    final stay = await env.checkIn(r2.beds.single.id, by: supervisor);
+    await nameGuest(stay, 'Grace Achieng', '0722418905');
+    final number =
+        (await env.db.select(env.db.payments).getSingle()).receiptNumber;
+    final app = await openBoard(tester);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'board.search');
+
+    await enterKey(tester, 'board.search', 'Achieng');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('board.receipts')), findsNothing);
+    expect(find.byKey(const ValueKey('board.room.2')), findsOneWidget);
+
+    await enterKey(tester, 'board.search', number);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('board.receipts')), findsOneWidget);
+    await tapKey(tester, 'board.receipt.$number');
+    expect(locationOf(app), Routes.receipts);
+  });
+
+  testWidgets('"N" starts a new check-in, unless a field has the cursor', (
+    tester,
+  ) async {
+    final app = await openBoard(tester);
+    await enterKey(tester, 'board.search', '');
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
+    await tester.pumpAndSettle();
+    expect(locationOf(app), Routes.home);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
+    await tester.pumpAndSettle();
+    expect(locationOf(app), Routes.checkIn);
+    // The board's streams close on leaving: run their zero-length timers.
+    await tester.pump(Duration.zero);
+  });
+
   testWidgets('a check-in shows at once (watched, no refresh)', (tester) async {
     final r4 = await room('4');
     // Opened now, so the check-in below writes once: a write inside
@@ -233,7 +277,7 @@ void main() {
 
     await tester.runAsync(() => env.checkIn(r4.beds.single.id, by: supervisor));
     await tester.pumpAndSettle();
-    expect(tileText('4A', 'In use'), findsOneWidget);
+    expect(tileStatus(tester, '4A'), BedTileStatus.occupied);
   });
 
   testWidgets('a bed turns Overstay on its own after paid_until + grace', (
@@ -244,12 +288,12 @@ void main() {
     await env.checkIn(r5.beds.single.id, by: supervisor);
     env.clock.set(nairobiInstant(2026, 10, 15, 10, 59, 45));
     await openBoard(tester, tick: const Duration(seconds: 30));
-    expect(tileText('5A', 'In use'), findsOneWidget);
+    expect(tileStatus(tester, '5A'), BedTileStatus.occupied);
     expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
 
     env.clock.advance(const Duration(seconds: 30)); // 11:00:15
     await tester.pump(const Duration(seconds: 30));
-    expect(tileText('5A', 'Overstay'), findsOneWidget);
+    expect(tileStatus(tester, '5A'), BedTileStatus.overstay);
     expect(find.byKey(const ValueKey('board.overstayBar')), findsOneWidget);
 
     // Leave the board so its ticker stops before the test ends.

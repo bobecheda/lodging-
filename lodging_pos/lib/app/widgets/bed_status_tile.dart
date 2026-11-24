@@ -2,48 +2,50 @@ import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
 import 'dashed_border.dart';
+import 'focus_ring.dart';
 
-/// How a bed looks on the board (docs/design.md, "Bed status styles").
+/// How a bed looks on the board (v2 PR 5, docs/ui-redesign-brief.md "Type
+/// and components": v2/Bed tile).
 enum BedTileStatus {
-  ready('Ready', 'Ready'),
-  occupied('In use', 'In use'),
-  overstay('Overstay', 'Overstay'),
-  toClean('To clean', 'Needs cleaning');
+  ready('Ready'),
+  occupied('Occupied'),
+  overstay('Overstay'),
+  toClean('To clean');
 
-  const BedTileStatus(this.badge, this.spoken);
-
-  /// The caps label on the tile.
-  final String badge;
+  const BedTileStatus(this.spoken);
 
   /// What a screen reader says.
   final String spoken;
 }
 
-/// One bed: letter box, "Category · KES price", a second line, and the caps
-/// status label. Each status has its own background, border style and
-/// label, so it is never shown by colour alone.
+/// One bed (v2/Bed tile): the letter box and one line ("Ready", "Otieno ·
+/// Thu", "Kamau · 2 h", "To clean"). Ready is white with a marine border;
+/// Occupied quiet marine-tint with the field border; Overstay red; To clean
+/// butter with a dashed border. Each has its own fill and border and its own
+/// words, so a status is never shown by colour alone. 44 px tall: it's a
+/// hit target.
 class BedStatusTile extends StatelessWidget {
   const BedStatusTile({
     super.key,
     required this.label,
-    required this.title,
-    required this.subtitle,
+    required this.text,
     required this.status,
+    this.semanticLabel,
     this.onTap,
   });
 
   /// "A" or "B".
   final String label;
 
-  /// e.g. "Deluxe", or the guest's name on a let bed. One line.
-  final String title;
-
-  /// e.g. "KES 700 / night", "Deluxe · until Fri 10:00". One line.
-  final String subtitle;
+  /// The tile's one line.
+  final String text;
   final BedTileStatus status;
 
-  /// Null: the tile isn't interactive and doesn't look it (no hover, no
-  /// hand cursor, no ripple).
+  /// What a screen reader hears instead of the short line, e.g. the guest's
+  /// full name and paid-until.
+  final String? semanticLabel;
+
+  /// Null: the tile isn't interactive and doesn't look it.
   final VoidCallback? onTap;
 
   @override
@@ -56,103 +58,61 @@ class BedStatusTile extends StatelessWidget {
       Color fg,
       Color letterBg,
       Color letterFg,
+      Color? border,
     ) = switch (status) {
-      BedTileStatus.ready => (c.white, c.ink, c.marineTint, c.marine),
-      BedTileStatus.occupied => (c.marine, c.white, c.marine600, c.white),
-      BedTileStatus.overstay => (c.red, c.white, c.redDark, c.white),
-      BedTileStatus.toClean => (c.butter, c.butterText, c.white, c.butterText),
+      BedTileStatus.ready => (c.white, c.ink, c.marineTint, c.marine, c.marine),
+      BedTileStatus.occupied => (
+        c.marineTint,
+        c.ink,
+        c.white,
+        c.marine,
+        c.fieldBorder,
+      ),
+      BedTileStatus.overstay => (c.red, c.white, c.white, c.redDark, c.redDark),
+      // Dashed, painted below.
+      BedTileStatus.toClean => (
+        c.butter,
+        c.butterText,
+        c.white,
+        c.butterText,
+        null,
+      ),
     };
-    final subtitleColor = switch (status) {
-      BedTileStatus.ready => c.muted,
-      BedTileStatus.toClean => c.butterText,
-      _ => c.navText,
-    };
-
-    final badge = status == BedTileStatus.overstay
-        ? Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Space.x8,
-              vertical: Space.x4,
-            ),
-            decoration: BoxDecoration(
-              color: c.white,
-              borderRadius: BorderRadius.circular(Radii.badge),
-            ),
-            child: Text(status.badge, style: t.meta.copyWith(color: c.redDark)),
-          )
-        : Text(
-            status.badge,
-            style: t.meta.copyWith(
-              color: status == BedTileStatus.ready ? c.marine : fg,
-            ),
-          );
 
     final body = Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Space.x12,
-        vertical: Space.x10,
-      ),
+      height: Sizes.target,
+      padding: const EdgeInsets.symmetric(horizontal: Space.x8),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(Radii.tile),
-        border: status == BedTileStatus.toClean
-            ? null // dashed, painted below
+        border: border == null
+            ? null
             : Border.all(
-                color: status == BedTileStatus.overstay ? c.redDark : c.marine,
-                width: Sizes.borderStrong,
+                color: border,
+                width: status == BedTileStatus.ready
+                    ? Sizes.borderStrong
+                    : Sizes.borderThin,
               ),
       ),
       child: Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: letterBg,
               borderRadius: BorderRadius.circular(Radii.badge),
             ),
-            child: Text(
-              label,
-              style: t.secondaryMedium.copyWith(color: letterFg),
-            ),
+            child: Text(label, style: t.meta.copyWith(color: letterFg)),
           ),
-          const SizedBox(width: Space.x12),
-          // The label sits on the title line so the second line gets the
-          // tile's full width (e.g. "until Fri 10:00 · Deluxe").
+          const SizedBox(width: Space.x10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // The label is at most 72 px wide (it wraps beyond that),
-                // so a narrow tile or large text never overflows. No
-                // LayoutBuilder: the board's rows measure their height.
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.secondaryMedium.copyWith(color: fg),
-                      ),
-                    ),
-                    const SizedBox(width: Space.x8),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 72),
-                      child: badge,
-                    ),
-                  ],
-                ),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.meta.copyWith(color: subtitleColor),
-                ),
-              ],
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: t.secondary.copyWith(color: fg),
             ),
           ),
         ],
@@ -164,16 +124,19 @@ class BedStatusTile extends StatelessWidget {
         : body;
     return Semantics(
       button: onTap != null,
-      label: 'Bed $label, $title. ${status.spoken}. $subtitle',
+      label: 'Bed $label. ${status.spoken}. ${semanticLabel ?? text}',
       excludeSemantics: true,
       child: onTap == null
           ? tile
-          : Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(Radii.tile),
-                child: tile,
+          : FocusRing(
+              radius: Radii.tile,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(Radii.tile),
+                  child: tile,
+                ),
               ),
             ),
     );
