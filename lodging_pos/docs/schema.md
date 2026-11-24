@@ -17,6 +17,7 @@ Local database: SQLite via drift (front desk). Cloud mirror: PostgreSQL on Supab
 | v6 | 21 Oct 2026 (roles) | `users.role` CHECK becomes `owner` \| `supervisor` \| `receptionist`; the rebuild copies `admin` users as `supervisor` (no UPDATE, timestamps unchanged). Old audit rows keep `"role":"admin"`; sync (sprint 2) must read an unsent outbox payload's `admin` as `supervisor` |
 | v4 | 19 Oct 2026 (FD-9) | `housekeeping_tasks.cancelled_at` and `cancelled_by` (empty for existing tasks); the one-open-task index leaves out cancelled tasks; a task can't be both completed and cancelled |
 | v3 | 18 Oct 2026 (FD-6) | `stays.room_number` and `bed_label`, as let; existing stays filled from their bed and room by rebuilding the table |
+| v12 | 24 Nov 2026 (v2 PR 4) | `bed_categories.colour`: a palette key (`gold` \| `violet` \| `teal` \| `slate` \| `plum` \| `bronze`, CHECK), default `slate`. The seeded categories are filled by id (VIP gold, Deluxe violet, Comfort teal, Normal slate) by rebuilding the table, `updated_at` unchanged; any other category is slate. Cloud: `20261124000000_category_colours.sql` (same check and backfill, plus a BEFORE trigger that keeps the colour, or slate, for rows from a desk not yet on v12) |
 
 **How an upgrade runs** (`AppDatabase._upgrade`):
 
@@ -82,10 +83,11 @@ Seed keys: `lodging_name` = `""` (filled by the first-run setup screen), `checko
 | price_per_night | INT | whole KES 1–100,000 (CHECK) |
 | sort_order | INT | new categories go last |
 | is_active | BOOL | a closed category can't be chosen for a bed |
+| colour | TEXT | v12: palette key for room cards and charts, default `slate` (CHECK). A new category takes the first key no category has yet, then `slate`; the owner changes it from the swatch menu in Prices (`category.update`, through the outbox) |
 
 A category can't be closed while active beds use it, counting beds in rooms closed for repairs (reopening the room would let them). Categories are never renamed or deleted. Price changes (`price.update`) apply to new check-ins only.
 
-Seed: VIP 1000, Deluxe 700, Comfort 600, Normal 500, with fixed UUIDs so the cloud can seed the same rows.
+Seed: VIP 1000 gold, Deluxe 700 violet, Comfort 600 teal, Normal 500 slate, with fixed UUIDs so the cloud can seed the same rows.
 
 Seed rows are written in `onCreate` with no `audit_log` or `outbox` rows. No user is seeded: when `users` is empty the desk shows a first-run setup screen that creates the **owner** and names the lodging (OS-1); the owner adds supervisors, who add receptionists. A database with users but no owner (from before the owner role) shows a one-time "Create the owner's account" screen before sign-in. Either way the owner is `user.create` with role `owner`.
 

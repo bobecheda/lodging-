@@ -247,6 +247,44 @@ void main() {
     expect(find.byKey(const ValueKey('prices.readOnly')), findsNothing);
   });
 
+  testWidgets('the owner changes a category’s colour from its swatch menu '
+      '(v2 PR 4); the supervisor only sees the swatch', (tester) async {
+    await openPrices(tester, asOwner: true);
+    expect(
+      find.bySemanticsLabel(RegExp('^Normal colour: Slate. Change colour')),
+      findsOneWidget,
+    );
+    await tapKey(tester, 'categories.colour.${SeedIds.normal}');
+    expect(find.byKey(const ValueKey('shell.menuCard')), findsOneWidget);
+    for (final name in ['Gold', 'Violet', 'Teal', 'Slate', 'Plum', 'Bronze']) {
+      expect(find.text(name), findsOneWidget);
+    }
+    await tapKey(tester, 'categories.colour.${SeedIds.normal}.bronze');
+    await tester.runAsync(() async {
+      final normal = (await prices().categories()).firstWhere(
+        (u) => u.category.id == SeedIds.normal,
+      );
+      expect(normal.category.colour, 'bronze');
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Colour saved.'), findsOneWidget);
+    expect(await env.auditFor('category.update'), hasLength(1));
+  });
+
+  testWidgets('the supervisor sees the colours but can’t change them', (
+    tester,
+  ) async {
+    await openPrices(tester);
+    expect(
+      find.bySemanticsLabel(RegExp(r'^VIP colour: Gold$')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(ValueKey('categories.colour.${SeedIds.vip}')),
+      findsNothing,
+    );
+  });
+
   testWidgets('a receptionist cannot open Prices & settings', (tester) async {
     await env.addReceptionist('desk');
     await env.ensureDrawerStarted(counted: 500);

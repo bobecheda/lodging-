@@ -1133,6 +1133,24 @@ class $BedCategoriesTable extends BedCategories
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _colourMeta = const VerificationMeta('colour');
+  @override
+  late final GeneratedColumn<String> colour = GeneratedColumn<String>(
+    'colour',
+    aliasedName,
+    false,
+    check: () => colour.isIn(const [
+      'gold',
+      'violet',
+      'teal',
+      'slate',
+      'plum',
+      'bronze',
+    ]),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('slate'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1143,6 +1161,7 @@ class $BedCategoriesTable extends BedCategories
     pricePerNight,
     sortOrder,
     isActive,
+    colour,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1210,6 +1229,12 @@ class $BedCategoriesTable extends BedCategories
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('colour')) {
+      context.handle(
+        _colourMeta,
+        colour.isAcceptableOrUnknown(data['colour']!, _colourMeta),
+      );
+    }
     return context;
   }
 
@@ -1251,6 +1276,10 @@ class $BedCategoriesTable extends BedCategories
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      colour: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}colour'],
+      )!,
     );
   }
 
@@ -1270,6 +1299,13 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
   final int pricePerNight;
   final int sortOrder;
   final bool isActive;
+
+  /// The category's colour key on room cards and charts (v2 PR 4, schema
+  /// v12): one of `categoryColourKeys`, default `defaultCategoryColour`.
+  /// Literals here, because drift copies them into the generated schema
+  /// snapshots; `test/core/database/category_colours_test.dart` keeps them
+  /// equal to the constants.
+  final String colour;
   const BedCategoryRow({
     required this.id,
     required this.createdAt,
@@ -1279,6 +1315,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     required this.pricePerNight,
     required this.sortOrder,
     required this.isActive,
+    required this.colour,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1291,6 +1328,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     map['price_per_night'] = Variable<int>(pricePerNight);
     map['sort_order'] = Variable<int>(sortOrder);
     map['is_active'] = Variable<bool>(isActive);
+    map['colour'] = Variable<String>(colour);
     return map;
   }
 
@@ -1304,6 +1342,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       pricePerNight: Value(pricePerNight),
       sortOrder: Value(sortOrder),
       isActive: Value(isActive),
+      colour: Value(colour),
     );
   }
 
@@ -1321,6 +1360,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       pricePerNight: serializer.fromJson<int>(json['price_per_night']),
       sortOrder: serializer.fromJson<int>(json['sort_order']),
       isActive: serializer.fromJson<bool>(json['is_active']),
+      colour: serializer.fromJson<String>(json['colour']),
     );
   }
   @override
@@ -1335,6 +1375,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
       'price_per_night': serializer.toJson<int>(pricePerNight),
       'sort_order': serializer.toJson<int>(sortOrder),
       'is_active': serializer.toJson<bool>(isActive),
+      'colour': serializer.toJson<String>(colour),
     };
   }
 
@@ -1347,6 +1388,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     int? pricePerNight,
     int? sortOrder,
     bool? isActive,
+    String? colour,
   }) => BedCategoryRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -1356,6 +1398,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     pricePerNight: pricePerNight ?? this.pricePerNight,
     sortOrder: sortOrder ?? this.sortOrder,
     isActive: isActive ?? this.isActive,
+    colour: colour ?? this.colour,
   );
   BedCategoryRow copyWithCompanion(BedCategoriesCompanion data) {
     return BedCategoryRow(
@@ -1369,6 +1412,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
           : this.pricePerNight,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      colour: data.colour.present ? data.colour.value : this.colour,
     );
   }
 
@@ -1382,7 +1426,8 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
           ..write('name: $name, ')
           ..write('pricePerNight: $pricePerNight, ')
           ..write('sortOrder: $sortOrder, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('colour: $colour')
           ..write(')'))
         .toString();
   }
@@ -1397,6 +1442,7 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
     pricePerNight,
     sortOrder,
     isActive,
+    colour,
   );
   @override
   bool operator ==(Object other) =>
@@ -1409,7 +1455,8 @@ class BedCategoryRow extends DataClass implements Insertable<BedCategoryRow> {
           other.name == this.name &&
           other.pricePerNight == this.pricePerNight &&
           other.sortOrder == this.sortOrder &&
-          other.isActive == this.isActive);
+          other.isActive == this.isActive &&
+          other.colour == this.colour);
 }
 
 class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
@@ -1421,6 +1468,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
   final Value<int> pricePerNight;
   final Value<int> sortOrder;
   final Value<bool> isActive;
+  final Value<String> colour;
   final Value<int> rowid;
   const BedCategoriesCompanion({
     this.id = const Value.absent(),
@@ -1431,6 +1479,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     this.pricePerNight = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.colour = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BedCategoriesCompanion.insert({
@@ -1442,6 +1491,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     required int pricePerNight,
     required int sortOrder,
     this.isActive = const Value.absent(),
+    this.colour = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : name = Value(name),
        pricePerNight = Value(pricePerNight),
@@ -1455,6 +1505,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     Expression<int>? pricePerNight,
     Expression<int>? sortOrder,
     Expression<bool>? isActive,
+    Expression<String>? colour,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1466,6 +1517,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
       if (pricePerNight != null) 'price_per_night': pricePerNight,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (isActive != null) 'is_active': isActive,
+      if (colour != null) 'colour': colour,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1479,6 +1531,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     Value<int>? pricePerNight,
     Value<int>? sortOrder,
     Value<bool>? isActive,
+    Value<String>? colour,
     Value<int>? rowid,
   }) {
     return BedCategoriesCompanion(
@@ -1490,6 +1543,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
       pricePerNight: pricePerNight ?? this.pricePerNight,
       sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
+      colour: colour ?? this.colour,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1521,6 +1575,9 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (colour.present) {
+      map['colour'] = Variable<String>(colour.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1538,6 +1595,7 @@ class BedCategoriesCompanion extends UpdateCompanion<BedCategoryRow> {
           ..write('pricePerNight: $pricePerNight, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isActive: $isActive, ')
+          ..write('colour: $colour, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -19706,6 +19764,7 @@ typedef $$BedCategoriesTableCreateCompanionBuilder =
       required int pricePerNight,
       required int sortOrder,
       Value<bool> isActive,
+      Value<String> colour,
       Value<int> rowid,
     });
 typedef $$BedCategoriesTableUpdateCompanionBuilder =
@@ -19718,6 +19777,7 @@ typedef $$BedCategoriesTableUpdateCompanionBuilder =
       Value<int> pricePerNight,
       Value<int> sortOrder,
       Value<bool> isActive,
+      Value<String> colour,
       Value<int> rowid,
     });
 
@@ -19831,6 +19891,11 @@ class $$BedCategoriesTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colour => $composableBuilder(
+    column: $table.colour,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19958,6 +20023,11 @@ class $$BedCategoriesTableOrderingComposer
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get colour => $composableBuilder(
+    column: $table.colour,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BedCategoriesTableAnnotationComposer
@@ -19994,6 +20064,9 @@ class $$BedCategoriesTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<String> get colour =>
+      $composableBuilder(column: $table.colour, builder: (column) => column);
 
   Expression<T> bedsRefs<T extends Object>(
     Expression<T> Function($$BedsTableAnnotationComposer a) f,
@@ -20111,6 +20184,7 @@ class $$BedCategoriesTableTableManager
                 Value<int> pricePerNight = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<String> colour = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BedCategoriesCompanion(
                 id: id,
@@ -20121,6 +20195,7 @@ class $$BedCategoriesTableTableManager
                 pricePerNight: pricePerNight,
                 sortOrder: sortOrder,
                 isActive: isActive,
+                colour: colour,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -20133,6 +20208,7 @@ class $$BedCategoriesTableTableManager
                 required int pricePerNight,
                 required int sortOrder,
                 Value<bool> isActive = const Value.absent(),
+                Value<String> colour = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BedCategoriesCompanion.insert(
                 id: id,
@@ -20143,6 +20219,7 @@ class $$BedCategoriesTableTableManager
                 pricePerNight: pricePerNight,
                 sortOrder: sortOrder,
                 isActive: isActive,
+                colour: colour,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

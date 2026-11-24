@@ -37,6 +37,73 @@ void main() {
   Map<String, Object?> json(String text) =>
       jsonDecode(text) as Map<String, Object?>;
 
+  group('category colours (v2 PR 4)', () {
+    test('a fresh install has the seeded colours', () async {
+      expect(
+        {
+          for (final u in await prices.categories())
+            u.category.name: u.category.colour,
+        },
+        {
+          'VIP': 'gold',
+          'Deluxe': 'violet',
+          'Comfort': 'teal',
+          'Normal': 'slate',
+        },
+      );
+    });
+
+    test('a new category takes the first unused colour; once all six are '
+        'used, slate', () async {
+      final family = await prices.addCategory(
+        owner,
+        name: 'Family',
+        pricePerNight: 900,
+      );
+      expect(family.colour, 'plum');
+      final suite = await prices.addCategory(
+        owner,
+        name: 'Suite',
+        pricePerNight: 1500,
+      );
+      expect(suite.colour, 'bronze');
+      final extra = await prices.addCategory(
+        owner,
+        name: 'Extra',
+        pricePerNight: 400,
+      );
+      expect(extra.colour, 'slate');
+    });
+
+    test('the owner changes a colour: category.update, before and after; '
+        'the same colour again writes nothing', () async {
+      await prices.setColour(owner, SeedIds.normal, 'bronze');
+      expect(
+        (await prices.categories())
+            .singleWhere((u) => u.category.id == SeedIds.normal)
+            .category
+            .colour,
+        'bronze',
+      );
+      final audit = (await env.auditFor('category.update')).single;
+      expect(json(audit.beforeJson!)['colour'], 'slate');
+      expect(json(audit.afterJson)['colour'], 'bronze');
+      await prices.setColour(owner, SeedIds.normal, 'bronze');
+      expect(await env.auditFor('category.update'), hasLength(1));
+    });
+
+    test('only the owner, and only palette keys', () async {
+      await expectLater(
+        prices.setColour(supervisor, SeedIds.vip, 'teal'),
+        throwsA(isA<NotPermitted>()),
+      );
+      await expectLater(
+        prices.setColour(owner, SeedIds.vip, 'pink'),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+  });
+
   group('prices', () {
     test('saves only changed prices, one price.update row each with old and '
         'new', () async {

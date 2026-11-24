@@ -3,6 +3,7 @@ import 'package:drift/internal/versioned_schema.dart';
 import 'package:uuid/uuid.dart';
 
 import '../clock/clock.dart';
+import 'category_colours.dart';
 import 'database.steps.dart';
 import 'seed.dart';
 import 'tables/admin_tables.dart';
@@ -73,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   /// rows that must survive. New NOT NULL columns get a default or a
   /// backfill in their step. Never edit an applied migration (CLAUDE.md).
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -317,6 +318,23 @@ class AppDatabase extends _$AppDatabase {
       await m.createTrigger(schema.cashReviewsNoUpdate);
       await m.createTrigger(schema.cashReviewsNoDelete);
     },
+    // v12 (v2 PR 4): each category has a colour key. Rebuilding the table
+    // fills it for existing rows, the seeded categories by id (VIP gold,
+    // Deluxe violet, Comfort teal, Normal slate) and any other slate; an
+    // UPDATE would trip the triggers on updated_at. The cloud's migration
+    // (20261124000000_category_colours.sql) fills its rows the same way.
+    from11To12: (m, schema) async {
+      final categories = schema.bedCategories;
+      await m.alterTable(
+        TableMigration(
+          categories,
+          newColumns: [categories.colour],
+          columnTransformer: {
+            categories.colour: CustomExpression<String>(_seedColourCase()),
+          },
+        ),
+      );
+    },
   );
 
   Future<void>? _closing;
@@ -329,6 +347,16 @@ class AppDatabase extends _$AppDatabase {
   /// This install's device id, stamped on every synced row it writes.
   Future<String> deviceId() async =>
       _deviceId ??= (await select(device).getSingle()).deviceId;
+}
+
+/// `CASE id WHEN '<vip id>' THEN 'gold' … ELSE 'slate' END`: a category's
+/// colour from its id ([seedCategoryColours]), for the v12 migration.
+String _seedColourCase() {
+  final whens = [
+    for (final MapEntry(:key, :value) in seedCategoryColours.entries)
+      "WHEN '$key' THEN '$value'",
+  ];
+  return "CASE id ${whens.join(' ')} ELSE '$defaultCategoryColour' END";
 }
 
 /// Called with the open database and the version its file is at, before a

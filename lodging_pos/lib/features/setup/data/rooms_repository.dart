@@ -37,6 +37,7 @@ class RoomsRepository {
           pricePerNight: c.pricePerNight,
           sortOrder: c.sortOrder,
           isActive: c.isActive,
+          colour: c.colour,
         ),
     ];
   }

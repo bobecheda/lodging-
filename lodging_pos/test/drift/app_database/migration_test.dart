@@ -13,6 +13,10 @@ import 'package:lodging_pos/core/database/database_files_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/fixtures.dart';
+
+import 'package:lodging_pos/core/app_version.dart';
+import 'package:lodging_pos/core/database/seed.dart';
+
 import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
@@ -1007,7 +1011,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      11,
+      latestSchemaVersion,
     );
   });
 
@@ -1061,7 +1065,7 @@ void main() {
       (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
         'user_version',
       ),
-      11,
+      latestSchemaVersion,
     );
     final category = await db
         .customSelect('SELECT price_per_night, updated_at FROM bed_categories')
@@ -1331,8 +1335,73 @@ void main() {
     },
   );
 
+  test('migration from v11 to v12: the seeded categories get their colours by '
+      'id, any other slate; everything else on the row, its beds and its '
+      'updated_at stay; only palette keys are allowed afterwards', () async {
+    const at = "'2026-11-11T06:00:00.000Z'";
+    final db = open(
+      NativeDatabase.memory(
+        setup: (raw) {
+          appStatements(11).forEach(raw.execute);
+          raw.execute('PRAGMA user_version = 11');
+          for (final (id, name, price, sort, active) in [
+            (SeedIds.vip, 'VIP', 1000, 1, 1),
+            (SeedIds.deluxe, 'Deluxe', 700, 2, 1),
+            (SeedIds.comfort, 'Comfort', 600, 3, 1),
+            (SeedIds.normal, 'Normal', 500, 4, 1),
+            ('c-family', 'Family', 900, 5, 0),
+          ]) {
+            raw.execute(
+              'INSERT INTO bed_categories (id, created_at, updated_at, '
+              'device_id, name, price_per_night, sort_order, is_active) '
+              "VALUES ('$id', $at, $at, 'dev', '$name', $price, $sort, "
+              '$active)',
+            );
+          }
+          raw.execute(
+            'INSERT INTO rooms (id, created_at, updated_at, device_id, '
+            "room_number, is_active) VALUES ('r-1', $at, $at, 'dev', '1', 1)",
+          );
+          raw.execute(
+            'INSERT INTO beds (id, created_at, updated_at, device_id, '
+            'room_id, label, category_id, cleanliness, is_active) VALUES '
+            "('b-1', $at, $at, 'dev', 'r-1', 'A', '${SeedIds.vip}', "
+            "'clean', 1)",
+          );
+        },
+      ),
+    );
+    addTearDown(db.close);
+    final rows = {
+      for (final c in await db.select(db.bedCategories).get()) c.id: c,
+    };
+    expect(
+      {for (final r in rows.values) r.name: r.colour},
+      {
+        'VIP': 'gold',
+        'Deluxe': 'violet',
+        'Comfort': 'teal',
+        'Normal': 'slate',
+        'Family': 'slate',
+      },
+    );
+    final family = rows['c-family']!;
+    expect(family.pricePerNight, 900);
+    expect(family.sortOrder, 5);
+    expect(family.isActive, isFalse);
+    expect(family.updatedAt, DateTime.utc(2026, 11, 11, 6));
+    expect((await db.select(db.beds).getSingle()).categoryId, SeedIds.vip);
+    await expectLater(
+      db.customStatement(
+        "UPDATE bed_categories SET colour = 'pink', "
+        "updated_at = '2030-01-01T00:00:00.000Z' WHERE id = 'c-family'",
+      ),
+      throwsA(anything),
+    );
+  });
+
   group('upgrade safety', () {
-    for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
       test('an upgraded v$from file matches what this build creates (the '
           'startup check passes), with foreign keys back on and the rebuilt '
           'tables keeping their triggers and indexes', () async {
@@ -1357,7 +1426,7 @@ void main() {
           (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
             'user_version',
           ),
-          11,
+          latestSchemaVersion,
         );
         final objects = await db
             .customSelect(

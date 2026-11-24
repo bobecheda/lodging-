@@ -227,6 +227,7 @@ class PriceRequestsRepository {
       pricePerNight: r.pricePerNight,
       sortOrder: r.sortOrder,
       isActive: r.isActive,
+      colour: r.colour,
     );
   }
 
@@ -488,6 +489,7 @@ class PriceRequestsRepository {
               pricePerNight: e.currentPrice,
               sortOrder: category.sortOrder,
               isActive: category.isActive,
+              colour: category.colour,
             ),
           )!,
         );

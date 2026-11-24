@@ -13,7 +13,7 @@ const appCommit = String.fromEnvironment('APP_COMMIT', defaultValue: 'dev');
 /// The schema version this build's database is at (`AppDatabase.
 /// schemaVersion`; `test/policy/app_version_test.dart` checks they match).
 /// Here as a constant so screens without a database can show it.
-const latestSchemaVersion = 11;
+const latestSchemaVersion = 12;
 
 /// The version a database records: which build last opened it.
 final class DeskStamp {
