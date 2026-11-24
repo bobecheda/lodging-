@@ -151,6 +151,27 @@ void main() {
     });
   });
 
+  test('when a bed was last cleaned, and by whom (the check-in header, v2 '
+      'PR 5)', () async {
+    expect(await repo.lastCleaned(bedA), isNull);
+    await repo.cleanNow(desk, bedA, jane);
+    final cleaned = (await repo.lastCleaned(bedA))!;
+    expect(cleaned.at, env.clock.now());
+    expect(cleaned.by, (await repo.names())[jane]);
+    expect(
+      cleanedLine(cleaned.at, 'Jane', now: cleaned.at),
+      'Cleaned ${formatTime(cleaned.at)} · Jane',
+    );
+    expect(
+      cleanedLine(
+        nairobiInstant(2026, 11, 10, 8, 15),
+        'Mary',
+        now: nairobiInstant(2026, 11, 11, 9, 0),
+      ),
+      'Cleaned Tue 10 Nov, 08:15 · Mary',
+    );
+  });
+
   test(
     '"Already cleaned": a task created and completed in one operation',
     () async {

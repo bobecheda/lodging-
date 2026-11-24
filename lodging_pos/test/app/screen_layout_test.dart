@@ -1084,18 +1084,18 @@ void screens(Size size) {
       tester,
     ) async {
       final app = await openBoard(tester, overstay: false);
-      await expectCleanLayout(tester, app, Routes.home, 'Bed board');
+      await expectCleanLayout(tester, app, Routes.home, 'New check-in');
       expect(find.byKey(const ValueKey('board.overstayBar')), findsNothing);
       if (size == deskSize) {
         expect(find.byKey(const ValueKey('board.room.12')), findsOneWidget);
       }
-      // At the laptop's width; PR 5 sets the columns for narrower ones.
+      // At the laptop's width the whole board fits, as on the artboard.
       if (size == deskSize) expect(gridOverflow(tester), 0);
     });
 
     testWidgets('12 rooms with the overstay bar: no overflow', (tester) async {
       final app = await openBoard(tester, overstay: true);
-      await expectCleanLayout(tester, app, Routes.home, 'Bed board');
+      await expectCleanLayout(tester, app, Routes.home, 'New check-in');
       expect(find.byKey(const ValueKey('board.overstayBar')), findsOneWidget);
     });
   });
@@ -1305,7 +1305,8 @@ void screens(Size size) {
         nights: 10,
         now: nairobiInstant(2026, 10, 21, 15),
       );
-      await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
+      await tapKey(tester, 'panel.toCheckOut');
+      await expectCleanLayout(tester, app, Routes.home, '5 A');
       expect(find.byKey(const ValueKey('panel.refund')), findsOneWidget);
     });
 
@@ -1318,9 +1319,9 @@ void screens(Size size) {
         now: nairobiInstant(2026, 10, 17, 13),
         viaBar: true,
       );
-      await tapKeyIn(tester, 'panel.method', 'choice.PaymentMethod.paybill');
+      await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.paybill');
       await tapKey(tester, 'panel.checkOut');
-      await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
+      await expectCleanLayout(tester, app, Routes.home, '5 A');
       expect(find.text('Enter the M-Pesa code.'), findsOneWidget);
       expect(find.byKey(const ValueKey('panel.overstay')), findsOneWidget);
     });
@@ -1333,7 +1334,7 @@ void screens(Size size) {
         nights: 1,
         now: nairobiInstant(2026, 10, 16, 11, 30),
       );
-      await tapKeyIn(tester, 'panel.method', 'choice.PaymentMethod.cash');
+      await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.cash');
       await tapKey(tester, 'panel.checkOut');
       await expectCleanLayout(tester, app, Routes.home, 'Late checkout');
       expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
@@ -1350,7 +1351,7 @@ void screens(Size size) {
       await enterKey(tester, 'stepper.value', '1');
       await tester.pumpAndSettle();
       await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.paybill');
-      await expectCleanLayout(tester, app, Routes.home, 'Room 5 · Bed A');
+      await expectCleanLayout(tester, app, Routes.home, '5 A');
       expect(find.byKey(const ValueKey('extend.minReason')), findsOneWidget);
       expect(find.byKey(const ValueKey('extend.nightsError')), findsOneWidget);
     });
@@ -1363,11 +1364,39 @@ void screens(Size size) {
         nights: 1,
         now: nairobiInstant(2026, 10, 16, 8),
       );
+      await tapKey(tester, 'panel.extend');
       await tapKey(tester, 'stepper.plus');
       await tapKeyIn(tester, 'extend.method', 'choice.PaymentMethod.cash');
       await tapKey(tester, 'extend.save');
       await expectCleanLayout(tester, app, Routes.home, 'Extended by 2 nights');
       expect(find.byKey(const ValueKey('receipt.view')), findsOneWidget);
+    });
+
+    testWidgets('void stay: the receipts, the bed after and the reason (v2 '
+        'PR 5)', (tester) async {
+      await withOwner();
+      final supervisor = (await env.users.findByUsername('supervisor'))!
+          .account;
+      final desk = await env.addReceptionist('desk');
+      env.clock.set(nairobiInstant(2026, 10, 15, 19));
+      final room = await RoomsRepository(env.db, env.audit).createRoom(
+        supervisor,
+        const NewRoom(
+          number: '5',
+          floor: null,
+          notes: null,
+          bedACategoryId: SeedIds.deluxe,
+          bedBCategoryId: SeedIds.comfort,
+        ),
+      );
+      await env.checkIn(room.beds.first.id, by: desk);
+      final app = await pumpDeskApp(tester, env, size: size);
+      await signInAs(tester, 'supervisor', 'super-pass');
+      await tapKey(tester, 'board.bed.5A');
+      await tapKey(tester, 'panel.void');
+      await enterKey(tester, 'panel.voidReason', 'Checked into the wrong bed');
+      await expectCleanLayout(tester, app, Routes.home, '5 A');
+      expect(find.byKey(const ValueKey('panel.voidConfirm')), findsOneWidget);
     });
   });
 
@@ -1401,7 +1430,7 @@ void screens(Size size) {
       await tester.pumpAndSettle();
       await tapKey(tester, 'cleaning.assign');
       await tapKey(tester, 'cleaning.reassign');
-      await expectCleanLayout(tester, app, Routes.home, 'Room 7 · Bed A');
+      await expectCleanLayout(tester, app, Routes.home, '7 A');
       expect(
         find.byKey(const ValueKey('cleaning.reassignSave')),
         findsOneWidget,

@@ -34,8 +34,7 @@ final class EarlyCheckout extends CheckoutTerms {
   final RefundTerms refund;
 
   @override
-  String get button =>
-      'Check out and request refund of ${formatKes(refund.amount)}';
+  String get button => 'Check out and request ${formatKes(refund.amount)}';
 }
 
 /// Within the paid time and grace: free.

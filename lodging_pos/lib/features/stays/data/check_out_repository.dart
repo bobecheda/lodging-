@@ -15,8 +15,12 @@ import '../../shifts/domain/shift_rules.dart';
 import '../domain/check_out.dart';
 import '../domain/stay_rules.dart';
 
-/// One of a stay's charges and the receipt that paid it.
-typedef PaidCharge = ({ChargeLine charge, String receiptNumber});
+/// One of a stay's charges, the receipt that paid it and how it was paid.
+typedef PaidCharge = ({
+  ChargeLine charge,
+  String receiptNumber,
+  PaymentMethod method,
+});
 
 /// A stay as the bed panel shows it.
 final class StayDetail {
@@ -162,6 +166,7 @@ class CheckOutRepository {
         (
           charge: _line(r.readTable(_db.stayCharges)),
           receiptNumber: r.readTable(_db.payments).receiptNumber,
+          method: PaymentMethod.parse(r.readTable(_db.payments).method),
         ),
     ];
     var stay = Stay.fromCheckIn(

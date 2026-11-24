@@ -65,7 +65,7 @@ final class ExtendQuote {
   String get priceLine =>
       '${charge.nights} × ${formatKes(charge.pricePerNight)} (check-in price)';
 
-  String get button => 'Extend and issue receipt';
+  String get button => 'Extend and print receipt';
 }
 
 ExtendQuote quoteExtend(Stay stay, int nights) =>

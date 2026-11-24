@@ -2,6 +2,7 @@
 /// the clock and its cleanliness. Never stored. Pure Dart.
 library;
 
+import '../../../core/category_colour_keys.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../setup/domain/rooms.dart';
 import '../../stays/domain/stay_rules.dart';
@@ -47,12 +48,16 @@ final class BoardBed {
     required this.cleanliness,
     required this.stay,
     this.cleaner,
+    this.categoryColour = defaultCategoryColour,
   });
 
   final String id;
   final BedLabel label;
   final String categoryId;
   final String categoryName;
+
+  /// The category's colour key (v2 PR 4) for the room card's stripe.
+  final String categoryColour;
 
   /// The category's current price, whole KES.
   final int pricePerNight;
@@ -156,6 +161,74 @@ String formatOverdue(Duration d) {
   final days = d.inDays;
   final h = d.inHours % 24;
   return '$days ${days == 1 ? 'day' : 'days'}${h == 0 ? '' : ' $h h'}';
+}
+
+// ── The v2 board's words (PR 5, Figma "Desk · Bed board") ─────────────
+
+/// The guest's surname as the tiles show it: the last word of the name.
+String shortGuestName(String fullName) {
+  final words = fullName.trim().split(RegExp(r'\s+'));
+  return words.last;
+}
+
+/// "45 min", "2 h", "1 d": how long past, in its largest whole unit.
+String compactOverdue(Duration d) {
+  if (d.inMinutes < 60) return '${d.inMinutes < 0 ? 0 : d.inMinutes} min';
+  if (d.inHours < 24) return '${d.inHours} h';
+  return '${d.inDays} d';
+}
+
+/// A tile's one line: "Ready"; "Otieno · Thu" (paid until Thursday) or
+/// "Kamau · 11:30" (due out today); "Kamau · 2 h" (past checkout);
+/// "To clean" or "To clean · Mary" (who has it).
+String tileLine(BoardBed bed, BoardStatus status, {required DateTime now}) {
+  final stay = bed.stay;
+  return switch (status) {
+    BoardStatus.ready => 'Ready',
+    BoardStatus.toClean =>
+      bed.cleaner == null ? 'To clean' : 'To clean · ${bed.cleaner}',
+    BoardStatus.occupied =>
+      '${shortGuestName(stay!.guestName)} · '
+          '${_sameNairobiDay(stay.paidUntil, now) ? formatTime(stay.paidUntil) : formatWeekday(stay.paidUntil)}',
+    BoardStatus.overstay =>
+      '${shortGuestName(stay!.guestName)} · '
+          '${compactOverdue(now.difference(stay.paidUntil))}',
+  };
+}
+
+bool _sameNairobiDay(DateTime a, DateTime b) =>
+    _nairobiDate(a) == _nairobiDate(b);
+
+/// The overstay card's line: "104 B · Kamau".
+String overstayWho(OverstayAlert a) =>
+    '${a.roomNumber} ${a.label.code} · ${shortGuestName(a.guestName)}';
+
+/// The overstay card's second line: "2 h past 10:00" (since checkout).
+String overstayPast(OverstayAlert a, {required DateTime now}) =>
+    '${compactOverdue(now.difference(a.paidUntil))} past '
+    '${formatTime(a.paidUntil)}';
+
+/// A room's categories for its card, each once in bed order: (name,
+/// colour key). One for most rooms; two when its beds differ.
+List<(String, String)> roomCategories(BoardRoom room) {
+  final seen = <String>{};
+  return [
+    for (final b in room.beds)
+      if (seen.add(b.categoryId)) (b.categoryName, b.categoryColour),
+  ];
+}
+
+/// What the "Guest or receipt" box looks up as a receipt (docs/ui-
+/// redesign-brief.md, "Bed-board search"): a receipt number with its
+/// letters (R-418) or five or more digits; never a name, and digits alone
+/// shorter than that are a room. Null: no receipt search.
+String? receiptSearchTerm(String query) {
+  final q = query.trim();
+  if (q.isEmpty) return null;
+  final compact = q.replaceAll(RegExp(r'[\s-]'), '');
+  final withPrefix = RegExp(r'^[A-Za-z]+\d+$').hasMatch(compact);
+  final digits = RegExp(r'^\+?\d{5,}$').hasMatch(compact);
+  return withPrefix || digits ? q : null;
 }
 
 /// The board after filtering, with counts for the chips and the overstays

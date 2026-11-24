@@ -19,6 +19,12 @@ HousekeepingRepository housekeepingRepository(Ref ref) =>
 Stream<BedCleaning> bedCleaning(Ref ref, String bedId) =>
     ref.watch(housekeepingRepositoryProvider).watchBed(bedId);
 
+/// When a bed was last cleaned and by whom, for the check-in header (v2 PR
+/// 5); null if never.
+@riverpod
+Future<({DateTime at, String by})?> lastCleaned(Ref ref, String bedId) =>
+    ref.watch(housekeepingRepositoryProvider).lastCleaned(bedId);
+
 /// Active housekeepers, for the dropdown.
 @riverpod
 Stream<List<HousekeeperOption>> activeHousekeepers(Ref ref) =>

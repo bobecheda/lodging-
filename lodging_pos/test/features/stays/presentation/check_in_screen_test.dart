@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lodging_pos/app/widgets/bed_status_tile.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/router.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
@@ -134,11 +135,10 @@ void main() {
     await tapKey(tester, 'checkIn.done.board');
     expect(locationOf(app), Routes.home);
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('board.bed.7A')),
-        matching: find.text('In use'),
-      ),
-      findsOneWidget,
+      tester
+          .widget<BedStatusTile>(find.byKey(const ValueKey('board.bed.7A')))
+          .status,
+      BedTileStatus.occupied,
     );
   });
 

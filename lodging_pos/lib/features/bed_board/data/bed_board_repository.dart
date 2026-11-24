@@ -67,6 +67,7 @@ class BedBoardRepository {
                 label: BedLabel.parse(bed.label),
                 categoryId: category.id,
                 categoryName: category.name,
+                categoryColour: category.colour,
                 pricePerNight: category.pricePerNight,
                 cleanliness: Cleanliness.parse(bed.cleanliness),
                 stay: stay == null || guest == null

@@ -15,15 +15,20 @@ import 'receipts_providers.dart';
 /// (never by name, as for guests), view it and print or save it again.
 /// After the first print or save, it says COPY.
 class ReceiptsScreen extends ConsumerStatefulWidget {
-  const ReceiptsScreen({super.key});
+  const ReceiptsScreen({super.key, this.query, this.receiptId});
+
+  /// `/receipts?q=…&receipt=…`: what to search for and which receipt to
+  /// show, e.g. from the bed board's search (v2 PR 5).
+  final String? query;
+  final String? receiptId;
 
   @override
   ConsumerState<ReceiptsScreen> createState() => _ReceiptsScreenState();
 }
 
 class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
-  final _search = TextEditingController();
-  String? _selected;
+  late final _search = TextEditingController(text: widget.query ?? '');
+  late String? _selected = widget.receiptId;
 
   @override
   void dispose() {

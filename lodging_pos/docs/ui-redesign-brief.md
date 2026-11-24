@@ -74,6 +74,38 @@ Temporary "More ▾" (PR 3 → removed in PR 8): for the supervisor and the owne
 
 Reduced motion fallback: if Windows "Show animations" doesn't reach Flutter, add a "Reduce motion" switch in Prices & settings (supervisor only), stored per desk PC, applying app-wide.
 
+## Bed panel (PR 5) — Figma "Bed panel · states" (node 42:1947) and "Desk · Bed panel open (overstay)" (node 42:2213)
+- A slide-over from the right, 440 px wide, full height, over the ink 35% scrim; soft shadow, no radius on the screen edge. Opens 220 ms ease-out; closes on X, scrim tap or Esc (focus returns to the bed tile). Stays a dialog (showBedPanel); /home?stay= still reopens it.
+- Head: bed number (Page title 24/600), category + price under it in the category's label colour (e.g. "Comfort · KES 600 a night"), status pill (Ready marine-tint · Occupied marine-tint · Overstay red/white · To clean butter), Close X 44 px.
+- Body: only what the state needs. Actions sit in a footer bar above a 1 px line, full-width buttons, primary first.
+- Guest row: neutral avatar circle with a person icon, name (Body medium), phone masked "0722 ••• 310" for everyone at the desk.
+
+| State | Body | Actions |
+|---|---|---|
+| Ready | No panel (decided 24 Nov): tapping a Ready tile goes straight to check-in, as today. "Cleaned 08:15 · Mary" shows in the check-in bed row instead | — |
+| Occupied | Guest; Checked in; Paid until; Nights "6 × KES 500"; Receipts (number · method, amount; tap opens the receipt) | Extend stay (primary) + Check out (secondary) side by side; "Void this stay" as a red-text link below — shown only with voidRecords |
+| Check out — early | Guest; Nights paid; Nights used "2 (tonight counts)"; grey box: "Refund · 4 × KES 500", KES 2,000 (Money hero), "Needs approval before it is paid" | "Check out and request KES 2,000" (primary, amount in the label) + Back |
+| Check out — on time / late | As today's flow, restyled (late: "Charge 1 night and check out") | — |
+| Overstay | Red-tint banner "2 h past 10:00 · paid to Wed 11 Nov"; guest; "Extend": nights stepper + "Out Thu 12 Nov, 10:00"; Price "KES 600 (check-in price)"; Cash / M-Pesa with NONE selected; confirm line (grey until a method is chosen, then e.g. "Cash · KES 600 · out Thu 10:00"); M-Pesa code field appears only for M-Pesa | "Extend and print receipt" (primary, disabled until a method is chosen) + "Charge 1 night and check out" |
+| Occupied → Extend | Same Extend block as Overstay, without the banner | Same |
+| To clean | Butter-tint banner "Checked out today 09:40"; Housekeeper select | Assign cleaning (primary) + Mark clean (secondary). Once assigned: banner adds "Assigned to Mary · 09:45" and Mark clean becomes primary |
+| Void stay (supervisor/owner) | Red-tint banner "Voids the stay and its payments"; guest + "Checked in by Akinyi · Mon 9 Nov"; each payment "R-000412 · Cash  − KES 3,000"; "Bed after void · To clean"; Reason (required) | Void stay (Danger) + Cancel. Refused (with the reason shown) if the user checked the guest in, or the stay has a refund |
+- Receptionists never see totals beyond the stay's own payments (blind rule unaffected: these are single-stay figures they already print).
+
+## Check-in (PR 6) — Figma "Desk · Check-in (full)" (node 43:2187) and "Check-in · variants" (node 44:2248)
+Form pattern; left card (Bed, Guest, Nights, Payment) + right summary card (360 px). Fits 1366×768 without scrolling.
+- Bed: the chosen bed as a row with a 1.5 px marine border: letter box, "104 A", meta line in the category label colour "Comfort · KES 600 a night · cleaned 08:15 · Mary", and "Change" (marine text button, 44 px tall).
+  - Change opens the bed chooser: a menu card listing only Ready + clean beds (BR-5), grouped by category (label in category colour + price), each bed an 80×44 chip; the chosen one solid marine.
+  - Whole room switch under the bed row, for 2-bed rooms only. Off by default. Disabled with the reason when the other bed isn't Ready ("· 104 B has a guest"). On: the bed row reads "107 A + 107 B · KES 500 a night each"; the summary says "2 beds × 2 nights × KES 500 · one receipt" (BR-4: two stays, one payment).
+- Guest: ONE search box for phone or ID number, matching as you type (FD-3).
+  - Match: a marine-tint row with a check, name, masked phone, masked ID ("National ID ••••3921"), stay count, and "Not her" to clear.
+  - No match: "No guest with this phone or ID — new guest", then Phone (prefilled from the search) and Full name side by side, then "ID (optional)" as a 3-way choice National ID / Passport / Alien ID (none chosen until tapped) and ID number. If an ID number is typed, a type is required; a duplicate ID is refused with where it is registered.
+  - No placeholders in empty fields except format hints.
+- Nights: stepper + "Out Fri 13 Nov, 10:00".
+- Payment: Cash / M-Pesa, none pre-selected; the chosen one turns solid marine with white text (stronger than other selections, because this is the most common mistake). M-Pesa code field only for M-Pesa.
+- Summary: Total (Money hero), "2 nights × KES 600", confirm line ("M-Pesa · KES 1,200 · out Fri 10:00"; grey "Choose Cash or M-Pesa" until chosen), Save and print receipt (disabled until bed, guest, nights and method are valid), Cancel.
+- No open shift: the page shows a centred card instead of the form — butter clock circle, "Open your shift first", "Check-ins and payments need an open shift.", Open shift (primary, if this user may open one) and Back to beds.
+
 ## Colour system (v2)
 | Colour | Token | Meaning |
 |---|---|---|
@@ -143,6 +175,8 @@ Removed as destinations: Shifts (merged into Cash in PR 7), Voids (action on the
 - PC · Needs your decision (supervisor): split pane queue + detail; Approve refund / Reject. (Built with AD-11.)
 - Phone · Owner Today: Needs you → Collected today (marine hero) → Beds now → Drawer should hold (new: computed on the phone with the desk's drawer rules, tested to match) → This month.
 - Shell · Top bar states; Shell · 768 menu open (supervisor).
+- Bed panel · states (six panels); Desk · Bed panel open (overstay).
+- Desk · Check-in (full); Check-in · variants (bed chooser, whole room on, new guest, no open shift).
 
 ## Bed-board search ("Guest or receipt")
 The board filters in memory as today (room number exact, occupant name part, phone start). Under the box, up to 5 matching receipts (existing receipts query). A name never searches receipts. Digits alone = room; a receipt needs the prefix (R-418) or 5+ digits.
@@ -163,5 +197,6 @@ The board filters in memory as today (room number exact, occupant name part, pho
 
 ## Next
 1. Build in order, one PR at a time: story/ui-3-shell → ui-4-category-colours → ui-5-bed-board → ui-6-check-in → ui-7-cash → ui-8-receipts-voids → ui-9-owner-phone.
-2. Designs still needed before their PR: bed panel states incl. Void stay (before PR 5), full check-in with bed chooser / whole room / ID search (before PR 6); then refunds, guests, setup screens, owner desk Today, owner phone Money/Beds/Prices/More.
-3. Before go-live (~mid-December): clickable test with the receptionist and supervisor on the v2 build (5 tasks), fixes, regression, tag, then docs/go-live.md.
+2. Designs still needed: refunds, guests, setup screens, owner desk Today, owner phone Money/Beds/Prices/More. (Bed panel and full check-in done 24 Nov.)
+3. Also in flight: story/desk-db-guards (startup checks, high-water mark, build stamp, single-instance lock, location warning, version on screen) — before PR 4.
+4. Before go-live (~mid-December): clickable test with the receptionist and supervisor on the v2 build (5 tasks), fixes, regression, tag, then docs/go-live.md.

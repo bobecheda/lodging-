@@ -34,6 +34,13 @@ abstract final class Routes {
   /// FD-6: find and reprint receipts.
   static const receipts = '/receipts';
 
+  /// Receipts searched for [query] with the receipt [paymentId] open (the
+  /// bed board's "Guest or receipt" results, v2 PR 5).
+  static String receiptFor(String query, String paymentId) => Uri(
+    path: receipts,
+    queryParameters: {'q': query, 'receipt': paymentId},
+  ).toString();
+
   /// FD-11: close your shift; `?shift=<id>` closes someone else's (supervisor).
   static const closeShift = '/close-shift';
 

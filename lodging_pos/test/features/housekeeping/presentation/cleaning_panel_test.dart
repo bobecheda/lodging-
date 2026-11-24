@@ -69,28 +69,28 @@ void main() {
       tester.widget<Text>(find.byKey(ValueKey(key))).data!;
 
   testWidgets('assign, then mark clean: TO CLEAN → READY; the tile line and '
-      'the room badge follow', (tester) async {
+      'the To clean card follow (v2 PR 5)', (tester) async {
     await housekeepers();
     await onBoard(tester);
-    expect(tileText('Needs cleaning · assign'), findsOneWidget);
-    expect(find.byKey(const ValueKey('board.room.7.toClean')), findsOneWidget);
+    expect(tileText('To clean'), findsOneWidget);
+    expect(find.byKey(const ValueKey('board.toClean.7A')), findsOneWidget);
 
     await tapKey(tester, 'board.bed.7A');
-    expect(text(tester, 'cleaning.title'), 'Room 7 · Bed A');
-    expect(find.text('Last checkout Fri 16 Oct, 09:30.'), findsOneWidget);
+    expect(text(tester, 'cleaning.title'), '7 A');
+    expect(find.text('Checked out today 09:30'), findsOneWidget);
     await choose(tester, 'Rose');
     await tapKey(tester, 'cleaning.assign');
     expect(text(tester, 'cleaning.assignee'), 'Rose · assigned 11:40');
 
     await tapKey(tester, 'cleaning.closeIcon');
-    expect(tileText('Needs cleaning · Rose'), findsOneWidget);
+    expect(tileText('To clean · Rose'), findsOneWidget);
 
     await tapKey(tester, 'board.bed.7A');
     await tapKey(tester, 'cleaning.markClean');
     expect(find.byKey(const ValueKey('cleaning.done')), findsOneWidget);
     await tapKey(tester, 'cleaning.close');
     expect(tileText('Ready'), findsOneWidget);
-    expect(find.byKey(const ValueKey('board.room.7.toClean')), findsNothing);
+    expect(find.byKey(const ValueKey('board.toClean.7A')), findsNothing);
   });
 
   testWidgets('already cleaned: one step', (tester) async {
@@ -140,7 +140,7 @@ void main() {
     await rooms.reactivateBed(supervisor, r7.beds.first.id);
 
     await onBoard(tester);
-    expect(tileText('Needs cleaning · assign'), findsOneWidget);
+    expect(tileText('To clean'), findsOneWidget);
     final task = await env.db.select(env.db.housekeepingTasks).getSingle();
     expect(task.cancelledAt, isNotNull);
     expect(task.completedAt, isNull);

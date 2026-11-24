@@ -12,12 +12,15 @@ import '../../../app/widgets/segmented_choice.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/auth/user_account.dart';
+import '../../../core/clock/clock.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../../bed_board/presentation/bed_board_providers.dart';
 import '../../guests/data/guests_repository.dart';
 import '../../guests/domain/guest.dart';
 import '../../guests/presentation/widgets/guest_finder_card.dart';
+import '../../housekeeping/domain/housekeeping.dart';
+import '../../housekeeping/presentation/housekeeping_providers.dart';
 import '../../payments/domain/payment_rules.dart';
 import '../../receipts/presentation/receipt_view.dart';
 import '../../setup/domain/rooms.dart';
@@ -455,6 +458,28 @@ class _StepPill extends StatelessWidget {
   }
 }
 
+/// "Cleaned 08:15 · Mary": when the chosen bed was last cleaned and by whom
+/// (v2 PR 5; a Ready tile goes straight to check-in, so it shows here).
+/// Nothing if it was never cleaned through the desk.
+class _CleanedLine extends ConsumerWidget {
+  const _CleanedLine(this.bedId);
+
+  final String bedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    final cleaned = ref.watch(lastCleanedProvider(bedId)).value;
+    if (cleaned == null) return const SizedBox.shrink();
+    return Text(
+      cleanedLine(cleaned.at, cleaned.by, now: ref.watch(clockProvider).now()),
+      key: const ValueKey('checkIn.cleaned'),
+      style: t.meta.copyWith(color: c.muted),
+    );
+  }
+}
+
 /// "BED": the chosen bed and Bed B for the whole room, or the Ready beds
 /// to choose from.
 class _BedCard extends StatelessWidget {
@@ -572,6 +597,7 @@ class _BedCard extends StatelessWidget {
                     'night',
                     style: t.secondary.copyWith(color: c.muted),
                   ),
+                  _CleanedLine(bed.id),
                 ],
               ),
             ),

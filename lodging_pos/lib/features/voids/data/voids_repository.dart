@@ -87,6 +87,21 @@ class VoidsRepository {
     );
   }
 
+  /// Stay [stayId] as the bed panel's Void stay shows it (v2 PR 5): the
+  /// plan (its payments, the other bed's stay when one payment paid both)
+  /// and who checked it in. The rules are the Voids screen's ([voidStay]).
+  Future<({VoidPlan plan, String checkedInBy})> stayVoid(String stayId) async {
+    final facts = await _facts(stayIds: {stayId});
+    final by = facts.stays[stayId]!.checkedInBy;
+    final user = await (_db.select(
+      _db.users,
+    )..where((u) => u.id.equals(by))).getSingleOrNull();
+    return (
+      plan: stayVoidPlan(facts, stayId),
+      checkedInBy: user?.fullName ?? 'someone',
+    );
+  }
+
   /// Voids [paymentId] alone. Throws [NotPermitted] or [VoidRuleViolation].
   Future<void> voidPayment(UserAccount user, String paymentId, String reason) =>
       _write(
