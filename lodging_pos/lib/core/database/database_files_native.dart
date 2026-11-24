@@ -195,6 +195,10 @@ Future<LiveFile> readLiveFile(String path) async {
           : DeskStamp(version: meta(DeskMetaKeys.version) ?? '?', build: build),
       installPath: meta(DeskMetaKeys.installPath),
       everConnected: meta('desk_email') != null || meta('upload.done') != null,
+      ownerEmail: meta('owner_email'),
+      deviceId: tables.contains('device')
+          ? scalar('SELECT device_id FROM device LIMIT 1') as String?
+          : null,
       nextReceiptNumber: next is int ? next : 1,
     );
   } finally {

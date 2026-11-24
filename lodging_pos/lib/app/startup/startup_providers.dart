@@ -62,6 +62,7 @@ RestoreAcceptance restoreAcceptance(Ref ref) {
         await ref.read(deskSecretStoreProvider).read() != null,
     writeMark: writeMarkToDataFolder,
     clock: ref.watch(clockProvider),
+    cloud: ref.watch(cloudProvider),
   );
 }
 

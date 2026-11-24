@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../database/desk_startup.dart' show receiptSerial;
 import 'cloud.dart';
 
 /// [Cloud] on Supabase: two clients on the same project, one signed in as
@@ -216,6 +217,45 @@ class SupabaseCloud implements Cloud {
 
   @override
   bool get ownerSignedIn => _owner.auth.currentSession != null;
+
+  @override
+  Future<DeskInCloud> deskInCloud(String deviceId) => _asOwner((c) async {
+    if (c.auth.currentUser?.appMetadata['role'] != 'owner') {
+      throw const CloudRefused('This account isn’t the owner’s.');
+    }
+    Future<Object?> newest(
+      String table,
+      String column, {
+      required String orderBy,
+    }) async {
+      final rows = await c
+          .from(table)
+          .select(column)
+          .eq('device_id', deviceId)
+          .not(column, 'is', null)
+          .order(orderBy, ascending: false)
+          .limit(1);
+      return rows.isEmpty ? null : rows.first[column];
+    }
+
+    final audit = await newest(
+      'audit_log',
+      'created_at',
+      orderBy: 'created_at',
+    );
+    final receipts =
+        [
+            await newest('payments', 'receipt_number', orderBy: 'created_at'),
+            await newest('refunds', 'receipt_number', orderBy: 'paid_at'),
+          ].whereType<String>().toList()
+          ..sort((a, b) => receiptSerial(b).compareTo(receiptSerial(a)));
+    return DeskInCloud(
+      lastAuditAt: audit == null
+          ? null
+          : DateTime.parse(audit as String).toUtc(),
+      lastReceipt: receipts.firstOrNull,
+    );
+  });
 
   @override
   Future<DateTime> recordPasswordChange({

@@ -98,6 +98,8 @@ void main() {
       expect(live.installPath, r'C:\UB40\Desk');
       expect(live.everConnected, isFalse);
       expect(live.nextReceiptNumber, 1);
+      expect(live.deviceId, isNotNull);
+      expect(live.ownerEmail, isNull); // never connected
       expect(File(at(databaseFileName)).readAsBytesSync(), before);
     });
 

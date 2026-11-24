@@ -220,6 +220,16 @@ final class CloudSignInRefused implements Exception {
   String toString() => message;
 }
 
+/// What the cloud holds from one desk (story/restore-cloud-check): its
+/// newest audit entry and its highest receipt number, payments and refund
+/// payouts alike. Null where it has none.
+final class DeskInCloud {
+  const DeskInCloud({this.lastAuditAt, this.lastReceipt});
+
+  final DateTime? lastAuditAt;
+  final String? lastReceipt;
+}
+
 abstract interface class Cloud {
   /// connect-desk (connect or reconnect). Throws [CloudOffline] or
   /// [CloudRefused] (with the owner-facing reason).
@@ -255,6 +265,12 @@ abstract interface class Cloud {
   Future<void> signInOwner(String email, String password);
   bool get ownerSignedIn;
   Future<void> signOutOwner();
+
+  /// What the cloud holds from desk [deviceId], read with the owner's
+  /// sign-in (the owner reads every synced table). Refused with
+  /// [CloudRefused] if the signed-in account isn't the owner's, so a
+  /// restore is never judged on rows it couldn't see.
+  Future<DeskInCloud> deskInCloud(String deviceId);
 
   /// Records that the owner's password is changing (owner-app-3), before
   /// it changes; answers the server's time of the change. A retry with

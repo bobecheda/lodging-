@@ -105,7 +105,7 @@ final class RestoreAcceptanceProvider
   }
 }
 
-String _$restoreAcceptanceHash() => r'0b4cdbb0432b137a72ac4aba95fca32d9bd8d478';
+String _$restoreAcceptanceHash() => r'52f5705a1f19afa4b24eaae8392a87f1a31cfe64';
 
 /// The unusual start still to be accepted, or null (story/desk-db-guards).
 
