@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/database/database_provider.dart';
 import '../data/voids_repository.dart';
+import '../domain/void_rules.dart';
 
 part 'voids_providers.g.dart';
 
@@ -11,6 +12,13 @@ VoidsRepository voidsRepository(Ref ref) => VoidsRepository(
   ref.watch(appDatabaseProvider),
   ref.watch(auditWriterProvider),
 );
+
+/// A stay for the bed panel's Void stay (v2 PR 5).
+@riverpod
+Future<({VoidPlan plan, String checkedInBy})> stayVoid(
+  Ref ref,
+  String stayId,
+) => ref.watch(voidsRepositoryProvider).stayVoid(stayId);
 
 /// One payment's receipt as the Voids screen shows it, watched: a void
 /// shows at once.

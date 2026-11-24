@@ -18,7 +18,7 @@ matching section of design.md is marked superseded.
 | 5 | `story/ui-5-bed-board` | Now strip, chips, room cards, v2 tiles, search |
 | 6 | `story/ui-6-check-in` | Check-in restyle, summary card, confirm line |
 | 7 | `story/ui-7-cash` | Cash (takes over Shifts), close shift |
-| 8 | `story/ui-8-receipts-voids` | Receipts, void on receipt and bed panel, Voids removed |
+| 8 | `story/ui-8-receipts-voids` | Receipts, void on receipt (the bed panel's Void stay came with PR 5), Voids removed |
 | 9 | `story/ui-9-owner-phone` | Phone Today (with Drawer should hold), Money, Beds, Prices, More |
 
 PR 5 waits for the owner to confirm the quiet occupied tile and the
@@ -266,7 +266,7 @@ The full sentence ("Online · synced 2 min ago") stays in the drawer and the Clo
 
 **Removed as destinations:**
 - Shifts, merged into Cash (PR 7). Cash takes its open shifts with Close, its needs-review rows and its voided-after-close marks.
-- Voids, now an action on the receipt view and the bed panel (PR 8).
+- Voids, now actions: Void stay in the bed panel (PR 5, the supervisor) and Void on the receipt view (PR 8). The Voids screen goes in PR 8.
 - The phone's Reports placeholder, hidden until AD-9 (PR 3).
 
 Until AD-11, Cash's "Review" opens the existing approve/reject box.
@@ -278,8 +278,8 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
   - Occupied: marine-tint with a field border (quiet).
   - Overstay: red.
   - To clean: butter with a dashed butter border.
-  - Every tile keeps its status label and the guest and paid-until text.
-- **Room card** (PR 5): white, with a 4 px category stripe along the top, the room number, and the category label in its text colour.
+  - As built: one line, 44 px tall (a hit target): "Ready"; the guest's surname and the paid-until weekday ("Otieno · Thu"), or the time when it's today ("Kamau · 11:30"); "Kamau · 2 h" past checkout; "To clean", or "To clean · Mary" once someone has it. Screen readers hear the full name and paid-until.
+- **Room card** (PR 5): white, with a 4 px category stripe along the top, the room number, and the category label in its text colour. A room whose beds are in two categories gets a stripe in two halves and both labels.
 - **Now strip** (PR 5):
   - Overstay and To clean alert cards, each with a 32 px tinted icon circle (red or butter).
   - "Due out" is dropped.
@@ -301,8 +301,18 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 
 **Bed board:**
 - Date and time; the "Guest or receipt" search; New check-in.
-- Now strip, filter chips with counts, the room grid.
-- Shortcuts: N for new check-in, / for search, Esc to close.
+- Now strip, filter chips with counts (All, Ready, Occupied, Overstay, To clean) and a last chip "Category ▾" whose menu narrows the board to one category, the room grid (6 columns at 1366, 4 at 1024, 3 at 768).
+- The Now strip's cards sit side by side when there's room, stacked below about 900 px; the overstay card stacks its guest above its buttons when it's narrow. A To clean chip opens that bed's cleaning panel.
+- A Ready tile goes straight to check-in (no Ready panel); the check-in's bed shows "Cleaned 08:15 · Mary" when it was cleaned through the desk.
+- Shortcuts: N for new check-in, / for search (not while a field has the cursor), Esc to close.
+
+**Bed panel (PR 5, Figma "Bed panel · states"):**
+- The 440 px side panel with a head (bed "106 A", category and price in the category's colour, status badge, Close), a scrolling body and the actions at the foot.
+- Occupied: the guest (masked phone), checked in, paid until, nights, receipts (number, method, amount); Extend stay and Check out; "Void this stay" for the supervisor (`voidRecords`).
+- Check out: early (nights paid and used, the refund card, "Check out and request KES …") or on time; Back.
+- Extend: nights with the new checkout, the check-in price, Cash or M-Pesa, a confirm line, "Extend and print receipt". During an overstay the panel opens here with the red banner ("2 h past 10:00 · paid to Wed 11 Nov"), and the second button charges the nights started and checks out with the same payment.
+- To clean (the cleaning panel): the butter banner with the last checkout, the housekeeper, Assign cleaning and Mark clean (already cleaned: both at once); once assigned, Mark clean and Reassign.
+- Void stay: the Story A rules as built (`void_rules.dart`, `VoidsRepository.voidStay`): the receipts it voids, the other bed's stay when one payment paid both, the bed after ("To clean"), a reason; the rule that stops it (e.g. you checked the guest in yourself) shows instead of the button.
 - **Search rule:**
   - The board filters in memory as today: room number exact, part of the occupant's name, the start of their phone.
   - Under the box, up to 5 matching receipts.
@@ -326,7 +336,6 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 - Then Money, Beds, Prices and More, restyled.
 
 Not designed yet:
-- the bed panel (including Void stay);
 - the full check-in;
 - refunds, guests, setup screens and the owner's desk Today;
 - phone Money, Beds, Prices and More;

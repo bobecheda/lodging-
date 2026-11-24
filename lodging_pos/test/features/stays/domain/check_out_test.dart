@@ -38,7 +38,7 @@ void main() {
       final early = terms as EarlyCheckout;
       expect((early.nightsPaid, early.nightsUsed), (10, 7));
       expect((early.refund.nights, early.refund.amount), (3, 2100));
-      expect(early.button, 'Check out and request refund of KES 2,100');
+      expect(early.button, 'Check out and request KES 2,100');
     });
 
     test('on time: a 1-night stay, or within the paid time and grace', () {

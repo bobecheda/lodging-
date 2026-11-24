@@ -89,7 +89,7 @@ void main() {
       expect(q.newPaidUntil, oct(18, 10));
       expect((q.charge.pricePerNight, q.total), (700, 1400));
       expect(q.charge.categoryName, 'Deluxe');
-      expect(q.button, 'Extend and issue receipt');
+      expect(q.button, 'Extend and print receipt');
       expect(q.priceLine, '2 × KES 700 (check-in price)');
       expect(q.newCheckoutText, 'Sun 18 Oct, 10:00');
     });

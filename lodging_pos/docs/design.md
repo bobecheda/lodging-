@@ -57,6 +57,8 @@ Light theme only for the MVP. Build colours as a `ThemeExtension` (`LodgingColor
 
 ## Bed status styles
 
+> **Superseded (v2 PR 5)** by design-system.md, "Bed board": one-line 44 px tiles ("Otieno · Thu", "Kamau · 2 h", "To clean"), Occupied quiet marine-tint, the Now strip instead of the overstay bar, category stripes on the room cards, and the v2 bed panel (states in Figma "Bed panel · states"). The table below is the v1 look.
+
 Status is never shown by colour alone: each has a label and a distinct border style.
 
 | Status | Background | Border | Text | Label |
