@@ -10,7 +10,6 @@ import 'package:lodging_pos/core/clock/clock.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/schema_check.dart';
 import 'package:lodging_pos/core/database/seed.dart';
-import 'package:lodging_pos/core/database/test_database_file_native.dart';
 
 import '../../helpers/fixtures.dart';
 
@@ -180,6 +179,21 @@ void main() {
     expect(find.text('Changed: table bed_categories'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
+    // Nothing happens until RESET is typed (story/desk-db-guards).
+    await tapKey(tester, 'oldDatabase.reset');
+    expect(resets, 0);
+    await tester.enterText(
+      find.byKey(const ValueKey('oldDatabase.confirm')),
+      'reset',
+    );
+    await tester.pump();
+    await tapKey(tester, 'oldDatabase.reset');
+    expect(resets, 0, reason: 'it must be typed exactly');
+    await tester.enterText(
+      find.byKey(const ValueKey('oldDatabase.confirm')),
+      'RESET',
+    );
+    await tester.pump();
     await tapKey(tester, 'oldDatabase.reset');
     expect(resets, 1);
     expect(locationOf(app), Routes.setup);
@@ -193,20 +207,6 @@ void main() {
     expect(locationOf(app), Routes.setup);
     expect(find.byType(OldDatabaseScreen), findsNothing);
     expect(find.byKey(const ValueKey('oldDatabase.reset')), findsNothing);
-  });
-
-  test('reset moves the file and its side files aside, deleting nothing', () {
-    final dir = Directory.systemTemp.createTempSync('lodging_reset');
-    addTearDown(() => dir.deleteSync(recursive: true));
-    final path = '${dir.path}${Platform.pathSeparator}lodging_pos.sqlite';
-    File(path).writeAsStringSync('old');
-    File('$path-wal').writeAsStringSync('wal');
-
-    final backup = moveDatabaseAside(path, DateTime.utc(2026, 10, 16, 9, 5, 7));
-    expect(backup, '$path.bak-20261016-090507');
-    expect(File(path).existsSync(), isFalse);
-    expect(File(backup).readAsStringSync(), 'old');
-    expect(File('$backup-wal').readAsStringSync(), 'wal');
   });
 
   testWidgets('a release build explains but never offers a reset', (

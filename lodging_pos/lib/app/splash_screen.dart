@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/schema_check.dart';
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/shifts/presentation/shift_providers.dart';
+import 'startup/startup_providers.dart';
 import 'theme/theme.dart';
 import 'widgets/notes.dart';
 
@@ -15,6 +16,7 @@ class SplashScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final error =
         ref.watch(schemaDriftProvider).error ??
+        ref.watch(startupTasksProvider).error ??
         ref.watch(setupStatusProvider).error ??
         ref.watch(currentShiftProvider).error;
     return Scaffold(

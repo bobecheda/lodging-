@@ -104,16 +104,20 @@ final class CanResetDatabaseProvider
 
 String _$canResetDatabaseHash() => r'6ac8871e68ec400b9c679bdc1ec84c8060a18dbc';
 
-/// Closes the database, renames its file to a timestamped `.bak` next to it
-/// (kept, not deleted) and reopens a fresh one. Returns the backup's path.
-/// Overridden in tests, which use in-memory databases.
+/// Closes the database, copies and checks it, then moves it, its side
+/// files and the mark into `reset-YYYYMMDD-HHMMSS` next to it (kept, never
+/// deleted), and reopens a fresh one. Returns the reset folder. The screen
+/// asks for `RESET` to be typed first. Overridden in tests, which use
+/// in-memory databases.
 
 @ProviderFor(resetTestDatabase)
 final resetTestDatabaseProvider = ResetTestDatabaseProvider._();
 
-/// Closes the database, renames its file to a timestamped `.bak` next to it
-/// (kept, not deleted) and reopens a fresh one. Returns the backup's path.
-/// Overridden in tests, which use in-memory databases.
+/// Closes the database, copies and checks it, then moves it, its side
+/// files and the mark into `reset-YYYYMMDD-HHMMSS` next to it (kept, never
+/// deleted), and reopens a fresh one. Returns the reset folder. The screen
+/// asks for `RESET` to be typed first. Overridden in tests, which use
+/// in-memory databases.
 
 final class ResetTestDatabaseProvider
     extends
@@ -123,9 +127,11 @@ final class ResetTestDatabaseProvider
           Future<String> Function()
         >
     with $Provider<Future<String> Function()> {
-  /// Closes the database, renames its file to a timestamped `.bak` next to it
-  /// (kept, not deleted) and reopens a fresh one. Returns the backup's path.
-  /// Overridden in tests, which use in-memory databases.
+  /// Closes the database, copies and checks it, then moves it, its side
+  /// files and the mark into `reset-YYYYMMDD-HHMMSS` next to it (kept, never
+  /// deleted), and reopens a fresh one. Returns the reset folder. The screen
+  /// asks for `RESET` to be typed first. Overridden in tests, which use
+  /// in-memory databases.
   ResetTestDatabaseProvider._()
     : super(
         from: null,
@@ -160,4 +166,4 @@ final class ResetTestDatabaseProvider
   }
 }
 
-String _$resetTestDatabaseHash() => r'c33c07b5a673ae98c8ded1a7400a98e9d340d84d';
+String _$resetTestDatabaseHash() => r'3f9d582352255beb32c8fceddfc0caf535b2bd3e';

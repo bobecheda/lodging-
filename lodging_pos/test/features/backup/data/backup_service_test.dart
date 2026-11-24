@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lodging_pos/core/app_version.dart';
 import 'package:lodging_pos/core/audit/audit_writer.dart';
 import 'package:lodging_pos/core/auth/permissions.dart';
 import 'package:lodging_pos/core/auth/user_account.dart';
 import 'package:lodging_pos/core/clock/clock.dart';
 import 'package:lodging_pos/core/clock/nairobi.dart';
 import 'package:lodging_pos/core/database/database.dart';
+import 'package:lodging_pos/core/database/desk_startup.dart';
 import 'package:lodging_pos/core/database/schema_check.dart';
 import 'package:lodging_pos/core/database/seed.dart';
 import 'package:lodging_pos/core/settings/settings_repository.dart';
@@ -72,6 +74,52 @@ void main() {
   /// Opens a backup the way a restore would: as the app's database.
   AppDatabase openCopy(String path) =>
       AppDatabase(NativeDatabase(File(path)), clock: env.clock);
+
+  test('after the copy passes its check, the high-water mark records what '
+      'it holds (story/desk-db-guards)', () async {
+    await letABed();
+    final marks = <HighWaterMark>[];
+    final service = BackupService(
+      env.db,
+      env.audit,
+      env.clock,
+      SettingsRepository(env.db),
+      folder: folder,
+      writeMark: (m) async => marks.add(m),
+    );
+    final done = await service.backUp(reason: BackupReason.daily);
+    final mark = marks.single;
+    expect(mark.backupName, done.file.name);
+    expect(mark.takenAt, env.clock.now());
+    expect(mark.build, AppBuild.current.stamp);
+    final copy = openCopy(inFolder(done.file.name));
+    addTearDown(copy.close);
+    expect(mark.figures.schemaVersion, env.db.schemaVersion);
+    expect(mark.figures.stays, 1);
+    expect(mark.figures.payments, 1);
+    expect(
+      mark.figures.auditEntries,
+      (await copy.select(copy.auditLog).get()).length,
+    );
+    expect(
+      mark.figures.lastReceipt,
+      (await copy.select(copy.payments).getSingle()).receiptNumber,
+    );
+    expect(mark.figures.lastAuditAt, isNotNull);
+  });
+
+  test('a mark that can’t be written never fails the backup', () async {
+    final service = BackupService(
+      env.db,
+      env.audit,
+      env.clock,
+      SettingsRepository(env.db),
+      folder: folder,
+      writeMark: (_) async => throw const FileSystemException('locked'),
+    );
+    await service.backUp(reason: BackupReason.daily);
+    expect(await env.auditFor('backup.create'), hasLength(1));
+  });
 
   test('a checked copy named for Nairobi time, audited, that restores to '
       'the same data and schema', () async {

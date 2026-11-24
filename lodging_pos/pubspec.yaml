@@ -39,6 +39,11 @@ dependencies:
   go_router: ^18.0.2
   drift: ^2.35.2
   drift_flutter: ^0.3.1
+  # Startup checks (story/desk-db-guards): reading the live file read-only
+  # before drift opens it, and Windows' GetDriveTypeW. Both were already
+  # in the lockfile through drift and path_provider.
+  sqlite3: ^3.5.2
+  ffi: ^2.2.0
   bcrypt: ^1.2.0
   uuid: ^4.6.0
   pdf: ^3.13.1

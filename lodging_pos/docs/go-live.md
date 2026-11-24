@@ -142,11 +142,14 @@ flutter build apk --release -t lib/main_owner.dart --dart-define-from-file=secre
 - [ ] Copy `build\app\outputs\flutter-apk\app-release.apk` somewhere safe, renamed `lodging-owner-1.1.apk`.
 
 ```bash
-flutter build windows --release --dart-define-from-file=secrets.prod.json
+flutter build windows --release --dart-define-from-file=secrets.prod.json --dart-define=APP_COMMIT=$(git rev-parse --short HEAD)
 ```
 
-- [ ] Copy the whole `build\windows\x64\runner\Release` folder to a USB drive as `UB40-Desk-1.1`, and `vc_redist.x64.exe` (Microsoft) next to it.
-- [ ] Quick check on this PC before leaving: run `Release\lodging_pos.exe` from the USB copy; it should open on "Create the owner's account" **only if this PC has no desk data** for that Windows user; otherwise just close it. Don't connect it to production.
+- [ ] The build is from the tag (`git describe --tags` names it) and `APP_COMMIT` is the tag's commit: the sign-in footer will show it.
+- [ ] Copy the whole `build\windows\x64\runner\Release` folder to a USB drive as `UB40-Desk-1.1`, and `vc_redist.x64.exe` (Microsoft) next to it. **The USB drive only carries the build to UB40;** nobody runs the desk from it.
+- [ ] Don't run the USB copy on this PC: it would open this PC's own desk data (story/desk-db-guards warns about a removable drive; this is how the 23 Nov 2026 incident started). Check the build on this PC from `build\windows\x64\runner\Release` instead, and close it.
+
+**One install, from the tag.** UB40 has exactly one copy of the desk app: `C:\UB40\Desk`, built from the release tag. No desk copies on USB drives, Desktops or old folders at UB40; a desk started from a removable drive or another folder shows a warning only the supervisor or owner can pass (`docs/backup-restore.md`, "Startup checks"), and an older build than the one that last opened the database is refused. Old builds made before story/desk-db-guards (`v1.0-golive`, `v0.9-demo`, the `D:\Release` copy) have none of these guards: delete them wherever they are.
 
 ## 4. On site: the UB40 PC
 
@@ -164,6 +167,8 @@ On the UB40 PC (`docs/release.md`, "First run on a new PC"):
 - [ ] The desk runs under **one** Windows user, always the same (the desk's cloud secret lives in that user's Credential Manager).
 - [ ] VC++ 2015–2022 Redistributable (x64) installed.
 - [ ] `UB40-Desk-1.1` copied whole to `C:\UB40\Desk`; shortcut to `lodging_pos.exe` on the desktop and in Startup if wanted.
+- [ ] **Delete the copy from the USB drive** (and empty the drive's recycle bin), then unplug it. The desk is only ever started from `C:\UB40\Desk`: its first run records that folder as the install folder.
+- [ ] The sign-in footer shows the release's version and the tag's commit (e.g. "Desk 1.1.0 (build 3) · a1b2c3d · database v11"), not "dev".
 - [ ] Printer installed in Windows; a test page prints.
 
 First run:
