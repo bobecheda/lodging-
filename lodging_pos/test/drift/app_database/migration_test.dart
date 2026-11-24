@@ -9,7 +9,7 @@ import 'package:drift_dev/api/migrations_native.dart';
 import 'package:lodging_pos/core/clock/clock.dart';
 import 'package:lodging_pos/core/database/database.dart';
 import 'package:lodging_pos/core/database/schema_check.dart';
-import 'package:lodging_pos/core/database/test_database_file_native.dart';
+import 'package:lodging_pos/core/database/database_files_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/fixtures.dart';

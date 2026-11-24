@@ -113,10 +113,10 @@ On the phone, with the desk connected to the same cloud:
 Build on this PC (not while the app runs from `flutter run` on it; the release folder is separate from the debug one):
 
 ```bash
-flutter build windows --release --dart-define-from-file=secrets.json
+flutter build windows --release --dart-define-from-file=secrets.json --dart-define=APP_COMMIT=$(git rev-parse --short HEAD)
 ```
 
-Copy **the whole folder** `lodging_pos\build\windows\x64\runner\Release` to the other PC, e.g. to `C:\UB40\Desk`, and make a shortcut to `lodging_pos.exe`. It holds `lodging_pos.exe`, `flutter_windows.dll`, `sqlite3.dll`, `pdfium.dll`, the `*_plugin.dll` files, `native_assets.json` and the `data` folder; the app needs all of them, side by side, and nothing else.
+`APP_COMMIT` puts the commit in the version line (sign-in footer, user menu, every refusal; without it the line says "dev"). Copy **the whole folder** `lodging_pos\build\windows\x64\runner\Release` to the other PC, e.g. to `C:\UB40\Desk`, and make a shortcut to `lodging_pos.exe`. Run it only from there: the first run records that folder as the install folder, and the desk warns when it starts from a removable drive or another folder (`docs/backup-restore.md`, "Startup checks"). A USB drive only carries the folder; delete the copy from it afterwards. Never run a desk build from a USB drive on a PC that has desk data: it opens that PC's database (the 23 Nov 2026 incident). It holds `lodging_pos.exe`, `flutter_windows.dll`, `sqlite3.dll`, `pdfium.dll`, the `*_plugin.dll` files, `native_assets.json` and the `data` folder; the app needs all of them, side by side, and nothing else.
 
 ### The VC++ runtime
 
@@ -128,6 +128,8 @@ Per Windows user, in `%APPDATA%\com.lodging\lodging_pos\` (e.g. `C:\Users\Recept
 
 - `lodging_pos.sqlite` (with `-wal` and `-shm` while it runs): the database.
 - `lodging_pos.sqlite.v<N>.bak`: the copy kept before each upgrade (newest two).
+- `lodging_pos.mark.json`: the high-water mark, what the newest backup held; the database may never hold less (`docs/backup-restore.md`).
+- `lodging_pos.lock`: held by the running desk, so a second copy can't open the same data.
 - `backups\`: the daily backups (`docs/backup-restore.md`); a second copy goes to the folder set on the Backups card.
 - `flutter_secure_storage.dat`: the desk's cloud secret, encrypted with a key in **that Windows user's** Credential Manager. Run the desk under one Windows user only (`docs/sync.md`).
 

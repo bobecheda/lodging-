@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/app_version.dart';
 import '../../core/auth/permissions.dart';
 import '../../core/auth/session.dart';
 import '../../core/auth/user_account.dart';

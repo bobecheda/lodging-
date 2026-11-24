@@ -33,6 +33,8 @@ import 'old_database_screen.dart';
 import 'page_transitions.dart';
 import 'shell/desk_shell.dart';
 import 'splash_screen.dart';
+import 'startup/startup_providers.dart';
+import 'startup/unusual_start_screen.dart';
 
 part 'router.g.dart';
 
@@ -43,6 +45,8 @@ GoRouter router(Ref ref) {
   void bump() => refresh.value++;
   ref
     ..listen(schemaDriftProvider, (_, _) => bump())
+    ..listen(startupTasksProvider, (_, _) => bump())
+    ..listen(unusualStartProvider, (_, _) => bump())
     ..listen(setupStatusProvider, (_, _) => bump())
     ..listen(sessionProvider, (_, _) => bump())
     ..listen(currentShiftProvider, (_, _) => bump())
@@ -55,12 +59,18 @@ GoRouter router(Ref ref) {
     return redirectFor(
       state.matchedLocation,
       returnTo: state.uri.queryParameters['then'],
-      // A failed check falls through, so its error shows on the splash.
-      schemaMatches: switch (ref.read(schemaDriftProvider)) {
-        AsyncData(:final value) => value == null,
-        AsyncError() => true,
+      // A failed check falls through, so its error shows on the splash. The
+      // startup tasks (an accepted restore, the build stamp) finish first.
+      schemaMatches: switch ((
+        ref.read(schemaDriftProvider),
+        ref.read(startupTasksProvider),
+      )) {
+        (AsyncData(:final value), _) when value != null => false,
+        (AsyncError(), _) || (_, AsyncError()) => true,
+        (AsyncData(), AsyncData()) => true,
         _ => null,
       },
+      unusualStart: ref.read(unusualStartProvider) != null,
       hasUsers: switch (ref.read(setupStatusProvider).value) {
         null => null,
         final setup => setup != SetupState.fresh,
@@ -89,6 +99,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: Routes.oldDatabase,
         builder: (_, _) => const OldDatabaseScreen(),
+      ),
+      GoRoute(
+        path: Routes.unusualStart,
+        builder: (_, _) => const UnusualStartScreen(),
       ),
       GoRoute(path: Routes.setup, builder: (_, _) => const SetupScreen()),
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),

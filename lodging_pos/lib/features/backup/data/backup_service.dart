@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/app_version.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/database/database.dart';
+import '../../../core/database/desk_startup.dart';
 import '../../../core/settings/setting_defaults.dart';
 import '../../../core/settings/settings_repository.dart';
 import '../domain/backup.dart';
@@ -91,6 +93,7 @@ class BackupService {
     this._clock,
     this._settings, {
     required this.folder,
+    this.writeMark,
   });
 
   final AppDatabase _db;
@@ -100,6 +103,11 @@ class BackupService {
 
   /// The main backup folder.
   final String folder;
+
+  /// Writes the high-water mark (story/desk-db-guards): what the newest
+  /// checked backup holds, which the live file must never fall below. Null
+  /// where there is no data folder (tests unless they set one).
+  final Future<void> Function(HighWaterMark mark)? writeMark;
 
   /// The newest backup in the main folder, or null if there is none.
   Future<BackupFile?> newest() async {
@@ -171,12 +179,13 @@ class BackupService {
     final partial = '$path.partial';
 
     final int size;
+    final DatabaseFigures figures;
     try {
       await createFolder(folder);
       await deleteIfExists(partial);
       // A consistent copy of the open database, WAL included.
       await _db.customStatement('VACUUM INTO ?', [partial]);
-      await _check(partial);
+      figures = await _check(partial);
       await moveReplacing(partial, path);
       size = await fileSize(path);
     } catch (e) {
@@ -190,6 +199,18 @@ class BackupService {
       throw BackupFailed(message);
     }
     await _prune(folder, now);
+    try {
+      await writeMark?.call(
+        HighWaterMark(
+          backupName: name,
+          takenAt: now,
+          figures: figures,
+          build: AppBuild.current.stamp,
+        ),
+      );
+    } catch (_) {
+      // The backup itself is good; the next one writes the mark again.
+    }
 
     final second = await _copyToSecond(path, name, now);
     final file = BackupFile(name: name, takenAt: now, sizeBytes: size);
@@ -214,8 +235,9 @@ class BackupService {
   }
 
   /// The copy at [path] must pass SQLite's integrity check and carry this
-  /// build's schema version before it may replace anything.
-  Future<void> _check(String path) async {
+  /// build's schema version before it may replace anything. Returns what
+  /// it holds, for the high-water mark.
+  Future<DatabaseFigures> _check(String path) async {
     await _db.customStatement('ATTACH DATABASE ? AS backup_check', [path]);
     try {
       final integrity = await _db
@@ -236,6 +258,14 @@ class BackupService {
           'not ${_db.schemaVersion}.',
         );
       }
+      return await figuresOf(
+        (query) async => (await _db.customSelect(query).get())
+            .firstOrNull
+            ?.data
+            .values
+            .first,
+        schema: 'backup_check',
+      );
     } finally {
       await _db.customStatement('DETACH DATABASE backup_check');
     }

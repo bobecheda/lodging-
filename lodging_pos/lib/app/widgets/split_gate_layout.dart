@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_version.dart';
 import '../theme/theme.dart';
 import 'wordmark.dart';
 
@@ -15,6 +16,7 @@ class SplitGateLayout extends ConsumerWidget {
     this.subtitle,
     this.above,
     this.footer,
+    this.showVersion = false,
   });
 
   final String title;
@@ -26,6 +28,10 @@ class SplitGateLayout extends ConsumerWidget {
 
   /// Small centred text under the form.
   final String? footer;
+
+  /// The app version, commit and schema under everything (the sign-in
+  /// screen; story/desk-db-guards), so an old build is obvious.
+  final bool showVersion;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -122,6 +128,18 @@ class SplitGateLayout extends ConsumerWidget {
                               footer!,
                               textAlign: TextAlign.center,
                               style: t.secondary,
+                            ),
+                          ],
+                          if (showVersion) ...[
+                            const SizedBox(height: Space.x24),
+                            Text(
+                              versionLine(
+                                AppBuild.current,
+                                schemaVersion: latestSchemaVersion,
+                              ),
+                              key: const ValueKey('gate.version'),
+                              textAlign: TextAlign.center,
+                              style: t.meta.copyWith(color: c.muted),
                             ),
                           ],
                         ],

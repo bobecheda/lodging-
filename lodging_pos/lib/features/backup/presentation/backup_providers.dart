@@ -8,6 +8,7 @@ import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/database/desk_startup_provider.dart';
 import '../../../core/database/schema_check.dart';
 import '../../../core/settings/settings_repository.dart';
 import '../data/backup_files.dart' as files;
@@ -163,6 +164,7 @@ class Backups extends _$Backups {
       ref.read(clockProvider),
       ref.read(settingsRepositoryProvider),
       folder: folder,
+      writeMark: ref.read(markWriterProvider),
     );
   }
 

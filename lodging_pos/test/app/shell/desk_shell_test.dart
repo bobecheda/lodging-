@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/gate.dart';
 import 'package:lodging_pos/app/theme/theme.dart';
 import 'package:lodging_pos/app/widgets/focus_ring.dart';
+import 'package:lodging_pos/core/app_version.dart';
 import 'package:lodging_pos/core/settings/reduce_motion.dart';
 import 'package:lodging_pos/core/settings/settings_repository.dart';
 
@@ -146,6 +147,7 @@ void main() {
       expect(find.text('More'), findsOneWidget);
       expect(find.byKey(const ValueKey('shell.drawer.lock')), findsOneWidget);
       expect(find.byKey(const ValueKey('shell.drawer.status')), findsOneWidget);
+      expect(find.byKey(const ValueKey('shell.version')), findsOneWidget);
 
       await tapKey(tester, 'nav.${Routes.receipts}');
       expect(find.byKey(const ValueKey('shell.drawer')), findsNothing);
@@ -205,14 +207,26 @@ void main() {
       expect(find.text('Close shift'), findsNothing);
     });
 
-    testWidgets('a supervisor without a shift of their own: nothing to open', (
+    testWidgets('a supervisor without a shift of their own: the menu still '
+        'opens, with only the version line (story/desk-db-guards)', (
       tester,
     ) async {
       await env.createFirstSupervisor(testSetup);
       await pumpAt(tester, deskSize);
       await signInAs(tester, 'supervisor', 'super-pass');
       await tapKey(tester, 'shell.user');
-      expect(find.byKey(const ValueKey('shell.menuCard')), findsNothing);
+      expect(find.byKey(const ValueKey('shell.menuCard')), findsOneWidget);
+      expect(find.text('Close shift'), findsNothing);
+      final version = find.descendant(
+        of: find.byKey(const ValueKey('shell.menuCard')),
+        matching: find.byKey(const ValueKey('shell.version')),
+      );
+      expect(
+        tester.widget<Text>(version).data,
+        versionLine(AppBuild.current, schemaVersion: env.db.schemaVersion),
+      );
+      // Read, not focused: a screen reader finds it; Tab never stops on it.
+      expect(find.bySemanticsLabel(RegExp('^Desk ')), findsOneWidget);
     });
   });
 

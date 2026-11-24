@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/schema_check.dart';
 import 'theme/theme.dart';
 import 'widgets/buttons.dart';
+import 'widgets/labeled_field.dart';
 import 'widgets/notes.dart';
 
 /// The database file doesn't match this build. A debug build offers to reset
@@ -18,8 +19,20 @@ class OldDatabaseScreen extends ConsumerStatefulWidget {
 
 class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
   static const _shown = 8;
+
+  /// The word to type before the reset button works.
+  static const _confirmWord = 'RESET';
+  final _confirm = TextEditingController();
   var _busy = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  bool get _confirmed => _confirm.text.trim() == _confirmWord;
 
   Future<void> _reset() async {
     setState(() {
@@ -73,9 +86,10 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
                       canReset
                           ? 'Its tables differ from what this build creates, '
                                 'so screens would fail. Reset it to start '
-                                'fresh: you will set up the lodging again, and '
-                                'the old file is kept as a backup next to the '
-                                'new one.'
+                                'fresh: you will set up the lodging again. The '
+                                'file is copied and checked first, then moved '
+                                'into a reset folder next to the new one; '
+                                'nothing is deleted.'
                           : 'The app has stopped so that nothing is saved '
                                 'wrongly. Your data is untouched. Do not use '
                                 'this PC for the desk until support has '
@@ -107,11 +121,18 @@ class _OldDatabaseScreenState extends ConsumerState<OldDatabaseScreen> {
                     ],
                     if (canReset) ...[
                       const SizedBox(height: Space.x20),
+                      LabeledField(
+                        label: 'Type $_confirmWord to reset',
+                        controller: _confirm,
+                        fieldKey: const ValueKey('oldDatabase.confirm'),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: Space.x12),
                       AppButton.destructive(
                         key: const ValueKey('oldDatabase.reset'),
                         label: 'Reset test database',
                         busy: _busy,
-                        onPressed: _reset,
+                        onPressed: _confirmed ? _reset : null,
                       ),
                       const SizedBox(height: Space.x12),
                       Text(

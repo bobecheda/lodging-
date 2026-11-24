@@ -5,6 +5,7 @@ import '../features/shifts/domain/shift_rules.dart';
 abstract final class Routes {
   static const splash = '/';
   static const oldDatabase = '/old-database';
+  static const unusualStart = '/unusual-start';
   static const setup = '/setup';
   static const login = '/login';
   static const changePassword = '/change-password';
@@ -118,6 +119,7 @@ abstract final class Routes {
   static const gates = {
     splash,
     oldDatabase,
+    unusualStart,
     setup,
     login,
     changePassword,
@@ -135,15 +137,20 @@ abstract final class Routes {
 /// shift is loading (only meaningful once signed in). [schemaMatches] is
 /// false when the database file was made by an older build (debug builds
 /// only; null while checking), which comes before everything else.
+/// [unusualStart] is true while the app runs from a removable drive or
+/// another folder than its install folder and nobody has accepted it yet
+/// (story/desk-db-guards); it comes right after the database check.
 String routeFor({
   required bool? hasUsers,
   required UserAccount? user,
   required ShiftStart? shiftStart,
   bool? schemaMatches = true,
   bool? hasOwner = true,
+  bool unusualStart = false,
 }) {
   if (schemaMatches == null) return Routes.splash;
   if (!schemaMatches) return Routes.oldDatabase;
+  if (unusualStart) return Routes.unusualStart;
   if (hasUsers == null) return Routes.splash;
   if (!hasUsers) return Routes.setup;
   if (hasOwner == null) return Routes.splash;
@@ -170,6 +177,7 @@ String? redirectFor(
   required ShiftStart? shiftStart,
   bool? schemaMatches = true,
   bool? hasOwner = true,
+  bool unusualStart = false,
   String? returnTo,
 }) {
   final target = routeFor(
@@ -178,6 +186,7 @@ String? redirectFor(
     user: user,
     shiftStart: shiftStart,
     schemaMatches: schemaMatches,
+    unusualStart: unusualStart,
   );
   if (target == Routes.home) {
     final home = Routes.homeFor(user);

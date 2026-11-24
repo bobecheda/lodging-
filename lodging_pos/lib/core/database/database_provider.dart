@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../clock/clock.dart';
 import 'database.dart';
-import 'test_database_file.dart';
+import 'database_files.dart';
 
 part 'database_provider.g.dart';
 

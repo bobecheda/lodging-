@@ -91,6 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           : 'Sign in to carry on.',
       above: notice == null ? null : _LockChip(notice),
       footer: 'Forgot your password? Ask the supervisor to reset it.',
+      showVersion: true,
       children: [
         LabeledField(
           label: 'Username',

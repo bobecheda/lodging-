@@ -97,6 +97,15 @@ enum Permission {
   /// "Change my password" (cloud first), and followed at sign-in when it
   /// was changed on the phone (owner-app-3).
   ownerCloudPassword,
+
+  /// Start the desk from a removable drive or another folder than the one
+  /// it was installed in, after the warning (story/desk-db-guards).
+  acceptUnusualStart,
+
+  /// Accept an older backup as the live database after the "older than
+  /// the last backup" refusal (story/desk-db-guards). Owner only; if the
+  /// owner isn't at the desk, it waits.
+  acceptRestore,
 }
 
 const _ownerOnly = {Role.owner};
@@ -118,6 +127,8 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.ownerCloudPassword: _ownerOnly,
   Permission.setCashRules: _ownerOnly,
   Permission.reviewSupervisorCash: _ownerOnly,
+  Permission.acceptRestore: _ownerOnly,
+  Permission.acceptUnusualStart: _ownerAndSupervisor,
   // Prices and adding or closing categories (BR-2); the supervisor asks.
   Permission.editPrices: _ownerOnly,
   Permission.viewAllReports: _ownerAndSupervisor,

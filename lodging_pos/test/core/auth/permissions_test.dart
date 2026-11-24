@@ -66,6 +66,8 @@ void main() {
       // Story B (10 Nov 2026): the count tolerance.
       Permission.setCashRules,
       Permission.reviewSupervisorCash,
+      // Desk DB guards (24 Nov 2026): only the owner accepts a restore.
+      Permission.acceptRestore,
     };
     const ownerAndSupervisor = {
       Permission.viewAllReports,
@@ -78,6 +80,8 @@ void main() {
       Permission.checkDrawer,
       Permission.collectCash,
       Permission.reviewCash,
+      // Desk DB guards: starting from a USB drive or another folder.
+      Permission.acceptUnusualStart,
     };
     const supervisorOnly = {
       Permission.requestPriceChange,

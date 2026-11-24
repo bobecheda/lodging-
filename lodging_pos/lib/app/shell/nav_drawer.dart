@@ -267,6 +267,8 @@ class _Drawer extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(height: Space.x8),
+                  const VersionFooter(),
                 ],
               ),
             ),

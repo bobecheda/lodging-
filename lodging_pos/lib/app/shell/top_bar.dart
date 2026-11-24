@@ -699,8 +699,41 @@ void actOnUserRow(GoRouter router, String? value) {
   }
 }
 
-/// The avatar, name and shift (or role); opens the user menu when it has
-/// rows. The name hides while the tabs are collapsed.
+/// The version line at the foot of the user menu and the drawer: muted
+/// Meta under a 1 px divider, read by screen readers, not focusable
+/// (story/desk-db-guards).
+class VersionFooter extends StatelessWidget {
+  const VersionFooter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(height: 1, thickness: 1, color: c.line),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Space.x12,
+            Space.x8,
+            Space.x12,
+            Space.x4,
+          ),
+          child: Text(
+            versionLine(AppBuild.current, schemaVersion: latestSchemaVersion),
+            key: const ValueKey('shell.version'),
+            style: t.meta.copyWith(color: c.muted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The avatar, name and shift (or role); opens the user menu. The name
+/// hides while the tabs are collapsed.
 class _UserButton extends ConsumerWidget {
   const _UserButton({required this.user, required this.showName});
 
@@ -766,21 +799,22 @@ class _UserButton extends ConsumerWidget {
           borderRadius: BorderRadius.circular(Radii.tab),
           hoverColor: c.surface,
           focusColor: c.white.withValues(alpha: 0),
-          onTap: rows.isEmpty
-              ? null
-              : () async {
-                  final box = context.findRenderObject() as RenderBox?;
-                  if (box == null) return;
-                  final router = GoRouter.of(context);
-                  final value = await showShellMenu<String>(
-                    context,
-                    anchor: box.localToGlobal(Offset.zero) & box.size,
-                    label: 'Your menu',
-                    alignRight: true,
-                    rows: rows,
-                  );
-                  actOnUserRow(router, value);
-                },
+          // Always opens: the version line is at its foot, even when it is
+          // the only thing in it (story/desk-db-guards).
+          onTap: () async {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final router = GoRouter.of(context);
+            final value = await showShellMenu<String>(
+              context,
+              anchor: box.localToGlobal(Offset.zero) & box.size,
+              label: 'Your menu',
+              alignRight: true,
+              rows: rows,
+              footer: const VersionFooter(),
+            );
+            actOnUserRow(router, value);
+          },
           child: SizedBox(height: Sizes.target, child: content),
         ),
       ),

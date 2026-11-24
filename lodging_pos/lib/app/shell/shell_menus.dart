@@ -34,6 +34,7 @@ Future<T?> showShellMenu<T>(
   required String label,
   required List<ShellMenuRow> rows,
   bool alignRight = false,
+  Widget? footer,
 }) {
   final c = LodgingColors.of(context);
   final m = LodgingMotion.of(context);
@@ -92,6 +93,7 @@ Future<T?> showShellMenu<T>(
                     autofocus: i == 0,
                     onTap: () => Navigator.of(context).pop(r.value),
                   ),
+                ?footer,
               ],
             ),
           ),

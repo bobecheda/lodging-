@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../clock/clock.dart';
 import 'database.dart';
 import 'database_provider.dart';
-import 'test_database_file.dart';
+import 'database_files.dart';
 
 part 'schema_check.g.dart';
 
@@ -102,13 +102,15 @@ Future<SchemaDrift?> schemaDrift(Ref ref) async {
 @Riverpod(keepAlive: true)
 bool canResetDatabase(Ref ref) => kDebugMode;
 
-/// Closes the database, renames its file to a timestamped `.bak` next to it
-/// (kept, not deleted) and reopens a fresh one. Returns the backup's path.
-/// Overridden in tests, which use in-memory databases.
+/// Closes the database, copies and checks it, then moves it, its side
+/// files and the mark into `reset-YYYYMMDD-HHMMSS` next to it (kept, never
+/// deleted), and reopens a fresh one. Returns the reset folder. The screen
+/// asks for `RESET` to be typed first. Overridden in tests, which use
+/// in-memory databases.
 @Riverpod(keepAlive: true)
 Future<String> Function() resetTestDatabase(Ref ref) => () async {
   await ref.read(appDatabaseProvider).close();
-  final backup = await backUpDatabaseFile(ref.read(clockProvider).now());
+  final backup = await resetDataFolder(ref.read(clockProvider).now());
   // Only now, with the old file moved away, may a new database open.
   ref.invalidate(appDatabaseProvider);
   return backup;

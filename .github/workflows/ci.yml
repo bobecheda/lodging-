@@ -160,7 +160,11 @@ jobs:
         run: flutter pub get --enforce-lockfile
 
       - name: Build the desk app (release)
-        run: flutter build windows --release
+        # The commit goes into the version line on screen (desk-db-guards).
+        shell: pwsh
+        run: |
+          $commit = $env:GITHUB_SHA.Substring(0, 7)
+          flutter build windows --release "--dart-define=APP_COMMIT=$commit"
 
       - name: Keep the release folder (14 days)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
