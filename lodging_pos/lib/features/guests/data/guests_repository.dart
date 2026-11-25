@@ -12,7 +12,12 @@ class InvalidGuest implements Exception {
   final Map<GuestField, String> errors;
 }
 
-const _idTaken = 'This ID is already registered to another guest.';
+/// The ID belongs to [owner] already: the message says who (v2 PR 6), and
+/// check-in offers to use that guest instead.
+class IdTaken extends InvalidGuest {
+  IdTaken(this.owner) : super({GuestField.idNumber: idTakenMessage(owner)});
+  final Guest owner;
+}
 
 /// Guests (FD-3). Searching is open to anyone signed in; registering and
 /// correcting need [Permission.registerGuests]. Writes go through
@@ -174,9 +179,7 @@ class GuestsRepository {
               )
               ..limit(1))
             .getSingleOrNull();
-    if (taken != null) {
-      throw const InvalidGuest({GuestField.idNumber: _idTaken});
-    }
+    if (taken != null) throw IdTaken(_toGuest(taken));
   }
 
   static Guest _toGuest(GuestRow r) => Guest(

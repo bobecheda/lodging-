@@ -39,6 +39,43 @@ Future<T?> showShellMenu<T>(
   required List<ShellMenuRow> rows,
   bool alignRight = false,
   Widget? footer,
+}) => showShellCard<T>(
+  context,
+  anchor: anchor,
+  label: label,
+  alignRight: alignRight,
+  cardKey: const ValueKey('shell.menuCard'),
+  width: Sizes.menuWidth,
+  padding: const EdgeInsets.all(Space.x6),
+  builder: (context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final (i, r) in rows.indexed)
+        _MenuRow(
+          row: r,
+          height: Sizes.target,
+          autofocus: i == 0,
+          onTap: () => Navigator.of(context).pop(r.value),
+        ),
+      ?footer,
+    ],
+  ),
+);
+
+/// A menu card under [anchor] with any content (e.g. check-in's bed
+/// chooser, v2 PR 6): the same card, motion and closing as [showShellMenu].
+/// The content scrolls when it is taller than the window; it pops its own
+/// value.
+Future<T?> showShellCard<T>(
+  BuildContext context, {
+  required Rect anchor,
+  required String label,
+  required double width,
+  required WidgetBuilder builder,
+  Key? cardKey,
+  EdgeInsets padding = const EdgeInsets.all(Space.x24),
+  bool alignRight = false,
 }) {
   final c = LodgingColors.of(context);
   final m = LodgingMotion.of(context);
@@ -69,9 +106,8 @@ Future<T?> showShellMenu<T>(
       builder: (context) => CustomSingleChildLayout(
         delegate: _MenuLayout(anchor, alignRight: alignRight),
         child: Container(
-          key: const ValueKey('shell.menuCard'),
-          width: Sizes.menuWidth,
-          padding: const EdgeInsets.all(Space.x6),
+          key: cardKey,
+          width: width,
           decoration: BoxDecoration(
             color: c.white,
             borderRadius: BorderRadius.circular(Radii.card),
@@ -86,19 +122,9 @@ Future<T?> showShellMenu<T>(
           ),
           child: Material(
             type: MaterialType.transparency,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final (i, r) in rows.indexed)
-                  _MenuRow(
-                    row: r,
-                    height: Sizes.target,
-                    autofocus: i == 0,
-                    onTap: () => Navigator.of(context).pop(r.value),
-                  ),
-                ?footer,
-              ],
+            child: SingleChildScrollView(
+              padding: padding,
+              child: Builder(builder: builder),
             ),
           ),
         ),

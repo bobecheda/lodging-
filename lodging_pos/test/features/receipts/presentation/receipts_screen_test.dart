@@ -162,7 +162,7 @@ void main() {
     expect(env.receiptOutput.opened, [path]);
   });
 
-  testWidgets('step 4 after check-in shows the receipt with Print as the '
+  testWidgets('after a check-in, the receipt shows with Print as the '
       'main button, and no dialog opens by itself', (tester) async {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'desk', 'desk-pass');
@@ -171,7 +171,7 @@ void main() {
     final r7b = rooms.firstWhere((r) => r.number == '7').beds.last;
     app.read(routerProvider).go(Routes.checkInFor(r7b.id));
     await tester.pumpAndSettle();
-    await enterKey(tester, 'guests.search', '0722');
+    await enterKey(tester, 'checkIn.guestSearch', '0722');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Grace Achieng').first);
     await tester.pumpAndSettle();

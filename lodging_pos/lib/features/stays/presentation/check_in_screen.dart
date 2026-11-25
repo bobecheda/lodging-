@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../app/gate.dart';
 import '../../../app/theme/theme.dart';
 import '../../../app/widgets/buttons.dart';
+import '../../../app/widgets/focus_ring.dart';
 import '../../../app/widgets/labeled_field.dart';
 import '../../../app/widgets/night_stepper.dart';
 import '../../../app/widgets/notes.dart';
-import '../../../app/widgets/segmented_choice.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/session.dart';
 import '../../../core/auth/user_account.dart';
-import '../../../core/clock/clock.dart';
 import '../../../core/clock/nairobi.dart';
+import '../../../core/contacts/phone.dart';
 import '../../../core/money/kes.dart';
 import '../../bed_board/presentation/bed_board_providers.dart';
 import '../../guests/data/guests_repository.dart';
 import '../../guests/domain/guest.dart';
-import '../../guests/presentation/widgets/guest_finder_card.dart';
-import '../../housekeeping/domain/housekeeping.dart';
-import '../../housekeeping/presentation/housekeeping_providers.dart';
+import '../../guests/presentation/guests_providers.dart';
+import '../../guests/presentation/widgets/guest_form_fields.dart';
 import '../../payments/domain/payment_rules.dart';
 import '../../receipts/presentation/receipt_view.dart';
 import '../../setup/domain/rooms.dart';
@@ -28,14 +28,19 @@ import '../../shifts/domain/shift_rules.dart';
 import '../../shifts/presentation/shift_providers.dart';
 import '../data/check_in_repository.dart';
 import '../domain/check_in.dart';
+import '../domain/check_in_view.dart';
 import '../domain/stay_rules.dart';
+import 'check_in_bed.dart';
+import 'check_in_guest.dart';
 import 'check_in_providers.dart';
 
-/// FD-4 "New check-in" with its payment (FD-5), from the artboard
-/// "Check-in — bed, guest, blocks, payment": the bed (and Bed B for the
-/// whole room), the guest, then nights and payment. Nothing is saved until
-/// "Save and issue receipt"; then step 4 shows what was saved (the printed
-/// receipt, FD-6).
+/// FD-4 "New check-in" with its payment (FD-5), v2 (PR 6, Figma "Desk ·
+/// Check-in (full)" and "Check-in · variants"): a form card (Bed, Guest,
+/// Nights, Payment) and a 360 px summary card (total, confirm line, Save
+/// and print receipt, Cancel). Below about 860 px the summary sits under
+/// the form. Nothing is saved until Save; then the receipt shows (FD-6),
+/// with no print dialog of its own. Without an open shift of their own the
+/// user sees "Open your shift first" instead of the form.
 class CheckInScreen extends ConsumerStatefulWidget {
   const CheckInScreen({super.key, this.bedId});
 
@@ -46,12 +51,24 @@ class CheckInScreen extends ConsumerStatefulWidget {
   ConsumerState<CheckInScreen> createState() => _CheckInScreenState();
 }
 
+/// Below this content width the summary moves under the form.
+const _sideBySide = 860.0;
+const _summaryWidth = 360.0;
+
 class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   String? _bedId;
   var _wholeRoom = false;
+
+  // The guest: one search box; a found guest, or the new guest form.
+  final _search = TextEditingController();
   Guest? _guest;
-  GuestForm? _newGuest;
+  final _newGuest = GuestFormControllers();
+  var _newGuestMode = false;
+  var _prefilled = (phone: '', idNumber: '');
+  var _guestErrors = <GuestField, String>{};
+  Guest? _idTaken;
   var _phoneSeen = <String>{};
+
   var _nights = 1;
   var _nightsText = '1';
   PaymentMethod? _method;
@@ -70,22 +87,67 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   @override
   void dispose() {
+    _search.dispose();
+    _newGuest.dispose();
     _code.dispose();
     super.dispose();
   }
 
-  void _chooseBed(String? bedId) => setState(() {
+  void _chooseBed(String bedId) => setState(() {
+    if (bedId != _bedId) _wholeRoom = false;
     _bedId = bedId;
-    _wholeRoom = false;
     _problem = null;
+  });
+
+  /// The search changed: the form keeps what was typed into it, and takes
+  /// the new search where it still holds the last one filled in.
+  void _onSearch(String text) => setState(() {
+    final p = newGuestPrefill(text);
+    if (_newGuest.phone.text == _prefilled.phone) {
+      _newGuest.phone.text = p.phone;
+    }
+    if (_newGuest.idNumber.text == _prefilled.idNumber) {
+      _newGuest.idNumber.text = p.idNumber;
+    }
+    _prefilled = p;
+    _newGuestMode = false;
+    _guestErrors = {};
+    _idTaken = null;
+    _problem = null;
+  });
+
+  void _selectGuest(Guest g) => setState(() {
+    _guest = g;
+    _newGuestMode = false;
+    _guestErrors = {};
+    _idTaken = null;
+    _phoneSeen = {};
+    _problem = null;
+  });
+
+  void _clearGuest() => setState(() {
+    _guest = null;
+    _problem = null;
+  });
+
+  void _newGuestWithPhone() => setState(() {
+    final p = newGuestPrefill(_search.text);
+    if (_newGuest.phone.text.trim().isEmpty) _newGuest.phone.text = p.phone;
+    _prefilled = (phone: _newGuest.phone.text, idNumber: _prefilled.idNumber);
+    _newGuestMode = true;
   });
 
   void _restart() {
     setState(() {
       _bedId = null;
       _wholeRoom = false;
+      _search.clear();
       _guest = null;
-      _newGuest = null;
+      _newGuest.clear();
+      _newGuestMode = false;
+      _prefilled = (phone: '', idNumber: '');
+      _guestErrors = {};
+      _idTaken = null;
       _phoneSeen = {};
       _nights = 1;
       _nightsText = '1';
@@ -99,12 +161,39 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Future<void> _save(UserAccount user, CheckInQuote quote) async {
-    final newGuest = _newGuest;
     final guest = _guest;
+    final GuestChoice choice;
+    final String guestName;
+    if (guest != null) {
+      choice = ReturningGuest(guest.id);
+      guestName = guest.fullName;
+    } else {
+      final form = _newGuest.form;
+      final errors = validateGuest(form);
+      if (errors.isNotEmpty) {
+        setState(() {
+          _guestErrors = errors;
+          _idTaken = null;
+        });
+        return;
+      }
+      final phone = normalizeGuestPhone(form.phone);
+      final shown = phone == null
+          ? const <Guest>[]
+          : ref.read(guestsWithPhoneProvider(phone, null)).value ??
+                const <Guest>[];
+      choice = NewGuest(
+        form,
+        phoneSharedWith: {..._phoneSeen, for (final g in shown) g.id},
+      );
+      guestName = form.normalized().fullName;
+    }
     final method = _method!;
     setState(() {
       _busy = true;
       _errors = {};
+      _guestErrors = {};
+      _idTaken = null;
       _problem = null;
     });
     try {
@@ -113,26 +202,21 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           .checkIn(
             user,
             CheckInRequest(
-              guest: newGuest != null
-                  ? NewGuest(newGuest, phoneSharedWith: _phoneSeen)
-                  : ReturningGuest(guest!.id),
+              guest: choice,
               method: method,
               mpesaCode: method == PaymentMethod.paybill ? _code.text : null,
               shown: quote,
             ),
           );
       if (!mounted) return;
-      setState(
-        () => _saved = _Saved(
-          result,
-          newGuest?.normalized().fullName ?? guest!.fullName,
-        ),
-      );
+      setState(() => _saved = _Saved(result, guestName));
     } on InvalidCheckIn catch (e) {
       if (!mounted) return;
       setState(() {
         _errors = e.errors;
-        final other = {...e.errors}..remove(CheckInField.mpesaCode);
+        final other = {...e.errors}
+          ..remove(CheckInField.mpesaCode)
+          ..remove(CheckInField.nights);
         if (other.isNotEmpty) _problem = other.values.join(' ');
       });
     } on CheckInRefused catch (e) {
@@ -143,10 +227,14 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         _problem = e.toString();
         _phoneSeen = {..._phoneSeen, for (final g in e.guests) g.id};
       });
+    } on IdTaken catch (e) {
+      if (mounted) setState(() => _idTaken = e.owner);
     } on InvalidGuest catch (e) {
-      if (mounted) setState(() => _problem = e.errors.values.join(' '));
+      if (mounted) setState(() => _guestErrors = e.errors);
     } on NoOpenShift {
-      if (mounted) setState(() => _problem = _noShift);
+      if (mounted) {
+        setState(() => _problem = 'Check-ins and payments need an open shift.');
+      }
     } on NotPermitted {
       if (mounted) setState(() => _problem = 'You can’t check guests in.');
     } finally {
@@ -154,64 +242,68 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     }
   }
 
-  static const _noShift = 'Check-in takes a payment. Open a shift first.';
-
   @override
   Widget build(BuildContext context) {
+    final t = LodgingType.of(context);
     final user = ref.watch(sessionProvider);
     final rooms = ref.watch(checkInRoomsProvider);
     final checkout = ref.watch(checkInCheckoutTimeProvider).value;
     final now = ref.watch(boardNowProvider).value;
-    final shift = ref.watch(currentShiftProvider).value;
+    final shiftState = ref.watch(currentShiftProvider);
     final saved = _saved;
-
-    final header = _Header(
-      bedDone: _bedId != null || saved != null,
-      guestDone: _guest != null || _newGuest != null || saved != null,
-      saved: saved != null,
-    );
     if (user == null) return const SizedBox.shrink();
+
+    Widget page(Widget body) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          header: true,
+          child: Text('New check-in', style: t.pageTitle),
+        ),
+        const SizedBox(height: Space.x16),
+        Expanded(child: body),
+      ],
+    );
+    const loading = Center(child: CircularProgressIndicator());
+
     if (saved != null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          const SizedBox(height: Space.x20),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: _Done(
-                  saved: saved,
-                  onBoard: () => context.go(Routes.home),
-                  onAnother: _restart,
-                ),
-              ),
+      return page(
+        SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: _Done(
+              saved: saved,
+              onBoard: () => context.go(Routes.home),
+              onAnother: _restart,
             ),
           ),
-        ],
+        ),
+      );
+    }
+    // Wait for the shift before saying there's none.
+    if (!shiftState.hasValue) return page(loading);
+    if (shiftState.value?.userId != user.id) {
+      return page(
+        SingleChildScrollView(
+          child: _NoShift(
+            canOpen: can(user, Permission.openShift),
+            onOpen: () =>
+                context.go(Routes.shiftThen(Routes.checkInFor(_bedId))),
+            onBack: () => context.go(Routes.home),
+          ),
+        ),
       );
     }
     if (rooms case AsyncError(:final error)) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          const SizedBox(height: Space.x16),
-          Note.error('$error', title: 'The beds could not be loaded.'),
-        ],
+      return page(
+        Align(
+          alignment: Alignment.topLeft,
+          child: Note.error('$error', title: 'The beds could not be loaded.'),
+        ),
       );
     }
     final list = rooms.value;
-    if (list == null || checkout == null || now == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          const Expanded(child: Center(child: CircularProgressIndicator())),
-        ],
-      );
-    }
+    if (list == null || checkout == null || now == null) return page(loading);
 
     // The chosen bed, its room and the room's other bed.
     RoomSummary? room;
@@ -222,12 +314,12 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       }
     }
     final other = room?.beds.where((b) => b.id != bed!.id).firstOrNull;
-    final bedProblem = bed == null ? null : _blocker(bed);
-    final otherProblem = other == null ? null : _blocker(other);
-    final letting = [
-      ?bed,
-      if (_wholeRoom && other != null && otherProblem == null) other,
-    ];
+    final bedProblem = bed == null
+        ? null
+        : letReason(bed, checkInOccupancy(bed));
+    final otherFree =
+        other != null && letBlocker(other, checkInOccupancy(other)) == null;
+    final letting = [?bed, if (_wholeRoom && otherFree) other];
 
     final nightsProblem = nightsError(parseNights(_nightsText));
     final quote = bed == null || bedProblem != null || nightsProblem != null
@@ -246,98 +338,176 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                 ),
             ],
           );
-    final ownShift = shift != null && shift.userId == user.id;
-    final hasGuest = _guest != null || _newGuest != null;
-    final missing = [
-      if (bed == null) 'the bed',
-      if (!hasGuest) 'the guest',
-      if (_method == null) 'how they paid',
-    ];
+    final out = nightsProblem == null
+        ? paidUntil(firstCheckout(now, checkout), _nights)
+        : null;
 
-    final guestId = _guest?.id;
-    final bedCard = _BedCard(
-      rooms: list,
-      room: room,
-      bed: bed,
-      bedProblem: bedProblem,
-      other: other,
-      otherProblem: otherProblem,
-      wholeRoom: _wholeRoom,
-      onChoose: _chooseBed,
-      onWholeRoom: (v) => setState(() => _wholeRoom = v),
-    );
-    final guestCard = GuestFinderCard(
-      selected: _guest,
-      newGuest: _newGuest,
-      selectedDetail: guestId == null
-          ? null
-          : ref.watch(guestHistoryProvider(guestId)).value?.summary,
-      onSelected: (g) => setState(() {
-        _guest = g;
-        _newGuest = null;
-        _phoneSeen = {};
-        _problem = null;
-      }),
-      onNewGuest: (form, seen) => setState(() {
-        _newGuest = form;
-        _phoneSeen = seen;
-        _guest = null;
-        _problem = null;
-      }),
-    );
-    final stayCard = _StayCard(
-      nights: _nights,
-      nightsError: nightsProblem ?? _errors[CheckInField.nights],
-      checkoutLabel: checkout.format(),
-      onNights: (n) => setState(() => _nights = n),
-      onNightsTyped: (text) => setState(() {
-        _nightsText = text;
-        final n = parseNights(text);
-        if (n != null && nightsError(n) == null) _nights = n;
-      }),
-      checkInAt: now,
+    // The guest.
+    final canRegister = can(user, Permission.registerGuests);
+    final query = _search.text;
+    final searchable = !GuestQuery.parse(query).isEmpty;
+    final guest = _guest;
+    final matches = searchable && guest == null
+        ? ref.watch(guestSearchProvider(query)).value
+        : null;
+    final formShown =
+        guest == null &&
+        canRegister &&
+        (_newGuestMode || (matches != null && matches.isEmpty));
+    final readiness = guest != null
+        ? GuestReadiness.ready
+        : !formShown
+        ? GuestReadiness.none
+        : _newGuest.fullName.text.trim().isNotEmpty &&
+              _newGuest.phone.text.trim().isNotEmpty
+        ? GuestReadiness.ready
+        : GuestReadiness.incomplete;
+    final history = guest == null
+        ? null
+        : ref.watch(guestHistoryProvider(guest.id)).value;
+    final selectedLine = guest == null
+        ? ''
+        : [
+            spacePhone(guest.phone),
+            ?guest.maskedId,
+            if (history != null) stayCountLabel(history.stays),
+          ].join(' · ');
+
+    final confirm = checkInConfirm(
       quote: quote,
-      letting: letting,
+      bedChosen: bed != null,
+      nightsProblem: nightsProblem,
+      guest: readiness,
       method: _method,
-      onMethod: (m) => setState(() => _method = m),
-      code: _code,
-      codeError: _errors[CheckInField.mpesaCode],
-      ownShift: ownShift,
-      onOpenShift: () =>
-          context.go(Routes.shiftThen(Routes.checkInFor(_bedId))),
-      problem: _problem,
-      missing: missing,
-      busy: _busy,
-      onSave: quote == null || !hasGuest || _method == null || !ownShift
-          ? null
-          : () => _save(user, quote),
     );
 
-    Widget column(Widget card) =>
-        Expanded(child: SingleChildScrollView(child: card));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        header,
-        const SizedBox(height: Space.x20),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              column(bedCard),
-              const SizedBox(width: Space.x16),
-              column(guestCard),
-              const SizedBox(width: Space.x16),
-              column(stayCard),
-            ],
-          ),
+    final formCard = Card(
+      key: const ValueKey('checkIn.form'),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(
+          Space.x24,
+          Space.x18,
+          Space.x24,
+          Space.x18,
         ),
-      ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CheckInBedSection(
+              rooms: list,
+              room: room,
+              letting: letting,
+              bedProblem: bedProblem,
+              other: other,
+              wholeRoom: _wholeRoom,
+              onChoose: _chooseBed,
+              onWholeRoom: (v) => setState(() => _wholeRoom = v),
+            ),
+            const SizedBox(height: Space.x14),
+            CheckInGuestSection(
+              search: _search,
+              onSearch: _onSearch,
+              matches: matches,
+              selected: guest,
+              selectedLine: selectedLine,
+              onSelect: _selectGuest,
+              onClear: _clearGuest,
+              canRegister: canRegister,
+              formShown: formShown,
+              newGuestMode: _newGuestMode,
+              onNewGuestWithPhone: _newGuestWithPhone,
+              form: _newGuest,
+              formErrors: _guestErrors,
+              onFormChanged: () => setState(() {
+                _guestErrors = {};
+                _idTaken = null;
+              }),
+              idTaken: _idTaken,
+              onUseTaken: _selectGuest,
+            ),
+            const SizedBox(height: Space.x14),
+            _Nights(
+              nights: _nights,
+              out: out,
+              error: nightsProblem ?? _errors[CheckInField.nights],
+              onNights: (n) => setState(() {
+                _nights = n;
+                _nightsText = '$n';
+              }),
+              onTyped: (text) => setState(() {
+                _nightsText = text;
+                final n = parseNights(text);
+                if (n != null && nightsError(n) == null) _nights = n;
+              }),
+            ),
+            const SizedBox(height: Space.x14),
+            _Payment(
+              method: _method,
+              onMethod: (m) => setState(() {
+                _method = m;
+                _errors = {..._errors}..remove(CheckInField.mpesaCode);
+              }),
+              code: _code,
+              codeError: _errors[CheckInField.mpesaCode],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final summary = _Summary(
+      quote: quote,
+      lines: quote == null
+          ? const []
+          : checkInPriceLines(
+              nights: quote.nights,
+              beds: [
+                for (final b in letting)
+                  (bedName(room!.number, b.label), b.pricePerNight),
+              ],
+            ),
+      confirm: confirm,
+      problem: _problem,
+      busy: _busy,
+      onSave: confirm.ready && quote != null ? () => _save(user, quote) : null,
+      onCancel: () => context.go(Routes.home),
+    );
+
+    return page(
+      LayoutBuilder(
+        builder: (context, box) => box.maxWidth >= _sideBySide
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: formCard,
+                    ),
+                  ),
+                  const SizedBox(width: Space.x20),
+                  SizedBox(
+                    width: _summaryWidth,
+                    child: SingleChildScrollView(child: summary),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: formCard,
+                    ),
+                  ),
+                  const SizedBox(height: Space.x16),
+                  summary,
+                ],
+              ),
+      ),
     );
   }
-
-  static String? _blocker(BedSummary b) =>
-      letBlocker(b, b.hasActiveStay ? Occupancy.occupied : Occupancy.available);
 }
 
 final class _Saved {
@@ -346,544 +516,255 @@ final class _Saved {
   final String guestName;
 }
 
-/// Back link, title and the step pills.
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.bedDone,
-    required this.guestDone,
-    required this.saved,
+/// "Nights": the stepper (typing allowed) and "Out Fri 13 Nov, 10:00".
+class _Nights extends StatelessWidget {
+  const _Nights({
+    required this.nights,
+    required this.out,
+    required this.error,
+    required this.onNights,
+    required this.onTyped,
   });
 
-  final bool bedDone;
-  final bool guestDone;
-  final bool saved;
+  final int nights;
+  final DateTime? out;
+  final String? error;
+  final ValueChanged<int> onNights;
+  final ValueChanged<String> onTyped;
 
   @override
   Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    _Step state(bool done, {bool current = false}) => done
-        ? _Step.done
-        : current
-        ? _Step.current
-        : _Step.todo;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final out = this.out;
+    final error = this.error;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextButton.icon(
-                key: const ValueKey('checkIn.back'),
-                onPressed: () => context.go(Routes.home),
-                icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('Bed board'),
-              ),
-              Semantics(
-                header: true,
-                child: Text('New check-in', style: t.pageTitle),
-              ),
-            ],
-          ),
-        ),
-        Wrap(
-          spacing: Space.x8,
-          runSpacing: Space.x8,
+        Text('Nights', style: t.sectionTitle),
+        const SizedBox(height: Space.x8),
+        Row(
           children: [
-            _StepPill(1, 'Bed', state(bedDone, current: true)),
-            _StepPill(2, 'Guest', state(guestDone, current: bedDone)),
-            _StepPill(
-              3,
-              'Stay & payment',
-              state(saved, current: bedDone && guestDone),
+            NightStepper(
+              value: nights,
+              min: nightsRange.min,
+              max: nightsRange.max,
+              onChanged: onNights,
+              onTyped: onTyped,
             ),
-            _StepPill(4, 'Receipt', saved ? _Step.current : _Step.todo),
+            const SizedBox(width: Space.x12),
+            if (out != null)
+              Flexible(
+                child: Text(
+                  'Out ${formatDayDateComma(out)}',
+                  key: const ValueKey('checkIn.out'),
+                  style: t.body,
+                ),
+              ),
           ],
         ),
+        if (error != null) ...[
+          const SizedBox(height: Space.x6),
+          Text(
+            error,
+            key: const ValueKey('checkIn.nightsError'),
+            style: t.secondary.copyWith(color: c.redText),
+          ),
+        ],
       ],
     );
   }
 }
 
-enum _Step { done, current, todo }
-
-class _StepPill extends StatelessWidget {
-  const _StepPill(this.number, this.label, this.step);
-
-  final int number;
-  final String label;
-  final _Step step;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final (Color bg, Color fg, Color? border) = switch (step) {
-      _Step.done => (c.marineTint, c.marine, null),
-      _Step.current => (c.marine, c.white, null),
-      _Step.todo => (c.white, c.muted, c.line),
-    };
-    final spoken = switch (step) {
-      _Step.done => 'done',
-      _Step.current => 'current step',
-      _Step.todo => 'to do',
-    };
-    return Semantics(
-      label: 'Step $number, $label, $spoken',
-      excludeSemantics: true,
-      child: Container(
-        key: ValueKey('checkIn.step.$number.${step.name}'),
-        padding: const EdgeInsets.symmetric(
-          horizontal: Space.x14,
-          vertical: Space.x8,
-        ),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(Radii.pill),
-          border: border == null ? null : Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (step == _Step.done)
-              Icon(Icons.check_rounded, size: 16, color: fg)
-            else
-              Text('$number', style: t.meta.copyWith(color: fg)),
-            const SizedBox(width: Space.x6),
-            Text(label, style: t.meta.copyWith(color: fg)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// "Cleaned 08:15 · Mary": when the chosen bed was last cleaned and by whom
-/// (v2 PR 5; a Ready tile goes straight to check-in, so it shows here).
-/// Nothing if it was never cleaned through the desk.
-class _CleanedLine extends ConsumerWidget {
-  const _CleanedLine(this.bedId);
-
-  final String bedId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final cleaned = ref.watch(lastCleanedProvider(bedId)).value;
-    if (cleaned == null) return const SizedBox.shrink();
-    return Text(
-      cleanedLine(cleaned.at, cleaned.by, now: ref.watch(clockProvider).now()),
-      key: const ValueKey('checkIn.cleaned'),
-      style: t.meta.copyWith(color: c.muted),
-    );
-  }
-}
-
-/// "BED": the chosen bed and Bed B for the whole room, or the Ready beds
-/// to choose from.
-class _BedCard extends StatelessWidget {
-  const _BedCard({
-    required this.rooms,
-    required this.room,
-    required this.bed,
-    required this.bedProblem,
-    required this.other,
-    required this.otherProblem,
-    required this.wholeRoom,
-    required this.onChoose,
-    required this.onWholeRoom,
-  });
-
-  final List<RoomSummary> rooms;
-  final RoomSummary? room;
-  final BedSummary? bed;
-  final String? bedProblem;
-  final BedSummary? other;
-  final String? otherProblem;
-  final bool wholeRoom;
-  final ValueChanged<String?> onChoose;
-  final ValueChanged<bool> onWholeRoom;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    final room = this.room;
-    final bed = this.bed;
-    final other = this.other;
-
-    final List<Widget> body;
-    if (room == null || bed == null) {
-      final ready = [
-        for (final r in rooms)
-          for (final b in r.beds)
-            if (_CheckInScreenState._blocker(b) == null) (r, b),
-      ];
-      body = [
-        Text('Choose a Ready bed.', style: t.body.copyWith(color: c.inkSoft)),
-        const SizedBox(height: Space.x12),
-        if (ready.isEmpty)
-          const Note.info(
-            'No bed is ready right now. Beds that need cleaning become '
-            'Ready once they are cleaned.',
-          ),
-        for (final (r, b) in ready)
-          Padding(
-            padding: const EdgeInsets.only(bottom: Space.x6),
-            child: Material(
-              color: c.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Radii.control),
-                side: BorderSide(color: c.line),
-              ),
-              child: InkWell(
-                key: ValueKey('checkIn.pick.${r.number}${b.label.code}'),
-                borderRadius: BorderRadius.circular(Radii.control),
-                onTap: () => onChoose(b.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Space.x12,
-                    vertical: Space.x10,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Room ${r.number} · Bed ${b.label.code}',
-                          style: t.bodyMedium,
-                        ),
-                      ),
-                      Text(
-                        '${b.categoryName} · ${formatKes(b.pricePerNight)}',
-                        style: t.secondary.copyWith(color: c.muted),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ];
-    } else {
-      body = [
-        Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: c.marineTint,
-                borderRadius: BorderRadius.circular(Radii.control),
-              ),
-              child: Text(
-                '${room.number}${bed.label.code}',
-                style: t.sectionTitle.copyWith(color: c.marine),
-              ),
-            ),
-            const SizedBox(width: Space.x14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Room ${room.number} · Bed ${bed.label.code}',
-                    key: const ValueKey('checkIn.bed'),
-                    style: t.sectionTitle,
-                  ),
-                  Text(
-                    '${bed.categoryName} · ${formatKes(bed.pricePerNight)} / '
-                    'night',
-                    style: t.secondary.copyWith(color: c.muted),
-                  ),
-                  _CleanedLine(bed.id),
-                ],
-              ),
-            ),
-          ],
-        ),
-        if (bedProblem != null) ...[
-          const SizedBox(height: Space.x12),
-          Note.error(
-            'Room ${room.number} · $bedProblem now. Choose another bed.',
-            key: const ValueKey('checkIn.bedProblem'),
-          ),
-        ],
-        if (other != null) ...[
-          const SizedBox(height: Space.x12),
-          Divider(color: c.lineSoft),
-          CheckboxListTile(
-            key: const ValueKey('checkIn.wholeRoom'),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            value: wholeRoom && otherProblem == null,
-            onChanged: otherProblem != null || bedProblem != null
-                ? null
-                : (v) => onWholeRoom(v ?? false),
-            title: Text(
-              'Also let Bed ${other.label.code} to this guest (whole room)',
-              style: t.body,
-            ),
-            subtitle: otherProblem == null
-                ? Text(
-                    '${other.categoryName} · ${formatKes(other.pricePerNight)}'
-                    ' / night',
-                    style: t.secondary.copyWith(color: c.muted),
-                  )
-                : null,
-          ),
-          if (otherProblem != null)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: StatusBadge(
-                otherProblem!,
-                key: const ValueKey('checkIn.otherProblem'),
-                tone: BadgeTone.warning,
-              ),
-            ),
-        ],
-      ];
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Space.x24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Bed', style: t.meta.copyWith(color: c.muted)),
-                ),
-                if (bed != null)
-                  TextButton(
-                    key: const ValueKey('checkIn.changeBed'),
-                    onPressed: () => onChoose(null),
-                    child: const Text('Change'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: Space.x12),
-            ...body,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// "STAY & PAYMENT": nights, dates, total, method, M-Pesa code, save.
-class _StayCard extends StatelessWidget {
-  const _StayCard({
-    required this.nights,
-    required this.nightsError,
-    required this.checkoutLabel,
-    required this.onNights,
-    required this.onNightsTyped,
-    required this.checkInAt,
-    required this.quote,
-    required this.letting,
+/// "Payment": Cash / M-Pesa with none chosen; the chosen one solid marine
+/// with white text (the brief: stronger than other selections, as the wrong
+/// method is the most common mistake). The M-Pesa code only for M-Pesa.
+class _Payment extends StatelessWidget {
+  const _Payment({
     required this.method,
     required this.onMethod,
     required this.code,
     required this.codeError,
-    required this.ownShift,
-    required this.onOpenShift,
-    required this.problem,
-    required this.missing,
-    required this.busy,
-    required this.onSave,
   });
 
-  final int nights;
-  final String? nightsError;
-  final String checkoutLabel;
-  final ValueChanged<int> onNights;
-  final ValueChanged<String> onNightsTyped;
-  final DateTime checkInAt;
-  final CheckInQuote? quote;
-  final List<BedSummary> letting;
   final PaymentMethod? method;
   final ValueChanged<PaymentMethod> onMethod;
   final TextEditingController code;
   final String? codeError;
-  final bool ownShift;
-  final VoidCallback onOpenShift;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = LodgingType.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Payment', style: t.sectionTitle),
+        const SizedBox(height: Space.x8),
+        Row(
+          children: [
+            for (final (i, m) in PaymentMethod.values.indexed) ...[
+              if (i > 0) const SizedBox(width: Space.x12),
+              Expanded(
+                child: _MethodButton(
+                  method: m,
+                  chosen: m == method,
+                  onTap: () => onMethod(m),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (method == PaymentMethod.paybill) ...[
+          const SizedBox(height: Space.x12),
+          LabeledField(
+            label: 'M-Pesa code',
+            controller: code,
+            fieldKey: const ValueKey('checkIn.mpesaCode'),
+            textStyle: t.moneySmall,
+            errorText: codeError,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _MethodButton extends StatelessWidget {
+  const _MethodButton({
+    required this.method,
+    required this.chosen,
+    required this.onTap,
+  });
+
+  final PaymentMethod method;
+  final bool chosen;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: chosen,
+      button: true,
+      label: method.label,
+      excludeSemantics: true,
+      child: FocusRing(
+        radius: Radii.control,
+        child: Material(
+          color: chosen ? c.marine : c.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.control),
+            side: BorderSide(color: chosen ? c.marine : c.fieldBorder),
+          ),
+          child: InkWell(
+            key: ValueKey('choice.$method'),
+            borderRadius: BorderRadius.circular(Radii.control),
+            onTap: onTap,
+            child: SizedBox(
+              height: 48,
+              child: Center(
+                child: Text(
+                  method.label,
+                  style: t.body.copyWith(
+                    color: chosen ? c.white : c.ink,
+                    fontWeight: chosen ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The summary card: Total, the price lines, the confirm line, a refusal if
+/// any, Save and print receipt, Cancel.
+class _Summary extends StatelessWidget {
+  const _Summary({
+    required this.quote,
+    required this.lines,
+    required this.confirm,
+    required this.problem,
+    required this.busy,
+    required this.onSave,
+    required this.onCancel,
+  });
+
+  final CheckInQuote? quote;
+  final List<String> lines;
+  final CheckInConfirm confirm;
   final String? problem;
-  final List<String> missing;
   final bool busy;
   final VoidCallback? onSave;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final quote = this.quote;
-
-    Widget dateBox(String label, String value, Key key) => Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: t.secondary.copyWith(color: c.muted)),
-          Text(value, key: key, style: t.bodyMedium),
-        ],
-      ),
-    );
-
+    final problem = this.problem;
     return Card(
+      key: const ValueKey('checkIn.summary'),
       child: Padding(
         padding: const EdgeInsets.all(Space.x24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Stay & payment', style: t.meta.copyWith(color: c.muted)),
-            const SizedBox(height: Space.x12),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Nights', style: t.bodyMedium),
-                      Text(
-                        'Checkout is $checkoutLabel',
-                        style: t.secondary.copyWith(color: c.muted),
-                      ),
-                    ],
-                  ),
-                ),
-                NightStepper(
-                  value: nights,
-                  min: nightsRange.min,
-                  max: nightsRange.max,
-                  onChanged: onNights,
-                  onTyped: onNightsTyped,
-                ),
-              ],
+            Text('Total', style: t.secondary.copyWith(color: c.muted)),
+            const SizedBox(height: Space.x10),
+            Text(
+              quote == null ? '—' : formatKes(quote.total),
+              key: const ValueKey('checkIn.total'),
+              style: t.moneyHero,
             ),
-            if (nightsError != null) ...[
-              const SizedBox(height: Space.x6),
+            for (final (i, line) in lines.indexed) ...[
+              SizedBox(height: i == 0 ? Space.x10 : Space.x4),
               Text(
-                nightsError!,
-                key: const ValueKey('checkIn.nightsError'),
-                style: t.secondary.copyWith(color: c.redText),
+                line,
+                key: ValueKey('checkIn.priceLine.$i'),
+                style: t.secondary.copyWith(color: c.inkSoft),
               ),
             ],
-            const SizedBox(height: Space.x12),
+            const SizedBox(height: Space.x14),
             Container(
-              padding: const EdgeInsets.all(Space.x12),
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.x14,
+                vertical: Space.x10,
+              ),
+              alignment: AlignmentDirectional.centerStart,
               decoration: BoxDecoration(
-                color: c.surface,
+                color: confirm.ready ? c.marineTint : c.surface,
                 borderRadius: BorderRadius.circular(Radii.control),
               ),
-              child: Row(
-                children: [
-                  dateBox(
-                    'Check-in',
-                    formatDayDateComma(checkInAt),
-                    const ValueKey('checkIn.from'),
-                  ),
-                  const SizedBox(width: Space.x12),
-                  dateBox(
-                    'Check-out by',
-                    quote == null ? '—' : formatDayDateComma(quote.paidUntil),
-                    const ValueKey('checkIn.until'),
-                  ),
-                ],
+              child: Text(
+                confirm.text,
+                key: const ValueKey('checkIn.confirmLine'),
+                style: t.body.copyWith(color: confirm.ready ? c.ink : c.muted),
               ),
             ),
-            const SizedBox(height: Space.x12),
-            Divider(color: c.lineSoft),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (quote != null)
-                        for (final s in quote.plan.stays)
-                          Text(
-                            [
-                              if (letting.length > 1)
-                                'Bed ${letting.firstWhere((b) => b.id == s.bedId).label.code}',
-                              '${s.charge.nights} × '
-                                  '${formatKes(s.charge.pricePerNight)}',
-                            ].join(' · '),
-                            style: t.secondary.copyWith(color: c.muted),
-                          ),
-                    ],
-                  ),
-                ),
-                Text(
-                  quote == null ? '—' : formatKes(quote.total),
-                  key: const ValueKey('checkIn.total'),
-                  style: t.money,
-                ),
-              ],
-            ),
-            const SizedBox(height: Space.x16),
-            Text('Paid by', style: t.secondaryMedium),
-            const SizedBox(height: Space.x6),
-            SegmentedChoice<PaymentMethod>(
-              options: [
-                for (final m in PaymentMethod.values) ChoiceOption(m, m.label),
-              ],
-              selected: method,
-              onChanged: onMethod,
-            ),
-            if (method == PaymentMethod.paybill) ...[
-              const SizedBox(height: Space.x12),
-              LabeledField(
-                label: 'M-Pesa transaction code',
-                controller: code,
-                fieldKey: const ValueKey('checkIn.mpesaCode'),
-                textStyle: t.moneySmall,
-                helperText:
-                    'Each code can be used once. A used code is '
-                    'refused.',
-                errorText: codeError,
-              ),
-            ],
-            if (!ownShift) ...[
-              const SizedBox(height: Space.x16),
-              const Note.warning(
-                _CheckInScreenState._noShift,
-                key: ValueKey('checkIn.noShift'),
-              ),
-              const SizedBox(height: Space.x8),
-              AppButton.secondary(
-                key: const ValueKey('checkIn.openShift'),
-                label: 'Open shift',
-                onPressed: onOpenShift,
-              ),
-            ],
             if (problem != null) ...[
-              const SizedBox(height: Space.x16),
-              Note.error(problem!, key: const ValueKey('checkIn.problem')),
+              const SizedBox(height: Space.x14),
+              Note.error(problem, key: const ValueKey('checkIn.problem')),
             ],
-            const SizedBox(height: Space.x16),
-            if (missing.isNotEmpty && ownShift) ...[
-              Text(
-                'Still to choose: ${missing.join(', ')}.',
-                key: const ValueKey('checkIn.missing'),
-                style: t.secondary.copyWith(color: c.muted),
-              ),
-              const SizedBox(height: Space.x8),
-            ],
+            const SizedBox(height: Space.x14),
             AppButton.primary(
               key: const ValueKey('checkIn.save'),
-              label: 'Save and issue receipt',
+              label: 'Save and print receipt',
               busy: busy,
               onPressed: onSave,
             ),
-            const SizedBox(height: Space.x8),
-            Text(
-              'The bed becomes Occupied only after this is saved.',
-              textAlign: TextAlign.center,
-              style: t.secondary.copyWith(color: c.muted),
+            const SizedBox(height: Space.x14),
+            AppButton.secondary(
+              key: const ValueKey('checkIn.cancel'),
+              label: 'Cancel',
+              onPressed: onCancel,
             ),
           ],
         ),
@@ -892,8 +773,93 @@ class _StayCard extends StatelessWidget {
   }
 }
 
-/// Step 4: the receipt (FD-6), with Print as the main button. No print
-/// dialog opens by itself.
+/// No open shift of their own (Figma "No open shift"): a centred card
+/// instead of the form.
+class _NoShift extends StatelessWidget {
+  const _NoShift({
+    required this.canOpen,
+    required this.onOpen,
+    required this.onBack,
+  });
+
+  final bool canOpen;
+  final VoidCallback onOpen;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Card(
+          key: const ValueKey('checkIn.noShift'),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Space.x24,
+              Space.x28,
+              Space.x24,
+              Space.x24,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: c.butter,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      LucideIcons.clock,
+                      size: 22,
+                      color: c.butterText,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Space.x14),
+                Text(
+                  'Open your shift first',
+                  textAlign: TextAlign.center,
+                  style: t.sectionTitle,
+                ),
+                const SizedBox(height: Space.x12),
+                Text(
+                  'Check-ins and payments need an open shift.',
+                  textAlign: TextAlign.center,
+                  style: t.secondary.copyWith(color: c.inkSoft),
+                ),
+                const SizedBox(height: Space.x14),
+                if (canOpen) ...[
+                  AppButton.primary(
+                    key: const ValueKey('checkIn.openShift'),
+                    label: 'Open shift',
+                    onPressed: onOpen,
+                  ),
+                  const SizedBox(height: Space.x14),
+                ],
+                AppButton.secondary(
+                  key: const ValueKey('checkIn.backToBeds'),
+                  label: 'Back to beds',
+                  onPressed: onBack,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// After saving (not redesigned): the receipt (FD-6), with Print as the
+/// main button. No print dialog opens by itself.
 class _Done extends StatelessWidget {
   const _Done({
     required this.saved,
@@ -918,7 +884,7 @@ class _Done extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.check_circle_rounded, color: c.marine, size: 24),
+              Icon(LucideIcons.circleCheck, color: c.marine, size: 24),
               const SizedBox(width: Space.x8),
               Semantics(
                 header: true,
