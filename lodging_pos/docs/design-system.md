@@ -282,7 +282,7 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 - **Room card** (PR 5): white, with a 4 px category stripe along the top, the room number, and the category label in its text colour. A room whose beds are in two categories gets a stripe in two halves and both labels.
 - **Now strip** (PR 5, fixed 25 Nov; brief "Bed board — fixes after the first build"): a summary, never a list.
   - Overstay and To clean cards, each with a 28 px tinted icon circle (red or butter), the title and the count; a card shows only when its count is above 0, and with both at 0 the strip is gone.
-  - Overstay: up to 3 rows, oldest first, 44 px and tappable (the bed panel, where Extend and Check out are): "A9 A · Bobe" left, how long right in red text ("2 h" under a day, then "32 days"). No buttons on the rows. More than 3: a last row "+ 8 more · Show all" that turns on the Overstay chip.
+  - Overstay: up to 3 rows, oldest first, 44 px and tappable (the bed panel, where Extend and Check out are): "A9 A · Bobe" left, how long right in red text ("2 h" under a day, then "32 days"). No buttons on the rows. More than 3: the title line reads "Overstay 11 · Show all", and "Show all" (a 44 px target) turns on the Overstay chip; no "+ N more" row.
   - To clean: 36 px butter chips that hug their text, 8 px apart, wrapping, at most 2 lines; when they don't fit, the last is "+ 6 more", which turns on the To clean chip. A chip opens that bed's cleaning panel.
   - Side by side, the same height, in a window 1024 wide or more; stacked below. The room grid's first row is always on the first screen (layout tests with 26 overstays and 26 beds to clean, at text scale 1, 1.25 and 1.5).
   - "Due out" is dropped.

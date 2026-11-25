@@ -213,8 +213,8 @@ String overstayLength(Duration d) {
   return d.inDays == 1 ? '1 day' : '${d.inDays} days';
 }
 
-/// The Overstay card shows at most 3 rows, the oldest first; the rest are
-/// "+ N more · Show all".
+/// The Overstay card shows at most 3 rows, the oldest first; with [more]
+/// above 0 its title line offers "Show all".
 ({int shown, int more}) nowRows(int count, {int max = 3}) =>
     count <= max ? (shown: count, more: 0) : (shown: max, more: count - max);
 

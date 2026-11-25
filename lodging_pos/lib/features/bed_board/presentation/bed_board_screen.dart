@@ -283,8 +283,8 @@ class _Header extends StatelessWidget {
 }
 
 /// The Now strip, a summary and never a list (brief, "Bed board — fixes
-/// after the first build"): an Overstay card (up to 3 rows, then "+ N more
-/// · Show all") and a To clean card (chips in up to 2 lines, then "+ N
+/// after the first build"): an Overstay card (up to 3 rows, with "Show all"
+/// in its title line when there are more) and a To clean card (chips in up to 2 lines, then "+ N
 /// more"), each only when it has something. Side by side, the same height,
 /// in a window 1024 wide or more; stacked below that.
 class _NowStrip extends StatelessWidget {
@@ -364,10 +364,11 @@ class _NowStrip extends StatelessWidget {
 }
 
 /// A Now card: its colours, a head (a 28 px tinted circle with the icon,
-/// the title and the count) and its body.
+/// the title, the count and an optional [action] after a "·") and its body.
 class _NowCard extends StatelessWidget {
   const _NowCard({
     super.key,
+    this.action,
     required this.background,
     required this.border,
     required this.icon,
@@ -388,6 +389,9 @@ class _NowCard extends StatelessWidget {
   final int count;
   final Color textColor;
   final Widget body;
+
+  /// After the count, e.g. "Show all".
+  final Widget? action;
 
   static const padX = Space.x16;
 
@@ -421,6 +425,11 @@ class _NowCard extends StatelessWidget {
               Text(title, style: t.secondaryMedium.copyWith(color: textColor)),
               const SizedBox(width: Space.x8),
               Text('$count', style: t.moneySmall.copyWith(color: textColor)),
+              if (action != null) ...[
+                const SizedBox(width: Space.x6),
+                Text('·', style: t.secondaryMedium.copyWith(color: textColor)),
+                action!,
+              ],
             ],
           ),
           const SizedBox(height: Space.x6),
@@ -460,6 +469,17 @@ class _OverstayCard extends StatelessWidget {
       title: 'Overstay',
       count: overstays.length,
       textColor: c.redText,
+      action: rows.more == 0
+          ? null
+          : _NowRow(
+              key: const ValueKey('board.overstay.more'),
+              semanticLabel: '${overstays.length} overstays. Show all',
+              onTap: onShowAll,
+              child: Text(
+                'Show all',
+                style: t.secondaryMedium.copyWith(color: c.redText),
+              ),
+            ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -486,16 +506,6 @@ class _OverstayCard extends StatelessWidget {
                     style: t.secondary.copyWith(color: c.redText),
                   ),
                 ],
-              ),
-            ),
-          if (rows.more > 0)
-            _NowRow(
-              key: const ValueKey('board.overstay.more'),
-              semanticLabel: '${rows.more} more overstays. Show all',
-              onTap: onShowAll,
-              child: Text(
-                '+ ${rows.more} more · Show all',
-                style: t.secondaryMedium.copyWith(color: c.redText),
               ),
             ),
         ],

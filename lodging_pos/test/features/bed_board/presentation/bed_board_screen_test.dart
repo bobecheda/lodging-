@@ -223,7 +223,7 @@ void main() {
   });
 
   testWidgets('the Now strip is a summary: 3 overstay rows, oldest first, '
-      'then "+ N more · Show all"; To clean chips hug their text, two lines '
+      'and "Show all" in the title line; To clean chips hug their text, two lines '
       'at most, then "+ N more"', (tester) async {
     // 5 overstays, checked in an hour apart from Mon 12 Oct 08:00 (paid to
     // Tue 10:00); 32 beds checked out, to clean.
@@ -258,7 +258,20 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('+ 2 more · Show all'), findsOneWidget);
+    // "Overstay 5 · Show all" in the title line, no "+ N more" row.
+    final showAll = find.byKey(const ValueKey('board.overstay.more'));
+    expect(
+      find.descendant(of: showAll, matching: find.text('Show all')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('more · Show all'), findsNothing);
+    expect(
+      tester.getCenter(showAll).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const ValueKey('board.overstay.1A'))).dy,
+      ),
+    );
+    expect(tester.getSize(showAll).height, greaterThanOrEqualTo(44));
     // No buttons on the rows.
     expect(find.byKey(const ValueKey('board.overstay.extend')), findsNothing);
 

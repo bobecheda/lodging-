@@ -1142,7 +1142,11 @@ void screens(Size size) {
         await signInAs(tester, 'supervisor', 'super-pass');
         await expectCleanLayout(tester, app, Routes.home, 'New check-in');
 
-        expect(find.text('+ 23 more · Show all'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('board.overstay.more')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('more · Show all'), findsNothing);
         expect(
           find.byKey(const ValueKey('board.toClean.more')),
           findsOneWidget,
