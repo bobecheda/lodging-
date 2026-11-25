@@ -92,14 +92,36 @@ Reduced motion fallback: if Windows "Show animations" doesn't reach Flutter, add
 | Void stay (supervisor/owner) | Red-tint banner "Voids the stay and its payments"; guest + "Checked in by Akinyi · Mon 9 Nov"; each payment "R-000412 · Cash  − KES 3,000"; "Bed after void · To clean"; Reason (required) | Void stay (Danger) + Cancel. Refused (with the reason shown) if the user checked the guest in, or the stay has a refund |
 - Receptionists never see totals beyond the stay's own payments (blind rule unaffected: these are single-stay figures they already print).
 
+## Bed board — fixes after the first build (decided 25 Nov 2026; overrides earlier bed-board text)
+Problem seen on the real build: with 11 overstays and 14 beds to clean, the Now strip filled the screen and the room grid was not visible; To clean chips were full-width bars; tab labels were clipped.
+
+Rule: the Now strip is a SUMMARY, never a list. The room grid must start within the first screen at every width. The strip is at most ~25% of the content height.
+- Each card only appears when its count > 0. If both are 0, the strip is gone.
+- Both cards: same height, hug their content, side by side (50/50) at ≥ 1024; stacked below that.
+- Overstay card: head "Overstay 11" (icon circle + count). Up to 3 rows, oldest first. Row = 44 px, tappable, opens that bed's panel (where Extend / Check out live): "A9 A · Bobe" (Body medium) left, how long right in red-text ("32 days", "2 h"). No buttons on the rows. If more than 3: a last link row "+ 8 more · Show all" that turns on the Overstay filter chip (grid shows only overstays).
+- To clean card: head "To clean 14". Bed chips HUG their text (e.g. "A5 A"), 36 px tall, 8 px gaps, wrapping left-to-right, at most 2 lines. A chip opens that bed's panel. If they don't fit in 2 lines, the last chip is "+ 6 more", which turns on the To clean filter.
+- Long overstays: under 24 h show hours ("2 h"); from 24 h show days ("32 days").
+- Filter chips row and the room grid follow directly; the grid is the main content.
+
+Search on the bed board: DROPPED (decided by Bobe 25 Nov). Remove the "Guest or receipt" box, the receipt results under it, and the "/" shortcut from the board. Finding a guest → Guests tab; finding a receipt → Receipts tab. The header row keeps the date and "New check-in" (N shortcut stays).
+
+Top bar labels must never be clipped or ellipsized. The fit check measures the tabs with the REAL text scale (Windows display scaling, e.g. 125–150%) and folds the tabs into the menu button when they don't fit. Same for the subtitle under the wordmark ("Supervisor" never becomes "Supervis…"): if space is short, the user name hides first, then the tabs fold.
+
 ## Check-in (PR 6) — Figma "Desk · Check-in (full)" (node 43:2187) and "Check-in · variants" (node 44:2248)
 Form pattern; left card (Bed, Guest, Nights, Payment) + right summary card (360 px). Fits 1366×768 without scrolling.
 - Bed: the chosen bed as a row with a 1.5 px marine border: letter box, "104 A", meta line in the category label colour "Comfort · KES 600 a night · cleaned 08:15 · Mary", and "Change" (marine text button, 44 px tall).
   - Change opens the bed chooser: a menu card listing only Ready + clean beds (BR-5), grouped by category (label in category colour + price), each bed an 80×44 chip; the chosen one solid marine.
   - Whole room switch under the bed row, for 2-bed rooms only. Off by default. Disabled with the reason when the other bed isn't Ready ("· 104 B has a guest"). On: the bed row reads "107 A + 107 B · KES 500 a night each"; the summary says "2 beds × 2 nights × KES 500 · one receipt" (BR-4: two stays, one payment).
 - Guest: ONE search box for phone or ID number, matching as you type (FD-3).
-  - Match: a marine-tint row with a check, name, masked phone, masked ID ("National ID ••••3921"), stay count, and "Not her" to clear.
-  - No match: "No guest with this phone or ID — new guest", then Phone (prefilled from the search) and Full name side by side, then "ID (optional)" as a 3-way choice National ID / Passport / Alien ID (none chosen until tapped) and ID number. If an ID number is typed, a type is required; a duplicate ID is refused with where it is registered.
+  - Matches while typing: a list with MASKED phones and IDs. Under the list: "New guest with this phone" (families share phones) — opens the new-guest form with the phone filled and the shared-phone notice.
+  - Selected: a marine-tint row with a check, name, the FULL phone (so staff can confirm it with the guest — masking applies to lists and search results only; CLAUDE.md rule unchanged), masked ID ("National ID ••••3921"), stay count, and "Not this guest" to clear. (The Figma frame shows the phone masked — the brief wins.)
+  - No match: "No guest with this phone or ID — new guest", then Phone and Full name side by side (Phone is filled when the search was a phone; ID number is filled when it was an ID), then "ID (optional)" as a 3-way choice National ID / Passport / Alien ID (none chosen until tapped) and ID number. If an ID number is typed, a type is required.
+  - Duplicate ID: "This National ID is already registered to Grace Wanjiru · 0722 ••• 310." with a "Use this guest" button beside it that selects that guest.
+- No bed chosen yet (New check-in from the board): the bed row reads "Choose a bed" with a Choose button that opens the same chooser.
+- Whole room with two different prices: "107 A + 107 B · KES 500 + KES 600 a night"; the summary shows one line per bed, then "· one receipt".
+- Widths: at 1024 the two columns stay side by side; at 768 the summary moves under the form. Longer states scroll inside the form card while the summary stays put.
+- After saving: today's "Checked in" view with the receipt, Print, Back to bed board and Check in another guest, restyled. No print dialog opens by itself.
+- Pictures (for when Figma's monthly limit is reached): docs/design/v2-check-in-main.png, v2-check-in-variants.png (the variants picture still shows an old grey "Type the full name" in the empty name field — empty fields have no placeholder), v2-bed-panel-states.png, v2-bed-panel-open.png.
   - No placeholders in empty fields except format hints.
 - Nights: stepper + "Out Fri 13 Nov, 10:00".
 - Payment: Cash / M-Pesa, none pre-selected; the chosen one turns solid marine with white text (stronger than other selections, because this is the most common mistake). M-Pesa code field only for M-Pesa.
@@ -184,6 +206,7 @@ The board filters in memory as today (room number exact, occupant name part, pho
 ## Dropped (do not build)
 - "Due out by 10:00" card and its business rule — removed by Bobe, 12 Nov 2026. Occupied tiles still show the guest and paid-until, as today.
 - Receptionist monthly takings PDF (FD-12) — breaks the blind count.
+- Bed-board search box ("Guest or receipt", receipt results, "/" shortcut) — removed by Bobe, 25 Nov 2026. Use the Guests and Receipts tabs.
 
 ## Type and components (v2 tokens in Figma)
 - Text styles v2/*: Page title 24/600, Section title 18/600, Body 16/400, Body medium 16/500, Secondary 14/400, Secondary medium 14/500, Meta 12/500 (meta only), Money hero 30 mono/600, Money 18 mono/600, Money small 14 mono/500. Manrope (incl. 400) + IBM Plex Mono.
