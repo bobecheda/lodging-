@@ -15,7 +15,7 @@ matching section of design.md is marked superseded.
 | 2 | `story/ui-2-tokens` | Colours, type, motion tokens; Manrope 400 |
 | 3 | `story/ui-3-shell` | Top bar, breakpoints, focused flows, phone Reports hidden |
 | 4 | `story/ui-4-category-colours` | `bed_categories.colour`, swatch menu in Prices |
-| 5 | `story/ui-5-bed-board` | Now strip, chips, room cards, v2 tiles, search |
+| 5 | `story/ui-5-bed-board` (+ `ui-5b-bed-board-fixes`) | Now strip, chips, room cards, v2 tiles; the fixes: Now strip as a summary, no board search, top bar labels never cut |
 | 6 | `story/ui-6-check-in` | Check-in restyle, summary card, confirm line |
 | 7 | `story/ui-7-cash` | Cash (takes over Shifts), close shift |
 | 8 | `story/ui-8-receipts-voids` | Receipts, void on receipt (the bed panel's Void stay came with PR 5), Voids removed |
@@ -186,8 +186,8 @@ Breakpoints come from one pure function, unit-tested at 767, 768, 1279 and 1280:
 
 | Width | Name | Desk |
 |---|---|---|
-| < 768 | narrow | Room grid 2 columns, Now strip stacked, search as an icon button |
-| 768–1279 | medium | Room grid 4 (landscape) or 3 (portrait); overstay card stacks guest above buttons |
+| < 768 | narrow | Room grid 2 columns, Now strip stacked |
+| 768–1279 | medium | Room grid 4 (landscape) or 3 (portrait); Now strip side by side from 1024, stacked below |
 | ≥ 1280 | wide | Room grid 6; Now strip side by side; content capped at 1280 px and centred, top bar full width |
 
 **Never:**
@@ -235,7 +235,7 @@ The full sentence ("Online · synced 2 min ago") stays in the drawer and the Clo
 
 **Menus** (Setup ▾, More ▾, the user menu; `showShellMenu`): a 240 px white card, 1 px line border, soft shadow (alpha 0.08), 44 px rows with 20 px icons, the hovered row marine-tint, the current page's row marine-tint with marine text. They drop 4 px as they fade in (150 ms) and fade out (120 ms). Escape or a tap outside closes them; focus goes back to the tab.
 
-**Collapsing:** the tabs collapse into a menu button left of the wordmark **whenever they don't fit** (`tabsFit`, measured with the real text widths). Then the user's name hides; the avatar, the status and Lock stay.
+**Collapsing:** no tab label and no role line under the wordmark is ever cut or ellipsized. Widths are measured with the real text scale (`MediaQuery.textScaler`, so Windows text scaling counts) and rounded up to whole pixels; every text style sets letter spacing 0, so what is drawn is what was measured (a null spacing took Material's 0.1–0.5 px a letter and cut labels, 25 Nov). When space runs short the user's name hides first; then the tabs collapse into a menu button left of the wordmark (`barLayout`), the name staying hidden; the avatar, the status and Lock stay.
 
 **The drawer** (`showNavDrawer`): 304 px from the left, full height, white, a 1 px line on its right and a soft shadow, over the 35% ink scrim.
 - Head: the wordmark and role, and Close (X, 44 px).
@@ -280,8 +280,11 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
   - To clean: butter with a dashed butter border.
   - As built: one line, 44 px tall (a hit target): "Ready"; the guest's surname and the paid-until weekday ("Otieno · Thu"), or the time when it's today ("Kamau · 11:30"); "Kamau · 2 h" past checkout; "To clean", or "To clean · Mary" once someone has it. Screen readers hear the full name and paid-until.
 - **Room card** (PR 5): white, with a 4 px category stripe along the top, the room number, and the category label in its text colour. A room whose beds are in two categories gets a stripe in two halves and both labels.
-- **Now strip** (PR 5):
-  - Overstay and To clean alert cards, each with a 32 px tinted icon circle (red or butter).
+- **Now strip** (PR 5, fixed 25 Nov; brief "Bed board — fixes after the first build"): a summary, never a list.
+  - Overstay and To clean cards, each with a 28 px tinted icon circle (red or butter), the title and the count; a card shows only when its count is above 0, and with both at 0 the strip is gone.
+  - Overstay: up to 3 rows, oldest first, 44 px and tappable (the bed panel, where Extend and Check out are): "A9 A · Bobe" left, how long right in red text ("2 h" under a day, then "32 days"). No buttons on the rows. More than 3: the title line reads "Overstay 11 · Show all", and "Show all" (a 44 px target) turns on the Overstay chip; no "+ N more" row.
+  - To clean: 36 px butter chips that hug their text, 8 px apart, wrapping, at most 2 lines; when they don't fit, the last is "+ 6 more", which turns on the To clean chip. A chip opens that bed's cleaning panel.
+  - Side by side, the same height, in a window 1024 wide or more; stacked below. The room grid's first row is always on the first screen (layout tests with 26 overstays and 26 beds to clean, at text scale 1, 1.25 and 1.5).
   - "Due out" is dropped.
 - **Menus**: white card, 1 px line border, soft shadow (alpha ≤ 0.08), 44 px rows, hovered row marine-tint.
 - **Buttons**: Primary (marine), Secondary (white, field border), Danger, per `v2/Button`.
@@ -300,11 +303,11 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 | Owner Today, phone (PR 9) | Phone · Owner Today | See below |
 
 **Bed board:**
-- Date and time; the "Guest or receipt" search; New check-in.
+- Date and time; New check-in. (The "Guest or receipt" search, its receipt results and "/" were dropped on 25 Nov: guests on Guests, receipts on Receipts.)
 - Now strip, filter chips with counts (All, Ready, Occupied, Overstay, To clean) and a last chip "Category ▾" whose menu narrows the board to one category, the room grid (6 columns at 1366, 4 at 1024, 3 at 768).
-- The Now strip's cards sit side by side when there's room, stacked below about 900 px; the overstay card stacks its guest above its buttons when it's narrow. A To clean chip opens that bed's cleaning panel.
+- The Now strip as described under Components.
 - A Ready tile goes straight to check-in (no Ready panel); the check-in's bed shows "Cleaned 08:15 · Mary" when it was cleaned through the desk.
-- Shortcuts: N for new check-in, / for search (not while a field has the cursor), Esc to close.
+- Shortcuts: N for new check-in (not while a field has the cursor), Esc to close.
 
 **Bed panel (PR 5, Figma "Bed panel · states"):**
 - The 440 px side panel with a head (bed "106 A", category and price in the category's colour, status badge, Close), a scrolling body and the actions at the foot.
@@ -313,11 +316,6 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 - Extend: nights with the new checkout, the check-in price, Cash or M-Pesa, a confirm line, "Extend and print receipt". During an overstay the panel opens here with the red banner ("2 h past 10:00 · paid to Wed 11 Nov"), and the second button charges the nights started and checks out with the same payment.
 - To clean (the cleaning panel): the butter banner with the last checkout, the housekeeper, Assign cleaning and Mark clean (already cleaned: both at once); once assigned, Mark clean and Reassign.
 - Void stay: the Story A rules as built (`void_rules.dart`, `VoidsRepository.voidStay`): the receipts it voids, the other bed's stay when one payment paid both, the bed after ("To clean"), a reason; the rule that stops it (e.g. you checked the guest in yourself) shows instead of the button.
-- **Search rule:**
-  - The board filters in memory as today: room number exact, part of the occupant's name, the start of their phone.
-  - Under the box, up to 5 matching receipts.
-  - Digits alone mean a room; a receipt needs the prefix (`R-418`) or 5 or more digits.
-  - A name never searches receipts.
 
 **Check-in:**
 - Guest, Nights, Payment; a summary card with the total; a confirm line above "Save and print receipt".

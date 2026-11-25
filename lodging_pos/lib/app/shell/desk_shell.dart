@@ -356,7 +356,7 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) {
     textScaler: scaler,
     maxLines: 1,
   )..layout();
-  final width = painter.width;
+  final width = measuredWidth(painter.width);
   painter.dispose();
   return width;
 }

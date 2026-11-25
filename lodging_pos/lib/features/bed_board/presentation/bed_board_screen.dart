@@ -16,15 +16,14 @@ import '../../../core/auth/session.dart';
 import '../../../core/clock/nairobi.dart';
 import '../../../core/money/kes.dart';
 import '../../housekeeping/presentation/cleaning_panel.dart';
-import '../../receipts/data/receipts_repository.dart';
-import '../../receipts/presentation/receipts_providers.dart';
+import '../../setup/domain/rooms.dart';
 import '../../stays/presentation/bed_panel.dart';
 import '../domain/bed_board.dart';
 import 'bed_board_providers.dart';
 
 /// FD-2 "Bed board", v2 (PR 5, Figma "Desk · Bed board — top nav", "— 1024
-/// wide", "— 768 wide"): the date, the "Guest or receipt" search and New
-/// check-in; the Now strip (Overstay, To clean); filter chips with a
+/// wide", "— 768 wide"; fixed 25 Nov): the date and New check-in; the Now
+/// strip, a summary (Overstay, To clean); filter chips with a
 /// category menu; room cards with their category stripe. A Ready tile
 /// starts a check-in; Occupied and Overstay tiles open the bed panel (FD-7,
 /// FD-8); To clean tiles the cleaning panel (FD-9).
@@ -40,8 +39,6 @@ class BedBoardScreen extends ConsumerStatefulWidget {
 }
 
 class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
-  final _search = TextEditingController();
-  final _searchFocus = FocusNode(debugLabel: 'board.search');
   BoardStatus? _status;
   String? _categoryId;
 
@@ -54,25 +51,21 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
     HardwareKeyboard.instance.addHandler(_onKey);
   }
 
-  /// The board's keys (design-system.md, "Bed board"), while it is the page
-  /// in front (no panel or menu over it) and no field has the cursor (there,
-  /// they are just characters): "/" goes to the search box, "N" starts a
-  /// new check-in.
+  /// "N" starts a new check-in (design-system.md, "Bed board"), while the
+  /// board is the page in front (no panel or menu over it) and no field has
+  /// the cursor (there, it's just a letter).
   bool _onKey(KeyEvent event) {
-    final key = event.character?.toLowerCase();
-    if (event is! KeyDownEvent || (key != '/' && key != 'n')) return false;
+    if (event is! KeyDownEvent || event.character?.toLowerCase() != 'n') {
+      return false;
+    }
     if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return false;
     final focused = FocusManager.instance.primaryFocus?.context;
     if (focused?.findAncestorWidgetOfExactType<EditableText>() != null) {
       return false;
     }
-    if (key == 'n') {
-      final user = ref.read(sessionProvider);
-      if (user == null || !can(user, Permission.checkIn)) return false;
-      context.go(Routes.checkIn);
-      return true;
-    }
-    _searchFocus.requestFocus();
+    final user = ref.read(sessionProvider);
+    if (user == null || !can(user, Permission.checkIn)) return false;
+    context.go(Routes.checkIn);
     return true;
   }
 
@@ -97,8 +90,6 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
-    _search.dispose();
-    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -123,9 +114,6 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
 
     final header = _Header(
       now: now,
-      search: _search,
-      searchFocus: _searchFocus,
-      onSearchChanged: () => setState(() {}),
       onNewCheckIn: canCheckIn ? () => context.go(Routes.checkIn) : null,
     );
 
@@ -152,16 +140,14 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
 
     final view = boardView(
       list,
-      BoardFilter(
-        status: _status,
-        categoryId: _categoryId,
-        query: _search.text,
-      ),
+      BoardFilter(status: _status, categoryId: _categoryId),
       now: now,
       graceMinutes: grace,
     );
     final toClean = [
-      for (final r in [...list]..sort((a, b) => a.number.compareTo(b.number)))
+      for (final r in [
+        ...list,
+      ]..sort((a, b) => compareRoomNumbers(a.number, b.number)))
         for (final b in r.beds)
           if (statusOf(b, now: now, graceMinutes: grace) == BoardStatus.toClean)
             (r, b),
@@ -201,19 +187,19 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
       key: const ValueKey('board.grid'),
       slivers: [
         SliverToBoxAdapter(child: header),
-        const SliverToBoxAdapter(child: SizedBox(height: Space.x20)),
+        const SliverToBoxAdapter(child: SizedBox(height: Space.x16)),
         if (view.overstays.isNotEmpty || toClean.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: _NowStrip(
               overstays: view.overstays,
               toClean: toClean,
               now: now,
-              onExtend: canExtend ? openPanel : null,
-              onCheckOut: canCheckOut ? openPanel : null,
+              onOpen: canCheckOut || canExtend ? openPanel : null,
               onClean: onClean,
+              onShowAll: (s) => setState(() => _status = s),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: Space.x20)),
+          const SliverToBoxAdapter(child: SizedBox(height: Space.x16)),
         ],
         SliverToBoxAdapter(
           child: Wrap(
@@ -243,7 +229,7 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
             ],
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: Space.x20)),
+        const SliverToBoxAdapter(child: SizedBox(height: Space.x16)),
         grid,
         const SliverToBoxAdapter(child: SizedBox(height: Space.x24)),
       ],
@@ -258,232 +244,107 @@ class _BedBoardScreenState extends ConsumerState<BedBoardScreen> {
   };
 }
 
-/// The date and time, the "Guest or receipt" box (with up to five matching
-/// receipts under it) and New check-in.
-class _Header extends ConsumerWidget {
-  const _Header({
-    required this.now,
-    required this.search,
-    required this.searchFocus,
-    required this.onSearchChanged,
-    required this.onNewCheckIn,
-  });
+/// The date and time, and New check-in. (The "Guest or receipt" search was
+/// dropped on 25 Nov: guests are found on Guests, receipts on Receipts.)
+class _Header extends StatelessWidget {
+  const _Header({required this.now, required this.onNewCheckIn});
 
   final DateTime? now;
-  final TextEditingController search;
-  final FocusNode searchFocus;
-  final VoidCallback onSearchChanged;
   final VoidCallback? onNewCheckIn;
 
-  static const _searchWidth = 300.0;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final date = now == null ? '' : formatDayDateTime(now!);
-    final term = receiptSearchTerm(search.text);
-    final receipts = term == null
-        ? const <ReceiptSummary>[]
-        : (ref.watch(receiptListProvider(term)).value ?? const [])
-              .take(5)
-              .toList();
-
-    final box = TextField(
-      key: const ValueKey('board.search'),
-      controller: search,
-      focusNode: searchFocus,
-      onChanged: (_) => onSearchChanged(),
-      style: t.body,
-      decoration: InputDecoration(
-        hintText: 'Guest or receipt',
-        prefixIcon: Icon(LucideIcons.search, size: 18, color: c.muted),
-        suffixIcon: Padding(
-          padding: const EdgeInsets.all(Space.x12),
-          child: Container(
-            width: 21,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(Radii.badge),
-              border: Border.all(color: c.line),
-            ),
-            child: ExcludeSemantics(
-              child: Text('/', style: t.meta.copyWith(color: c.muted)),
+    return Row(
+      children: [
+        Expanded(
+          child: Semantics(
+            header: true,
+            label: 'Bed board, $date',
+            excludeSemantics: true,
+            child: Text(
+              date,
+              key: const ValueKey('board.now'),
+              style: t.secondary.copyWith(color: c.muted),
             ),
           ),
         ),
-        suffixIconConstraints: const BoxConstraints(maxHeight: Sizes.target),
-      ),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Semantics(
-                header: true,
-                label: 'Bed board, $date',
-                excludeSemantics: true,
-                child: Text(
-                  date,
-                  key: const ValueKey('board.now'),
-                  style: t.secondary.copyWith(color: c.muted),
-                ),
-              ),
-            ),
-            Flexible(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _searchWidth),
-                child: box,
-              ),
-            ),
-            if (onNewCheckIn != null) ...[
-              const SizedBox(width: Space.x12),
-              AppButton.primary(
-                key: const ValueKey('board.newCheckIn'),
-                label: 'New check-in',
-                onPressed: onNewCheckIn,
-              ),
-            ],
-          ],
-        ),
-        if (receipts.isNotEmpty)
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: Space.x8,
-                right: onNewCheckIn == null ? 0 : 133,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _searchWidth),
-                child: _ReceiptResults(
-                  receipts: receipts,
-                  onOpen: (r) => context.go(
-                    Routes.receiptFor(search.text.trim(), r.paymentId),
-                  ),
-                ),
-              ),
-            ),
+        if (onNewCheckIn != null)
+          AppButton.primary(
+            key: const ValueKey('board.newCheckIn'),
+            label: 'New check-in',
+            onPressed: onNewCheckIn,
           ),
       ],
     );
   }
 }
 
-/// Up to five receipts matching the search, under the box.
-class _ReceiptResults extends StatelessWidget {
-  const _ReceiptResults({required this.receipts, required this.onOpen});
-
-  final List<ReceiptSummary> receipts;
-  final ValueChanged<ReceiptSummary> onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    final t = LodgingType.of(context);
-    return Container(
-      key: const ValueKey('board.receipts'),
-      padding: const EdgeInsets.all(Space.x6),
-      decoration: BoxDecoration(
-        color: c.white,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: c.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final r in receipts)
-            FocusRing(
-              radius: Radii.tab,
-              child: InkWell(
-                key: ValueKey('board.receipt.${r.receiptNumber}'),
-                borderRadius: BorderRadius.circular(Radii.tab),
-                hoverColor: c.marineTint,
-                onTap: () => onOpen(r),
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: Sizes.target),
-                  padding: const EdgeInsets.symmetric(horizontal: Space.x10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${r.receiptNumber} · ${shortGuestName(r.guestName)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.moneySmall.copyWith(color: c.ink),
-                        ),
-                      ),
-                      const SizedBox(width: Space.x8),
-                      Text(
-                        formatKes(r.total),
-                        style: t.moneySmall.copyWith(color: c.inkSoft),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The Now strip: the Overstay card (the oldest, with Extend and Check out)
-/// and the To clean card (a chip per bed). Side by side when there's room,
-/// stacked below about 900 px; the overstay card stacks its guest above its
-/// buttons when it's narrow.
+/// The Now strip, a summary and never a list (brief, "Bed board — fixes
+/// after the first build"): an Overstay card (up to 3 rows, with "Show all"
+/// in its title line when there are more) and a To clean card (chips in up to 2 lines, then "+ N
+/// more"), each only when it has something. Side by side, the same height,
+/// in a window 1024 wide or more; stacked below that.
 class _NowStrip extends StatelessWidget {
   const _NowStrip({
     required this.overstays,
     required this.toClean,
     required this.now,
-    required this.onExtend,
-    required this.onCheckOut,
+    required this.onOpen,
     required this.onClean,
+    required this.onShowAll,
   });
 
   final List<OverstayAlert> overstays;
   final List<(BoardRoom, BoardBed)> toClean;
   final DateTime now;
-  final ValueChanged<String>? onExtend;
-  final ValueChanged<String>? onCheckOut;
+
+  /// Opens an overstay's bed panel (Extend and Check out live there).
+  final ValueChanged<String>? onOpen;
   final ValueChanged<String>? onClean;
 
-  static const _sideBySide = 900.0;
+  /// "Show all": the board's filter chip for that status.
+  final ValueChanged<BoardStatus> onShowAll;
+
+  static const _sideBySideWindow = 1024.0;
 
   @override
   Widget build(BuildContext context) {
+    final sideBySide =
+        overstays.isNotEmpty &&
+        toClean.isNotEmpty &&
+        MediaQuery.sizeOf(context).width >= _sideBySideWindow;
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final both = overstays.isNotEmpty && toClean.isNotEmpty;
-        final sideBySide = both && constraints.maxWidth >= _sideBySide;
-        final overstayWidth = sideBySide
-            ? (constraints.maxWidth - Space.x12) / 2
-            : constraints.maxWidth;
-        final cards = [
-          if (overstays.isNotEmpty)
-            _OverstayCard(
-              overstays,
-              now: now,
-              stacked: overstayWidth < _OverstayCard.stackBelow,
-              onExtend: onExtend,
-              onCheckOut: onCheckOut,
-            ),
-          if (toClean.isNotEmpty) _ToCleanCard(toClean, onClean: onClean),
-        ];
-        if (cards.length == 1) return cards.single;
+      builder: (context, box) {
+        final cardWidth = sideBySide
+            ? (box.maxWidth - Space.x12) / 2
+            : box.maxWidth;
+        final overstay = overstays.isEmpty
+            ? null
+            : _OverstayCard(
+                overstays,
+                now: now,
+                onOpen: onOpen,
+                onShowAll: () => onShowAll(BoardStatus.overstay),
+              );
+        final clean = toClean.isEmpty
+            ? null
+            : _ToCleanCard(
+                toClean,
+                chipsWidth: cardWidth - 2 * _NowCard.padX - 2,
+                onClean: onClean,
+                onShowAll: () => onShowAll(BoardStatus.toClean),
+              );
         if (sideBySide) {
           return IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(child: cards[0]),
+                Expanded(child: overstay!),
                 const SizedBox(width: Space.x12),
-                Expanded(child: cards[1]),
+                Expanded(child: clean!),
               ],
             ),
           );
@@ -491,9 +352,10 @@ class _NowStrip extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            cards[0],
-            const SizedBox(height: Space.x12),
-            cards[1],
+            ?overstay,
+            if (overstay != null && clean != null)
+              const SizedBox(height: Space.x12),
+            ?clean,
           ],
         );
       },
@@ -501,42 +363,79 @@ class _NowStrip extends StatelessWidget {
   }
 }
 
-/// A Now card's head: a 32 px tinted circle with its icon, the title and
-/// the count.
-class _NowHead extends StatelessWidget {
-  const _NowHead({
+/// A Now card: its colours, a head (a 28 px tinted circle with the icon,
+/// the title, the count and an optional [action] after a "·") and its body.
+class _NowCard extends StatelessWidget {
+  const _NowCard({
+    super.key,
+    this.action,
+    required this.background,
+    required this.border,
     required this.icon,
     required this.circle,
     required this.iconColor,
     required this.title,
     required this.count,
     required this.textColor,
+    required this.body,
   });
 
+  final Color background;
+  final Color border;
   final IconData icon;
   final Color circle;
   final Color iconColor;
   final String title;
   final int count;
   final Color textColor;
+  final Widget body;
+
+  /// After the count, e.g. "Show all".
+  final Widget? action;
+
+  static const padX = Space.x16;
 
   @override
   Widget build(BuildContext context) {
     final t = LodgingType.of(context);
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: circle, shape: BoxShape.circle),
-          child: Icon(icon, size: 18, color: iconColor),
-        ),
-        const SizedBox(width: Space.x10),
-        Text(title, style: t.secondaryMedium.copyWith(color: textColor)),
-        const SizedBox(width: Space.x10),
-        Text('$count', style: t.moneySmall.copyWith(color: textColor)),
-      ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(padX, Space.x12, padX, Space.x12),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(Radii.card),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: circle,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 16, color: iconColor),
+              ),
+              const SizedBox(width: Space.x10),
+              Text(title, style: t.secondaryMedium.copyWith(color: textColor)),
+              const SizedBox(width: Space.x8),
+              Text('$count', style: t.moneySmall.copyWith(color: textColor)),
+              if (action != null) ...[
+                const SizedBox(width: Space.x6),
+                Text('·', style: t.secondaryMedium.copyWith(color: textColor)),
+                action!,
+              ],
+            ],
+          ),
+          const SizedBox(height: Space.x6),
+          body,
+        ],
+      ),
     );
   }
 }
@@ -545,178 +444,242 @@ class _OverstayCard extends StatelessWidget {
   const _OverstayCard(
     this.overstays, {
     required this.now,
-    required this.stacked,
-    required this.onExtend,
-    required this.onCheckOut,
+    required this.onOpen,
+    required this.onShowAll,
   });
 
+  /// Oldest first.
   final List<OverstayAlert> overstays;
   final DateTime now;
-
-  /// The guest above the buttons, when the card is narrow.
-  final bool stacked;
-
-  /// Each opens the oldest overstay's bed panel.
-  final ValueChanged<String>? onExtend;
-  final ValueChanged<String>? onCheckOut;
-
-  /// Narrower than this, the card stacks the guest above its buttons.
-  static const stackBelow = 560.0;
+  final ValueChanged<String>? onOpen;
+  final VoidCallback onShowAll;
 
   @override
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
-    final first = overstays.first;
-    final who = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          overstayWho(first),
-          key: const ValueKey('board.overstay.who'),
-          style: t.body.copyWith(color: c.ink),
-        ),
-        Text(
-          overstayPast(first, now: now),
-          style: t.secondary.copyWith(color: c.redText),
-        ),
-      ],
-    );
-    final buttons = Wrap(
-      spacing: Space.x8,
-      runSpacing: Space.x8,
-      children: [
-        if (onExtend != null)
-          AppButton.urgent(
-            key: const ValueKey('board.overstay.extend'),
-            label: 'Extend',
-            onPressed: () => onExtend!(first.stayId),
-          ),
-        if (onCheckOut != null)
-          AppButton.secondary(
-            key: const ValueKey('board.overstay.checkOut'),
-            label: 'Check out',
-            onPressed: () => onCheckOut!(first.stayId),
-          ),
-      ],
-    );
-    return Container(
+    final rows = nowRows(overstays.length);
+    return _NowCard(
       key: const ValueKey('board.overstayBar'),
-      padding: const EdgeInsets.all(Space.x16),
-      decoration: BoxDecoration(
-        color: c.redTint,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: c.redBorder),
-      ),
-      child: Builder(
-        builder: (context) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _NowHead(
-                icon: LucideIcons.triangleAlert,
-                circle: c.red,
-                iconColor: c.white,
-                title: 'Overstay',
-                count: overstays.length,
-                textColor: c.redText,
+      background: c.redTint,
+      border: c.redBorder,
+      icon: LucideIcons.triangleAlert,
+      circle: c.red,
+      iconColor: c.white,
+      title: 'Overstay',
+      count: overstays.length,
+      textColor: c.redText,
+      action: rows.more == 0
+          ? null
+          : _NowRow(
+              key: const ValueKey('board.overstay.more'),
+              semanticLabel: '${overstays.length} overstays. Show all',
+              onTap: onShowAll,
+              child: Text(
+                'Show all',
+                style: t.secondaryMedium.copyWith(color: c.redText),
               ),
-              const SizedBox(height: Space.x12),
-              if (stacked) ...[
-                who,
-                const SizedBox(height: Space.x12),
-                buttons,
-              ] else
-                Row(
-                  children: [
-                    Expanded(child: who),
-                    const SizedBox(width: Space.x8),
-                    buttons,
-                  ],
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ToCleanCard extends StatelessWidget {
-  const _ToCleanCard(this.beds, {required this.onClean});
-
-  final List<(BoardRoom, BoardBed)> beds;
-  final ValueChanged<String>? onClean;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = LodgingColors.of(context);
-    return Container(
-      key: const ValueKey('board.toClean'),
-      padding: const EdgeInsets.all(Space.x16),
-      decoration: BoxDecoration(
-        color: c.white,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: c.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _NowHead(
-            icon: LucideIcons.bedDouble,
-            circle: c.butter,
-            iconColor: c.butterText,
-            title: 'To clean',
-            count: beds.length,
-            textColor: c.ink,
-          ),
-          const SizedBox(height: Space.x12),
-          Wrap(
-            spacing: Space.x8,
-            runSpacing: Space.x8,
-            children: [
-              for (final (room, bed) in beds)
-                _CleanChip(
-                  key: ValueKey(
-                    'board.toClean.${room.number}${bed.label.code}',
+          for (final a in overstays.take(rows.shown))
+            _NowRow(
+              key: ValueKey('board.overstay.${a.roomNumber}${a.label.code}'),
+              semanticLabel:
+                  '${overstayWho(a)}, '
+                  '${overstayLength(now.difference(a.paidUntil))} past '
+                  'checkout',
+              onTap: onOpen == null ? null : () => onOpen!(a.stayId),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      overstayWho(a),
+                      style: t.bodyMedium.copyWith(color: c.ink),
+                    ),
                   ),
-                  text: '${room.number} ${bed.label.code}',
-                  onTap: onClean == null ? null : () => onClean!(bed.id),
-                ),
-            ],
-          ),
+                  const SizedBox(width: Space.x8),
+                  Text(
+                    overstayLength(now.difference(a.paidUntil)),
+                    style: t.secondary.copyWith(color: c.redText),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
+/// A 44 px tappable row of a Now card.
+class _NowRow extends StatelessWidget {
+  const _NowRow({
+    super.key,
+    required this.semanticLabel,
+    required this.onTap,
+    required this.child,
+  });
+
+  final String semanticLabel;
+  final VoidCallback? onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Container(
+      constraints: const BoxConstraints(minHeight: Sizes.target),
+      padding: const EdgeInsets.symmetric(horizontal: Space.x8),
+      alignment: AlignmentDirectional.centerStart,
+      child: child,
+    );
+    return Semantics(
+      button: onTap != null,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: onTap == null
+          ? row
+          : FocusRing(
+              radius: Radii.tab,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(Radii.tab),
+                  onTap: onTap,
+                  child: row,
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _ToCleanCard extends StatelessWidget {
+  const _ToCleanCard(
+    this.beds, {
+    required this.chipsWidth,
+    required this.onClean,
+    required this.onShowAll,
+  });
+
+  final List<(BoardRoom, BoardBed)> beds;
+
+  /// The width the chips wrap in.
+  final double chipsWidth;
+  final ValueChanged<String>? onClean;
+  final VoidCallback onShowAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = t.moneySmall;
+    String name(BoardRoom r, BoardBed b) => '${r.number} ${b.label.code}';
+    final shown = chipsThatFit(
+      widths: [
+        for (final (r, b) in beds)
+          _CleanChip.widthOf(name(r, b), style, scaler),
+      ],
+      maxWidth: chipsWidth,
+      gap: Space.x8,
+      lines: 2,
+      moreWidth: (n) => _CleanChip.widthOf('+ $n more', style, scaler),
+    );
+    final more = beds.length - shown;
+    return _NowCard(
+      key: const ValueKey('board.toClean'),
+      background: c.white,
+      border: c.line,
+      icon: LucideIcons.bedDouble,
+      circle: c.butter,
+      iconColor: c.butterText,
+      title: 'To clean',
+      count: beds.length,
+      textColor: c.ink,
+      body: Padding(
+        padding: const EdgeInsets.only(top: Space.x4),
+        child: Wrap(
+          spacing: Space.x8,
+          runSpacing: Space.x8,
+          children: [
+            for (final (r, b) in beds.take(shown))
+              _CleanChip(
+                key: ValueKey('board.toClean.${r.number}${b.label.code}'),
+                text: name(r, b),
+                semanticLabel: 'Bed ${name(r, b)} to clean',
+                onTap: onClean == null ? null : () => onClean!(b.id),
+              ),
+            if (more > 0)
+              _CleanChip(
+                key: const ValueKey('board.toClean.more'),
+                text: '+ $more more',
+                semanticLabel: '$more more beds to clean. Show all',
+                onTap: onShowAll,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A 36 px butter chip that hugs its text.
 class _CleanChip extends StatelessWidget {
-  const _CleanChip({super.key, required this.text, required this.onTap});
+  const _CleanChip({
+    super.key,
+    required this.text,
+    required this.semanticLabel,
+    required this.onTap,
+  });
 
   final String text;
+  final String semanticLabel;
   final VoidCallback? onTap;
+
+  static const _padX = Space.x10;
+
+  /// The chip's width for [text]: its padding and the text, rounded up.
+  static double widthOf(String text, TextStyle style, TextScaler scaler) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    final width = painter.width.ceilToDouble() + 2 * _padX;
+    painter.dispose();
+    return width;
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = LodgingColors.of(context);
     final t = LodgingType.of(context);
     final chip = Container(
-      constraints: const BoxConstraints(minHeight: Sizes.target),
-      padding: const EdgeInsets.symmetric(horizontal: Space.x10),
-      alignment: Alignment.center,
+      height: Sizes.targetCompact,
+      padding: const EdgeInsets.symmetric(horizontal: _padX),
       decoration: BoxDecoration(
         color: c.butter,
         borderRadius: BorderRadius.circular(Radii.badge),
       ),
-      child: Text(text, style: t.moneySmall.copyWith(color: c.butterText)),
+      // widthFactor 1: the chip hugs its text instead of filling the row
+      // (an alignment here made each chip a full-width bar).
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: t.moneySmall.copyWith(color: c.butterText),
+        ),
+      ),
     );
     return Semantics(
       button: onTap != null,
-      label: 'Bed $text to clean',
+      label: semanticLabel,
       excludeSemantics: true,
       child: onTap == null
           ? chip

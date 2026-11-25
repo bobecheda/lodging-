@@ -127,17 +127,20 @@ void main() {
     expect(tileText('5A', 'Kamau · 1 h'), findsOneWidget);
     expect(tileStatus(tester, '5A'), BedTileStatus.overstay);
 
-    // The Now strip: the oldest overstay, and the beds to clean.
-    final card = find.byKey(const ValueKey('board.overstayBar'));
+    // The Now strip: the overstay as a row (no buttons), and the beds to
+    // clean as chips.
+    final row = find.byKey(const ValueKey('board.overstay.5A'));
     expect(
-      find.descendant(of: card, matching: find.text('5 A · Kamau')),
+      find.descendant(of: row, matching: find.text('5 A · Kamau')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: card, matching: find.text('1 h past 10:00')),
+      find.descendant(of: row, matching: find.text('1 h')),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('board.overstay.more')), findsNothing);
     expect(find.byKey(const ValueKey('board.toClean.3A')), findsOneWidget);
+    expect(find.byKey(const ValueKey('board.toClean.more')), findsNothing);
 
     expect(chip(tester, 'all'), 'All, 4');
     expect(chip(tester, 'ready'), 'Ready, 1');
@@ -181,7 +184,7 @@ void main() {
     expect(find.text('Room 1 · Bed A'), findsOneWidget);
   });
 
-  testWidgets('chips, category and search filter the board', (tester) async {
+  testWidgets('chips and category filter the board', (tester) async {
     await room('1', twoBeds: true); // A Deluxe, B Normal
     final r2 = await room('2');
     final stay = await env.checkIn(r2.beds.single.id, by: supervisor);
@@ -201,68 +204,118 @@ void main() {
     expect(chip(tester, 'all'), 'All, 1');
     await tapKey(tester, 'board.category');
     await tapKey(tester, 'board.category.all');
-
-    Future<List<String>> roomsFor(String q) async {
-      await enterKey(tester, 'board.search', q);
-      await tester.pumpAndSettle();
-      return [
-        for (final n in ['1', '2', '10'])
-          if (find.byKey(ValueKey('board.room.$n')).evaluate().isNotEmpty) n,
-      ];
-    }
-
-    expect(await roomsFor('10'), ['10']);
-    expect(await roomsFor('grace'), ['2']);
-    expect(await roomsFor('0722 41'), ['2']);
-    expect(await roomsFor('+254 722'), ['2']);
-    expect(await roomsFor('nobody'), isEmpty);
-    expect(find.text('No beds match.'), findsOneWidget);
-    expect(await roomsFor(''), ['1', '2', '10']);
     // Phones are never shown on the board, masked or not.
     expect(find.textContaining('0722'), findsNothing);
   });
 
-  testWidgets('"Guest or receipt": a receipt number lists the receipt under '
-      'the box and opens it in Receipts; a name never does; "/" goes to the '
-      'box (v2 PR 5)', (tester) async {
-    final r2 = await room('2');
-    final stay = await env.checkIn(r2.beds.single.id, by: supervisor);
-    await nameGuest(stay, 'Grace Achieng', '0722418905');
-    final number =
-        (await env.db.select(env.db.payments).getSingle()).receiptNumber;
+  testWidgets('"N" starts a new check-in; there is no board search and '
+      '"/" does nothing (dropped 25 Nov)', (tester) async {
     final app = await openBoard(tester);
-
+    expect(find.byKey(const ValueKey('board.search')), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.slash);
-    await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'board.search');
-
-    await enterKey(tester, 'board.search', 'Achieng');
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('board.receipts')), findsNothing);
-    expect(find.byKey(const ValueKey('board.room.2')), findsOneWidget);
-
-    await enterKey(tester, 'board.search', number);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('board.receipts')), findsOneWidget);
-    await tapKey(tester, 'board.receipt.$number');
-    expect(locationOf(app), Routes.receipts);
-  });
-
-  testWidgets('"N" starts a new check-in, unless a field has the cursor', (
-    tester,
-  ) async {
-    final app = await openBoard(tester);
-    await enterKey(tester, 'board.search', '');
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
     await tester.pumpAndSettle();
     expect(locationOf(app), Routes.home);
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
     await tester.pumpAndSettle();
     expect(locationOf(app), Routes.checkIn);
     // The board's streams close on leaving: run their zero-length timers.
     await tester.pump(Duration.zero);
+  });
+
+  testWidgets('the Now strip is a summary: 3 overstay rows, oldest first, '
+      'and "Show all" in the title line; To clean chips hug their text, two lines '
+      'at most, then "+ N more"', (tester) async {
+    // 5 overstays, checked in an hour apart from Mon 12 Oct 08:00 (paid to
+    // Tue 10:00); 32 beds checked out, to clean.
+    final over = <RoomSummary>[];
+    for (var i = 1; i <= 5; i++) {
+      over.add(await room('$i'));
+    }
+    final dirty = <RoomSummary>[];
+    for (var i = 21; i <= 52; i++) {
+      dirty.add(await room('$i'));
+    }
+    for (final (i, r) in over.indexed) {
+      env.clock.set(nairobiInstant(2026, 10, 12, 8 + i));
+      await env.checkIn(r.beds.single.id, by: supervisor);
+    }
+    env.clock.set(nairobiInstant(2026, 10, 14, 21));
+    for (final r in dirty) {
+      final stay = await env.checkIn(r.beds.single.id, by: supervisor);
+      await env.checkOut(stay, by: supervisor);
+    }
+    env.clock.set(nairobiInstant(2026, 10, 15, 12)); // Thu 12:00
+    await openBoard(tester);
+
+    for (final b in ['1A', '2A', '3A']) {
+      expect(find.byKey(ValueKey('board.overstay.$b')), findsOneWidget);
+    }
+    expect(find.byKey(const ValueKey('board.overstay.4A')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('board.overstay.1A')),
+        matching: find.text('2 days'),
+      ),
+      findsOneWidget,
+    );
+    // "Overstay 5 · Show all" in the title line, no "+ N more" row.
+    final showAll = find.byKey(const ValueKey('board.overstay.more'));
+    expect(
+      find.descendant(of: showAll, matching: find.text('Show all')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('more · Show all'), findsNothing);
+    expect(
+      tester.getCenter(showAll).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const ValueKey('board.overstay.1A'))).dy,
+      ),
+    );
+    expect(tester.getSize(showAll).height, greaterThanOrEqualTo(44));
+    // No buttons on the rows.
+    expect(find.byKey(const ValueKey('board.overstay.extend')), findsNothing);
+
+    // Chips hug their text: far narrower than the card.
+    final card = tester.getSize(find.byKey(const ValueKey('board.toClean')));
+    final chipSize = tester.getSize(
+      find.byKey(const ValueKey('board.toClean.21A')),
+    );
+    expect(chipSize.width, lessThan(card.width / 4));
+    expect(chipSize.height, 36);
+    // Two lines at most, then "+ N more".
+    final more = find.byKey(const ValueKey('board.toClean.more'));
+    expect(more, findsOneWidget);
+    final first = tester.getTopLeft(
+      find.byKey(const ValueKey('board.toClean.21A')),
+    );
+    expect(tester.getTopLeft(more).dy - first.dy, lessThanOrEqualTo(36 + 8));
+
+    await tapKey(tester, 'board.overstay.more');
+    expect(chip(tester, 'overstay'), 'Overstay, 5');
+    expect(find.byKey(const ValueKey('board.bed.21A')), findsNothing);
+    expect(find.byKey(const ValueKey('board.bed.5A')), findsOneWidget);
+
+    await tapKey(tester, 'board.chip.all');
+    await tapKey(tester, 'board.toClean.more');
+    expect(find.byKey(const ValueKey('board.bed.1A')), findsNothing);
+    expect(find.byKey(const ValueKey('board.bed.21A')), findsOneWidget);
+  });
+
+  testWidgets('an overstay row opens its bed panel; a To clean chip its '
+      'cleaning panel', (tester) async {
+    final r5 = await room('5');
+    final r6 = await room('6');
+    await env.checkIn(r5.beds.single.id, by: supervisor);
+    final gone = await env.checkIn(r6.beds.single.id, by: supervisor);
+    await env.checkOut(gone, by: supervisor);
+    env.clock.set(nairobiInstant(2026, 10, 15, 12)); // 5A: 2 h past 10:00
+    await openBoard(tester);
+
+    await tapKey(tester, 'board.overstay.5A');
+    expect(find.byKey(const ValueKey('panel.title')), findsOneWidget);
+    await tapKey(tester, 'panel.close');
+    await tapKey(tester, 'board.toClean.6A');
+    expect(find.byKey(const ValueKey('cleaning.title')), findsOneWidget);
   });
 
   testWidgets('a check-in shows at once (watched, no refresh)', (tester) async {

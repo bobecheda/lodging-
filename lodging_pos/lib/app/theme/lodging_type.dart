@@ -32,6 +32,9 @@ class LodgingType extends ThemeExtension<LodgingType> {
   });
 
   factory LodgingType.from(LodgingColors c) {
+    // Letter spacing 0, never null: a null one takes Material 3's defaults
+    // (0.1–0.5 px a letter), so text drew wider than the top bar measured
+    // it and its labels were cut (25 Nov 2026).
     TextStyle ui(double size, FontWeight weight, Color color, {double? h}) =>
         TextStyle(
           fontFamily: manrope,
@@ -39,12 +42,14 @@ class LodgingType extends ThemeExtension<LodgingType> {
           fontWeight: weight,
           color: color,
           height: h,
+          letterSpacing: 0,
         );
     TextStyle mono(double size, FontWeight weight) => TextStyle(
       fontFamily: plexMono,
       fontSize: size,
       fontWeight: weight,
       color: c.ink,
+      letterSpacing: 0,
     );
     return LodgingType(
       pageTitle: ui(24, FontWeight.w600, c.ink, h: 1.2),

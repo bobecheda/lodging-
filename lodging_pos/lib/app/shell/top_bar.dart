@@ -130,16 +130,18 @@ class _TopBarState extends ConsumerState<TopBar> {
         ),
     ];
     final wordStyle = WordmarkStyle.of(c, WordmarkSize.topBar, onDark: false);
-    final wordmarkWidth = math.min(
-      200.0,
-      math.max(
+    // The name may be cut at 200 px (the wordmark's own ellipsis); the role
+    // under it never is.
+    final wordmarkWidth = math.max(
+      math.min(
+        200.0,
         _textWidth(
           lodgingName.trim().isEmpty ? '[LODGING NAME]' : lodgingName.trim(),
           wordStyle.name,
           scaler,
         ),
-        _textWidth(subtitle, t.meta, scaler),
       ),
+      _textWidth(subtitle, t.meta, scaler),
     );
 
     return LayoutBuilder(
@@ -150,14 +152,17 @@ class _TopBarState extends ConsumerState<TopBar> {
         // Status, divider, user, Lock: the right part with the name shown.
         final trailing =
             pad + status + 1 + 2 * pad + userBlock + Space.x12 + Sizes.target;
-        final collapsed =
-            user != null &&
-            !tabsFit(
-              barWidth: box.maxWidth,
-              leading: pad + wordmarkWidth + pad,
-              trailing: trailing + pad,
-              tabWidths: tabWidths,
-            );
+        final layout = user == null
+            ? BarLayout.full
+            : barLayout(
+                barWidth: box.maxWidth,
+                leading: pad + wordmarkWidth + pad,
+                tabWidths: tabWidths,
+                trailing: trailing + pad,
+                nameWidth: _UserButton.nameWidthOf(ref, user, t, scaler),
+              );
+        final collapsed = layout == BarLayout.folded;
+        final showName = layout == BarLayout.full;
         final tabsLeft = pad + wordmarkWidth + pad;
         final activeIndex = widget.entries.indexWhere(_isActive);
         double tabX(int i) =>
@@ -231,7 +236,7 @@ class _TopBarState extends ConsumerState<TopBar> {
                     Container(width: 1, height: 28, color: c.line),
                     const SizedBox(width: pad),
                     if (user != null) ...[
-                      _UserButton(user: user, showName: !collapsed),
+                      _UserButton(user: user, showName: showName),
                       const SizedBox(width: Space.x12),
                       _IconButton(
                         key: const ValueKey('shell.lock'),
@@ -295,7 +300,7 @@ class _Brand extends StatelessWidget {
             subtitle,
             key: const ValueKey('shell.role'),
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            softWrap: false,
             style: t.meta.copyWith(color: c.muted),
           ),
       ],
@@ -379,18 +384,22 @@ class _TopTabState extends State<_TopTab> {
                   children: [
                     Icon(widget.icon, size: tabIconSize, color: iconColor),
                     const SizedBox(width: tabGap),
-                    Flexible(
-                      child: Text(
-                        widget.label,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.fade,
-                        style: t.secondaryMedium.copyWith(color: fg),
-                      ),
+                    // Never cut: the bar folds the tabs before a label
+                    // would lose a letter.
+                    Text(
+                      widget.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: t.secondaryMedium.copyWith(color: fg),
                     ),
                     if (widget.badge > 0) ...[
                       const SizedBox(width: tabGap),
-                      CountBadge(widget.badge, key: widget.badgeKey),
+                      // Flexible: while a count changes, the old badge can
+                      // be a pixel or two wider than the tab was sized for;
+                      // the badge gives way, never the label.
+                      Flexible(
+                        child: CountBadge(widget.badge, key: widget.badgeKey),
+                      ),
                     ],
                     if (widget.menu) ...[
                       const SizedBox(width: tabGap),
@@ -755,6 +764,20 @@ class _UserButton extends ConsumerWidget {
         ) +
         Space.x8;
   }
+
+  /// What hiding the name saves: the gap after the avatar and the name or
+  /// role line, whichever is wider.
+  static double nameWidthOf(
+    WidgetRef ref,
+    UserAccount user,
+    LodgingType t,
+    TextScaler scaler,
+  ) =>
+      Space.x12 +
+      math.max(
+        _textWidth(user.fullName, t.secondaryMedium, scaler),
+        _textWidth(_userLine(ref, user), t.meta, scaler),
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/core/sync/sync_engine.dart';
@@ -1098,6 +1099,77 @@ void screens(Size size) {
       await expectCleanLayout(tester, app, Routes.home, 'New check-in');
       expect(find.byKey(const ValueKey('board.overstayBar')), findsOneWidget);
     });
+
+    // A busy day as on the lodging's own PC (25 Nov): 26 overstays and 26
+    // beds to clean. The Now strip stays a summary, the grid's first row is
+    // on the first screen, and no top bar text is cut, at Windows text
+    // scaling too.
+    for (final scale in const [1.0, 1.25, 1.5]) {
+      testWidgets('a busy day, text ×$scale: the grid starts on the first '
+          'screen; nothing in the top bar is cut', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await withOwner();
+        final supervisor = (await env.users.findByUsername('supervisor'))!
+            .account;
+        final repo = RoomsRepository(env.db, env.audit);
+        final rooms = <RoomSummary>[];
+        for (var n = 1; n <= 56; n++) {
+          rooms.add(
+            await repo.createRoom(
+              supervisor,
+              NewRoom(
+                number: 'A$n',
+                floor: null,
+                notes: null,
+                bedACategoryId: SeedIds.deluxe,
+                bedBCategoryId: null,
+              ),
+            ),
+          );
+        }
+        final today = env.clock.now();
+        env.clock.set(today.subtract(const Duration(days: 3)));
+        for (final r in rooms.take(26)) {
+          await env.checkIn(r.beds.single.id, by: supervisor);
+        }
+        env.clock.set(today);
+        for (final r in rooms.skip(26).take(26)) {
+          final stay = await env.checkIn(r.beds.single.id, by: supervisor);
+          await env.checkOut(stay, by: supervisor);
+        }
+        final app = await pumpDeskApp(tester, env, size: size);
+        await signInAs(tester, 'supervisor', 'super-pass');
+        await expectCleanLayout(tester, app, Routes.home, 'New check-in');
+
+        expect(
+          find.byKey(const ValueKey('board.overstay.more')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('more · Show all'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('board.toClean.more')),
+          findsOneWidget,
+        );
+        final first = tester.getRect(
+          find.byKey(const ValueKey('board.room.A1')),
+        );
+        expect(first.bottom, lessThanOrEqualTo(size.height), reason: '$first');
+
+        final bar = find.byKey(const ValueKey('shell.topBar'));
+        for (final p in tester.renderObjectList<RenderParagraph>(
+          find.descendant(of: bar, matching: find.byType(RichText)),
+        )) {
+          final text = p.text.toPlainText();
+          expect(p.didExceedMaxLines, isFalse, reason: text);
+          expect(
+            p.getMaxIntrinsicWidth(double.infinity),
+            lessThanOrEqualTo(p.size.width + 0.01),
+            reason: '"$text" is cut',
+          );
+        }
+      });
+    }
   });
 
   group('Check-in (FD-4)', () {
@@ -1291,9 +1363,9 @@ void screens(Size size) {
       await tapKey(
         tester,
         viaExtend
-            ? 'board.overstay.extend'
+            ? 'board.overstay.5A'
             : viaBar
-            ? 'board.overstay.checkOut'
+            ? 'board.overstay.5A'
             : 'board.bed.5A',
       );
       return app;

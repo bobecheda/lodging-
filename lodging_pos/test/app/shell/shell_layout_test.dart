@@ -72,6 +72,37 @@ void main() {
     });
   });
 
+  group('when space runs short, the user name hides first, then the tabs '
+      'fold (brief, 25 Nov)', () {
+    // Leading 100, tabs 300 (+ spacing 4), right part 200 with the name,
+    // of which the name is 80.
+    BarLayout at(double width) => barLayout(
+      barWidth: width,
+      leading: 100,
+      tabWidths: const [148, 148],
+      trailing: 200,
+      nameWidth: 80,
+    );
+
+    test('everything fits', () {
+      expect(at(600), BarLayout.full);
+    });
+
+    test('a little short: the name hides, the tabs stay', () {
+      expect(at(599), BarLayout.noName);
+      expect(at(520), BarLayout.noName);
+    });
+
+    test('shorter: the tabs fold into the menu', () {
+      expect(at(519), BarLayout.folded);
+    });
+
+    test('labels are measured whole: a fraction rounds up', () {
+      expect(measuredWidth(33.2), 34);
+      expect(measuredWidth(33), 33);
+    });
+  });
+
   group('the active tab for a location', () {
     const routes = ['/home', '/owner', '/cash', '/receipts'];
     const flows = {'/check-in': '/home'};
