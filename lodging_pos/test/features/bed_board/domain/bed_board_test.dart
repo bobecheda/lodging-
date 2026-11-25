@@ -127,6 +127,22 @@ void main() {
       expect(v.total, 4);
     });
 
+    test('lettered rooms in natural order: A1, A2, A9, A10, then B1', () {
+      final v = boardView(
+        [
+          for (final n in ['A10', 'B1', 'A2', 'A9', 'A1'])
+            BoardRoom(id: n, number: n, beds: [bed('$n-a')]),
+        ],
+        const BoardFilter(),
+        now: oct(16, 9),
+        graceMinutes: grace,
+      );
+      expect(
+        [for (final r in v.rooms) r.number],
+        ['A1', 'A2', 'A9', 'A10', 'B1'],
+      );
+    });
+
     test('a status filter keeps only rooms with matching beds; counts stay '
         'for every status', () {
       final v = view(status: BoardStatus.toClean);

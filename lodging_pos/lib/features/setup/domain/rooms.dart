@@ -110,18 +110,37 @@ String? roomNumberError(String input) {
   return null;
 }
 
-/// Natural order: numeric parts compare as numbers, so 2 comes before 10.
+/// Natural order, part by part: runs of digits compare as numbers and
+/// letters ignore case, so A2 comes before A10 and 1-9 before 1-10. A digit
+/// part sorts before a letter part (numbered rooms first) and a name before
+/// a longer one that starts with it (2 before 2A). Names equal by these
+/// rules (A1 and a1, 01 and 1) fall back to plain text order, so every pair
+/// of different names has one order.
 int compareRoomNumbers(String a, String b) {
-  final digits = RegExp(r'^\d+');
-  final na = digits.firstMatch(a)?.group(0);
-  final nb = digits.firstMatch(b)?.group(0);
-  if (na != null && nb != null) {
-    final byNumber = int.parse(na).compareTo(int.parse(nb));
-    if (byNumber != 0) return byNumber;
-  } else if (na != null || nb != null) {
-    return na != null ? -1 : 1; // numbered rooms first
+  final pa = _roomParts.allMatches(a).map((m) => m.group(0)!).toList();
+  final pb = _roomParts.allMatches(b).map((m) => m.group(0)!).toList();
+  for (var i = 0; i < pa.length && i < pb.length; i++) {
+    final x = pa[i];
+    final y = pb[i];
+    final xNumber = _isDigit(x);
+    final yNumber = _isDigit(y);
+    final byPart = switch ((xNumber, yNumber)) {
+      (true, true) => BigInt.parse(x).compareTo(BigInt.parse(y)),
+      (true, false) => -1,
+      (false, true) => 1,
+      (false, false) => x.toLowerCase().compareTo(y.toLowerCase()),
+    };
+    if (byPart != 0) return byPart;
   }
-  return a.compareTo(b);
+  final byLength = pa.length.compareTo(pb.length);
+  return byLength != 0 ? byLength : a.compareTo(b);
+}
+
+final _roomParts = RegExp(r'\d+|\D+');
+
+bool _isDigit(String part) {
+  final c = part.codeUnitAt(0);
+  return c >= 0x30 && c <= 0x39; // 0-9
 }
 
 /// Errors per field; empty if the room can be created.
