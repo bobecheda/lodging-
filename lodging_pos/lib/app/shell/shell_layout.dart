@@ -57,6 +57,37 @@ bool tabsFit({
   return leading + tabs + trailing <= barWidth;
 }
 
+/// How the top bar fits its width (brief, "Bed board — fixes after the
+/// first build"): labels are never cut. When space runs short the user's
+/// name hides first, then the tabs fold into the menu button (the name
+/// stays hidden then, as in the 768 design).
+enum BarLayout { full, noName, folded }
+
+/// [leading]: padding, wordmark and gap; [trailing]: status, user block
+/// (with its name, [nameWidth] of it) and Lock, with padding.
+BarLayout barLayout({
+  required double barWidth,
+  required double leading,
+  required List<double> tabWidths,
+  required double trailing,
+  required double nameWidth,
+}) {
+  bool fits(double right) => tabsFit(
+    barWidth: barWidth,
+    leading: leading,
+    trailing: right,
+    tabWidths: tabWidths,
+  );
+  if (fits(trailing)) return BarLayout.full;
+  if (fits(trailing - nameWidth)) return BarLayout.noName;
+  return BarLayout.folded;
+}
+
+/// A measured text width, rounded up to the next whole pixel: text drawn on
+/// a scaled display (125%, 150%) can need the fraction, and a label that
+/// gets less than it needs is cut.
+double measuredWidth(double width) => width.ceilToDouble();
+
 /// The nav route a location belongs to: itself, the route it sits under
 /// (`/cash/count` → `/cash`, `/owner/refund` → `/owner`), or a flow's home
 /// (`/check-in` → the bed board, given as [flows]). Null when none of

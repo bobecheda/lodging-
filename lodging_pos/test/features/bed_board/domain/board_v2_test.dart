@@ -129,23 +129,4 @@ void main() {
       expect(roomCategories(room), [('Deluxe', 'violet'), ('Normal', 'slate')]);
     });
   });
-
-  group('the search box looks for receipts', () {
-    test('a receipt number with its prefix', () {
-      expect(receiptSearchTerm('R-418'), 'R-418');
-      expect(receiptSearchTerm(' r418 '), 'r418');
-    });
-
-    test('five or more digits (a receipt or a phone)', () {
-      expect(receiptSearchTerm('00418'), '00418');
-      expect(receiptSearchTerm('0722 310'), '0722 310');
-    });
-
-    test('never a name, a room number or a short number', () {
-      expect(receiptSearchTerm('Kamau'), isNull);
-      expect(receiptSearchTerm('104'), isNull);
-      expect(receiptSearchTerm('1042'), isNull);
-      expect(receiptSearchTerm(''), isNull);
-    });
-  });
 }

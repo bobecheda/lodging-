@@ -108,13 +108,9 @@ void main() {
     ];
     final now = oct(16, 11, 30); // Peter overstays, Grace doesn't.
 
-    BoardView view({
-      BoardStatus? status,
-      String? categoryId,
-      String query = '',
-    }) => boardView(
+    BoardView view({BoardStatus? status, String? categoryId}) => boardView(
       rooms,
-      BoardFilter(status: status, categoryId: categoryId, query: query),
+      BoardFilter(status: status, categoryId: categoryId),
       now: now,
       graceMinutes: grace,
     );
@@ -145,22 +141,6 @@ void main() {
       expect(v.total, 1);
       expect(v.counts[BoardStatus.toClean], 1);
       expect(v.counts[BoardStatus.ready], 0);
-    });
-
-    test('search: room number, occupant name, or occupant phone', () {
-      List<String> ids(String q) => [
-        for (final r in view(query: q).rooms)
-          for (final b in r.beds) b.id,
-      ];
-      expect(ids('10'), ['10a']);
-      expect(ids('5'), ['5a']); // room 5 only, not every bed
-      expect(ids('grace'), ['2a']);
-      expect(ids('kamau'), ['5a']);
-      expect(ids('0722 41'), ['2a']); // phone prefix, any spacing
-      expect(ids('+254 722'), ['2a']); // Kenyan forms normalized
-      expect(ids('+2567'), ['5a']);
-      expect(ids('nobody'), isEmpty);
-      expect(ids('  '), ['2a', '2b', '5a', '10a']);
     });
 
     test('overstays are listed for the bar, oldest first', () {

@@ -37,6 +37,9 @@ final class WordmarkStyle {
         fontFamily: pirataOne,
         fontSize: s,
         height: 1.05,
+        // 0, not null: Material's default spacing made the name wider than
+        // the top bar measured it, and it was cut.
+        letterSpacing: 0,
         color: ink,
         shadows: [
           Shadow(

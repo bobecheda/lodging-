@@ -102,13 +102,10 @@ BoardStatus statusOf(
 
 /// What the board is narrowed to. Null [status] or [categoryId] is "all".
 final class BoardFilter {
-  const BoardFilter({this.status, this.categoryId, this.query = ''});
+  const BoardFilter({this.status, this.categoryId});
 
   final BoardStatus? status;
   final String? categoryId;
-
-  /// Room number, or the current occupant's name or phone.
-  final String query;
 }
 
 /// One overstaying bed, for the alert bar.
@@ -208,6 +205,51 @@ String overstayPast(OverstayAlert a, {required DateTime now}) =>
     '${compactOverdue(now.difference(a.paidUntil))} past '
     '${formatTime(a.paidUntil)}';
 
+/// How long an overstay has run, for the Now strip's rows: "40 min",
+/// "2 h" under a day, then "1 day", "32 days".
+String overstayLength(Duration d) {
+  if (d.inMinutes < 60) return '${d.inMinutes < 0 ? 0 : d.inMinutes} min';
+  if (d.inHours < 24) return '${d.inHours} h';
+  return d.inDays == 1 ? '1 day' : '${d.inDays} days';
+}
+
+/// The Overstay card shows at most 3 rows, the oldest first; the rest are
+/// "+ N more · Show all".
+({int shown, int more}) nowRows(int count, {int max = 3}) =>
+    count <= max ? (shown: count, more: 0) : (shown: max, more: count - max);
+
+/// How many chips of [widths] the To clean card shows in [lines] lines of
+/// [maxWidth] (chips [gap] apart, wrapping left to right): all of them when
+/// they fit, else as many as fit with the "+ N more" chip
+/// ([moreWidth] of N) after them on the last line.
+int chipsThatFit({
+  required List<double> widths,
+  required double maxWidth,
+  required double gap,
+  required int lines,
+  required double Function(int more) moreWidth,
+}) {
+  bool fits(List<double> chips) {
+    var line = 1;
+    var x = 0.0;
+    for (final w in chips) {
+      if (x > 0 && x + gap + w > maxWidth) {
+        line++;
+        x = 0;
+      }
+      x += (x > 0 ? gap : 0) + w;
+      if (line > lines) return false;
+    }
+    return true;
+  }
+
+  if (fits(widths)) return widths.length;
+  for (var n = widths.length - 1; n >= 0; n--) {
+    if (fits([...widths.take(n), moreWidth(widths.length - n)])) return n;
+  }
+  return 0;
+}
+
 /// A room's categories for its card, each once in bed order: (name,
 /// colour key). One for most rooms; two when its beds differ.
 List<(String, String)> roomCategories(BoardRoom room) {
@@ -216,19 +258,6 @@ List<(String, String)> roomCategories(BoardRoom room) {
     for (final b in room.beds)
       if (seen.add(b.categoryId)) (b.categoryName, b.categoryColour),
   ];
-}
-
-/// What the "Guest or receipt" box looks up as a receipt (docs/ui-
-/// redesign-brief.md, "Bed-board search"): a receipt number with its
-/// letters (R-418) or five or more digits; never a name, and digits alone
-/// shorter than that are a room. Null: no receipt search.
-String? receiptSearchTerm(String query) {
-  final q = query.trim();
-  if (q.isEmpty) return null;
-  final compact = q.replaceAll(RegExp(r'[\s-]'), '');
-  final withPrefix = RegExp(r'^[A-Za-z]+\d+$').hasMatch(compact);
-  final digits = RegExp(r'^\+?\d{5,}$').hasMatch(compact);
-  return withPrefix || digits ? q : null;
 }
 
 /// The board after filtering, with counts for the chips and the overstays
@@ -263,7 +292,6 @@ BoardView boardView(
 }) {
   BoardStatus status(BoardBed b) =>
       statusOf(b, now: now, graceMinutes: graceMinutes);
-  final query = _Query.parse(filter.query);
   final sorted = [...rooms]
     ..sort((a, b) => compareRoomNumbers(a.number, b.number));
 
@@ -291,12 +319,10 @@ BoardView boardView(
       if (filter.categoryId != null && bed.categoryId != filter.categoryId) {
         continue;
       }
-      if (!query.matches(room, bed)) continue;
       counts[s] = counts[s]! + 1;
       if (filter.status == null || filter.status == s) beds.add(bed);
     }
-    final narrowed =
-        filter.status != null || filter.categoryId != null || !query.isEmpty;
+    final narrowed = filter.status != null || filter.categoryId != null;
     if (beds.isNotEmpty || (!narrowed && room.beds.isEmpty)) {
       shown.add(BoardRoom(id: room.id, number: room.number, beds: beds));
     }
@@ -307,34 +333,3 @@ BoardView boardView(
 
 /// The search box: a room number (exact), part of the occupant's name, or
 /// the start of their phone in any common form.
-final class _Query {
-  const _Query(this.text, this.phone);
-
-  factory _Query.parse(String input) {
-    final text = input.trim().toLowerCase();
-    var phone = input.replaceAll(RegExp(r'[\s-]'), '');
-    if (phone.startsWith('+254')) {
-      phone = '0${phone.substring(4)}';
-    } else if (phone.startsWith('254')) {
-      phone = '0${phone.substring(3)}';
-    }
-    final digits = phone.replaceAll('+', '');
-    final usable = RegExp(r'^\+?\d+$').hasMatch(phone) && digits.length >= 3;
-    return _Query(text, usable ? phone : null);
-  }
-
-  final String text;
-  final String? phone;
-
-  bool get isEmpty => text.isEmpty;
-
-  bool matches(BoardRoom room, BoardBed bed) {
-    if (isEmpty) return true;
-    if (room.number.toLowerCase() == text) return true;
-    final stay = bed.stay;
-    if (stay == null) return false;
-    if (stay.guestName.toLowerCase().contains(text)) return true;
-    final p = phone;
-    return p != null && stay.guestPhone.startsWith(p);
-  }
-}

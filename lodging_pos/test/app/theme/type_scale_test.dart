@@ -50,7 +50,9 @@ void main() {
     for (final MapEntry(key: name, value: s) in styles.entries) {
       expect(s.fontWeight!.value, lessThanOrEqualTo(600), reason: name);
       expect(s.fontSize, greaterThanOrEqualTo(12), reason: name);
-      expect(s.letterSpacing, isNull, reason: '$name: no caps tracking');
+      // 0, not null: a null letter spacing takes Material's (0.1–0.5 px),
+      // which made labels wider than the top bar measured them (25 Nov).
+      expect(s.letterSpacing, 0, reason: '$name: no letter spacing');
     }
   });
 

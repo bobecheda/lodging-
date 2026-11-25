@@ -134,7 +134,7 @@ void main() {
     env.clock.set(nairobiInstant(2026, 10, 16, 11, 30)); // 30 min past grace
     await deskOnBoard(tester);
 
-    await tapKey(tester, 'board.overstay.checkOut');
+    await tapKey(tester, 'board.overstay.5A');
     expect(find.text('Overstay'), findsWidgets);
     expect(find.text('1 h past 10:00 · paid to Fri 16 Oct'), findsOneWidget);
     expect(
@@ -293,7 +293,7 @@ void main() {
       env.clock.set(nairobiInstant(2026, 10, 18, 12)); // Sun 12:00: 3 started
       await deskOnBoard(tester);
 
-      await tapKey(tester, 'board.overstay.extend');
+      await tapKey(tester, 'board.overstay.5A');
       expect(
         text(tester, 'extend.minReason'),
         'At least 3 nights: 3 have started since Fri 10:00.',
