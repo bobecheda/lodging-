@@ -296,7 +296,7 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 | Screen | Figma frame | Notes |
 |---|---|---|
 | Bed board (PR 5) | Desk · Bed board — top nav (receptionist), — 1024 wide, — 768 wide | See below |
-| Check-in (PR 6) | Desk · Check-in | See below |
+| Check-in (PR 6) | Desk · Check-in (full), Check-in · variants | See below |
 | Close shift (PR 7) | Desk · Close shift — count / — second count | Blind; one large cash field; a mismatch shows no amount |
 | Cash (PR 7) | Desk · Cash — top nav (supervisor), …, Setup open | Marine drawer hero (should hold, last check, last collection, Collect cash, Count drawer); To review; History; plus what Shifts did |
 | Receipts (PR 8) | Desk · Receipts (receptionist) | See below |
@@ -317,10 +317,17 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 - To clean (the cleaning panel): the butter banner with the last checkout, the housekeeper, Assign cleaning and Mark clean (already cleaned: both at once); once assigned, Mark clean and Reassign.
 - Void stay: the Story A rules as built (`void_rules.dart`, `VoidsRepository.voidStay`): the receipts it voids, the other bed's stay when one payment paid both, the bed after ("To clean"), a reason; the rule that stops it (e.g. you checked the guest in yourself) shows instead of the button.
 
-**Check-in:**
-- Guest, Nights, Payment; a summary card with the total; a confirm line above "Save and print receipt".
-- No payment method is chosen at the start; this already holds, and a test keeps it.
-- Kept and restyled (principle 14): the bed chooser, "let the whole room", search by ID number, the "Open shift" note.
+**Check-in (PR 6, Figma "Desk · Check-in (full)" and "Check-in · variants"; as built):**
+- A form card (Bed, Guest, Nights, Payment) and a 360 px summary card. The frame's state fits 1366×768 without scrolling; longer states scroll inside the form card while the summary stays put. Side by side from about 860 px of content; narrower (768), the summary sits under the form.
+- Bed: the chosen bed as a row with a 1.5 px marine border, a letter box, "104 A" and "Comfort · KES 600 a night · cleaned 08:15 · Mary" in the category's colour, and Change. With no bed yet: "Choose a bed" and Choose. Change opens the bed chooser (`showShellCard`, the menu card style): "Ready beds · 6", Ready and clean beds only (BR-5) by category, dearest first, each an 80×44 mono chip, the chosen one solid marine; "Only Ready and clean beds are listed."
+- Whole room: a switch under the bed row for 2-bed rooms, off at the start, disabled with the reason ("· 104 B has a guest"). On: "107 A + 107 B · KES 500 a night each", or "KES 700 + KES 600 a night" at two prices; the summary says "2 beds × 2 nights × KES 500 · one receipt", or one line per bed ending "· one receipt". Two stays, one payment (BR-4).
+- Guest: one search box (phone or ID number, as you type). Matches list with masked phones and IDs, then "New guest with this phone" (families share phones). The chosen guest: a marine-tint row with a check, the name, the **full** phone (to confirm with the guest), the masked ID, "3 stays", and "Not this guest". No match: "No guest with this phone or ID — new guest", then Phone and Full name side by side (Phone filled when the search was a phone, ID number when it was an ID), "ID (optional)" National ID / Passport / Alien ID (none chosen until tapped) and ID number. The shared-phone notice as before. A registered ID: "This National ID is already registered to Grace Wanjiru · 0722 ••• 310." with "Use this guest". The new guest is registered by the check-in's own save.
+- Nights: the stepper (typable, 1–30) and "Out Fri 13 Nov, 10:00".
+- Payment: Cash / M-Pesa, 48 px, none chosen at the start; the chosen one solid marine with white text. "M-Pesa code" only for M-Pesa.
+- Summary: Total (Money hero), the price lines, the confirm line (grey and naming the first thing missing: "Choose a bed", "Find or add the guest", "Add the new guest’s name and phone", "Choose Cash or M-Pesa"; then "M-Pesa · KES 1,200 · out Fri 10:00"), any refusal, "Save and print receipt" (off until all is chosen), Cancel.
+- No open shift of your own: a centred card instead of the form: butter clock circle, "Open your shift first", "Check-ins and payments need an open shift.", Open shift (with `openShift`; returns to the same bed) and Back to beds.
+- After saving (not redesigned): "Checked in" with the receipt and Print, Back to bed board, Check in another guest. No print dialog opens by itself.
+- Gone: the step pills, the "← Bed board" link (Cancel), the check-in / check-out-by box, "The bed becomes Occupied only after this is saved.", "Still to choose: …" (now the grey confirm line), the M-Pesa helper text.
 
 **Receipts:**
 - Search by receipt number or phone.
@@ -334,7 +341,6 @@ Until AD-11, Cash's "Review" opens the existing approve/reject box.
 - Then Money, Beds, Prices and More, restyled.
 
 Not designed yet:
-- the full check-in;
 - refunds, guests, setup screens and the owner's desk Today;
 - phone Money, Beds, Prices and More;
 - the 768 menu drawer;

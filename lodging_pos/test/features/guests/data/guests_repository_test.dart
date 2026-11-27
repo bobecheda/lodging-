@@ -104,7 +104,8 @@ void main() {
       grace(phone: '0711 000 111', idNumber: '1234 3921'),
       fieldError(
         GuestField.idNumber,
-        'This ID is already registered to another guest.',
+        'This National ID is already registered to Grace Achieng · '
+        '0722 ••• 905.',
       ),
     );
     // The same digits as another type are a different document.
@@ -214,7 +215,8 @@ void main() {
         ),
         fieldError(
           GuestField.idNumber,
-          'This ID is already registered to another guest.',
+          'This National ID is already registered to Grace Achieng · '
+          '0722 ••• 905.',
         ),
       );
       expect(

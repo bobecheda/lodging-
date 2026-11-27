@@ -515,7 +515,7 @@ class SelectedGuestCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.x6),
           Text(
-            [_spaced(phone), ?id].join(' · '),
+            [spacePhone(phone), ?id].join(' · '),
             style: t.body.copyWith(color: c.inkSoft),
           ),
           if (detail != null) ...[
@@ -530,10 +530,4 @@ class SelectedGuestCard extends StatelessWidget {
       ),
     );
   }
-
-  /// `0722 418 905`; international numbers as stored.
-  static String _spaced(String phone) => phone.length == 10
-      ? '${phone.substring(0, 4)} ${phone.substring(4, 7)} '
-            '${phone.substring(7)}'
-      : phone;
 }

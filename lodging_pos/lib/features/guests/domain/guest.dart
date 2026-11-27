@@ -47,6 +47,30 @@ final class Guest {
   };
 }
 
+/// What a search that found nobody fills in the new guest form (v2 PR 6):
+/// a phone (starting 0, +, or 254 with 12 digits) goes into Phone,
+/// anything else searchable as an ID into ID number, as typed.
+({String phone, String idNumber}) newGuestPrefill(String search) {
+  final typed = search.trim();
+  final query = GuestQuery.parse(typed);
+  final compact = typed.replaceAll(RegExp(r'[\s-]'), '');
+  final looksLikePhone =
+      RegExp(r'^(\+|0)\d*$').hasMatch(compact) ||
+      RegExp(r'^254\d{9}$').hasMatch(compact);
+  if (looksLikePhone && query.phonePrefix != null) {
+    return (phone: typed, idNumber: '');
+  }
+  if (!looksLikePhone && query.idPrefix != null) {
+    return (phone: '', idNumber: typed);
+  }
+  return (phone: '', idNumber: '');
+}
+
+/// A new guest's ID already belongs to [owner]: says who, phone masked.
+String idTakenMessage(Guest owner) =>
+    'This ${owner.idType?.label ?? 'ID'} is already registered to '
+    '${owner.fullName} · ${maskPhone(owner.phone)}.';
+
 /// A guest's earlier check-ins (both beds of one check-in count once).
 final class GuestHistory {
   const GuestHistory({required this.stays, required this.lastCheckIn});

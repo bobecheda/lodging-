@@ -138,4 +138,45 @@ void main() {
       '3 earlier stays · last on Fri 2 Oct',
     );
   });
+
+  group('a search that found nobody fills the new guest form (v2 PR 6)', () {
+    test('a phone goes into Phone', () {
+      for (final s in [
+        '0733 120 455',
+        '0733',
+        '+44 7911 123456',
+        '254733120455',
+      ]) {
+        expect(newGuestPrefill(s), (phone: s, idNumber: ''), reason: s);
+      }
+    });
+
+    test('an ID goes into ID number', () {
+      for (final s in ['3418 2297', 'A1234567', '12343921', '25412345']) {
+        expect(newGuestPrefill(s), (phone: '', idNumber: s), reason: s);
+      }
+    });
+
+    test('nothing searchable fills nothing', () {
+      for (final s in ['', ' ', 'Grace', '07']) {
+        expect(newGuestPrefill(s), (phone: '', idNumber: ''), reason: s);
+      }
+    });
+  });
+
+  test('a duplicate ID says who has it, phone masked', () {
+    final grace = Guest(
+      id: 'g1',
+      fullName: 'Grace Wanjiru',
+      phone: '0722456310',
+      idType: IdType.nationalId,
+      idNumber: '12343921',
+      registeredAt: DateTime.utc(2026, 10, 2),
+    );
+    expect(
+      idTakenMessage(grace),
+      'This National ID is already registered to Grace Wanjiru · '
+      '0722 ••• 310.',
+    );
+  });
 }

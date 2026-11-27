@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lodging_pos/app/widgets/bed_status_tile.dart';
@@ -13,6 +14,8 @@ import 'package:lodging_pos/features/shifts/data/shift_repository.dart';
 
 import '../../../helpers/fixtures.dart';
 
+/// The v2 check-in (PR 6, Figma "Desk · Check-in (full)" and "Check-in ·
+/// variants"): every function of the old one, restyled.
 void main() {
   late TestEnv env;
   late UserAccount supervisor;
@@ -72,10 +75,14 @@ void main() {
     await t.pumpAndSettle();
   }
 
-  Future<void> findGuest(WidgetTester tester, Guest g) async {
-    await enterKey(tester, 'guests.search', '0722 418');
+  Future<void> search(WidgetTester tester, String text) async {
+    await enterKey(tester, 'checkIn.guestSearch', text);
     await tester.pumpAndSettle();
-    await tapKey(tester, 'guests.match.${g.id}');
+  }
+
+  Future<void> findGuest(WidgetTester tester, Guest g) async {
+    await search(tester, '0722 418');
+    await tapKey(tester, 'checkIn.match.${g.id}');
   }
 
   bool saveEnabled(WidgetTester tester) =>
@@ -92,8 +99,11 @@ void main() {
   String text(WidgetTester tester, String key) =>
       tester.widget<Text>(find.byKey(ValueKey(key))).data!;
 
+  String field(WidgetTester tester, String key) =>
+      tester.widget<TextField>(find.byKey(ValueKey(key))).controller!.text;
+
   testWidgets('from a Ready tile: returning guest, 2 nights, cash → saved, '
-      'step 4, and the bed is In use on the board', (tester) async {
+      'the receipt, and the bed is In use on the board', (tester) async {
     await room('7');
     final g = await grace();
     // Another guest checked in first, so this receipt is the second.
@@ -102,22 +112,41 @@ void main() {
     final app = await deskOnBoard(tester);
 
     await tapKey(tester, 'board.bed.7A');
-    expect(text(tester, 'checkIn.bed'), 'Room 7 · Bed A');
+    expect(text(tester, 'checkIn.bed'), '7 A');
+    expect(text(tester, 'checkIn.bedMeta'), 'Deluxe · KES 700 a night');
     expect(saveEnabled(tester), isFalse);
-    expect(find.byKey(const ValueKey('checkIn.missing')), findsOneWidget);
+    expect(text(tester, 'checkIn.confirmLine'), 'Find or add the guest');
 
-    await findGuest(tester, g);
-    expect(find.byKey(const ValueKey('guests.selected')), findsOneWidget);
-    expect(find.text('Returning'), findsOneWidget);
-    expect(find.text('No earlier stays'), findsOneWidget);
+    // Matches mask the phone; the chosen guest shows it in full.
+    await search(tester, '0722 418');
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('checkIn.match.${g.id}')),
+        matching: find.text('0722 ••• 905 · National ID ••••3921'),
+      ),
+      findsOneWidget,
+    );
+    await tapKey(tester, 'checkIn.match.${g.id}');
+    expect(find.byKey(const ValueKey('checkIn.guest')), findsOneWidget);
+    expect(
+      text(tester, 'checkIn.guest.line'),
+      '0722 418 905 · National ID ••••3921 · No stays yet',
+    );
+    expect(find.byKey(ValueKey('checkIn.match.${g.id}')), findsNothing);
 
     await tapKey(tester, 'stepper.plus');
-    expect(text(tester, 'checkIn.from'), 'Wed 14 Oct, 22:00');
-    expect(text(tester, 'checkIn.until'), 'Fri 16 Oct, 10:00');
+    expect(text(tester, 'checkIn.out'), 'Out Fri 16 Oct, 10:00');
     expect(text(tester, 'checkIn.total'), 'KES 1,400');
-    expect(find.text('2 × KES 700'), findsOneWidget);
+    expect(text(tester, 'checkIn.priceLine.0'), '2 nights × KES 700');
 
+    // No payment method is chosen at the start.
+    expect(text(tester, 'checkIn.confirmLine'), 'Choose Cash or M-Pesa');
+    expect(saveEnabled(tester), isFalse);
     await tapKey(tester, 'choice.PaymentMethod.cash');
+    expect(
+      text(tester, 'checkIn.confirmLine'),
+      'Cash · KES 1,400 · out Fri 10:00',
+    );
     expect(saveEnabled(tester), isTrue);
     await tapKey(tester, 'checkIn.save');
 
@@ -125,12 +154,7 @@ void main() {
     expect(text(tester, 'receipt.number'), 'R-000002');
     expect(text(tester, 'receipt.room'), 'Room 7 · Bed A');
     expect(text(tester, 'receipt.total'), 'KES 1,400');
-    expect(find.text('Cash'), findsWidgets);
     expect(find.byKey(const ValueKey('receipt.copy')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('checkIn.step.4.current')),
-      findsOneWidget,
-    );
 
     await tapKey(tester, 'checkIn.done.board');
     expect(locationOf(app), Routes.home);
@@ -142,17 +166,30 @@ void main() {
     );
   });
 
-  testWidgets('cancelling leaves the bed Available; nothing is saved', (
-    tester,
-  ) async {
+  testWidgets('"Not this guest" clears the choice', (tester) async {
     await room('7');
     final g = await grace();
     await deskOnBoard(tester);
     await tapKey(tester, 'board.bed.7A');
     await findGuest(tester, g);
-    await tapKey(tester, 'choice.PaymentMethod.cash');
-    await tapKey(tester, 'checkIn.back');
+    await tapKey(tester, 'checkIn.notThisGuest');
+    expect(find.byKey(const ValueKey('checkIn.guest')), findsNothing);
+    expect(find.byKey(ValueKey('checkIn.match.${g.id}')), findsOneWidget);
+    expect(text(tester, 'checkIn.confirmLine'), 'Find or add the guest');
+  });
 
+  testWidgets('Cancel leaves the bed Available; nothing is saved', (
+    tester,
+  ) async {
+    await room('7');
+    final g = await grace();
+    final app = await deskOnBoard(tester);
+    await tapKey(tester, 'board.bed.7A');
+    await findGuest(tester, g);
+    await tapKey(tester, 'choice.PaymentMethod.cash');
+    await tapKey(tester, 'checkIn.cancel');
+
+    expect(locationOf(app), Routes.home);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('board.bed.7A')),
@@ -164,9 +201,8 @@ void main() {
     expect(await env.db.select(env.db.payments).get(), isEmpty);
   });
 
-  testWidgets('New check-in lists only Ready beds to choose from', (
-    tester,
-  ) async {
+  testWidgets('New check-in: "Choose a bed" opens the chooser, which lists '
+      'only Ready and clean beds', (tester) async {
     await room('7');
     final r8 = await room('8');
     final stay = await env.checkIn(r8.beds.single.id, by: desk);
@@ -174,16 +210,28 @@ void main() {
     await deskOnBoard(tester);
     await tapKey(tester, 'board.newCheckIn');
 
+    expect(text(tester, 'checkIn.bed'), 'Choose a bed');
+    expect(text(tester, 'checkIn.confirmLine'), 'Choose a bed');
+    await tapKey(tester, 'checkIn.changeBed');
+    expect(text(tester, 'checkIn.chooser.count'), 'Ready beds · 1');
     expect(find.byKey(const ValueKey('checkIn.pick.7A')), findsOneWidget);
     expect(find.byKey(const ValueKey('checkIn.pick.8A')), findsNothing);
+    expect(find.text('Only Ready and clean beds are listed.'), findsOneWidget);
     await tapKey(tester, 'checkIn.pick.7A');
-    expect(text(tester, 'checkIn.bed'), 'Room 7 · Bed A');
+    expect(find.byKey(const ValueKey('checkIn.chooser')), findsNothing);
+    expect(text(tester, 'checkIn.bed'), '7 A');
+
+    // Change opens it again; Escape closes it and keeps the bed.
     await tapKey(tester, 'checkIn.changeBed');
     expect(find.byKey(const ValueKey('checkIn.pick.7A')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('checkIn.chooser')), findsNothing);
+    expect(text(tester, 'checkIn.bed'), '7 A');
   });
 
-  testWidgets('whole room: both beds on one receipt; a Bed B that needs '
-      'cleaning says so and can’t be added', (tester) async {
+  testWidgets('whole room: both beds on one receipt; a room whose other bed '
+      'needs cleaning says so and can’t be switched on', (tester) async {
     final r7 = await room('7', twoBeds: true);
     final r8 = await room('8', twoBeds: true);
     final stay = await env.checkIn(r8.beds.last.id, by: desk);
@@ -192,19 +240,31 @@ void main() {
     final app = await deskOnBoard(tester);
 
     await go(app, Routes.checkInFor(r8.beds.first.id), tester);
-    expect(find.text('Bed B needs cleaning first'), findsOneWidget);
-    final box = tester.widget<CheckboxListTile>(
-      find.byKey(const ValueKey('checkIn.wholeRoom')),
+    expect(text(tester, 'checkIn.wholeRoomNote'), '· 8 B needs cleaning first');
+    expect(
+      tester
+          .widget<Switch>(find.byKey(const ValueKey('checkIn.wholeRoom')))
+          .onChanged,
+      isNull,
     );
-    expect(box.onChanged, isNull);
 
     await go(app, Routes.checkInFor(r7.beds.first.id), tester);
+    expect(find.text('Whole room (7 A + B)'), findsOneWidget);
     await tapKey(tester, 'checkIn.wholeRoom');
+    expect(text(tester, 'checkIn.bed'), '7 A + 7 B');
+    expect(text(tester, 'checkIn.bedMeta'), 'KES 700 + KES 600 a night');
     await findGuest(tester, g);
     expect(text(tester, 'checkIn.total'), 'KES 1,300');
-    expect(find.text('Bed A · 1 × KES 700'), findsOneWidget);
-    expect(find.text('Bed B · 1 × KES 600'), findsOneWidget);
+    expect(text(tester, 'checkIn.priceLine.0'), '7 A · 1 night × KES 700');
+    expect(
+      text(tester, 'checkIn.priceLine.1'),
+      '7 B · 1 night × KES 600 · one receipt',
+    );
     await tapKey(tester, 'choice.PaymentMethod.cash');
+    expect(
+      text(tester, 'checkIn.confirmLine'),
+      'Cash · KES 1,300 · 2 beds · out Thu 10:00',
+    );
     await tapKey(tester, 'checkIn.save');
 
     expect(text(tester, 'receipt.room'), 'Room 7 · Beds A and B');
@@ -220,32 +280,111 @@ void main() {
     expect(payments.last.amount, 1300);
   });
 
-  testWidgets('a new guest is shown as NEW and saved only with the check-in', (
-    tester,
-  ) async {
+  testWidgets('no match: the new guest form, Phone filled from the search; '
+      'the guest is saved only with the check-in', (tester) async {
     await room('7');
     await deskOnBoard(tester);
     await tapKey(tester, 'board.bed.7A');
-    await tapKey(tester, 'guests.register');
-    await enterKey(tester, 'newGuest.fullName', 'Ann Wambui');
-    await enterKey(tester, 'newGuest.phone', '0711 000 111');
+    await search(tester, '0711 000 111');
+
+    expect(
+      find.text('No guest with this phone or ID — new guest'),
+      findsOneWidget,
+    );
+    expect(field(tester, 'checkIn.newGuest.phone'), '0711 000 111');
+    expect(field(tester, 'checkIn.newGuest.idNumber'), '');
+    expect(
+      text(tester, 'checkIn.confirmLine'),
+      'Add the new guest’s name and phone',
+    );
+    // No ID type is chosen until tapped.
+    expect(
+      find.byKey(const ValueKey('checkIn.idType.national_id.on')),
+      findsNothing,
+    );
+
+    await enterKey(tester, 'checkIn.newGuest.fullName', 'Ann Wambui');
     await tester.pumpAndSettle();
-    await tapKey(tester, 'newGuest.save'); // "Use this guest"
-
-    expect(find.text('New'), findsOneWidget);
-    expect(find.text('Registered when the check-in is saved'), findsOneWidget);
-    expect(await env.db.select(env.db.guests).get(), isEmpty);
-
     await tapKey(tester, 'choice.PaymentMethod.cash');
+    expect(await env.db.select(env.db.guests).get(), isEmpty);
     await tapKey(tester, 'checkIn.save');
+
     final guests = await env.db.select(env.db.guests).get();
-    expect(guests.single.fullName, 'Ann Wambui');
+    expect(
+      (guests.single.fullName, guests.single.phone),
+      ('Ann Wambui', '0711000111'),
+    );
     expect(find.byKey(const ValueKey('checkIn.done')), findsOneWidget);
   });
 
-  testWidgets('M-Pesa: a used code is refused, saying where it was used', (
+  testWidgets('an ID search fills ID number; a typed ID needs its type; a '
+      'registered ID names its guest and "Use this guest" takes her', (
     tester,
   ) async {
+    await room('7');
+    final g = await grace();
+    await deskOnBoard(tester);
+    await tapKey(tester, 'board.bed.7A');
+
+    await search(tester, '3418 2297');
+    expect(field(tester, 'checkIn.newGuest.idNumber'), '3418 2297');
+    expect(field(tester, 'checkIn.newGuest.phone'), '');
+
+    await search(tester, '0733 120 455');
+    expect(field(tester, 'checkIn.newGuest.phone'), '0733 120 455');
+    await enterKey(tester, 'checkIn.newGuest.fullName', 'Tom Otieno');
+    await enterKey(tester, 'checkIn.newGuest.idNumber', '12343921');
+    await tester.pumpAndSettle();
+    await tapKey(tester, 'choice.PaymentMethod.cash');
+    await tapKey(tester, 'checkIn.save');
+    expect(find.text('Choose the ID type.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('checkIn.done')), findsNothing);
+
+    await tapKey(tester, 'checkIn.idType.national_id');
+    await tapKey(tester, 'checkIn.save');
+    expect(
+      text(tester, 'checkIn.idTaken'),
+      'This National ID is already registered to Grace Achieng · '
+      '0722 ••• 905.',
+    );
+    expect(find.byKey(const ValueKey('checkIn.done')), findsNothing);
+
+    await tapKey(tester, 'checkIn.useTakenGuest');
+    expect(find.byKey(const ValueKey('checkIn.guest')), findsOneWidget);
+    expect(find.text('Grace Achieng'), findsOneWidget);
+    await tapKey(tester, 'checkIn.save');
+    expect(find.byKey(const ValueKey('checkIn.done')), findsOneWidget);
+    final guests = await env.db.select(env.db.guests).get();
+    expect(guests.single.id, g.id);
+  });
+
+  testWidgets('"New guest with this phone": a family member sharing a phone, '
+      'with the shared-phone notice', (tester) async {
+    await room('7');
+    final g = await grace();
+    await deskOnBoard(tester);
+    await tapKey(tester, 'board.bed.7A');
+    await search(tester, '0722 418 905');
+    expect(find.byKey(ValueKey('checkIn.match.${g.id}')), findsOneWidget);
+
+    await tapKey(tester, 'checkIn.newGuestWithPhone');
+    expect(field(tester, 'checkIn.newGuest.phone'), '0722 418 905');
+    expect(
+      find.textContaining('Already registered with this phone: Grace Achieng'),
+      findsOneWidget,
+    );
+    await enterKey(tester, 'checkIn.newGuest.fullName', 'Tom Achieng');
+    await tester.pumpAndSettle();
+    await tapKey(tester, 'choice.PaymentMethod.cash');
+    await tapKey(tester, 'checkIn.save');
+
+    expect(find.byKey(const ValueKey('checkIn.done')), findsOneWidget);
+    final guests = await env.db.select(env.db.guests).get();
+    expect(guests.map((g) => g.fullName), {'Grace Achieng', 'Tom Achieng'});
+  });
+
+  testWidgets('M-Pesa: the code field only for M-Pesa; a used code is '
+      'refused, saying where it was used', (tester) async {
     final r7 = await room('7');
     final r8 = await room('8');
     final g = await grace();
@@ -254,6 +393,7 @@ void main() {
     Future<void> payByMpesa(String bedId) async {
       await go(app, Routes.checkInFor(bedId), tester);
       await findGuest(tester, g);
+      expect(find.byKey(const ValueKey('checkIn.mpesaCode')), findsNothing);
       await tapKey(tester, 'choice.PaymentMethod.paybill');
       await enterKey(tester, 'checkIn.mpesaCode', 'qjk7h2lm4p');
       await tester.pumpAndSettle();
@@ -285,16 +425,18 @@ void main() {
     await enterKey(tester, 'stepper.value', '10');
     await tester.pumpAndSettle();
     expect(text(tester, 'checkIn.total'), 'KES 7,000');
-    expect(text(tester, 'checkIn.until'), 'Sat 24 Oct, 10:00');
+    expect(text(tester, 'checkIn.out'), 'Out Sat 24 Oct, 10:00');
 
     await enterKey(tester, 'stepper.value', '31');
     await tester.pumpAndSettle();
     expect(text(tester, 'checkIn.nightsError'), 'Choose 1 to 30 nights.');
+    expect(text(tester, 'checkIn.confirmLine'), 'Choose 1 to 30 nights.');
     expect(saveEnabled(tester), isFalse);
   });
 
-  testWidgets('a supervisor without a shift: Save is off with the note; Open '
-      'shift goes to the shift screen and comes back', (tester) async {
+  testWidgets('a supervisor without a shift: "Open your shift first" '
+      'instead of the form; Open shift goes to the shift screen and comes '
+      'back to the same bed', (tester) async {
     final r7 = await room('7');
     await env.ensureDrawerStarted(counted: 500);
     final app = await pumpDeskApp(tester, env);
@@ -303,11 +445,13 @@ void main() {
     expect(locationOf(app), Routes.home);
 
     await tapKey(tester, 'board.bed.7A');
+    expect(find.byKey(const ValueKey('checkIn.noShift')), findsOneWidget);
+    expect(find.text('Open your shift first'), findsOneWidget);
     expect(
-      find.text('Check-in takes a payment. Open a shift first.'),
+      find.text('Check-ins and payments need an open shift.'),
       findsOneWidget,
     );
-    expect(saveEnabled(tester), isFalse);
+    expect(find.byKey(const ValueKey('checkIn.guestSearch')), findsNothing);
 
     await tapKey(tester, 'checkIn.openShift');
     expect(locationOf(app), Routes.shift);
@@ -328,10 +472,21 @@ void main() {
       r7.beds.single.id,
     );
     expect(find.byKey(const ValueKey('checkIn.noShift')), findsNothing);
+    expect(text(tester, 'checkIn.bed'), '7 A');
     final shift = await ShiftRepository(
       env.db,
       env.audit,
     ).openShiftOnThisDevice();
     expect((shift!.userId, shift.openingFloat), (supervisor.id, 500));
+  });
+
+  testWidgets('no open shift: Back to beds', (tester) async {
+    await room('7');
+    await env.ensureDrawerStarted(counted: 500);
+    final app = await pumpDeskApp(tester, env);
+    await signInAs(tester, 'supervisor', 'super-pass');
+    await tapKey(tester, 'board.bed.7A');
+    await tapKey(tester, 'checkIn.backToBeds');
+    expect(locationOf(app), Routes.home);
   });
 }

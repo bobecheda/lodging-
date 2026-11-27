@@ -181,7 +181,7 @@ void main() {
           .queryParameters['bed'],
       r1.beds.single.id,
     );
-    expect(find.text('Room 1 · Bed A'), findsOneWidget);
+    expect(find.text('1 A'), findsOneWidget);
   });
 
   testWidgets('chips and category filter the board', (tester) async {

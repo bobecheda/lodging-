@@ -286,7 +286,10 @@ void main() {
     await enterKey(tester, 'newGuest.idNumber', '12343921');
     await tapKey(tester, 'newGuest.save');
     expect(
-      find.text('This ID is already registered to another guest.'),
+      find.text(
+        'This National ID is already registered to Grace Achieng · '
+        '0722 ••• 905.',
+      ),
       findsOneWidget,
     );
   });

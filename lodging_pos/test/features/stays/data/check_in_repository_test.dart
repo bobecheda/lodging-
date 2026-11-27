@@ -470,7 +470,8 @@ void main() {
           isA<InvalidGuest>().having(
             (e) => e.errors[GuestField.idNumber],
             'ID error',
-            'This ID is already registered to another guest.',
+            'This Passport is already registered to Someone Else · '
+                '0733 ••• 000.',
           ),
         ),
       );

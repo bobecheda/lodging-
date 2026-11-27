@@ -1237,7 +1237,7 @@ void screens(Size size) {
     }
 
     Future<void> chooseGuest(WidgetTester tester) async {
-      await enterKey(tester, 'guests.search', '0722');
+      await enterKey(tester, 'checkIn.guestSearch', '0722');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Grace Wanjiru Achieng-Odhiambo').first);
       await tester.pumpAndSettle();
@@ -1255,41 +1255,75 @@ void screens(Size size) {
       expect(find.text('Enter the M-Pesa code.'), findsOneWidget);
     });
 
-    testWidgets('both beds, registering a new guest with errors and a '
-        'shared-phone notice', (tester) async {
+    testWidgets('both beds, a new guest sharing a phone, with errors', (
+      tester,
+    ) async {
       final app = await openCheckIn(tester);
       await tapKey(tester, 'board.bed.7A');
       await tapKey(tester, 'checkIn.wholeRoom');
-      await tapKey(tester, 'guests.register');
-      await enterKey(tester, 'newGuest.phone', '0722 418 905');
-      await enterKey(tester, 'newGuest.idNumber', '12');
+      await enterKey(tester, 'checkIn.guestSearch', '0722 418 905');
       await tester.pumpAndSettle();
-      await tapKey(tester, 'newGuest.save');
+      await tapKey(tester, 'checkIn.newGuestWithPhone');
+      await enterKey(tester, 'checkIn.newGuest.fullName', 'Tom Achieng');
+      await enterKey(tester, 'checkIn.newGuest.idNumber', '12');
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'choice.PaymentMethod.cash');
+      await tapKey(tester, 'checkIn.save');
       await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
-      expect(
-        find.byKey(const ValueKey('newGuest.sharedPhone')),
-        findsOneWidget,
-      );
-      expect(find.text('Bed A · 1 × KES 700'), findsOneWidget);
+      expect(find.byKey(const ValueKey('checkIn.sharedPhone')), findsOneWidget);
+      expect(find.text('Choose the ID type.'), findsOneWidget);
+      expect(find.text('7 A · 1 night × KES 700'), findsOneWidget);
     });
 
-    testWidgets('no shift of their own, Bed B needs cleaning', (tester) async {
-      final app = await openCheckIn(tester, shift: false, dirtyB: true);
+    testWidgets('no match: the new guest form, and a registered ID', (
+      tester,
+    ) async {
+      final app = await openCheckIn(tester);
+      await tapKey(tester, 'board.bed.7A');
+      await enterKey(tester, 'checkIn.guestSearch', '0733 120 455');
+      await tester.pumpAndSettle();
+      await enterKey(tester, 'checkIn.newGuest.fullName', 'Tom Otieno');
+      await tapKey(tester, 'checkIn.idType.national_id');
+      await enterKey(tester, 'checkIn.newGuest.idNumber', '12343921');
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'choice.PaymentMethod.paybill');
+      await enterKey(tester, 'checkIn.mpesaCode', 'QKF7H2LX9P');
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'checkIn.save');
+      await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
+      expect(find.byKey(const ValueKey('checkIn.idTaken')), findsOneWidget);
+    });
+
+    testWidgets('Bed B needs cleaning: the whole room says why', (
+      tester,
+    ) async {
+      final app = await openCheckIn(tester, dirtyB: true);
       await tapKey(tester, 'board.bed.7A');
       await chooseGuest(tester);
       await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
-      expect(find.byKey(const ValueKey('checkIn.noShift')), findsOneWidget);
-      expect(find.text('Bed B needs cleaning first'), findsOneWidget);
+      expect(find.text('· 7 B needs cleaning first'), findsOneWidget);
+    });
+
+    testWidgets('no shift of their own', (tester) async {
+      final app = await openCheckIn(tester, shift: false);
+      await tapKey(tester, 'board.bed.7A');
+      await expectCleanLayout(
+        tester,
+        app,
+        Routes.checkIn,
+        'Open your shift first',
+      );
     });
 
     testWidgets('choosing from 25 Ready beds', (tester) async {
       final app = await openCheckIn(tester, extraRooms: 12);
       await tapKey(tester, 'board.newCheckIn');
-      await expectCleanLayout(tester, app, Routes.checkIn, 'New check-in');
+      await tapKey(tester, 'checkIn.changeBed');
+      await expectCleanLayout(tester, app, Routes.checkIn, 'Ready beds · 26');
       expect(find.byKey(const ValueKey('checkIn.pick.7A')), findsOneWidget);
     });
 
-    testWidgets('step 4: checked in', (tester) async {
+    testWidgets('after saving: checked in', (tester) async {
       final app = await openCheckIn(tester);
       await tapKey(tester, 'board.bed.7A');
       await tapKey(tester, 'checkIn.wholeRoom');

@@ -1,6 +1,8 @@
 /// Rooms and beds (AD-2): models and rules. Pure Dart.
 library;
 
+import '../../../core/category_colour_keys.dart';
+
 enum BedLabel {
   a('A'),
   b('B');
@@ -37,12 +39,17 @@ class BedSummary {
     required this.cleanliness,
     required this.isActive,
     required this.hasActiveStay,
+    this.categoryColour = defaultCategoryColour,
   });
 
   final String id;
   final BedLabel label;
   final String categoryId;
   final String categoryName;
+
+  /// The category's colour key (v2 PR 4), for check-in's bed row and
+  /// chooser.
+  final String categoryColour;
 
   /// Current category price, whole KES. A stay keeps the price it locked in.
   final int pricePerNight;

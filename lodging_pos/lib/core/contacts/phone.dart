@@ -60,3 +60,10 @@ String maskPhone(String phone, {bool compact = false}) {
   return '$plus${digits.substring(0, 4)}$gap•••$gap'
       '${digits.substring(digits.length - 3)}';
 }
+
+/// The full number, spaced for reading aloud: `0722 418 905`;
+/// international numbers as stored. Only where the full number may show
+/// (a selected guest).
+String spacePhone(String phone) => phone.length == 10 && !phone.startsWith('+')
+    ? '${phone.substring(0, 4)} ${phone.substring(4, 7)} ${phone.substring(7)}'
+    : phone;

@@ -31,12 +31,23 @@ int? parseNights(String text) {
 /// Why [bed] can't be let now (BR-5), or null if it can: closed, has a
 /// guest, or needs cleaning, in that order. Agrees with [canLet].
 String? letBlocker(BedSummary bed, Occupancy occupancy) {
-  final name = 'Bed ${bed.label.code}';
-  if (!bed.isActive) return '$name is closed';
-  if (occupancy != Occupancy.available) return '$name has a guest';
-  if (bed.cleanliness != Cleanliness.clean) return '$name needs cleaning first';
+  final reason = letReason(bed, occupancy);
+  return reason == null ? null : 'Bed ${bed.label.code} $reason';
+}
+
+/// [letBlocker] without the bed's name: `is closed`, `has a guest`,
+/// `needs cleaning first`, or null.
+String? letReason(BedSummary bed, Occupancy occupancy) {
+  if (!bed.isActive) return 'is closed';
+  if (occupancy != Occupancy.available) return 'has a guest';
+  if (bed.cleanliness != Cleanliness.clean) return 'needs cleaning first';
   return null;
 }
+
+/// A bed's own occupancy on the check-in screen: a bed with an active stay
+/// can't be let, overstay or not.
+Occupancy checkInOccupancy(BedSummary bed) =>
+    bed.hasActiveStay ? Occupancy.occupied : Occupancy.available;
 
 /// What the check-in screen shows before saving: each bed at its category's
 /// price, the dates and the total. A save works it out again and refuses if
