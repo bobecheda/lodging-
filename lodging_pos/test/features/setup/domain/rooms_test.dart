@@ -46,6 +46,25 @@ void main() {
         ..sort(compareRoomNumbers);
       expect(sorted, ['1', '2', '2A', '10', '13', 'ANNEX']);
     });
+
+    test('letters then numbers sort naturally: A1, A2 … A10, then B1', () {
+      final sorted = ['A10', 'B1', 'A2', 'A11', 'A1', 'A9', 'B10', 'B2']
+        ..sort(compareRoomNumbers);
+      expect(sorted, ['A1', 'A2', 'A9', 'A10', 'A11', 'B1', 'B2', 'B10']);
+    });
+
+    test('every number in a name counts, not only the first', () {
+      final sorted = ['A2B', 'A10', 'A2', '1-10', '1-9', 'A2-10', 'A2-9']
+        ..sort(compareRoomNumbers);
+      expect(sorted, ['1-9', '1-10', 'A2', 'A2-9', 'A2-10', 'A2B', 'A10']);
+    });
+
+    test('letters ignore case first; equal names still have one order', () {
+      final sorted = ['a10', 'A2', 'b1', 'A1', 'a1']..sort(compareRoomNumbers);
+      expect(sorted, ['A1', 'a1', 'A2', 'a10', 'b1']);
+      expect(compareRoomNumbers('01', '1'), isNot(0));
+      expect(compareRoomNumbers('A1', 'A1'), 0);
+    });
   });
 
   group('validateNewRoom', () {
