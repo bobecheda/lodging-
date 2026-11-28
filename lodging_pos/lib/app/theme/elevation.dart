@@ -15,22 +15,4 @@ abstract final class LodgingShadows {
       offset: const Offset(0, 4),
     ),
   ];
-
-  /// The Check in button at rest: a faint red glow under it.
-  static List<BoxShadow> cta(LodgingColors c) => [
-    BoxShadow(
-      color: c.red.withValues(alpha: 0.22),
-      blurRadius: 8,
-      offset: const Offset(0, 2),
-    ),
-  ];
-
-  /// The Check in button hovered or keyboard-focused: lifted.
-  static List<BoxShadow> ctaRaised(LodgingColors c) => [
-    BoxShadow(
-      color: c.red.withValues(alpha: 0.32),
-      blurRadius: 16,
-      offset: const Offset(0, 6),
-    ),
-  ];
 }

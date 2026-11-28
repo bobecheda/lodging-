@@ -34,10 +34,6 @@ class LodgingMotion {
     required this.panel,
     required this.scrim,
     required this.count,
-    required this.ctaHover,
-    required this.ctaLoop,
-    required this.ctaNudge,
-    required this.ctaScale,
   });
 
   /// The brief's tokens.
@@ -58,10 +54,6 @@ class LodgingMotion {
     panel: MotionStep(Duration(milliseconds: 220), Curves.easeOut),
     scrim: MotionStep(Duration(milliseconds: 150), Curves.linear),
     count: MotionStep(Duration(milliseconds: 150), Curves.linear),
-    ctaHover: MotionStep(Duration(milliseconds: 160), Curves.easeOut),
-    ctaLoop: Duration(milliseconds: 1200),
-    ctaNudge: 3,
-    ctaScale: 1.03,
   );
 
   /// Reduced motion: everything switches at once, nothing moves.
@@ -82,10 +74,6 @@ class LodgingMotion {
     panel: MotionStep(Duration.zero, Curves.linear),
     scrim: MotionStep(Duration.zero, Curves.linear),
     count: MotionStep(Duration.zero, Curves.linear),
-    ctaHover: MotionStep(Duration.zero, Curves.linear),
-    ctaLoop: Duration.zero,
-    ctaNudge: 0,
-    ctaScale: 1,
   );
 
   /// True when the system asked for reduced motion.
@@ -126,16 +114,6 @@ class LodgingMotion {
 
   /// A count or badge cross-fading to its new number.
   final MotionStep count;
-
-  /// The top bar's Check in button (story/ui-floating-nav), while hovered
-  /// or keyboard-focused: the label and lift change over [ctaHover]; the
-  /// icon nudges forward [ctaNudge] px and back, once every [ctaLoop];
-  /// the button grows to [ctaScale]. Reduced motion: the label still
-  /// swaps, nothing moves or loops.
-  final MotionStep ctaHover;
-  final Duration ctaLoop;
-  final double ctaNudge;
-  final double ctaScale;
 
   static LodgingMotion of(BuildContext context) =>
       MediaQuery.maybeDisableAnimationsOf(context) ?? false

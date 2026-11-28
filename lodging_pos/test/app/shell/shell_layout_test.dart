@@ -97,11 +97,6 @@ void main() {
       expect(at(523), BarLayout.folded);
     });
 
-    test('Check in fits its longer label: 20 + icon 20 + 8 + label + 20 '
-        '(story/ui-floating-nav)', () {
-      expect(ctaWidth(labelWidth: 70), 138);
-    });
-
     test('labels are measured whole: a fraction rounds up', () {
       expect(measuredWidth(33.2), 34);
       expect(measuredWidth(33), 33);

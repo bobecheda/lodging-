@@ -47,12 +47,6 @@ abstract final class Sizes {
   static const topBarMargin = 12.0;
   static const topBarInset = 8.0;
 
-  /// The bar's Check in button: 48 high (the tabs are 44), a 20 px icon,
-  /// 20 px padding each side.
-  static const cta = 48.0;
-  static const ctaIcon = 20.0;
-  static const ctaPadding = 20.0;
-
   /// The user's initials in the top bar and the drawer.
   static const avatar = 36.0;
 

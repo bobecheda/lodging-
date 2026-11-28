@@ -20,7 +20,7 @@ matching section of design.md is marked superseded.
 | 7 | `story/ui-7-cash` | Cash (takes over Shifts), close shift |
 | 8 | `story/ui-8-receipts-voids` | Receipts, void on receipt (the bed panel's Void stay came with PR 5), Voids removed |
 | 9 | `story/ui-9-owner-phone` | Phone Today (with Drawer should hold), Money, Beds, Prices, More |
-| — | `story/ui-floating-nav` | The floating top bar and its red Check in button (asked 28 Nov) |
+| — | `story/ui-floating-nav` | The floating top bar (asked 28 Nov) |
 
 PR 5 waits for the owner to confirm the quiet occupied tile and the
 category colours. Screens not designed yet take the new tokens and shell
@@ -50,7 +50,7 @@ decide a build question:
 |---|---|---|
 | `marine` | `#0B2E59` | Brand and action: primary buttons, active tab and indicator, Ready border, hero card, links, focus ring |
 | `marineTint` | `#EAF1FA` | Occupied bed (quiet), selected chip |
-| `red` | `#D62839` | Overstay and urgent; and the top bar's Check in button, the desk's one primary action (story/ui-floating-nav; white on red is 4.98:1) |
+| `red` | `#D62839` | Overstay and urgent only |
 | `butter` | `#F7E3A1` | Needs cleaning, warnings, count badges, offline |
 | `green` (new) | `#1E7B4F` | Good: online, money up, count matched, saved |
 | `greenTint` (new) | `#E6F4EC` | Background for good notes |
@@ -167,7 +167,6 @@ constants (`standard`, `instant`) picked by reduced motion, not a
 - The top bar never moves.
 - Input is never blocked.
 - No bounce, and money never counts up.
-- One exception, asked for 28 Nov (story/ui-floating-nav): while the top bar's Check in button is hovered or keyboard-focused, its icon nudges 3 px forward and back in a 1.2 s loop (`ctaLoop`, `ctaNudge`), the button grows to 1.03 (`ctaScale`) and its label becomes "Let’s go!" (`ctaHover`, 160 ms). Leaving settles it back. Reduced motion: the label still swaps; nothing moves or loops.
 - Esc closes menus and panels and returns focus to the control that opened them.
 
 **Reduced motion:**
@@ -209,8 +208,7 @@ Code: `lib/app/shell/` (`desk_shell.dart` with its parts `top_bar.dart`, `shell_
 
 **The top bar:**
 - Floating (story/ui-floating-nav): 12 px clear of the window's top and sides (`Sizes.topBarMargin`), 64 px tall, white, radius 16 (`Radii.floatingBar`), a 1 px `line` border all round and a soft shadow (`LodgingShadows.floatingBar`: ink 6%, 16 blur, 4 down); 8 px inside its border (`Sizes.topBarInset`), the wordmark 8 px further in. The page starts under it. It never moves; pages change under it.
-- Tabs 8 px apart (`tabSpacing`); 16 px either side of the divider before the user.
-- **Check in** (users with `checkIn`: receptionist and supervisor), 24 px after the last tab (`ctaGap`): a 48 px red pill (`Sizes.cta`), a white 20 px Lucide log-in icon and "Check in" in `bodyMedium`, a faint red shadow (`LodgingShadows.cta`); it opens the check-in. Its width fits "Let’s go!", its hover label (`ctaWidth`), so nothing moves. Hovered or keyboard-focused: lifted (`ctaRaised`, scale 1.03), "Let’s go!", the icon nudging (Motion); keyboard focus adds the marine ring. Screen readers hear "Check in". Folded bar too narrow for it (768 with large text or a long name): a 48 px circle with the icon and a "Check in" tooltip. The bed board's own "New check-in" stays.
+- Tabs 8 px apart (`tabSpacing`); 16 px either side of the divider before the user. With these, a role's tabs need no more room than before the bar floated, so they fold into the drawer at the same widths as before.
 - Left: the UB40 wordmark (`LodgingWordmark`, Pirata One, the lodging name from settings, name only) in marine, about 22 px tall, with the role subtitle under it in `meta`, muted: "Front desk", "Supervisor" or "Owner". The wordmark is a logo, exempt from the type rules.
 - Tabs (Figma `v2/Top tab`): 44 px pills, radius 8, centred in the bar; 12 px padding, an 18 px Lucide icon, 8 px gaps, the label in `secondaryMedium`, then a butter count badge and, for a menu tab, a 16 px chevron.
   - Default: ink-soft text, muted icon. Active: marine text and icon, and the 3 px marine indicator that slides between tabs (`tabIndicator`, 200 ms).

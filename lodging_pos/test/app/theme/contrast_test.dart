@@ -34,10 +34,7 @@ void main() {
     'redText on redTint (alerts)': (c.redText, c.redTint),
     'redText on white (destructive outline)': (c.redText, c.white),
     'redDark on white (overstay pill text)': (c.redDark, c.white),
-    'white on red (overstay tile, Extend, the Check in button)': (
-      c.white,
-      c.red,
-    ),
+    'white on red (overstay tile, Extend)': (c.white, c.red),
     'green on white (online, money up)': (c.green, c.white),
     'green on greenTint (good notes)': (c.green, c.greenTint),
     'butterText on butterTint (soft warnings)': (c.butterText, c.butterTint),

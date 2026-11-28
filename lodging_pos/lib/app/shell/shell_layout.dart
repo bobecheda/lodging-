@@ -4,8 +4,6 @@
 /// belongs to, and the avatar's initials. No Flutter imports.
 library;
 
-import '../theme/spacing.dart';
-
 /// Breakpoints: narrow < 768, medium 768–1279, wide ≥ 1280.
 enum DeskWidth { narrow, medium, wide }
 
@@ -25,20 +23,6 @@ const tabChevron = 16.0;
 
 /// Between two tabs (8 since story/ui-floating-nav, was 4).
 const tabSpacing = 8.0;
-
-/// Between the last tab and the Check in button, and the least room
-/// between that button and the status on its right.
-const ctaGap = 24.0;
-const ctaClear = 16.0;
-
-/// The Check in button's width (story/ui-floating-nav): padding, the 20 px
-/// icon, an 8 px gap and the wider of its two labels ("Check in", and
-/// "Let's go!" on hover), so swapping them never moves anything.
-///
-/// On a folded bar too narrow for it (768 with large text or a backup
-/// warning), the button keeps only its icon: a 48 px circle.
-double ctaWidth({required double labelWidth}) =>
-    Sizes.ctaPadding + Sizes.ctaIcon + tabGap + labelWidth + Sizes.ctaPadding;
 
 /// A tab's width from its label's width, its badge's width (0: none) and
 /// whether it opens a menu.
