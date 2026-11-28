@@ -4,8 +4,10 @@ part of 'desk_shell.dart';
 
 /// The light top bar (brief, "Desk navigation" and "Shell states"): the
 /// wordmark and role, the tabs (or the menu button when they don't fit),
-/// the backup and sync status, the user button and Lock. It never moves;
-/// only the indicator slides between tabs.
+/// the backup and sync status, the user button and Lock. It floats
+/// (story/ui-floating-nav): 12 px clear of the window's top and sides,
+/// rounded, with a 1 px line border and a soft shadow, and the page starts
+/// under it. It never moves; only the indicator slides between tabs.
 class TopBar extends ConsumerStatefulWidget {
   const TopBar({
     super.key,
@@ -144,134 +146,165 @@ class _TopBarState extends ConsumerState<TopBar> {
       _textWidth(subtitle, t.meta, scaler),
     );
 
-    return LayoutBuilder(
-      builder: (context, box) {
-        const pad = Space.x24;
-        final status = _StatusSlot.widthOf(ref, user, t, scaler);
-        final userBlock = _UserButton.widthOf(ref, user, t, scaler);
-        // Status, divider, user, Lock: the right part with the name shown.
-        final trailing =
-            pad + status + 1 + 2 * pad + userBlock + Space.x12 + Sizes.target;
-        final layout = user == null
-            ? BarLayout.full
-            : barLayout(
-                barWidth: box.maxWidth,
-                leading: pad + wordmarkWidth + pad,
-                tabWidths: tabWidths,
-                trailing: trailing + pad,
-                nameWidth: _UserButton.nameWidthOf(ref, user, t, scaler),
-              );
-        final collapsed = layout == BarLayout.folded;
-        final showName = layout == BarLayout.full;
-        final tabsLeft = pad + wordmarkWidth + pad;
-        final activeIndex = widget.entries.indexWhere(_isActive);
-        double tabX(int i) =>
-            tabsLeft +
-            tabWidths.take(i).fold(0.0, (a, b) => a + b) +
-            tabSpacing * i;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Sizes.topBarMargin,
+        Sizes.topBarMargin,
+        Sizes.topBarMargin,
+        0,
+      ),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          const pad = Space.x24;
+          const inset = Sizes.topBarInset;
+          // The wordmark sits 16 px in from the border: the bar's 8 px and 8
+          // more, so it doesn't crowd the rounded corner.
+          const brandInset = Space.x8;
+          // Between the wordmark and the first tab, and either side of the
+          // divider before the user. With these the tabs need no more room
+          // than before the bar floated, so they fold at the same widths.
+          const brandGap = Space.x16;
+          const split = Space.x16;
+          final status = _StatusSlot.widthOf(ref, user, t, scaler);
+          final userBlock = _UserButton.widthOf(ref, user, t, scaler);
+          // A gap after the tabs, then status, divider, user and Lock, with
+          // the name shown.
+          final trailing =
+              pad +
+              status +
+              split +
+              1 +
+              split +
+              userBlock +
+              Space.x12 +
+              Sizes.target +
+              inset;
+          final layout = user == null
+              ? BarLayout.full
+              : barLayout(
+                  barWidth: box.maxWidth,
+                  leading: inset + brandInset + wordmarkWidth + brandGap,
+                  tabWidths: tabWidths,
+                  trailing: trailing,
+                  nameWidth: _UserButton.nameWidthOf(ref, user, t, scaler),
+                );
+          final collapsed = layout == BarLayout.folded;
+          final showName = layout == BarLayout.full;
+          final tabsLeft = inset + brandInset + wordmarkWidth + brandGap;
+          final activeIndex = widget.entries.indexWhere(_isActive);
+          double tabX(int i) =>
+              tabsLeft +
+              tabWidths.take(i).fold(0.0, (a, b) => a + b) +
+              tabSpacing * i;
 
-        return Container(
-          key: const ValueKey('shell.topBar'),
-          height: Sizes.topBar,
-          decoration: BoxDecoration(
-            color: c.white,
-            border: Border(bottom: BorderSide(color: c.line)),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: pad),
-                child: Row(
-                  children: [
-                    if (collapsed) ...[
-                      _IconButton(
-                        key: const ValueKey('shell.menu'),
-                        focusNode: _menuButton,
-                        icon: LucideIcons.menu,
-                        tooltip: 'Menu',
-                        background: null,
-                        onTap: _openDrawer,
-                      ),
-                      const SizedBox(width: Space.x8),
-                    ],
-                    SizedBox(
-                      width: wordmarkWidth,
-                      child: _Brand(subtitle: subtitle),
-                    ),
-                    const SizedBox(width: pad),
-                    if (!collapsed)
-                      for (final (i, e) in widget.entries.indexed) ...[
-                        if (i > 0) const SizedBox(width: tabSpacing),
-                        _TopTab(
-                          key: ValueKey('nav.${_entryId(e)}'),
-                          anchorKey: _keyFor(_entryId(e)),
-                          focusNode: _nodeFor(_entryId(e)),
-                          width: tabWidths[i],
-                          label: _entryLabel(e),
-                          icon: switch (e) {
-                            NavLink(:final item) => item.icon,
-                            NavMenu(:final group) => group.icon,
-                          },
-                          active: _isActive(e),
-                          badge: _entryCount(ref, user, e),
-                          badgeKey: switch (e) {
-                            NavLink(:final item) => ValueKey(
-                              'nav.badge.${item.route}',
-                            ),
-                            NavMenu(:final group) => ValueKey(
-                              'nav.badge.group.${group.name}',
-                            ),
-                          },
-                          menu: e is NavMenu,
-                          onTap: switch (e) {
-                            NavLink(:final item) => () => _go(item.route),
-                            NavMenu() => () => _openMenu(e),
-                          },
+          return Container(
+            key: const ValueKey('shell.topBar'),
+            height: Sizes.topBar,
+            decoration: BoxDecoration(
+              color: c.white,
+              borderRadius: BorderRadius.circular(Radii.floatingBar),
+              border: Border.all(color: c.line),
+              boxShadow: LodgingShadows.floatingBar(c),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: inset),
+                    child: Row(
+                      children: [
+                        if (collapsed) ...[
+                          _IconButton(
+                            key: const ValueKey('shell.menu'),
+                            focusNode: _menuButton,
+                            icon: LucideIcons.menu,
+                            tooltip: 'Menu',
+                            background: null,
+                            onTap: _openDrawer,
+                          ),
+                          const SizedBox(width: Space.x8),
+                        ] else
+                          const SizedBox(width: brandInset),
+                        SizedBox(
+                          width: wordmarkWidth,
+                          child: _Brand(subtitle: subtitle),
                         ),
+                        const SizedBox(width: brandGap),
+                        if (!collapsed)
+                          for (final (i, e) in widget.entries.indexed) ...[
+                            if (i > 0) const SizedBox(width: tabSpacing),
+                            _TopTab(
+                              key: ValueKey('nav.${_entryId(e)}'),
+                              anchorKey: _keyFor(_entryId(e)),
+                              focusNode: _nodeFor(_entryId(e)),
+                              width: tabWidths[i],
+                              label: _entryLabel(e),
+                              icon: switch (e) {
+                                NavLink(:final item) => item.icon,
+                                NavMenu(:final group) => group.icon,
+                              },
+                              active: _isActive(e),
+                              badge: _entryCount(ref, user, e),
+                              badgeKey: switch (e) {
+                                NavLink(:final item) => ValueKey(
+                                  'nav.badge.${item.route}',
+                                ),
+                                NavMenu(:final group) => ValueKey(
+                                  'nav.badge.group.${group.name}',
+                                ),
+                              },
+                              menu: e is NavMenu,
+                              onTap: switch (e) {
+                                NavLink(:final item) => () => _go(item.route),
+                                NavMenu() => () => _openMenu(e),
+                              },
+                            ),
+                          ],
+                        const Spacer(),
+                        _StatusSlot(user: user),
+                        const SizedBox(width: split),
+                        Container(width: 1, height: 28, color: c.line),
+                        const SizedBox(width: split),
+                        if (user != null) ...[
+                          _UserButton(user: user, showName: showName),
+                          const SizedBox(width: Space.x12),
+                          _IconButton(
+                            key: const ValueKey('shell.lock'),
+                            icon: LucideIcons.lock,
+                            tooltip: 'Lock screen',
+                            background: c.surface,
+                            onTap: () =>
+                                ref.read(idleLockProvider.notifier).lockNow(),
+                          ),
+                        ],
                       ],
-                    const Spacer(),
-                    _StatusSlot(user: user),
-                    const SizedBox(width: pad),
-                    Container(width: 1, height: 28, color: c.line),
-                    const SizedBox(width: pad),
-                    if (user != null) ...[
-                      _UserButton(user: user, showName: showName),
-                      const SizedBox(width: Space.x12),
-                      _IconButton(
-                        key: const ValueKey('shell.lock'),
-                        icon: LucideIcons.lock,
-                        tooltip: 'Lock screen',
-                        background: c.surface,
-                        onTap: () =>
-                            ref.read(idleLockProvider.notifier).lockNow(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (!collapsed && activeIndex >= 0)
-                AnimatedPositioned(
-                  key: const ValueKey('shell.indicator'),
-                  duration: m.tabIndicator.duration,
-                  curve: m.tabIndicator.curve,
-                  left: tabX(activeIndex) + Space.x4,
-                  width: tabWidths[activeIndex] - 2 * Space.x4,
-                  bottom: 0,
-                  height: Sizes.tabIndicator,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: c.marine,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(Sizes.tabIndicator),
-                      ),
                     ),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
+                if (!collapsed && activeIndex >= 0)
+                  AnimatedPositioned(
+                    key: const ValueKey('shell.indicator'),
+                    duration: m.tabIndicator.duration,
+                    curve: m.tabIndicator.curve,
+                    left: tabX(activeIndex) + Space.x4,
+                    width: tabWidths[activeIndex] - 2 * Space.x4,
+                    bottom: 0,
+                    height: Sizes.tabIndicator,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: c.marine,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(Sizes.tabIndicator),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

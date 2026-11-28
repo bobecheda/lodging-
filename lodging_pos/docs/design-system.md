@@ -20,6 +20,7 @@ matching section of design.md is marked superseded.
 | 7 | `story/ui-7-cash` | Cash (takes over Shifts), close shift |
 | 8 | `story/ui-8-receipts-voids` | Receipts, void on receipt (the bed panel's Void stay came with PR 5), Voids removed |
 | 9 | `story/ui-9-owner-phone` | Phone Today (with Drawer should hold), Money, Beds, Prices, More |
+| — | `story/ui-floating-nav` | The floating top bar (asked 28 Nov) |
 
 PR 5 waits for the owner to confirm the quiet occupied tile and the
 category colours. Screens not designed yet take the new tokens and shell
@@ -206,7 +207,8 @@ Breakpoints come from one pure function, unit-tested at 767, 768, 1279 and 1280:
 Code: `lib/app/shell/` (`desk_shell.dart` with its parts `top_bar.dart`, `shell_menus.dart`, `nav_drawer.dart`; the pure rules in `shell_layout.dart`).
 
 **The top bar:**
-- 64 px, white, with a 1 px `line` bottom border. It never moves; pages change under it.
+- Floating (story/ui-floating-nav): 12 px clear of the window's top and sides (`Sizes.topBarMargin`), 64 px tall, white, radius 16 (`Radii.floatingBar`), a 1 px `line` border all round and a soft shadow (`LodgingShadows.floatingBar`: ink 6%, 16 blur, 4 down); 8 px inside its border (`Sizes.topBarInset`), the wordmark 8 px further in. The page starts under it. It never moves; pages change under it.
+- Tabs 8 px apart (`tabSpacing`); 16 px either side of the divider before the user. With these, a role's tabs need no more room than before the bar floated, so they fold into the drawer at the same widths as before.
 - Left: the UB40 wordmark (`LodgingWordmark`, Pirata One, the lodging name from settings, name only) in marine, about 22 px tall, with the role subtitle under it in `meta`, muted: "Front desk", "Supervisor" or "Owner". The wordmark is a logo, exempt from the type rules.
 - Tabs (Figma `v2/Top tab`): 44 px pills, radius 8, centred in the bar; 12 px padding, an 18 px Lucide icon, 8 px gaps, the label in `secondaryMedium`, then a butter count badge and, for a menu tab, a 16 px chevron.
   - Default: ink-soft text, muted icon. Active: marine text and icon, and the 3 px marine indicator that slides between tabs (`tabIndicator`, 200 ms).

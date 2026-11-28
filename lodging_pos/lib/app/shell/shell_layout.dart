@@ -21,8 +21,8 @@ const tabIconSize = 18.0;
 const tabGap = 8.0;
 const tabChevron = 16.0;
 
-/// Between two tabs.
-const tabSpacing = 4.0;
+/// Between two tabs (8 since story/ui-floating-nav, was 4).
+const tabSpacing = 8.0;
 
 /// A tab's width from its label's width, its badge's width (0: none) and
 /// whether it opens a menu.

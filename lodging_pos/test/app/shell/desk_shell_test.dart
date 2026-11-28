@@ -290,4 +290,43 @@ void main() {
     final context = tester.element(find.byKey(const ValueKey('shell.topBar')));
     expect(LodgingMotion.of(context).reduced, isTrue);
   });
+
+  group('the floating bar (story/ui-floating-nav)', () {
+    testWidgets('12 px clear of the window, 64 tall; the page starts under '
+        'it', (tester) async {
+      await env.createFirstSupervisor(testSetup);
+      await env.addReceptionist('desk');
+      await env.ensureDrawerStarted(counted: 500);
+      await pumpAt(tester, deskSize);
+      await receptionistIn(tester);
+      final bar = tester.getRect(find.byKey(const ValueKey('shell.topBar')));
+      expect(bar.left, Sizes.topBarMargin);
+      expect(bar.top, Sizes.topBarMargin);
+      expect(bar.right, deskSize.width - Sizes.topBarMargin);
+      expect(bar.height, Sizes.topBar);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('board.now'))).top,
+        greaterThan(bar.bottom),
+      );
+    });
+
+    // As before the bar floated: the supervisor's seven tabs stay in the
+    // bar at 1366 with the name, and at 1280 without it; never the drawer.
+    for (final (width, name) in const [(1366.0, true), (1280.0, false)]) {
+      testWidgets('the supervisor at $width: every tab in the bar', (
+        tester,
+      ) async {
+        await env.createFirstSupervisor(testSetup);
+        await pumpAt(tester, Size(width, 768));
+        await signInAs(tester, 'supervisor', 'super-pass');
+        expect(tabs(tester), hasLength(7));
+        expect(find.byKey(const ValueKey('shell.menu')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('shell.userName')),
+          name ? findsOneWidget : findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }
