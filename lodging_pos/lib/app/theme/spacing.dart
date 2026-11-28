@@ -19,6 +19,9 @@ abstract final class Radii {
   static const control = 10.0; // inputs and buttons
   static const tile = 8.0; // bed tiles
   static const tab = 8.0; // top tabs, menu and drawer rows
+
+  /// The floating top bar's corners (story/ui-floating-nav).
+  static const floatingBar = 16.0;
   static const badge = 6.0;
   static const pill = 999.0;
 }
@@ -38,6 +41,17 @@ abstract final class Sizes {
   static const topBar = 64.0;
   static const tabIndicator = 3.0;
   static const tabIcon = 18.0;
+
+  /// The floating top bar (story/ui-floating-nav): 12 px clear of the
+  /// window's top and sides, 8 px of padding inside its border.
+  static const topBarMargin = 12.0;
+  static const topBarInset = 8.0;
+
+  /// The bar's Check in button: 48 high (the tabs are 44), a 20 px icon,
+  /// 20 px padding each side.
+  static const cta = 48.0;
+  static const ctaIcon = 20.0;
+  static const ctaPadding = 20.0;
 
   /// The user's initials in the top bar and the drawer.
   static const avatar = 36.0;

@@ -1,0 +1,36 @@
+import 'package:flutter/painting.dart';
+
+import 'lodging_colors.dart';
+
+/// The few shadows the app draws (story/ui-floating-nav): soft, ink at
+/// 8% or less, never on cards. Menus and the drawer keep their own (ink
+/// 8%, 16 blur).
+abstract final class LodgingShadows {
+  /// The floating top bar: lifts it off the page, with its 1 px line
+  /// border.
+  static List<BoxShadow> floatingBar(LodgingColors c) => [
+    BoxShadow(
+      color: c.ink.withValues(alpha: 0.06),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  /// The Check in button at rest: a faint red glow under it.
+  static List<BoxShadow> cta(LodgingColors c) => [
+    BoxShadow(
+      color: c.red.withValues(alpha: 0.22),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+  ];
+
+  /// The Check in button hovered or keyboard-focused: lifted.
+  static List<BoxShadow> ctaRaised(LodgingColors c) => [
+    BoxShadow(
+      color: c.red.withValues(alpha: 0.32),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ];
+}

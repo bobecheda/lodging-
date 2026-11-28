@@ -4,6 +4,7 @@ import 'lodging_colors.dart';
 import 'lodging_type.dart';
 import 'spacing.dart';
 
+export 'elevation.dart';
 export 'lodging_colors.dart';
 export 'lodging_motion.dart';
 export 'lodging_type.dart';
@@ -11,7 +12,7 @@ export 'spacing.dart';
 export 'wordmark_style.dart';
 
 /// The app theme: light only, hand-written ColorScheme (no fromSeed), no
-/// shadows or gradients (docs/design.md).
+/// gradients, and shadows only from `LodgingShadows` (docs/design.md).
 ThemeData buildLodgingTheme() {
   const c = LodgingColors.light;
   final type = LodgingType.from(c);

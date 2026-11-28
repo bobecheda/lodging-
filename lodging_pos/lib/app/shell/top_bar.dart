@@ -4,8 +4,11 @@ part of 'desk_shell.dart';
 
 /// The light top bar (brief, "Desk navigation" and "Shell states"): the
 /// wordmark and role, the tabs (or the menu button when they don't fit),
-/// the backup and sync status, the user button and Lock. It never moves;
-/// only the indicator slides between tabs.
+/// the Check in button, the backup and sync status, the user button and
+/// Lock. It floats (story/ui-floating-nav): 12 px clear of the window's
+/// top and sides, rounded, with a 1 px line border and a soft shadow, and
+/// the page starts under it. It never moves; only the indicator slides
+/// between tabs.
 class TopBar extends ConsumerStatefulWidget {
   const TopBar({
     super.key,
@@ -129,6 +132,12 @@ class _TopBarState extends ConsumerState<TopBar> {
           menu: e is NavMenu,
         ),
     ];
+    final canCheckIn = user != null && can(user, Permission.checkIn);
+    final ctaLabelWidth = math.max(
+      _textWidth(checkInLabel, t.bodyMedium, scaler),
+      _textWidth(checkInHoverLabel, t.bodyMedium, scaler),
+    );
+    final cta = canCheckIn ? ctaWidth(labelWidth: ctaLabelWidth) : 0.0;
     final wordStyle = WordmarkStyle.of(c, WordmarkSize.topBar, onDark: false);
     // The name may be cut at 200 px (the wordmark's own ellipsis); the role
     // under it never is.
@@ -144,134 +153,197 @@ class _TopBarState extends ConsumerState<TopBar> {
       _textWidth(subtitle, t.meta, scaler),
     );
 
-    return LayoutBuilder(
-      builder: (context, box) {
-        const pad = Space.x24;
-        final status = _StatusSlot.widthOf(ref, user, t, scaler);
-        final userBlock = _UserButton.widthOf(ref, user, t, scaler);
-        // Status, divider, user, Lock: the right part with the name shown.
-        final trailing =
-            pad + status + 1 + 2 * pad + userBlock + Space.x12 + Sizes.target;
-        final layout = user == null
-            ? BarLayout.full
-            : barLayout(
-                barWidth: box.maxWidth,
-                leading: pad + wordmarkWidth + pad,
-                tabWidths: tabWidths,
-                trailing: trailing + pad,
-                nameWidth: _UserButton.nameWidthOf(ref, user, t, scaler),
-              );
-        final collapsed = layout == BarLayout.folded;
-        final showName = layout == BarLayout.full;
-        final tabsLeft = pad + wordmarkWidth + pad;
-        final activeIndex = widget.entries.indexWhere(_isActive);
-        double tabX(int i) =>
-            tabsLeft +
-            tabWidths.take(i).fold(0.0, (a, b) => a + b) +
-            tabSpacing * i;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Sizes.topBarMargin,
+        Sizes.topBarMargin,
+        Sizes.topBarMargin,
+        0,
+      ),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          const pad = Space.x24;
+          const inset = Sizes.topBarInset;
+          // The wordmark sits 16 px in from the border: the bar's 8 px and 8
+          // more, so it doesn't crowd the rounded corner.
+          const brandInset = Space.x8;
+          // Either side of the divider before the user.
+          const split = Space.x16;
+          final status = _StatusSlot.widthOf(ref, user, t, scaler);
+          final userBlock = _UserButton.widthOf(ref, user, t, scaler);
+          // After the tabs: Check in (or a gap), then status, divider, user,
+          // Lock, with the name shown.
+          final afterTabs = canCheckIn ? ctaGap + cta + ctaClear : pad;
+          final trailing =
+              afterTabs +
+              status +
+              split +
+              1 +
+              split +
+              userBlock +
+              Space.x12 +
+              Sizes.target +
+              inset;
+          final nameWidth = user == null
+              ? 0.0
+              : _UserButton.nameWidthOf(ref, user, t, scaler);
+          final layout = user == null
+              ? BarLayout.full
+              : barLayout(
+                  barWidth: box.maxWidth,
+                  leading: inset + brandInset + wordmarkWidth + pad,
+                  tabWidths: tabWidths,
+                  trailing: trailing,
+                  nameWidth: nameWidth,
+                );
+          final collapsed = layout == BarLayout.folded;
+          // Folded: the menu button, the wordmark, Check in, then the right
+          // part without the name. Too narrow even so (768 with large text
+          // or a backup warning): Check in keeps only its icon.
+          final folded =
+              inset +
+              Sizes.target +
+              Space.x8 +
+              wordmarkWidth +
+              pad +
+              cta +
+              ctaClear +
+              status +
+              split +
+              1 +
+              split +
+              userBlock -
+              nameWidth +
+              Space.x12 +
+              Sizes.target +
+              inset;
+          final iconOnly = collapsed && folded > box.maxWidth;
+          final showName = layout == BarLayout.full;
+          final tabsLeft = inset + brandInset + wordmarkWidth + pad;
+          final activeIndex = widget.entries.indexWhere(_isActive);
+          double tabX(int i) =>
+              tabsLeft +
+              tabWidths.take(i).fold(0.0, (a, b) => a + b) +
+              tabSpacing * i;
 
-        return Container(
-          key: const ValueKey('shell.topBar'),
-          height: Sizes.topBar,
-          decoration: BoxDecoration(
-            color: c.white,
-            border: Border(bottom: BorderSide(color: c.line)),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: pad),
-                child: Row(
-                  children: [
-                    if (collapsed) ...[
-                      _IconButton(
-                        key: const ValueKey('shell.menu'),
-                        focusNode: _menuButton,
-                        icon: LucideIcons.menu,
-                        tooltip: 'Menu',
-                        background: null,
-                        onTap: _openDrawer,
-                      ),
-                      const SizedBox(width: Space.x8),
-                    ],
-                    SizedBox(
-                      width: wordmarkWidth,
-                      child: _Brand(subtitle: subtitle),
-                    ),
-                    const SizedBox(width: pad),
-                    if (!collapsed)
-                      for (final (i, e) in widget.entries.indexed) ...[
-                        if (i > 0) const SizedBox(width: tabSpacing),
-                        _TopTab(
-                          key: ValueKey('nav.${_entryId(e)}'),
-                          anchorKey: _keyFor(_entryId(e)),
-                          focusNode: _nodeFor(_entryId(e)),
-                          width: tabWidths[i],
-                          label: _entryLabel(e),
-                          icon: switch (e) {
-                            NavLink(:final item) => item.icon,
-                            NavMenu(:final group) => group.icon,
-                          },
-                          active: _isActive(e),
-                          badge: _entryCount(ref, user, e),
-                          badgeKey: switch (e) {
-                            NavLink(:final item) => ValueKey(
-                              'nav.badge.${item.route}',
-                            ),
-                            NavMenu(:final group) => ValueKey(
-                              'nav.badge.group.${group.name}',
-                            ),
-                          },
-                          menu: e is NavMenu,
-                          onTap: switch (e) {
-                            NavLink(:final item) => () => _go(item.route),
-                            NavMenu() => () => _openMenu(e),
-                          },
+          return Container(
+            key: const ValueKey('shell.topBar'),
+            height: Sizes.topBar,
+            decoration: BoxDecoration(
+              color: c.white,
+              borderRadius: BorderRadius.circular(Radii.floatingBar),
+              border: Border.all(color: c.line),
+              boxShadow: LodgingShadows.floatingBar(c),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: inset),
+                    child: Row(
+                      children: [
+                        if (collapsed) ...[
+                          _IconButton(
+                            key: const ValueKey('shell.menu'),
+                            focusNode: _menuButton,
+                            icon: LucideIcons.menu,
+                            tooltip: 'Menu',
+                            background: null,
+                            onTap: _openDrawer,
+                          ),
+                          const SizedBox(width: Space.x8),
+                        ] else
+                          const SizedBox(width: brandInset),
+                        SizedBox(
+                          width: wordmarkWidth,
+                          child: _Brand(subtitle: subtitle),
                         ),
+                        const SizedBox(width: pad),
+                        if (!collapsed)
+                          for (final (i, e) in widget.entries.indexed) ...[
+                            if (i > 0) const SizedBox(width: tabSpacing),
+                            _TopTab(
+                              key: ValueKey('nav.${_entryId(e)}'),
+                              anchorKey: _keyFor(_entryId(e)),
+                              focusNode: _nodeFor(_entryId(e)),
+                              width: tabWidths[i],
+                              label: _entryLabel(e),
+                              icon: switch (e) {
+                                NavLink(:final item) => item.icon,
+                                NavMenu(:final group) => group.icon,
+                              },
+                              active: _isActive(e),
+                              badge: _entryCount(ref, user, e),
+                              badgeKey: switch (e) {
+                                NavLink(:final item) => ValueKey(
+                                  'nav.badge.${item.route}',
+                                ),
+                                NavMenu(:final group) => ValueKey(
+                                  'nav.badge.group.${group.name}',
+                                ),
+                              },
+                              menu: e is NavMenu,
+                              onTap: switch (e) {
+                                NavLink(:final item) => () => _go(item.route),
+                                NavMenu() => () => _openMenu(e),
+                              },
+                            ),
+                          ],
+                        if (canCheckIn) ...[
+                          if (!collapsed) const SizedBox(width: ctaGap),
+                          _CheckInButton(
+                            width: iconOnly ? Sizes.cta : cta,
+                            labelWidth: ctaLabelWidth,
+                            iconOnly: iconOnly,
+                            onTap: () => _go(Routes.checkIn),
+                          ),
+                          const SizedBox(width: ctaClear),
+                        ],
+                        const Spacer(),
+                        _StatusSlot(user: user),
+                        const SizedBox(width: split),
+                        Container(width: 1, height: 28, color: c.line),
+                        const SizedBox(width: split),
+                        if (user != null) ...[
+                          _UserButton(user: user, showName: showName),
+                          const SizedBox(width: Space.x12),
+                          _IconButton(
+                            key: const ValueKey('shell.lock'),
+                            icon: LucideIcons.lock,
+                            tooltip: 'Lock screen',
+                            background: c.surface,
+                            onTap: () =>
+                                ref.read(idleLockProvider.notifier).lockNow(),
+                          ),
+                        ],
                       ],
-                    const Spacer(),
-                    _StatusSlot(user: user),
-                    const SizedBox(width: pad),
-                    Container(width: 1, height: 28, color: c.line),
-                    const SizedBox(width: pad),
-                    if (user != null) ...[
-                      _UserButton(user: user, showName: showName),
-                      const SizedBox(width: Space.x12),
-                      _IconButton(
-                        key: const ValueKey('shell.lock'),
-                        icon: LucideIcons.lock,
-                        tooltip: 'Lock screen',
-                        background: c.surface,
-                        onTap: () =>
-                            ref.read(idleLockProvider.notifier).lockNow(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (!collapsed && activeIndex >= 0)
-                AnimatedPositioned(
-                  key: const ValueKey('shell.indicator'),
-                  duration: m.tabIndicator.duration,
-                  curve: m.tabIndicator.curve,
-                  left: tabX(activeIndex) + Space.x4,
-                  width: tabWidths[activeIndex] - 2 * Space.x4,
-                  bottom: 0,
-                  height: Sizes.tabIndicator,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: c.marine,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(Sizes.tabIndicator),
-                      ),
                     ),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
+                if (!collapsed && activeIndex >= 0)
+                  AnimatedPositioned(
+                    key: const ValueKey('shell.indicator'),
+                    duration: m.tabIndicator.duration,
+                    curve: m.tabIndicator.curve,
+                    left: tabX(activeIndex) + Space.x4,
+                    width: tabWidths[activeIndex] - 2 * Space.x4,
+                    bottom: 0,
+                    height: Sizes.tabIndicator,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: c.marine,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(Sizes.tabIndicator),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -417,6 +489,211 @@ class _TopTabState extends State<_TopTab> {
         ),
       ),
     );
+  }
+}
+
+/// The Check in button's two labels: at rest, and while hovered or
+/// keyboard-focused.
+const checkInLabel = 'Check in';
+const checkInHoverLabel = 'Let’s go!';
+
+/// The bar's primary action (story/ui-floating-nav): a 48 px red pill with
+/// a white icon and label, opening the check-in. It reads as the one action
+/// on the bar, never as another tab. Hovered or keyboard-focused, it lifts
+/// (scale [LodgingMotion.ctaScale], a stronger shadow), its label becomes
+/// "Let’s go!" and its icon nudges forward and back in a loop; leaving
+/// settles it back. Its width fits the longer label, so nothing moves.
+/// Reduced motion: the label still swaps; nothing moves or loops. Screen
+/// readers always hear "Check in".
+class _CheckInButton extends StatefulWidget {
+  const _CheckInButton({
+    required this.width,
+    required this.labelWidth,
+    required this.onTap,
+    this.iconOnly = false,
+  });
+
+  final double width;
+
+  /// The wider of the two labels.
+  final double labelWidth;
+  final VoidCallback onTap;
+
+  /// On a folded bar too narrow for the label: a 48 px circle with the
+  /// icon, "Check in" as its tooltip.
+  final bool iconOnly;
+
+  @override
+  State<_CheckInButton> createState() => _CheckInButtonState();
+}
+
+class _CheckInButtonState extends State<_CheckInButton>
+    with SingleTickerProviderStateMixin {
+  late final _loop = AnimationController(vsync: this);
+  var _hover = false;
+  var _focused = false;
+  var _keyboard =
+      FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+
+  bool get _lifted => _hover || (_focused && _keyboard);
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_onMode);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion may have been turned on or off.
+    _syncLoop();
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_onMode);
+    _loop.dispose();
+    super.dispose();
+  }
+
+  void _onMode(FocusHighlightMode mode) {
+    final keyboard = mode == FocusHighlightMode.traditional;
+    if (keyboard == _keyboard) return;
+    setState(() => _keyboard = keyboard);
+    _syncLoop();
+  }
+
+  void _set({bool? hover, bool? focused}) {
+    setState(() {
+      _hover = hover ?? _hover;
+      _focused = focused ?? _focused;
+    });
+    _syncLoop();
+  }
+
+  /// Loops the icon while lifted; otherwise lets it glide home (the nudge
+  /// is 0 at both ends of a loop) and stops.
+  void _syncLoop() {
+    if (!mounted) return;
+    final m = LodgingMotion.of(context);
+    if (_lifted && !m.reduced) {
+      if (!_loop.isAnimating) {
+        _loop.duration = m.ctaLoop;
+        _loop.repeat();
+      }
+      return;
+    }
+    if (m.reduced || _loop.value == 0) {
+      _loop
+        ..stop()
+        ..value = 0;
+      return;
+    }
+    final home = _loop.value < 0.5 ? 0.0 : 1.0;
+    _loop
+        .animateTo(home, duration: m.ctaHover.duration, curve: Curves.easeOut)
+        .whenCompleteOrCancel(() {
+          if (mounted && !_loop.isAnimating) _loop.value = 0;
+        });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    final m = LodgingMotion.of(context);
+    final lifted = _lifted;
+    final shape = BorderRadius.circular(Radii.pill);
+    final button = Semantics(
+      button: true,
+      label: checkInLabel,
+      excludeSemantics: true,
+      child: AnimatedScale(
+        scale: lifted ? m.ctaScale : 1,
+        duration: m.ctaHover.duration,
+        curve: m.ctaHover.curve,
+        child: FocusRing(
+          radius: Radii.pill,
+          child: AnimatedContainer(
+            key: const ValueKey('shell.checkIn'),
+            duration: m.ctaHover.duration,
+            curve: m.ctaHover.curve,
+            width: widget.width,
+            height: Sizes.cta,
+            decoration: BoxDecoration(
+              color: c.red,
+              borderRadius: shape,
+              boxShadow: lifted
+                  ? LodgingShadows.ctaRaised(c)
+                  : LodgingShadows.cta(c),
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                borderRadius: shape,
+                hoverColor: c.white.withValues(alpha: 0),
+                focusColor: c.white.withValues(alpha: 0),
+                highlightColor: c.white.withValues(alpha: 0.12),
+                splashColor: c.white.withValues(alpha: 0.16),
+                onHover: (h) => _set(hover: h),
+                onFocusChange: (f) => _set(focused: f),
+                onTap: widget.onTap,
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _loop,
+                        builder: (context, icon) => Transform.translate(
+                          // Forward and back once per loop: 0 at both ends.
+                          offset: Offset(
+                            m.ctaNudge *
+                                (1 - math.cos(2 * math.pi * _loop.value)) /
+                                2,
+                            0,
+                          ),
+                          child: icon,
+                        ),
+                        child: Icon(
+                          LucideIcons.logIn,
+                          key: const ValueKey('shell.checkIn.icon'),
+                          size: Sizes.ctaIcon,
+                          color: c.white,
+                        ),
+                      ),
+                      if (!widget.iconOnly) ...[
+                        const SizedBox(width: tabGap),
+                        SizedBox(
+                          width: widget.labelWidth,
+                          child: AnimatedSwitcher(
+                            duration: m.ctaHover.duration,
+                            layoutBuilder: (current, previous) => Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [...previous, ?current],
+                            ),
+                            child: Text(
+                              lifted ? checkInHoverLabel : checkInLabel,
+                              key: ValueKey('shell.checkIn.$lifted'),
+                              maxLines: 1,
+                              softWrap: false,
+                              style: t.bodyMedium.copyWith(color: c.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return widget.iconOnly
+        ? Tooltip(message: checkInLabel, child: button)
+        : button;
   }
 }
 
