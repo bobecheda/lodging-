@@ -22,3 +22,7 @@ supabase/.temp/
 
 # Claude Code personal settings (permission rules for this PC); never shared.
 **/.claude/settings.local.json
+
+# Evidence copies of desk databases (the dev sync problem, Nov 2026): real
+# test data, never committed.
+sync-evidence/
