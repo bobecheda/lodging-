@@ -68,6 +68,9 @@ void main() {
       Permission.reviewSupervisorCash,
       // Desk DB guards (24 Nov 2026): only the owner accepts a restore.
       Permission.acceptRestore,
+      // Desk DB guards 2 (28 Nov 2026): only the owner sees why the desk's
+      // data is older than the cloud.
+      Permission.viewBehindEvidence,
     };
     const ownerAndSupervisor = {
       Permission.viewAllReports,

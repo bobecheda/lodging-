@@ -78,9 +78,9 @@ npx supabase@2.121.0 db push
 ```
 
 - [ ] It lists and applies these, in this order, with no error:
-  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`, `20261110000200_drawer_counts`, `20261111000000_cash_reviews`, `20261124000000_category_colours`.
+  `20261023000000_tables`, `20261023000100_rules`, `20261023000200_sync`, `20261024000000_hardening`, `20261025000000_pull`, `20261026000000_owner_app`, `20261027000000_change_prices`, `20261028000000_password_changes`, `20261029000000_voids`, `20261110000000_cash_drawer`, `20261110000100_cash_drawer_defaults`, `20261110000200_drawer_counts`, `20261111000000_cash_reviews`, `20261124000000_category_colours`, `20261128000000_desk_cloud_state`.
   The desk build at the tag is schema **v12** (the blind close, the drawer's counts, the cash reviews and the room category colours).
-- [ ] Check in the SQL Editor that they're all recorded (14 rows):
+- [ ] Check in the SQL Editor that they're all recorded (15 rows):
 
   ```sql
   select version from supabase_migrations.schema_migrations order by version;
@@ -121,9 +121,12 @@ npx supabase@2.121.0 link --project-ref <dev-ref>
   ```json
   {
     "SUPABASE_URL": "https://<production-ref>.supabase.co",
-    "SUPABASE_ANON_KEY": "<production anon key>"
+    "SUPABASE_ANON_KEY": "<production anon key>",
+    "SUPPORT_PHONE": "<Bobe's phone, as it should read on the screen>"
   }
   ```
+
+  `SUPPORT_PHONE` is the number the desk shows when it refuses ("… call Bobe on 07…"); it lives only in this file, never in git or a log (`lib/core/support_contact.dart`).
 
   Keep your dev file as `secrets.json`; never mix them up. Every production build below names `secrets.prod.json`.
 
@@ -148,6 +151,8 @@ flutter build windows --release --dart-define-from-file=secrets.prod.json --dart
 - [ ] The build is from the tag (`git describe --tags` names it) and `APP_COMMIT` is the tag's commit: the sign-in footer will show it.
 - [ ] Copy the whole `build\windows\x64\runner\Release` folder to a USB drive as `UB40-Desk-1.1`, and `vc_redist.x64.exe` (Microsoft) next to it. **The USB drive only carries the build to UB40;** nobody runs the desk from it.
 - [ ] Don't run the USB copy on this PC: it would open this PC's own desk data (story/desk-db-guards warns about a removable drive; this is how the 23 Nov 2026 incident started). Check the build on this PC from `build\windows\x64\runner\Release` instead, and close it.
+
+**Database files.** At UB40, nobody but Bobe copies, moves or restores a database file, and only after the app's own checks say it's safe. No copies on USB.
 
 **One install, from the tag.** UB40 has exactly one copy of the desk app: `C:\UB40\Desk`, built from the release tag. No desk copies on USB drives, Desktops or old folders at UB40; a desk started from a removable drive or another folder shows a warning only the supervisor or owner can pass (`docs/backup-restore.md`, "Startup checks"), and an older build than the one that last opened the database is refused. Old builds made before story/desk-db-guards (`v1.0-golive`, `v0.9-demo`, the `D:\Release` copy) have none of these guards: delete them wherever they are.
 
@@ -221,6 +226,8 @@ Use a test guest you will then check out; all money in this test is small and re
 ## 7. If something fails on site (rollback)
 
 The desk works fully offline and keeps every record itself; the cloud is a copy plus the owner's decisions (which the desk also keeps). So the lodging can always open, whatever the cloud does.
+
+**If the desk refuses** (any refusal screen, or the red "This PC's data is older than the cloud" banner): use the paper receipt book, call Bobe, entries are typed in after recovery.
 
 **Sync fails** (the pill shows "Sync problem · details", "Offline", or connecting is refused):
 
