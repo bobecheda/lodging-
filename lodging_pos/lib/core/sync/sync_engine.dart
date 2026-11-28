@@ -149,6 +149,12 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   /// The cloud was asked this session whether the file is behind (before
   /// the first push).
   var _checkedThisSession = false;
+  Future<BehindEvidence?>? _checking;
+
+  /// Completes once [start] has read this desk's state (before any network
+  /// call): the startup check waits for it.
+  Future<void> get ready => _ready.future;
+  final _ready = Completer<void>();
 
   late String _deviceId;
   var _connected = false;
@@ -228,6 +234,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     _clockWarning = await _store.get(SyncStore.clockWarning) == 'on';
     _voidsHeld = (await _store.held()).length;
     _behind = await _store.behind();
+    if (!_ready.isCompleted) _ready.complete();
     if (!_connected) {
       _emitPhase(SyncPhase.notConnected);
       return;
@@ -278,17 +285,17 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   /// the evidence, or null when it doesn't, or when it can't be asked (not
   /// connected, the first upload unfinished, offline, the key refused). The
   /// startup check calls it; the push asks it once a session first.
-  Future<BehindEvidence?> checkCloud() async {
-    if (_behind case final behind?) return behind;
+  Future<BehindEvidence?> checkCloud() {
+    if (_behind case final behind?) return Future.value(behind);
+    if (_checkedThisSession) return Future.value();
+    return _checking ??= _checkCloud().whenComplete(() => _checking = null);
+  }
+
+  Future<BehindEvidence?> _checkCloud() async {
     if (!_connected || !_uploadDone || !await _ensureDesk()) return null;
     final DeskCloudState state;
     try {
-      state = await _cloud.deskCloudState(
-        (await _store.deskHere(
-          _deviceId,
-          const DeskCloudState(),
-        )).lastOwnAuditAt,
-      );
+      state = await _cloud.deskCloudState();
     } on CloudOffline {
       _offline();
       return null;

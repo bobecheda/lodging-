@@ -70,33 +70,42 @@ insert into public.audit_log (id, created_at, updated_at, device_id, at,
 select tests_dcs.as_desk('1');
 
 select is(
-  (public.desk_cloud_state('2026-11-11T08:03:57Z') ->> 'newer_audit_rows')::int,
-  2, 'counts only this desk''s audit rows newer than the file''s newest');
+  public.desk_cloud_state() -> 'recent_audit_ids',
+  '["a-3", "a-2", "a-1"]'::jsonb,
+  'the ids of this desk''s newest audit rows, newest first, none of another''s');
 select is(
-  (public.desk_cloud_state('2026-11-11T08:03:57Z') ->> 'last_audit_at')::timestamptz,
+  (public.desk_cloud_state() ->> 'last_audit_at')::timestamptz,
   '2026-11-11T08:22:31Z'::timestamptz, 'this desk''s newest audit row');
 select is(
-  public.desk_cloud_state('2026-11-11T08:03:57Z') ->> 'top_receipt',
+  public.desk_cloud_state() ->> 'top_receipt',
   'R-000052', 'the highest receipt number, compared as a number');
 select is(
-  public.desk_cloud_state('2026-11-11T08:03:57Z') ->> 'open_shift',
+  public.desk_cloud_state() ->> 'open_shift',
   's-open', 'this desk''s open shift');
+
+reset role;
+insert into public.audit_log (id, created_at, updated_at, device_id, at,
+  operation_id, user_id, action, entity, entity_id, after_json)
+select 'many-' || n, '2026-11-12T00:00:00Z'::timestamptz + n * interval '1 second',
+  now(), 'dev-1', now(), 'op-m', 'u-1', 'user.login', 'users', 'u-1', '{}'
+from generate_series(1, 60) n;
+select tests_dcs.as_desk('1');
 select is(
-  (public.desk_cloud_state(null) ->> 'newer_audit_rows')::int,
-  3, 'a file with no audit rows of its own: every one counts');
+  jsonb_array_length(public.desk_cloud_state() -> 'recent_audit_ids'),
+  50, 'at most 50 ids (recentAuditLimit)');
 select is(
-  (public.desk_cloud_state('2026-11-11T08:22:31Z') ->> 'newer_audit_rows')::int,
-  0, 'a file as new as the cloud: none');
+  public.desk_cloud_state() -> 'recent_audit_ids' ->> 0,
+  'many-60', 'the newest first');
 
 select tests_dcs.as_desk('2');
 select is(
-  public.desk_cloud_state(null),
-  '{"newer_audit_rows": 0, "last_audit_at": null, "top_receipt": null, "open_shift": null}'::jsonb,
+  public.desk_cloud_state(),
+  '{"recent_audit_ids": [], "last_audit_at": null, "top_receipt": null, "open_shift": null}'::jsonb,
   'another desk sees only its own, here nothing');
 
 select tests_dcs.as_anon();
 select throws_ok(
-  $$ select public.desk_cloud_state(null) $$, '42501', null,
+  $$ select public.desk_cloud_state() $$, '42501', null,
   'no one without a desk''s sign-in may ask');
 
 reset role;

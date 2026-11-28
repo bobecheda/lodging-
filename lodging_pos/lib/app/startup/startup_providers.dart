@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/app_version.dart';
@@ -51,6 +53,26 @@ Future<void> startupTasks(Ref ref) async {
   }
   if (startup.location case LocationRecord(:final path)) {
     await recordInstallPath(db, path);
+  }
+}
+
+/// The longest sign-in waits for the cloud's answer at start.
+const cloudCheckWait = Duration(seconds: 8);
+
+/// Before sign-in, on a connected desk that is online
+/// (story/desk-db-guards-2): asks the cloud whether this file is behind it
+/// (`SyncEngine.checkCloud`). Offline, refused or slower than
+/// [cloudCheckWait], the desk opens as today; the engine asks again before
+/// it sends anything.
+@Riverpod(keepAlive: true)
+Future<void> cloudStartupCheck(Ref ref) async {
+  await ref.watch(startupTasksProvider.future);
+  final engine = ref.watch(syncEngineProvider);
+  if (engine == null) return;
+  try {
+    await engine.ready.then((_) => engine.checkCloud()).timeout(cloudCheckWait);
+  } on TimeoutException {
+    // Opens as today.
   }
 }
 

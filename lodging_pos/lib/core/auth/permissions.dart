@@ -106,6 +106,11 @@ enum Permission {
   /// the last backup" refusal (story/desk-db-guards). Owner only; if the
   /// owner isn't at the desk, it waits.
   acceptRestore,
+
+  /// See what proved this PC's data older than the cloud, on the refusal
+  /// screen, and copy it for Bobe (story/desk-db-guards-2). It unlocks
+  /// nothing.
+  viewBehindEvidence,
 }
 
 const _ownerOnly = {Role.owner};
@@ -128,6 +133,7 @@ const permissionMap = <Permission, Set<Role>>{
   Permission.setCashRules: _ownerOnly,
   Permission.reviewSupervisorCash: _ownerOnly,
   Permission.acceptRestore: _ownerOnly,
+  Permission.viewBehindEvidence: _ownerOnly,
   Permission.acceptUnusualStart: _ownerAndSupervisor,
   // Prices and adding or closing categories (BR-2); the supervisor asks.
   Permission.editPrices: _ownerOnly,

@@ -7,6 +7,7 @@ import '../clock/clock.dart';
 import '../database/database_provider.dart';
 import 'cloud.dart';
 import 'cloud_writes.dart';
+import 'desk_behind.dart';
 import 'desk_secret_store.dart';
 import 'supabase_cloud.dart';
 import 'sync_engine.dart';
@@ -60,6 +61,13 @@ SyncEngine? syncEngine(Ref ref) {
 /// The cloud-first writes for repositories (null: local only).
 @Riverpod(keepAlive: true)
 CloudWrites? cloudWrites(Ref ref) => ref.watch(syncEngineProvider);
+
+/// What proved this PC's data older than the cloud, or null
+/// (story/desk-db-guards-2): the banner while someone is signed in, the
+/// refusal screen at the next sign-in or lock.
+@Riverpod(keepAlive: true)
+BehindEvidence? deskBehind(Ref ref) =>
+    ref.watch(syncStatusProvider).value?.behind;
 
 /// What the sync pill shows.
 @Riverpod(keepAlive: true)

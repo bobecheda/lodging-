@@ -242,6 +242,59 @@ final class CloudWritesProvider
 
 String _$cloudWritesHash() => r'9551440231672dd97138a0b04ffdbbec093aa006';
 
+/// What proved this PC's data older than the cloud, or null
+/// (story/desk-db-guards-2): the banner while someone is signed in, the
+/// refusal screen at the next sign-in or lock.
+
+@ProviderFor(deskBehind)
+final deskBehindProvider = DeskBehindProvider._();
+
+/// What proved this PC's data older than the cloud, or null
+/// (story/desk-db-guards-2): the banner while someone is signed in, the
+/// refusal screen at the next sign-in or lock.
+
+final class DeskBehindProvider
+    extends
+        $FunctionalProvider<BehindEvidence?, BehindEvidence?, BehindEvidence?>
+    with $Provider<BehindEvidence?> {
+  /// What proved this PC's data older than the cloud, or null
+  /// (story/desk-db-guards-2): the banner while someone is signed in, the
+  /// refusal screen at the next sign-in or lock.
+  DeskBehindProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deskBehindProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deskBehindHash();
+
+  @$internal
+  @override
+  $ProviderElement<BehindEvidence?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  BehindEvidence? create(Ref ref) {
+    return deskBehind(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BehindEvidence? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BehindEvidence?>(value),
+    );
+  }
+}
+
+String _$deskBehindHash() => r'93857f44edf7b7a071b2fd1aa4130f5e9d14405f';
+
 /// What the sync pill shows.
 
 @ProviderFor(syncStatus)

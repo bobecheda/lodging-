@@ -8,8 +8,9 @@ import '../database/desk_startup.dart' show receiptSerial;
 
 /// What proved it.
 enum BehindReason {
-  /// The cloud has audit rows from this desk newer than its newest.
-  newerRecords,
+  /// The cloud has audit rows from this desk that the file lacks (by id: the
+  /// desk never deletes one, so a missing one proves an older copy).
+  missingRecords,
 
   /// The cloud has a receipt number from this desk above its last.
   higherReceipt,
@@ -37,18 +38,22 @@ const behindConstraints = {
   'shifts_one_open_per_device': BehindReason.openShiftTaken,
 };
 
+/// How many of this desk's newest audit row ids `desk_cloud_state` returns.
+const recentAuditLimit = 50;
+
 /// What the cloud holds from this desk (`desk_cloud_state`), read with
 /// the desk's own sign-in.
 final class DeskCloudState {
   const DeskCloudState({
-    this.newerAuditRows = 0,
+    this.recentAuditIds = const [],
     this.lastAuditAt,
     this.topReceipt,
     this.openShiftId,
   });
 
-  /// This desk's audit rows newer than the desk's newest one.
-  final int newerAuditRows;
+  /// The ids of this desk's newest audit rows in the cloud, at most
+  /// [recentAuditLimit], newest first.
+  final List<String> recentAuditIds;
 
   /// The newest of this desk's audit rows in the cloud.
   final DateTime? lastAuditAt;
@@ -63,11 +68,16 @@ final class DeskCloudState {
 /// What the live file holds, to compare.
 final class DeskHere {
   const DeskHere({
+    required this.missingAuditRows,
     required this.lastOwnAuditAt,
     required this.nextReceiptNumber,
     required this.openShiftKnown,
     this.lastReceipt,
   });
+
+  /// How many of the cloud's [DeskCloudState.recentAuditIds] the file
+  /// doesn't have.
+  final int missingAuditRows;
 
   /// The last receipt number issued here, as printed (for the details).
   final String? lastReceipt;
@@ -90,7 +100,7 @@ final class BehindEvidence {
   const BehindEvidence({
     required this.reasons,
     required this.foundAt,
-    this.newerAuditRows = 0,
+    this.missingAuditRows = 0,
     this.cloudLastAuditAt,
     this.cloudTopReceipt,
     this.cloudOpenShiftId,
@@ -105,7 +115,7 @@ final class BehindEvidence {
         BehindReason.values.byName(r as String),
     ],
     foundAt: DateTime.parse(json['found_at']! as String),
-    newerAuditRows: json['newer_audit_rows'] as int? ?? 0,
+    missingAuditRows: json['missing_audit_rows'] as int? ?? 0,
     cloudLastAuditAt: _time(json['cloud_last_audit_at']),
     cloudTopReceipt: json['cloud_top_receipt'] as String?,
     cloudOpenShiftId: json['cloud_open_shift'] as String?,
@@ -116,7 +126,7 @@ final class BehindEvidence {
 
   final List<BehindReason> reasons;
   final DateTime foundAt;
-  final int newerAuditRows;
+  final int missingAuditRows;
   final DateTime? cloudLastAuditAt;
   final String? cloudTopReceipt;
   final String? cloudOpenShiftId;
@@ -129,7 +139,7 @@ final class BehindEvidence {
   Map<String, Object?> toJson() => {
     'reasons': [for (final r in reasons) r.name],
     'found_at': foundAt.toUtc().toIso8601String(),
-    'newer_audit_rows': newerAuditRows,
+    'missing_audit_rows': missingAuditRows,
     'cloud_last_audit_at': cloudLastAuditAt?.toUtc().toIso8601String(),
     'cloud_top_receipt': cloudTopReceipt,
     'cloud_open_shift': cloudOpenShiftId,
@@ -142,9 +152,11 @@ final class BehindEvidence {
   List<String> lines() => [for (final r in reasons) _line(r)];
 
   String _line(BehindReason reason) => switch (reason) {
-    BehindReason.newerRecords =>
-      'The cloud has $newerAuditRows records from this desk newer than this '
-          'PC’s last one (cloud: ${_when(cloudLastAuditAt)}; this PC: '
+    BehindReason.missingRecords =>
+      'The cloud has $missingAuditRows'
+          '${missingAuditRows >= recentAuditLimit ? ' or more' : ''} records '
+          'from this desk that this PC doesn’t have (the cloud’s newest: '
+          '${_when(cloudLastAuditAt)}; this PC’s newest: '
           '${_when(deskLastAuditAt)}).',
     BehindReason.higherReceipt =>
       'The cloud has receipt $cloudTopReceipt from this desk; this PC’s '
@@ -173,10 +185,10 @@ String _short(String? id) =>
 String? _lastIssued(int next) =>
     next <= 1 ? null : 'R-${(next - 1).toString().padLeft(6, '0')}';
 
-/// Behind if the cloud proves it: records from this desk newer than the
-/// file's newest, a receipt number above the last one issued here, or an
-/// open shift the file doesn't have. Rows the desk hasn't sent yet never
-/// count (the desk is ahead, not behind).
+/// Behind if the cloud proves it: records from this desk the file doesn't
+/// have, a receipt number above the last one issued here, or an open shift
+/// the file doesn't have. Rows the desk hasn't sent yet never count (the
+/// desk is ahead, not behind).
 BehindEvidence? deskBehind(
   DeskHere here,
   DeskCloudState cloud, {
@@ -184,7 +196,7 @@ BehindEvidence? deskBehind(
 }) {
   final issued = here.nextReceiptNumber - 1;
   final reasons = [
-    if (cloud.newerAuditRows > 0) BehindReason.newerRecords,
+    if (here.missingAuditRows > 0) BehindReason.missingRecords,
     if (receiptSerial(cloud.topReceipt) > issued) BehindReason.higherReceipt,
     if (cloud.openShiftId != null && !here.openShiftKnown)
       BehindReason.unknownOpenShift,
@@ -193,7 +205,7 @@ BehindEvidence? deskBehind(
   return BehindEvidence(
     reasons: reasons,
     foundAt: now,
-    newerAuditRows: cloud.newerAuditRows,
+    missingAuditRows: here.missingAuditRows,
     cloudLastAuditAt: cloud.lastAuditAt,
     cloudTopReceipt: cloud.topReceipt,
     cloudOpenShiftId: cloud.openShiftId,

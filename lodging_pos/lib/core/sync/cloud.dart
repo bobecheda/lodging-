@@ -265,10 +265,9 @@ abstract interface class Cloud {
   Future<PullPage> pullChanges(int after, {required int limit});
 
   /// What the cloud holds from this desk (`desk_cloud_state`, the desk's own
-  /// sign-in): how many of its audit rows are newer than [after] (the
-  /// file's newest own row; null for none), its highest receipt number and
-  /// its open shift (story/desk-db-guards-2).
-  Future<DeskCloudState> deskCloudState(DateTime? after);
+  /// sign-in): the ids of its newest audit rows, its highest receipt number
+  /// and its open shift (story/desk-db-guards-2).
+  Future<DeskCloudState> deskCloudState();
 
   // ── The owner's sign-in ────────────────────────────────────────────────
 

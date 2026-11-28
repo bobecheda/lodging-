@@ -1,4 +1,5 @@
 import 'package:lodging_pos/core/database/desk_startup.dart' show receiptSerial;
+import 'package:lodging_pos/core/sync/desk_behind.dart' show recentAuditLimit;
 import 'package:lodging_pos/core/sync/cloud.dart';
 import 'package:lodging_pos/core/sync/sync_store.dart';
 
@@ -346,30 +347,31 @@ class FakeCloud implements Cloud {
   @override
   Future<void> signOutOwner() async => _ownerSignedIn = false;
 
-  /// Calls to [deskCloudState], with the time each asked from.
-  final cloudStateAsks = <DateTime?>[];
+  /// Calls to [deskCloudState].
+  final cloudStateAsks = <Object>[];
 
   @override
-  Future<DeskCloudState> deskCloudState(DateTime? after) async {
+  Future<DeskCloudState> deskCloudState() async {
     _asDesk();
-    cloudStateAsks.add(after);
+    cloudStateAsks.add(Object());
     Iterable<Map<String, Object?>> mine(String table) =>
         (tables[table]?.values ?? const <Map<String, Object?>>[]).where(
           (r) => r['device_id'] == _deskDevice,
         );
     final audits = [
       for (final r in mine('audit_log'))
-        DateTime.parse(r['created_at']! as String).toUtc(),
-    ]..sort();
+        (
+          id: r['id']! as String,
+          at: DateTime.parse(r['created_at']! as String).toUtc(),
+        ),
+    ]..sort((a, b) => b.at.compareTo(a.at));
     final receipts = [
       for (final r in [...mine('payments'), ...mine('refunds')])
         if (r['receipt_number'] case final String n) n,
     ]..sort((a, b) => receiptSerial(b).compareTo(receiptSerial(a)));
     return DeskCloudState(
-      newerAuditRows: audits
-          .where((at) => after == null || at.isAfter(after))
-          .length,
-      lastAuditAt: audits.lastOrNull,
+      recentAuditIds: [for (final a in audits.take(recentAuditLimit)) a.id],
+      lastAuditAt: audits.firstOrNull?.at,
       topReceipt: receipts.firstOrNull,
       openShiftId: [
         for (final r in mine('shifts'))

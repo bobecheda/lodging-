@@ -127,12 +127,12 @@ void main() {
       await engine.syncNow();
 
       expect(engine.status.phase, SyncPhase.behind);
-      expect(engine.status.behind!.reasons, [BehindReason.newerRecords]);
+      expect(engine.status.behind!.reasons, [BehindReason.missingRecords]);
       expect(cloud.pushes.length, pushes, reason: 'nothing sent');
       expect(await store.behind(), isNotNull);
       final audit = await env.auditFor('desk.behind_cloud');
       expect(audit, hasLength(1));
-      expect(audit.single.afterJson, contains('newerRecords'));
+      expect(audit.single.afterJson, contains('missingRecords'));
 
       // Kept: the next session never asks or sends again.
       await restart();
@@ -157,7 +157,7 @@ void main() {
       cloudHasNewerRecords();
       final pushes = cloud.pushes.length;
       final evidence = await engine.checkCloud();
-      expect(evidence!.reasons, [BehindReason.newerRecords]);
+      expect(evidence!.reasons, [BehindReason.missingRecords]);
       await engine.syncNow();
       expect(cloud.pushes.length, pushes);
     });

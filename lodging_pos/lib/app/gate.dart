@@ -6,6 +6,10 @@ abstract final class Routes {
   static const splash = '/';
   static const oldDatabase = '/old-database';
   static const unusualStart = '/unusual-start';
+
+  /// This PC's data is older than the cloud (story/desk-db-guards-2): no
+  /// sign-in until the data folder is replaced.
+  static const behindCloud = '/behind-cloud';
   static const setup = '/setup';
   static const login = '/login';
   static const changePassword = '/change-password';
@@ -127,6 +131,7 @@ abstract final class Routes {
     splash,
     oldDatabase,
     unusualStart,
+    behindCloud,
     setup,
     login,
     changePassword,
@@ -154,10 +159,14 @@ String routeFor({
   bool? schemaMatches = true,
   bool? hasOwner = true,
   bool unusualStart = false,
+  bool behindCloud = false,
 }) {
   if (schemaMatches == null) return Routes.splash;
   if (!schemaMatches) return Routes.oldDatabase;
   if (unusualStart) return Routes.unusualStart;
+  // Whoever is signed in finishes with this guest under the banner; the
+  // refusal comes at the next sign-in or lock.
+  if (behindCloud && user == null) return Routes.behindCloud;
   if (hasUsers == null) return Routes.splash;
   if (!hasUsers) return Routes.setup;
   if (hasOwner == null) return Routes.splash;
@@ -185,6 +194,7 @@ String? redirectFor(
   bool? schemaMatches = true,
   bool? hasOwner = true,
   bool unusualStart = false,
+  bool behindCloud = false,
   String? returnTo,
 }) {
   final target = routeFor(
@@ -194,6 +204,7 @@ String? redirectFor(
     shiftStart: shiftStart,
     schemaMatches: schemaMatches,
     unusualStart: unusualStart,
+    behindCloud: behindCloud,
   );
   if (target == Routes.home) {
     final home = Routes.homeFor(user);

@@ -13,6 +13,7 @@ import '../../core/auth/user_account.dart';
 import '../../core/clock/clock.dart';
 import '../../core/clock/nairobi.dart';
 import '../../core/settings/settings_repository.dart';
+import '../../core/support_contact.dart';
 import '../../core/sync/outbox_status.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/sync/sync_providers.dart';
@@ -268,6 +269,7 @@ class DeskShell extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TopBar(location: location, entries: entries, user: user),
+          if (ref.watch(deskBehindProvider) != null) const _BehindBanner(),
           Expanded(
             child: LayoutBuilder(
               builder: (context, box) => Align(
@@ -287,6 +289,42 @@ class DeskShell extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Across the page while someone is signed in, once the cloud proved this
+/// PC's data older (story/desk-db-guards-2): finish with this guest, then
+/// call Bobe. The refusal screen comes at the next sign-in or lock.
+class _BehindBanner extends StatelessWidget {
+  const _BehindBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = LodgingColors.of(context);
+    final t = LodgingType.of(context);
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        key: const ValueKey('shell.behindBanner'),
+        color: c.red,
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.x28,
+          vertical: Space.x10,
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.triangleAlert, size: 18, color: c.white),
+            const SizedBox(width: Space.x10),
+            Expanded(
+              child: Text(
+                behindBannerText,
+                style: t.bodyMedium.copyWith(color: c.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

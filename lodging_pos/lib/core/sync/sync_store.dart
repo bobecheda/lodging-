@@ -145,9 +145,10 @@ class SyncStore {
   Future<void> setBehind(BehindEvidence evidence) =>
       set(behindKey, jsonEncode(evidence.toJson()));
 
-  /// What the file holds, to compare with the cloud's [state]: its newest
-  /// own audit row ([deviceId]'s; pulled rows from the phone don't count),
-  /// the receipt counter and whether the cloud's open shift is here.
+  /// What the file holds, to compare with the cloud's [state]: how many of
+  /// the cloud's recent audit ids it lacks, its newest own audit row
+  /// ([deviceId]'s; pulled rows from the phone don't count), the receipt
+  /// counter and whether the cloud's open shift is here.
   Future<DeskHere> deskHere(String deviceId, DeskCloudState state) async {
     Future<Object?> scalar(String sql, List<Variable> vars) async =>
         (await _db.customSelect(sql, variables: vars).getSingleOrNull())
@@ -174,7 +175,16 @@ class SyncStore {
       'ORDER BY created_at DESC LIMIT 1',
       [Variable(deviceId)],
     );
+    final ids = state.recentAuditIds;
+    final present = ids.isEmpty
+        ? 0
+        : await scalar(
+            'SELECT COUNT(*) AS v FROM audit_log WHERE id IN '
+            '(${List.filled(ids.length, '?').join(', ')})',
+            [for (final id in ids) Variable(id)],
+          ) as int;
     return DeskHere(
+      missingAuditRows: ids.length - present,
       lastOwnAuditAt: switch (lastAudit) {
         final String at => DateTime.parse(at).toUtc(),
         _ => null,
