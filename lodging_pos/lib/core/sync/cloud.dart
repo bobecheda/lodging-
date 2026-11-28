@@ -7,6 +7,10 @@
 /// and prices, which are the owner's to write).
 library;
 
+import 'desk_behind.dart';
+
+export 'desk_behind.dart' show DeskCloudState;
+
 /// One synced row as the cloud takes it: the table and the row's columns
 /// (snake_case, times as ISO-8601 UTC strings).
 final class CloudRow {
@@ -259,6 +263,12 @@ abstract interface class Cloud {
   /// What the owner's side wrote after [after] (`server_seq`), oldest
   /// first, at most [limit] rows.
   Future<PullPage> pullChanges(int after, {required int limit});
+
+  /// What the cloud holds from this desk (`desk_cloud_state`, the desk's own
+  /// sign-in): how many of its audit rows are newer than [after] (the
+  /// file's newest own row; null for none), its highest receipt number and
+  /// its open shift (story/desk-db-guards-2).
+  Future<DeskCloudState> deskCloudState(DateTime? after);
 
   // ── The owner's sign-in ────────────────────────────────────────────────
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:uuid/uuid.dart';
@@ -10,6 +11,7 @@ import '../clock/clock.dart';
 import '../database/database.dart';
 import 'cloud.dart';
 import 'cloud_writes.dart';
+import 'desk_behind.dart';
 import 'desk_secret_store.dart';
 import 'pulled_rows.dart';
 import 'sync_store.dart';
@@ -32,6 +34,11 @@ enum SyncPhase {
 
   /// Stopped at a refused row (or the desk's key): [SyncStatus.problem].
   problem,
+
+  /// The cloud proved this file is behind it (an older copy took its place;
+  /// story/desk-db-guards-2): sync has stopped for good,
+  /// [SyncStatus.behind] says why.
+  behind,
 }
 
 final class SyncStatus {
@@ -45,9 +52,13 @@ final class SyncStatus {
     this.clockOffset,
     this.clockWarning = false,
     this.voidsHeld = 0,
+    this.behind,
   });
 
   final SyncPhase phase;
+
+  /// What proved the file behind the cloud ([SyncPhase.behind]).
+  final BehindEvidence? behind;
 
   /// The last time the cloud had everything this desk had written.
   final DateTime? lastSyncAt;
@@ -132,6 +143,13 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   var _clockWarning = false;
   var _voidsHeld = 0;
 
+  /// Set once the cloud proves the file behind; never cleared here.
+  BehindEvidence? _behind;
+
+  /// The cloud was asked this session whether the file is behind (before
+  /// the first push).
+  var _checkedThisSession = false;
+
   late String _deviceId;
   var _connected = false;
   var _uploadDone = false;
@@ -161,7 +179,8 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     int? uploadTotal,
   }) {
     _base = SyncStatus(
-      phase: phase,
+      phase: _behind == null ? phase : SyncPhase.behind,
+      behind: _behind,
       lastSyncAt: _lastSyncAt,
       uploadSent: uploadSent ?? _base.uploadSent,
       uploadTotal: uploadTotal ?? _base.uploadTotal,
@@ -181,6 +200,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
         (base.phase == SyncPhase.online || base.phase == SyncPhase.offline);
     _status = SyncStatus(
       phase: pullStops ? SyncPhase.problem : base.phase,
+      behind: base.behind,
       lastSyncAt: base.lastSyncAt,
       uploadSent: base.uploadSent,
       uploadTotal: base.uploadTotal,
@@ -207,8 +227,14 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     _clockOffset = offset == null ? null : Duration(seconds: offset);
     _clockWarning = await _store.get(SyncStore.clockWarning) == 'on';
     _voidsHeld = (await _store.held()).length;
+    _behind = await _store.behind();
     if (!_connected) {
       _emitPhase(SyncPhase.notConnected);
+      return;
+    }
+    if (_behind != null) {
+      _emitPhase(SyncPhase.behind, problem: behindProblem);
+      _startTimers(pushing: false);
       return;
     }
     _startTimers();
@@ -222,8 +248,8 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     }
   }
 
-  void _startTimers() {
-    if (pushEvery case final every?) {
+  void _startTimers({bool pushing = true}) {
+    if (pushEvery case final every? when pushing) {
       _pushTimer ??= Timer.periodic(every, (_) => _tick());
     }
     if (heartbeatEvery case final every?) {
@@ -245,6 +271,70 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
     await _push();
     await _pull();
   }
+
+  // ── Behind the cloud (story/desk-db-guards-2) ─────────────────────────
+
+  /// Whether the cloud proves this file behind it (`desk_cloud_state`):
+  /// the evidence, or null when it doesn't, or when it can't be asked (not
+  /// connected, the first upload unfinished, offline, the key refused). The
+  /// startup check calls it; the push asks it once a session first.
+  Future<BehindEvidence?> checkCloud() async {
+    if (_behind case final behind?) return behind;
+    if (!_connected || !_uploadDone || !await _ensureDesk()) return null;
+    final DeskCloudState state;
+    try {
+      state = await _cloud.deskCloudState(
+        (await _store.deskHere(
+          _deviceId,
+          const DeskCloudState(),
+        )).lastOwnAuditAt,
+      );
+    } on CloudOffline {
+      _offline();
+      return null;
+    } on CloudSignInRefused {
+      await _ensureDesk();
+      return null;
+    } on CloudRefused {
+      // A cloud without the check yet: sync goes on as before.
+      _checkedThisSession = true;
+      return null;
+    }
+    _checkedThisSession = true;
+    final evidence = deskBehind(
+      await _store.deskHere(_deviceId, state),
+      state,
+      now: _clock.now(),
+    );
+    if (evidence != null) await _markBehind(evidence);
+    return evidence;
+  }
+
+  /// Stops sync for good: kept in `sync_state`, audited once
+  /// (`desk.behind_cloud`, with the evidence), the pill red. Only the
+  /// heartbeat goes on, so the owner's side sees it.
+  Future<void> _markBehind(BehindEvidence evidence) async {
+    if (_behind != null) return;
+    _behind = evidence;
+    await _store.setBehind(evidence);
+    await _store.set(SyncStore.problem, behindProblem);
+    _pushTimer?.cancel();
+    _pushTimer = null;
+    _retryTimer?.cancel();
+    _nudgeTimer?.cancel();
+    _retryAt = null;
+    await _audit.recordEvent(
+      action: 'desk.behind_cloud',
+      userId: null,
+      entity: 'sync',
+      entityId: _deviceId,
+      details: evidence.toJson(),
+    );
+    _emitPhase(SyncPhase.behind, problem: behindProblem);
+  }
+
+  /// The words the pill, the heartbeat and the owner's side show.
+  static const behindProblem = 'This desk’s data is behind the cloud';
 
   /// Signs the desk in from its stored key if it isn't yet. False (and the
   /// status says why) when it can't.
@@ -555,6 +645,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   /// with the timers.
   void nudge() {
     if (pushEvery == null || !_connected || !_uploadDone) return;
+    if (_behind != null) return;
     _nudgeTimer?.cancel();
     _nudgeTimer = Timer(nudgeDelay, () => unawaited(_push()));
   }
@@ -578,7 +669,12 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   /// nothing. A refused row stops the queue (order matters; nothing is
   /// skipped) until it goes through.
   Future<void> _pushLoop() async {
+    if (_behind != null) return;
     if (!_connected || !_uploadDone || !await _ensureDesk()) return;
+    if (!_checkedThisSession) {
+      await checkCloud();
+      if (_behind != null || !_checkedThisSession) return;
+    }
     while (true) {
       final batch = await _store.unsent(limit: batchSize);
       final now = _clock.now();
@@ -602,6 +698,16 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
         return;
       } on CloudRefused catch (e) {
         final row = batch[(e.index ?? 0).clamp(0, batch.length - 1)];
+        final behind = behindFromRefusal(
+          e.message,
+          detail: _receiptOf(row),
+          now: _clock.now(),
+        );
+        if (behind != null) {
+          await _store.recordFailure(row.seq, e.message);
+          await _markBehind(behind);
+          return;
+        }
         if (e.index != null && SyncStore.heldTables.contains(row.targetTable)) {
           // A void never stops the queue (AD-7): the desk checked the same
           // rules before writing it, so a refusal here is a mismatch to
@@ -619,6 +725,18 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
       await _store.markSent([for (final o in batch) o.seq], now);
       _lastPushAt = now;
       await _store.set(SyncStore.lastPushAt, now.toIso8601String());
+    }
+  }
+
+  /// The receipt number of a refused payment or refund payout row.
+  static String? _receiptOf(OutboxRow row) {
+    if (row.targetTable != 'payments' && row.targetTable != 'refunds') {
+      return null;
+    }
+    try {
+      return (jsonDecode(row.payloadJson) as Map)['receipt_number'] as String?;
+    } on Object {
+      return null;
     }
   }
 
@@ -687,6 +805,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   /// written in one transaction ([PulledRows]). It runs whatever the push
   /// queue is doing; a clash stops it (and only it) with a problem.
   Future<void> _pullLoop() async {
+    if (_behind != null) return;
     if (!_connected || !_uploadDone || !await _ensureDesk()) return;
     final rows = PulledRows(_db, _clock);
     while (true) {
@@ -712,6 +831,9 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
           page.rows,
           cursor: page.rows.isEmpty ? after : page.rows.last.seq,
         );
+      } on PullBehind catch (e) {
+        await _markBehind(behindFromMissing(e.what, now: _clock.now()));
+        return;
       } on PullConflict catch (e) {
         _pullProblem = e.message;
         _publish();
@@ -806,6 +928,7 @@ class SyncEngine implements CloudWrites, OwnerPasswordCloud {
   /// The cloud has everything this desk wrote, and the owner is signed in
   /// when [owner]: the cloud-first write can go.
   Future<void> _readyForCloudWrite({required bool owner}) async {
+    if (_behind != null) throw const SyncBlocked(behindProblem);
     if (!_uploadDone) throw const FirstUploadUnfinished();
     if (owner && !_cloud.ownerSignedIn) throw const OwnerCloudSignInNeeded();
     if (!await _ensureDesk()) {

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../audit/audit_writer.dart';
 import '../database/database.dart';
 import 'cloud.dart';
+import 'desk_behind.dart';
 
 /// The desk's side of sync in the database: its bookkeeping (`sync_state`),
 /// the outbox queue, and the first upload's snapshot reads. Local only;
@@ -61,6 +62,11 @@ class SyncStore {
   static const passwordCloudAt = 'password.cloud_at';
   static const passwordDeskAt = 'password.desk_at';
 
+  /// What proved this file behind the cloud ([BehindEvidence] as JSON,
+  /// story/desk-db-guards-2). Once set, sync stops and the desk refuses at
+  /// every start, sign-in and lock until the data folder is replaced.
+  static const behindKey = 'behind';
+
   // ── What goes up, in which order ───────────────────────────────────────
 
   /// The desk's tables, parents before children, so every foreign key
@@ -116,6 +122,67 @@ class SyncStore {
             SyncStateCompanion.insert(key: key, value: '$value'),
           );
     }
+  }
+
+  /// The evidence this file is behind the cloud, or null.
+  Future<BehindEvidence?> behind() async {
+    final json = await get(behindKey);
+    if (json == null) return null;
+    try {
+      return BehindEvidence.fromJson(
+        (jsonDecode(json) as Map).cast<String, Object?>(),
+      );
+    } on Object {
+      // Unreadable is still behind: never let a damaged key reopen sync.
+      return BehindEvidence(
+        reasons: const [BehindReason.missingSubject],
+        foundAt: DateTime.utc(1970),
+        detail: 'a record this desk can no longer read',
+      );
+    }
+  }
+
+  Future<void> setBehind(BehindEvidence evidence) =>
+      set(behindKey, jsonEncode(evidence.toJson()));
+
+  /// What the file holds, to compare with the cloud's [state]: its newest
+  /// own audit row ([deviceId]'s; pulled rows from the phone don't count),
+  /// the receipt counter and whether the cloud's open shift is here.
+  Future<DeskHere> deskHere(String deviceId, DeskCloudState state) async {
+    Future<Object?> scalar(String sql, List<Variable> vars) async =>
+        (await _db.customSelect(sql, variables: vars).getSingleOrNull())
+            ?.data
+            .values
+            .first;
+    final lastAudit = await scalar(
+      'SELECT MAX(created_at) AS v FROM audit_log WHERE device_id = ?',
+      [Variable(deviceId)],
+    );
+    final next = await scalar(
+      'SELECT next_number AS v FROM receipt_counter WHERE device_id = ?',
+      [Variable(deviceId)],
+    );
+    final open = state.openShiftId;
+    final known =
+        open != null &&
+        await scalar('SELECT COUNT(*) AS v FROM shifts WHERE id = ?', [
+              Variable(open),
+            ]) !=
+            0;
+    final lastReceipt = await scalar(
+      'SELECT receipt_number AS v FROM payments WHERE device_id = ? '
+      'ORDER BY created_at DESC LIMIT 1',
+      [Variable(deviceId)],
+    );
+    return DeskHere(
+      lastOwnAuditAt: switch (lastAudit) {
+        final String at => DateTime.parse(at).toUtc(),
+        _ => null,
+      },
+      nextReceiptNumber: next is int ? next : 1,
+      openShiftKnown: known,
+      lastReceipt: lastReceipt as String?,
+    );
   }
 
   /// Removes every key starting with [prefix].

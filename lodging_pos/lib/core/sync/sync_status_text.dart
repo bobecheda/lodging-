@@ -16,7 +16,7 @@ SyncTone syncTone(
 }) => switch (phase) {
   SyncPhase.online when clockWarning || voidsHeld > 0 => SyncTone.waiting,
   SyncPhase.online || SyncPhase.uploading => SyncTone.calm,
-  SyncPhase.problem => SyncTone.problem,
+  SyncPhase.problem || SyncPhase.behind => SyncTone.problem,
   _ => SyncTone.waiting,
 };
 
@@ -78,6 +78,7 @@ String syncPillText(
         '${status.lastSyncAt == null ? 'just now' : syncAgo(status.lastSyncAt!, now)}',
   SyncPhase.offline => 'Offline · ${_waiting(pending)}',
   SyncPhase.problem => 'Sync problem · details',
+  SyncPhase.behind => SyncEngine.behindProblem,
 };
 
 /// How the top bar shows the sync state (docs/ui-redesign-brief.md, "Shell
@@ -119,4 +120,5 @@ enum SyncBarTone { online, muted, warning, problem }
         SyncBarTone.warning,
       ),
       SyncPhase.problem => ('Sync problem', SyncBarTone.problem),
+      SyncPhase.behind => (SyncEngine.behindProblem, SyncBarTone.problem),
     };
