@@ -73,8 +73,9 @@ void main() {
     final app = await pumpDeskApp(tester, env);
     await signInAs(tester, 'SUPERVISOR', 'super-pass');
     expect(locationOf(app), Routes.home);
-    expect(find.text('Grace Supervisor'), findsOneWidget);
-    // The role under the wordmark, and beside the name (no shift).
+    // At 1366 the supervisor's seven tabs and Check in leave no room for
+    // the name (story/ui-floating-nav): the initials and the role show.
+    expect(find.text('GS'), findsOneWidget);
     expect(find.text('Supervisor'), findsWidgets);
     expect(find.byKey(const ValueKey('board.now')), findsWidgets);
     expect(await env.db.select(env.db.shifts).get(), isEmpty);

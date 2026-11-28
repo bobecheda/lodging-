@@ -74,7 +74,7 @@ void main() {
 
   group('when space runs short, the user name hides first, then the tabs '
       'fold (brief, 25 Nov)', () {
-    // Leading 100, tabs 300 (+ spacing 4), right part 200 with the name,
+    // Leading 100, tabs 296 (+ spacing 8), right part 200 with the name,
     // of which the name is 80.
     BarLayout at(double width) => barLayout(
       barWidth: width,
@@ -85,16 +85,21 @@ void main() {
     );
 
     test('everything fits', () {
-      expect(at(600), BarLayout.full);
+      expect(at(604), BarLayout.full);
     });
 
     test('a little short: the name hides, the tabs stay', () {
-      expect(at(599), BarLayout.noName);
-      expect(at(520), BarLayout.noName);
+      expect(at(603), BarLayout.noName);
+      expect(at(524), BarLayout.noName);
     });
 
     test('shorter: the tabs fold into the menu', () {
-      expect(at(519), BarLayout.folded);
+      expect(at(523), BarLayout.folded);
+    });
+
+    test('Check in fits its longer label: 20 + icon 20 + 8 + label + 20 '
+        '(story/ui-floating-nav)', () {
+      expect(ctaWidth(labelWidth: 70), 138);
     });
 
     test('labels are measured whole: a fraction rounds up', () {
