@@ -181,16 +181,19 @@ void main() {
       openShiftId: '37441d06-272e-4cb3-8455-918760f42006',
     );
 
-    test('survives JSON (it is kept on the desk until Bobe sorts it)', () {
-      final e = deskBehind(here(missing: 21), cloud, now: found)!;
-      final back = BehindEvidence.fromJson(e.toJson());
-      expect(back.reasons, e.reasons);
-      expect(back.foundAt, found);
-      expect(back.cloudLastAuditAt, cloudLast);
-      expect(back.deskLastAuditAt, deskLast);
-      expect(back.cloudOpenShiftId, cloud.openShiftId);
-      expect(back.missingAuditRows, 21);
-    });
+    test(
+      'survives JSON (it is kept on the desk until the technician sorts it)',
+      () {
+        final e = deskBehind(here(missing: 21), cloud, now: found)!;
+        final back = BehindEvidence.fromJson(e.toJson());
+        expect(back.reasons, e.reasons);
+        expect(back.foundAt, found);
+        expect(back.cloudLastAuditAt, cloudLast);
+        expect(back.deskLastAuditAt, deskLast);
+        expect(back.cloudOpenShiftId, cloud.openShiftId);
+        expect(back.missingAuditRows, 21);
+      },
+    );
 
     test('the owner’s details are plain lines, with both sides', () {
       expect(deskBehind(here(missing: 21), cloud, now: found)!.lines(), [

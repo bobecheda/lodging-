@@ -108,7 +108,7 @@ enum Permission {
   acceptRestore,
 
   /// See what proved this PC's data older than the cloud, on the refusal
-  /// screen, and copy it for Bobe (story/desk-db-guards-2). It unlocks
+  /// screen, and copy it for the technician (story/desk-db-guards-2). It unlocks
   /// nothing.
   viewBehindEvidence,
 }

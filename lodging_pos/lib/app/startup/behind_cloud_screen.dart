@@ -18,7 +18,7 @@ import 'behind_cloud.dart';
 /// This PC's data is older than the cloud (story/desk-db-guards-2): shown
 /// instead of sign-in, at start and at every sign-in or lock, until the
 /// data folder is replaced. Plain words, no raw errors; the owner may see
-/// what proved it and copy it for Bobe. Nothing here unlocks the data.
+/// what proved it and copy it for the technician. Nothing here unlocks the data.
 class BehindCloudScreen extends ConsumerStatefulWidget {
   const BehindCloudScreen({super.key});
 

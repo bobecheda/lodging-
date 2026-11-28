@@ -122,11 +122,11 @@ npx supabase@2.121.0 link --project-ref <dev-ref>
   {
     "SUPABASE_URL": "https://<production-ref>.supabase.co",
     "SUPABASE_ANON_KEY": "<production anon key>",
-    "SUPPORT_PHONE": "<Bobe's phone, as it should read on the screen>"
+    "SUPPORT_PHONE": "<the technician's phone, as it should read on the screen>"
   }
   ```
 
-  `SUPPORT_PHONE` is the number the desk shows when it refuses ("… call Bobe on 07…"); it lives only in this file, never in git or a log (`lib/core/support_contact.dart`).
+  `SUPPORT_PHONE` is the number the desk shows when it refuses ("… call the technician on 07…"); it lives only in this file, never in git or a log (`lib/core/support_contact.dart`).
 
   Keep your dev file as `secrets.json`; never mix them up. Every production build below names `secrets.prod.json`.
 
@@ -227,7 +227,7 @@ Use a test guest you will then check out; all money in this test is small and re
 
 The desk works fully offline and keeps every record itself; the cloud is a copy plus the owner's decisions (which the desk also keeps). So the lodging can always open, whatever the cloud does.
 
-**If the desk refuses** (any refusal screen, or the red "This PC's data is older than the cloud" banner): use the paper receipt book, call Bobe, entries are typed in after recovery.
+**If the desk refuses** (any refusal screen, or the red "This PC's data is older than the cloud" banner): use the paper receipt book, call the technician, entries are typed in after recovery.
 
 **Sync fails** (the pill shows "Sync problem · details", "Offline", or connecting is refused):
 

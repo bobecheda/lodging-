@@ -296,7 +296,7 @@ class DeskShell extends ConsumerWidget {
 
 /// Across the page while someone is signed in, once the cloud proved this
 /// PC's data older (story/desk-db-guards-2): finish with this guest, then
-/// call Bobe. The refusal screen comes at the next sign-in or lock.
+/// call the technician. The refusal screen comes at the next sign-in or lock.
 class _BehindBanner extends StatelessWidget {
   const _BehindBanner();
 

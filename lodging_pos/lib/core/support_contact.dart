@@ -4,12 +4,13 @@
 /// the audit trail or any log.
 library;
 
-const supportName = 'Bobe';
+const supportName = 'the technician';
 
 /// From `--dart-define-from-file=secrets.json`; empty in builds without it.
 const supportPhone = String.fromEnvironment('SUPPORT_PHONE');
 
-/// "call Bobe on 0722 000 000", or "call Bobe" without a number.
+/// "call the technician on 0722 000 000", or "call the technician"
+/// without a number.
 String get callSupport => supportPhone.isEmpty
     ? 'call $supportName'
     : 'call $supportName on $supportPhone';

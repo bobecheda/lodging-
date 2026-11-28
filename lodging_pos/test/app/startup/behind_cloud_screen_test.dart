@@ -120,57 +120,58 @@ void main() {
     expect(locationOf(app), Routes.behindCloud);
   });
 
-  testWidgets('the details are the owner\'s, audited, and copy for Bobe', (
-    tester,
-  ) async {
-    String? copied;
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied = (call.arguments as Map)['text'] as String?;
-        }
-        return null;
-      },
-    );
-    cloudHasNewerRecords();
-    final app = await pumpDeskApp(tester, env);
-    await tester.pumpAndSettle();
-    expect(locationOf(app), Routes.behindCloud);
-    expect(find.byKey(const ValueKey('behind.lines')), findsNothing);
+  testWidgets(
+    'the details are the owner\'s, audited, and copy for the technician',
+    (tester) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      cloudHasNewerRecords();
+      final app = await pumpDeskApp(tester, env);
+      await tester.pumpAndSettle();
+      expect(locationOf(app), Routes.behindCloud);
+      expect(find.byKey(const ValueKey('behind.lines')), findsNothing);
 
-    await tester.enterText(
-      find.byKey(const ValueKey('behind.username')),
-      'supervisor',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('behind.password')),
-      'super-pass',
-    );
-    await tapKey(tester, 'behind.details');
-    expect(find.text('Only the owner can see the details.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('behind.lines')), findsNothing);
+      await tester.enterText(
+        find.byKey(const ValueKey('behind.username')),
+        'supervisor',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('behind.password')),
+        'super-pass',
+      );
+      await tapKey(tester, 'behind.details');
+      expect(find.text('Only the owner can see the details.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('behind.lines')), findsNothing);
 
-    await tester.enterText(
-      find.byKey(const ValueKey('behind.username')),
-      testOwner.username,
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('behind.password')),
-      testOwner.password,
-    );
-    await tapKey(tester, 'behind.details');
-    expect(
-      find.textContaining('records from this desk that this PC doesn’t have'),
-      findsOneWidget,
-    );
-    await tapKey(tester, 'behind.copy');
-    expect(copied, contains('records from this desk that this PC'));
-    expect(copied, contains(device.substring(0, 8)));
-    expect(await env.auditFor('desk.behind_details'), hasLength(1));
-    // Still nothing unlocks the data.
-    expect(locationOf(app), Routes.behindCloud);
-  });
+      await tester.enterText(
+        find.byKey(const ValueKey('behind.username')),
+        testOwner.username,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('behind.password')),
+        testOwner.password,
+      );
+      await tapKey(tester, 'behind.details');
+      expect(
+        find.textContaining('records from this desk that this PC doesn’t have'),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'behind.copy');
+      expect(copied, contains('records from this desk that this PC'));
+      expect(copied, contains(device.substring(0, 8)));
+      expect(await env.auditFor('desk.behind_details'), hasLength(1));
+      // Still nothing unlocks the data.
+      expect(locationOf(app), Routes.behindCloud);
+    },
+  );
 
   for (final size in deskSizes) {
     testWidgets('the refusal and the banner fit at '

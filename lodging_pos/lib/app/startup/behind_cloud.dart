@@ -18,7 +18,7 @@ final class BehindDetailsRefused implements Exception {
 
 /// The refusal screen's owner-only step (story/desk-db-guards-2): with the
 /// owner's username and password, what proved this PC's data older than
-/// the cloud, and the text to copy for Bobe. Audited
+/// the cloud, and the text to copy for the technician. Audited
 /// `desk.behind_details`. It unlocks nothing; nobody signs in here.
 class BehindDetailsService {
   BehindDetailsService(this._db, this._audit, this._users, this._hasher);
@@ -28,7 +28,7 @@ class BehindDetailsService {
   final UserRepository _users;
   final PasswordHasher _hasher;
 
-  /// The text for Bobe; throws [BehindDetailsRefused].
+  /// The text for the technician; throws [BehindDetailsRefused].
   Future<String> reveal(
     BehindEvidence evidence, {
     required String username,
@@ -64,7 +64,7 @@ class BehindDetailsService {
   }
 }
 
-/// What the owner copies for Bobe: which desk, when it was found, each
+/// What the owner copies for the technician: which desk, when it was found, each
 /// proof, and this app's version. No guest data, no phone numbers.
 String behindCopyText(
   BehindEvidence evidence, {
