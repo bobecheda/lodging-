@@ -20,7 +20,7 @@ Future<String> resetDataFolder(DateTime now) =>
 Future<void> backUpBeforeMigration(GeneratedDatabase db, int from) =>
     throw UnsupportedError('There is no local database file on this platform.');
 
-Future<void> writeMarkToDataFolder(HighWaterMark mark) async {}
+MarkStore markStoreFor(String folder) => const NoMarks();
 
 ({String id, String passwordHash, bool isActive})? readOwnerFromFile(
   String folder,

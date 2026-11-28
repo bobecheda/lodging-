@@ -34,6 +34,16 @@ String _join(String folder, String name) =>
 Future<String> dataFolder() async =>
     (await getApplicationSupportDirectory()).path;
 
+/// `%LOCALAPPDATA%\com.lodging\lodging_pos` on Windows: where the second
+/// copy of the mark lives, outside the data folder (`%APPDATA%\…`), so
+/// copying the data folder back never brings an old mark with it
+/// (story/desk-db-guards-2). Null elsewhere.
+String? secondMarkFolder() {
+  final local = Platform.environment['LOCALAPPDATA'];
+  if (!Platform.isWindows || local == null || local.isEmpty) return null;
+  return _join(_join(local, 'com.lodging'), databaseName);
+}
+
 /// `<app support dir>/lodging_pos.sqlite`.
 Future<String> databaseFilePath() async =>
     _join(await dataFolder(), databaseFileName);
@@ -58,7 +68,11 @@ Future<DeskStartup> runDeskStartup({
       since: DateTime.now().toUtc().toIso8601String(),
     ),
   );
-  final inspection = await inspectDataFolder(folder, heldBy: holder);
+  final inspection = await inspectDataFolder(
+    folder,
+    heldBy: holder,
+    secondFolder: secondMarkFolder(),
+  );
   final verdict = judgeStartup(
     inspection,
     build: build,
@@ -137,9 +151,13 @@ final _besideBackup = RegExp(r'^lodging_pos\.sqlite\.(v\d+\.bak|bak-.+)$');
 Future<DeskInspection> inspectDataFolder(
   String folder, {
   LockHolder? heldBy,
+  String? secondFolder,
 }) async {
+  final second = secondFolder == null ? null : readMark(secondFolder);
   final dir = Directory(folder);
-  if (!dir.existsSync()) return DeskInspection(heldBy: heldBy);
+  if (!dir.existsSync()) {
+    return DeskInspection(heldBy: heldBy, secondMark: second);
+  }
   final names = [
     for (final e in dir.listSync())
       (e, e.uri.pathSegments.lastWhere((s) => s.isNotEmpty)),
@@ -163,6 +181,7 @@ Future<DeskInspection> inspectDataFolder(
     live: live,
     hasBackups: hasBackups,
     mark: readMark(folder),
+    secondMark: second,
     heldBy: heldBy,
   );
 }
@@ -250,10 +269,65 @@ HighWaterMark? readMark(String folder) {
 
 /// Writes [mark] whole: a `.partial` file first, then renamed over the old.
 void writeMark(String folder, HighWaterMark mark) {
+  Directory(folder).createSync(recursive: true);
   final target = _join(folder, markFileName);
   final partial = File('$target.partial')
     ..writeAsStringSync(jsonEncode(mark.toJson()), flush: true);
   partial.renameSync(target);
+}
+
+/// The mark in the data folder and its second copy ([MarkStore]).
+final class MarkFiles implements MarkStore {
+  MarkFiles(this.folder, this.second, {DeskStamp? build})
+    : _build = build ?? AppBuild.current.stamp;
+
+  final String folder;
+
+  /// [secondMarkFolder]; null where there is none.
+  final String? second;
+  final DeskStamp _build;
+
+  List<String> get _folders => [folder, ?second];
+
+  @override
+  Future<void> raise(
+    DatabaseFigures figures, {
+    required DateTime at,
+    String? backupName,
+  }) async {
+    final existing = [for (final f in _folders) readMark(f)].nonNulls;
+    final base = existing.isEmpty
+        ? null
+        : existing.reduce(
+            (a, b) => HighWaterMark(
+              backupName: a.takenAt.isAfter(b.takenAt)
+                  ? a.backupName
+                  : b.backupName,
+              takenAt: a.takenAt.isAfter(b.takenAt) ? a.takenAt : b.takenAt,
+              figures: DatabaseFigures.highest(a.figures, b.figures),
+              build: a.build,
+              pendingRestore: a.pendingRestore ?? b.pendingRestore,
+              heldAt: a.heldAt.isAfter(b.heldAt) ? a.heldAt : b.heldAt,
+            ),
+          );
+    final raised = HighWaterMark.raised(
+      base,
+      figures,
+      at: at,
+      build: _build,
+      backupName: backupName,
+    );
+    for (final f in _folders) {
+      writeMark(f, raised);
+    }
+  }
+
+  @override
+  Future<void> replace(HighWaterMark mark) async {
+    for (final f in _folders) {
+      writeMark(f, mark);
+    }
+  }
 }
 
 // ── Upgrades ────────────────────────────────────────────────────────────
@@ -330,7 +404,7 @@ final class ResetRefused implements Exception {
 /// [folder] is copied into `reset-YYYYMMDD-HHMMSS/copy` (Nairobi time) and
 /// the copy checked; only then are the file, its side files and the mark
 /// moved into `reset-…`. Nothing is deleted. Returns the reset folder.
-String resetDatabaseFiles(String folder, DateTime now) {
+String resetDatabaseFiles(String folder, DateTime now, {String? secondFolder}) {
   final local = toNairobi(now);
   String two(int n) => n.toString().padLeft(2, '0');
   final stamp =
@@ -371,12 +445,29 @@ String resetDatabaseFiles(String folder, DateTime now) {
     final file = File(_join(folder, name));
     if (file.existsSync()) file.renameSync(_join(target, name));
   }
+  if (secondFolder != null) {
+    final file = File(_join(secondFolder, markFileName));
+    if (file.existsSync()) {
+      final into = _join(target, 'second-$markFileName');
+      try {
+        file.renameSync(into);
+      } on FileSystemException {
+        // Another drive: copied, then the original removed.
+        file
+          ..copySync(into)
+          ..deleteSync();
+      }
+    }
+  }
   return target;
 }
 
 /// Debug builds: resets the app's own data folder.
-Future<String> resetDataFolder(DateTime now) async =>
-    resetDatabaseFiles(await dataFolder(), now);
+Future<String> resetDataFolder(DateTime now) async => resetDatabaseFiles(
+  await dataFolder(),
+  now,
+  secondFolder: secondMarkFolder(),
+);
 
 // ── Where the app runs from ─────────────────────────────────────────────
 
@@ -400,6 +491,6 @@ bool isRemovableDrive(String path) {
   }
 }
 
-/// Writes the high-water mark into the app's data folder.
-Future<void> writeMarkToDataFolder(HighWaterMark mark) async =>
-    writeMark(await dataFolder(), mark);
+/// The two marks of the data folder [folder]: there and in
+/// [secondMarkFolder].
+MarkStore markStoreFor(String folder) => MarkFiles(folder, secondMarkFolder());

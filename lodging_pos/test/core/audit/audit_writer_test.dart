@@ -888,4 +888,69 @@ void main() {
       );
     });
   });
+
+  group(
+    'after the commit: the operation’s actions (story/desk-db-guards-2)',
+    () {
+      test(
+        'every action an operation recorded, once it has committed',
+        () async {
+          final seen = <Set<String>>[];
+          audit.onCommitted = (actions) async {
+            // Called after the commit: the rows are there to read.
+            expect(await db.select(db.rooms).get(), isNotEmpty);
+            seen.add(actions);
+          };
+          await audit.writeWithAudit(
+            action: 'room.create',
+            userId: adminId,
+            body: (w) async {
+              final room = await w.insert(
+                db.rooms,
+                RoomsCompanion.insert(roomNumber: '9'),
+              );
+              await w.insert(
+                db.rooms,
+                RoomsCompanion.insert(roomNumber: '10'),
+                action: 'room.update',
+              );
+              return room;
+            },
+          );
+          await audit.recordEvent(
+            action: 'user.login',
+            userId: adminId,
+            entity: 'users',
+            entityId: adminId,
+          );
+          expect(seen, [
+            {'room.create', 'room.update'},
+            {'user.login'},
+          ]);
+        },
+      );
+
+      test('nothing when the operation fails, and a failing hook never fails '
+          'the write', () async {
+        final seen = <Set<String>>[];
+        audit.onCommitted = (actions) async => seen.add(actions);
+        await expectLater(
+          audit.writeWithAudit(
+            action: 'room.create',
+            userId: adminId,
+            body: (w) async {
+              await w.insert(db.rooms, RoomsCompanion.insert(roomNumber: '9'));
+              throw StateError('stop');
+            },
+          ),
+          throwsStateError,
+        );
+        expect(seen, isEmpty);
+
+        audit.onCommitted = (_) async => throw StateError('mark locked');
+        await createRoom('10');
+        expect(await db.select(db.rooms).get(), hasLength(1));
+      });
+    },
+  );
 }

@@ -6,6 +6,7 @@ import 'package:lodging_pos/features/backup/data/restore_acceptance.dart';
 
 import '../../../helpers/fake_cloud.dart';
 import '../../../helpers/fixtures.dart';
+import '../../../helpers/recording_marks.dart';
 
 /// Accepting an older backup as the live database (story/desk-db-guards,
 /// docs/backup-restore.md "Restoring an older backup"): the owner only,
@@ -43,14 +44,14 @@ void main() {
       );
 
   group('accepting', () {
-    late List<HighWaterMark> written;
+    late RecordingMarks marks;
     late bool deskConnected;
     late RestoreAcceptance acceptance;
 
     setUp(() async {
       await env.createFirstSupervisor(testSetup);
       final owner = await env.users.findByUsername('owner');
-      written = [];
+      marks = RecordingMarks();
       deskConnected = false;
       acceptance = RestoreAcceptance(
         readOwner: () async => RestoreOwner(
@@ -60,7 +61,7 @@ void main() {
         ),
         hasher: env.hasher,
         deskConnected: () async => deskConnected,
-        writeMark: (m) async => written.add(m),
+        marks: marks,
         clock: env.clock,
       );
     });
@@ -72,7 +73,7 @@ void main() {
         password: 'owner-pass',
         lastPaperReceipt: 'R-000064',
       );
-      final mark = written.single;
+      final mark = marks.replaced.single;
       expect(mark.figures, figures()); // the restored file is the new mark
       final pending = mark.pendingRestore!;
       expect(pending.acceptedBy, env.owner!.id);
@@ -86,7 +87,10 @@ void main() {
         password: 'owner-pass',
         lastPaperReceipt: '55',
       );
-      expect(written.single.pendingRestore!.counterFloor, 62); // R-000061 + 1
+      expect(
+        marks.replaced.single.pendingRestore!.counterFloor,
+        62,
+      ); // R-000061 + 1
     });
 
     test('a wrong password: refused, nothing written', () async {
@@ -94,7 +98,7 @@ void main() {
         acceptance.accept(refusal(), password: 'nope', lastPaperReceipt: '64'),
         throwsA(isA<RestoreRefused>()),
       );
-      expect(written, isEmpty);
+      expect(marks.replaced, isEmpty);
     });
 
     test('no paper receipt number: refused', () async {
@@ -129,7 +133,7 @@ void main() {
           ),
           throwsA(isA<RestoreNeedsCloud>()),
         );
-        expect(written, isEmpty);
+        expect(marks.replaced, isEmpty);
       },
     );
   });
@@ -137,7 +141,7 @@ void main() {
   group('a desk that has synced: the cloud check (story/restore-cloud-'
       'check)', () {
     late FakeCloud cloud;
-    late List<HighWaterMark> written;
+    late RecordingMarks marks;
     late RestoreAcceptance acceptance;
     const device = 'desk-device-1';
 
@@ -147,7 +151,7 @@ void main() {
       cloud = FakeCloud()
         ..ownerEmail = 'owner@example.com'
         ..ownerPassword = 'cloud-pass';
-      written = [];
+      marks = RecordingMarks();
       acceptance = RestoreAcceptance(
         readOwner: () async => RestoreOwner(
           id: owner!.account.id,
@@ -156,7 +160,7 @@ void main() {
         ),
         hasher: env.hasher,
         deskConnected: () async => true,
-        writeMark: (m) async => written.add(m),
+        marks: marks,
         clock: env.clock,
         cloud: cloud,
       );
@@ -205,7 +209,7 @@ void main() {
         password: 'cloud-pass',
         lastPaperReceipt: 'R-000064',
       );
-      final pending = written.single.pendingRestore!;
+      final pending = marks.replaced.single.pendingRestore!;
       expect(pending.counterFloor, 71);
       expect(pending.cloudChecked, isTrue);
       expect(cloud.ownerSignedIn, isFalse, reason: 'signed out again');
@@ -232,7 +236,7 @@ void main() {
           ),
         ),
       );
-      expect(written, isEmpty);
+      expect(marks.replaced, isEmpty);
     });
 
     test('offline: it waits; a wrong password: refused', () async {
@@ -260,7 +264,7 @@ void main() {
         ),
         throwsA(isA<RestoreRefused>()),
       );
-      expect(written, isEmpty);
+      expect(marks.replaced, isEmpty);
     });
 
     test('the file doesn’t know the owner’s email: it asks for it', () async {
@@ -278,7 +282,7 @@ void main() {
         lastPaperReceipt: '64',
         ownerEmail: 'owner@example.com',
       );
-      expect(written, hasLength(1));
+      expect(marks.replaced, hasLength(1));
     });
   });
 
@@ -299,20 +303,15 @@ void main() {
             previous: figures(stays: 42, receipt: 'R-000061'),
           ),
         );
-        final written = <HighWaterMark>[];
-        await applyPendingRestore(
-          env.db,
-          env.audit,
-          mark,
-          writeMark: (m) async => written.add(m),
-        );
+        final marks = RecordingMarks();
+        await applyPendingRestore(env.db, env.audit, mark, marks: marks);
         expect(await raiseReceiptCounter(env.db, 1), (65, 65));
         final audit = (await env.auditFor('database.restore_accepted')).single;
         expect(audit.userId, env.owner!.id);
         expect(audit.afterJson, contains('"counter_before":1'));
         expect(audit.afterJson, contains('"counter_after":65'));
-        expect(written.single.pendingRestore, isNull);
-        expect(written.single.figures, figures());
+        expect(marks.replaced.single.pendingRestore, isNull);
+        expect(marks.replaced.single.figures, figures());
       },
     );
   });

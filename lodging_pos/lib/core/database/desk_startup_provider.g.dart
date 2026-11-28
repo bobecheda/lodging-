@@ -60,58 +60,54 @@ final class DeskStartupProvider
 
 String _$deskStartupHash() => r'f1fb2fab18e68dc934494d9b39e168164b7def96';
 
-/// Writes the high-water mark after each backup; null where the desk has
-/// no data folder (tests unless they set one).
+/// The two high-water marks (the data folder's and the second copy), raised
+/// after each backup and each operation in [markActions]; null where the
+/// desk has no data folder (tests unless they set one).
 
-@ProviderFor(markWriter)
-final markWriterProvider = MarkWriterProvider._();
+@ProviderFor(markStore)
+final markStoreProvider = MarkStoreProvider._();
 
-/// Writes the high-water mark after each backup; null where the desk has
-/// no data folder (tests unless they set one).
+/// The two high-water marks (the data folder's and the second copy), raised
+/// after each backup and each operation in [markActions]; null where the
+/// desk has no data folder (tests unless they set one).
 
-final class MarkWriterProvider
-    extends
-        $FunctionalProvider<
-          Future<void> Function(HighWaterMark mark)?,
-          Future<void> Function(HighWaterMark mark)?,
-          Future<void> Function(HighWaterMark mark)?
-        >
-    with $Provider<Future<void> Function(HighWaterMark mark)?> {
-  /// Writes the high-water mark after each backup; null where the desk has
-  /// no data folder (tests unless they set one).
-  MarkWriterProvider._()
+final class MarkStoreProvider
+    extends $FunctionalProvider<MarkStore?, MarkStore?, MarkStore?>
+    with $Provider<MarkStore?> {
+  /// The two high-water marks (the data folder's and the second copy), raised
+  /// after each backup and each operation in [markActions]; null where the
+  /// desk has no data folder (tests unless they set one).
+  MarkStoreProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'markWriterProvider',
+        name: r'markStoreProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$markWriterHash();
+  String debugGetCreateSourceHash() => _$markStoreHash();
 
   @$internal
   @override
-  $ProviderElement<Future<void> Function(HighWaterMark mark)?> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<MarkStore?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  Future<void> Function(HighWaterMark mark)? create(Ref ref) {
-    return markWriter(ref);
+  MarkStore? create(Ref ref) {
+    return markStore(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Future<void> Function(HighWaterMark mark)? value) {
+  Override overrideWithValue(MarkStore? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride:
-          $SyncValueProvider<Future<void> Function(HighWaterMark mark)?>(value),
+      providerOverride: $SyncValueProvider<MarkStore?>(value),
     );
   }
 }
 
-String _$markWriterHash() => r'8fd73cdad46cdadb0cff2eb56d454d36c516f7b8';
+String _$markStoreHash() => r'7193496d65cb87ca9a1767eaa7f043e9e083286c';

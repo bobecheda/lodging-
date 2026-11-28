@@ -149,6 +149,113 @@ void main() {
     });
   });
 
+  group('two marks that move with the work (story/desk-db-guards-2)', () {
+    late String second;
+    setUp(() => second = Directory(at('local')).path);
+
+    DatabaseFigures figures({int payments = 46, String receipt = 'R-000050'}) =>
+        DatabaseFigures(
+          schemaVersion: 12,
+          stays: 30,
+          payments: payments,
+          auditEntries: 711,
+          lastReceipt: receipt,
+          lastAuditAt: testT0,
+        );
+    const build = DeskStamp(version: '1.1.0', build: 3);
+    MarkFiles marks() => MarkFiles(dir.path, second, build: build);
+
+    test('raised in both places, each written whole', () async {
+      await marks().raise(figures(), at: testT0);
+      for (final folder in [dir.path, second]) {
+        expect(readMark(folder)!.figures, figures(), reason: folder);
+        expect(
+          File('$folder${Platform.pathSeparator}$markFileName.partial')
+              .existsSync(),
+          isFalse,
+        );
+      }
+      final i = await inspectDataFolder(dir.path, secondFolder: second);
+      expect(i.mark!.figures, figures());
+      expect(i.secondMark!.figures, figures());
+    });
+
+    test('never lowered by a raise, and a lost copy comes back from the '
+        'other', () async {
+      final later = testT0.add(const Duration(minutes: 3));
+      await marks().raise(
+        figures(payments: 47, receipt: 'R-000051'),
+        at: later,
+      );
+      File('$second${Platform.pathSeparator}$markFileName').deleteSync();
+      await marks().raise(
+        figures(),
+        at: later.add(const Duration(minutes: 1)),
+        backupName: 'lodging_pos-2026-11-11-1103.sqlite',
+      );
+      for (final folder in [dir.path, second]) {
+        final m = readMark(folder)!;
+        expect(m.figures.payments, 47, reason: folder);
+        expect(m.figures.lastReceipt, 'R-000051');
+        expect(m.backupName, 'lodging_pos-2026-11-11-1103.sqlite');
+      }
+    });
+
+    test('the higher copy wins when the data folder came back with an old '
+        'mark', () async {
+      await marks().raise(
+        figures(payments: 47, receipt: 'R-000051'),
+        at: testT0,
+      );
+      writeMark(
+        dir.path,
+        HighWaterMark(
+          backupName: 'old',
+          takenAt: testT0,
+          figures: figures(),
+          build: build,
+        ),
+      );
+      await marks().raise(figures(), at: testT0);
+      expect(readMark(dir.path)!.figures.payments, 47);
+    });
+
+    test(
+      'replaced exactly (an accepted restore lowers it on purpose)',
+      () async {
+        await marks().raise(
+          figures(payments: 47, receipt: 'R-000051'),
+          at: testT0,
+        );
+        final restored = HighWaterMark(
+          backupName: 'restore accepted',
+          takenAt: testT0,
+          figures: figures(),
+          build: build,
+        );
+        await marks().replace(restored);
+        expect(readMark(dir.path)!.figures, figures());
+        expect(readMark(second)!.figures, figures());
+      },
+    );
+
+    test('the debug reset moves the second mark aside too', () async {
+      await makeDatabase();
+      await marks().raise(
+        (await inspectDataFolder(dir.path)).live!.figures,
+        at: testT0,
+      );
+      final folder = resetDatabaseFiles(
+        dir.path,
+        DateTime.utc(2026, 11, 24, 7, 20, 5),
+        secondFolder: second,
+      );
+      final sep = Platform.pathSeparator;
+      expect(File('$second$sep$markFileName').existsSync(), isFalse);
+      expect(File('$folder${sep}second-$markFileName').existsSync(), isTrue);
+    });
+  });
+
   group('the debug reset', () {
     test('copies and checks first, then moves everything aside; nothing is '
         'deleted', () async {

@@ -11,10 +11,12 @@ part 'desk_startup_provider.g.dart';
 @Riverpod(keepAlive: true)
 DeskStartup deskStartup(Ref ref) => DeskStartup.none;
 
-/// Writes the high-water mark after each backup; null where the desk has
-/// no data folder (tests unless they set one).
+/// The two high-water marks (the data folder's and the second copy), raised
+/// after each backup and each operation in [markActions]; null where the
+/// desk has no data folder (tests unless they set one).
 @Riverpod(keepAlive: true)
-Future<void> Function(HighWaterMark mark)? markWriter(Ref ref) =>
-    ref.watch(deskStartupProvider).folder == null
-    ? null
-    : writeMarkToDataFolder;
+MarkStore? markStore(Ref ref) =>
+    switch (ref.watch(deskStartupProvider).folder) {
+      final folder? => markStoreFor(folder),
+      null => null,
+    };

@@ -50,7 +50,7 @@ final class StartupTasksProvider
   }
 }
 
-String _$startupTasksHash() => r'd177429945c95745c53e46754f81b8951c736540';
+String _$startupTasksHash() => r'131ef2298374700897769e1ddab54ccce2a0d16f';
 
 /// Accepting an older backup from the refusal screen, before the database
 /// opens: the owner's account is read from the file read-only.
@@ -105,7 +105,7 @@ final class RestoreAcceptanceProvider
   }
 }
 
-String _$restoreAcceptanceHash() => r'52f5705a1f19afa4b24eaae8392a87f1a31cfe64';
+String _$restoreAcceptanceHash() => r'92cd151a2ccfd8e7f36abbbaf45ff21db01b408d';
 
 /// The unusual start still to be accepted, or null (story/desk-db-guards).
 
