@@ -13,6 +13,7 @@ import 'package:lodging_pos/core/database/desk_startup_provider.dart';
 import 'package:lodging_pos/features/backup/data/restore_acceptance.dart';
 
 import '../../helpers/fixtures.dart';
+import '../../helpers/recording_marks.dart';
 
 /// The startup refusals, the unusual-start warning and the version line on
 /// screen (story/desk-db-guards).
@@ -309,7 +310,7 @@ void main() {
         previous: figures(),
       ),
     );
-    final marks = <HighWaterMark>[];
+    final marks = RecordingMarks();
     final app = await pumpDeskApp(
       tester,
       env,
@@ -321,13 +322,13 @@ void main() {
             location: const LocationRecord(r'C:\UB40\Desk'),
           ),
         ),
-        markWriterProvider.overrideWithValue((m) async => marks.add(m)),
+        markStoreProvider.overrideWithValue(marks),
       ],
     );
     expect(locationOf(app), Routes.login);
     expect(await raiseReceiptCounter(env.db, 1), (65, 65));
     expect(await env.auditFor('database.restore_accepted'), hasLength(1));
-    expect(marks.single.pendingRestore, isNull);
+    expect(marks.replaced.single.pendingRestore, isNull);
     expect(await installPath(env.db), r'C:\UB40\Desk');
     final stamp = await (env.db.select(
       env.db.syncState,

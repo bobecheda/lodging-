@@ -99,6 +99,14 @@ const _actions = <String, (String, AuditKind)>{
   'sync.reconnect': ('Reconnected the desk', AuditKind.other),
   'sync.first_upload': ('Sent everything to the cloud', AuditKind.other),
   'sync.clock_warning': ('The desk’s clock was wrong', AuditKind.other),
+  'desk.behind_cloud': (
+    'The desk’s data was older than the cloud',
+    AuditKind.other,
+  ),
+  'desk.behind_details': (
+    'Looked at why the desk’s data is older',
+    AuditKind.other,
+  ),
 };
 
 /// "Checked a guest in"; an action this app doesn't know reads as itself.

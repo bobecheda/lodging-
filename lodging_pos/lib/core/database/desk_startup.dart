@@ -67,6 +67,23 @@ final class DatabaseFigures {
     }}',
   ].join(' · ');
 
+  /// Each figure at its highest of [a] and [b] (a mark never goes down).
+  static DatabaseFigures highest(DatabaseFigures a, DatabaseFigures? b) {
+    if (b == null) return a;
+    int top(int x, int y) => x > y ? x : y;
+    final (la, lb) = (a.lastAuditAt, b.lastAuditAt);
+    return DatabaseFigures(
+      schemaVersion: top(a.schemaVersion, b.schemaVersion),
+      stays: top(a.stays, b.stays),
+      payments: top(a.payments, b.payments),
+      auditEntries: top(a.auditEntries, b.auditEntries),
+      lastReceipt: receiptSerial(b.lastReceipt) > receiptSerial(a.lastReceipt)
+          ? b.lastReceipt
+          : a.lastReceipt,
+      lastAuditAt: la == null || (lb != null && lb.isAfter(la)) ? lb : la,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       other is DatabaseFigures &&
@@ -202,9 +219,26 @@ final class PendingRestore {
   };
 }
 
-/// The high-water mark (`lodging_pos.mark.json`, next to the database):
-/// what the newest checked backup held. Written after every backup; the
-/// live file must never hold less.
+/// The operations after which the mark moves (story/desk-db-guards-2):
+/// every receipt number issued, every shift opened or closed and every
+/// drawer count.
+const markActions = {
+  'payment.create',
+  'refund.pay',
+  'shift.open',
+  'shift.close',
+  'drawer.start',
+  'drawer.check',
+  'drawer.collect',
+};
+
+/// Whether an operation that recorded [actions] moves the mark.
+bool movesMark(Set<String> actions) => actions.any(markActions.contains);
+
+/// The high-water mark (`lodging_pos.mark.json`, next to the database, and
+/// a second copy outside the data folder): the most this desk has held.
+/// Raised after every backup and, since story/desk-db-guards-2, after every
+/// operation in [markActions]; the live file must never hold less.
 final class HighWaterMark {
   const HighWaterMark({
     required this.backupName,
@@ -212,11 +246,34 @@ final class HighWaterMark {
     required this.figures,
     required this.build,
     this.pendingRestore,
-  });
+    DateTime? heldAt,
+  }) : heldAt = heldAt ?? takenAt;
+
+  /// [existing] raised to [live] at [at]: every figure at its highest, the
+  /// last backup kept unless [backupName] is a new one, a pending restore
+  /// kept.
+  factory HighWaterMark.raised(
+    HighWaterMark? existing,
+    DatabaseFigures live, {
+    required DateTime at,
+    required DeskStamp build,
+    String? backupName,
+  }) => HighWaterMark(
+    backupName: backupName ?? existing?.backupName,
+    takenAt: backupName != null || existing == null ? at : existing.takenAt,
+    figures: DatabaseFigures.highest(live, existing?.figures),
+    build: build,
+    pendingRestore: existing?.pendingRestore,
+    heldAt: at,
+  );
 
   factory HighWaterMark.fromJson(Map<String, Object?> json) => HighWaterMark(
-    backupName: json['backup']! as String,
+    backupName: json['backup'] as String?,
     takenAt: DateTime.parse(json['taken_at']! as String),
+    heldAt: switch (json['held_at']) {
+      final String at => DateTime.parse(at),
+      _ => null,
+    },
     figures: DatabaseFigures.fromJson(
       (json['figures']! as Map).cast<String, Object?>(),
     ),
@@ -232,8 +289,15 @@ final class HighWaterMark {
     },
   );
 
-  final String backupName;
+  /// The last backup's file name; null before the first backup.
+  final String? backupName;
+
+  /// When the last backup was taken (or the mark first written).
   final DateTime takenAt;
+
+  /// When the desk last held [figures].
+  final DateTime heldAt;
+
   final DatabaseFigures figures;
   final DeskStamp build;
   final PendingRestore? pendingRestore;
@@ -241,6 +305,7 @@ final class HighWaterMark {
   Map<String, Object?> toJson() => {
     'backup': backupName,
     'taken_at': takenAt.toUtc().toIso8601String(),
+    'held_at': heldAt.toUtc().toIso8601String(),
     'figures': figures.toJson(),
     'build_version': build.version,
     'build': build.build,
@@ -252,7 +317,39 @@ final class HighWaterMark {
     takenAt: takenAt,
     figures: figures,
     build: build,
+    heldAt: heldAt,
   );
+}
+
+/// Where the marks are kept (`MarkFiles`: the data folder and a second copy
+/// outside it).
+abstract interface class MarkStore {
+  /// Raises both copies to [figures] (never lowers them); [backupName] when
+  /// a backup was just taken.
+  Future<void> raise(
+    DatabaseFigures figures, {
+    required DateTime at,
+    String? backupName,
+  });
+
+  /// Writes [mark] as it is to both copies: an accepted restore lowers it
+  /// on purpose.
+  Future<void> replace(HighWaterMark mark);
+}
+
+/// No marks: where the desk has no data folder (web, tests).
+final class NoMarks implements MarkStore {
+  const NoMarks();
+
+  @override
+  Future<void> raise(
+    DatabaseFigures figures, {
+    required DateTime at,
+    String? backupName,
+  }) async {}
+
+  @override
+  Future<void> replace(HighWaterMark mark) async {}
 }
 
 /// The copy of the app holding the data folder's lock.
@@ -326,6 +423,7 @@ final class DeskInspection {
     this.live,
     this.hasBackups = false,
     this.mark,
+    this.secondMark,
     this.heldBy,
   });
 
@@ -335,6 +433,10 @@ final class DeskInspection {
   /// Daily backups, pre-upgrade copies or reset folders exist.
   final bool hasBackups;
   final HighWaterMark? mark;
+
+  /// The mark's copy outside the data folder (`%LOCALAPPDATA%`): it stays
+  /// put when someone copies the whole data folder back.
+  final HighWaterMark? secondMark;
 
   /// Another copy of the app holds the lock.
   final LockHolder? heldBy;
@@ -412,8 +514,9 @@ StartupVerdict judgeStartup(
   if (inspection.heldBy case final holder?) return AlreadyOpen(holder);
   final live = inspection.live;
   if (live == null) {
-    return inspection.hasBackups || inspection.mark != null
-        ? DatabaseMissing(inspection.mark)
+    final mark = inspection.mark ?? inspection.secondMark;
+    return inspection.hasBackups || mark != null
+        ? DatabaseMissing(mark)
         : const StartOk();
   }
   if (live.figures.schemaVersion > schemaVersion) {
@@ -422,9 +525,8 @@ StartupVerdict judgeStartup(
   if (live.stamp case final stamp? when stamp.build > build.build) {
     return NewerBuild(stamp);
   }
-  if (inspection.mark case final mark?
-      when isOlder(live.figures, mark.figures)) {
-    return OlderThanBackup(live, mark);
+  for (final mark in [inspection.mark, inspection.secondMark].nonNulls) {
+    if (isOlder(live.figures, mark.figures)) return OlderThanBackup(live, mark);
   }
   return const StartOk();
 }
@@ -456,7 +558,8 @@ String refusalMessage(
           '${holder.exePath}. $self',
     DatabaseMissing(:final mark) =>
       'The database file is missing, but backups show there was one'
-          '${mark == null ? '' : ' (last backup ${mark.backupName}: '
+          '${mark == null ? '' : ' (this desk last held, '
+                    '${formatDayDateTime(mark.heldAt)}: '
                     '${mark.figures.describe()})'}. $self',
     NewerDatabase(schemaVersion: final v, :final stamp) =>
       'This database is v$v'
@@ -465,9 +568,11 @@ String refusalMessage(
       'This database was last opened by ${stamp.label}, a newer build. '
           '$self',
     OlderThanBackup(:final live, :final mark) =>
-      'This database looks older than the last backup. This file: '
-          '${live.figures.describe()}. Last backup (${mark.backupName}, '
-          '${formatDayDateTime(mark.takenAt)}, ${mark.build.label}): '
+      'This database looks older than what this desk last held. This '
+          'file: ${live.figures.describe()}. Last held '
+          '(${formatDayDateTime(mark.heldAt)}, ${mark.build.label}'
+          '${mark.backupName == null ? '' : '; last backup '
+                    '${mark.backupName}'}): '
           '${mark.figures.describe()}. $self',
   };
 }

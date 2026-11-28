@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-import '../../../core/app_version.dart';
 import '../../../core/audit/audit_writer.dart';
 import '../../../core/auth/permissions.dart';
 import '../../../core/auth/user_account.dart';
@@ -93,7 +92,7 @@ class BackupService {
     this._clock,
     this._settings, {
     required this.folder,
-    this.writeMark,
+    this.marks,
   });
 
   final AppDatabase _db;
@@ -104,10 +103,10 @@ class BackupService {
   /// The main backup folder.
   final String folder;
 
-  /// Writes the high-water mark (story/desk-db-guards): what the newest
+  /// The high-water marks (story/desk-db-guards): raised to what the newest
   /// checked backup holds, which the live file must never fall below. Null
   /// where there is no data folder (tests unless they set one).
-  final Future<void> Function(HighWaterMark mark)? writeMark;
+  final MarkStore? marks;
 
   /// The newest backup in the main folder, or null if there is none.
   Future<BackupFile?> newest() async {
@@ -200,14 +199,7 @@ class BackupService {
     }
     await _prune(folder, now);
     try {
-      await writeMark?.call(
-        HighWaterMark(
-          backupName: name,
-          takenAt: now,
-          figures: figures,
-          build: AppBuild.current.stamp,
-        ),
-      );
+      await marks?.raise(figures, at: now, backupName: name);
     } catch (_) {
       // The backup itself is good; the next one writes the mark again.
     }

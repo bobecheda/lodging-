@@ -59,6 +59,22 @@ class AuditWriter {
   /// Called after every committed write (sync pushes soon after).
   void Function()? onCommit;
 
+  /// Called after every committed write with the actions it recorded (the
+  /// high-water mark moves after some, story/desk-db-guards-2). Awaited; a
+  /// failure here never fails the write, which has already committed.
+  Future<void> Function(Set<String> actions)? onCommitted;
+
+  Future<void> _afterCommit(Set<String> actions) async {
+    onCommit?.call();
+    final hook = onCommitted;
+    if (hook == null) return;
+    try {
+      await hook(actions);
+    } on Object {
+      // The write stands; the next one tries again.
+    }
+  }
+
   /// Runs [body] in one transaction. For every synced row [body] inserts or
   /// updates through [AuditedWrites], it writes, at that moment, the outbox
   /// row for the business row, one `audit_log` row (tagged with [action]) and
@@ -82,8 +98,9 @@ class AuditWriter {
     Set<String> inCloud = const {},
   }) async {
     _checkAction(action);
+    late AuditedWrites writes;
     final result = await _db.transaction(() async {
-      final w = await _start(action, userId, inCloud: inCloud);
+      final w = writes = await _start(action, userId, inCloud: inCloud);
       try {
         final result = await body(w);
         await Future.wait(w._pending);
@@ -98,7 +115,7 @@ class AuditWriter {
         w._closed = true;
       }
     });
-    onCommit?.call();
+    await _afterCommit(writes._actions);
     return result;
   }
 
@@ -121,7 +138,7 @@ class AuditWriter {
         afterJson: jsonEncode(details),
       );
     });
-    onCommit?.call();
+    await _afterCommit({action});
   }
 
   Future<AuditedWrites> _start(
@@ -179,6 +196,9 @@ class AuditedWrites {
   final String operationId;
 
   final _pending = <Future<Object?>>[];
+
+  /// Every action this call's audit rows recorded.
+  final _actions = <String>{};
   var _writes = 0;
   var _closed = false;
 
@@ -334,6 +354,7 @@ class AuditedWrites {
     required String? beforeJson,
     required String afterJson,
   }) async {
+    _actions.add(action ?? _action);
     final row = await _db
         .into(_db.auditLog)
         .insertReturning(

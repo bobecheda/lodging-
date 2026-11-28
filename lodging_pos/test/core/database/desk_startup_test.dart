@@ -35,6 +35,7 @@ void main() {
     LiveFile? live,
     bool hasBackups = false,
     HighWaterMark? mark,
+    HighWaterMark? secondMark,
     LockHolder? heldBy,
     AppBuild build = thisBuild,
     int schema = 11,
@@ -43,6 +44,7 @@ void main() {
       live: live,
       hasBackups: hasBackups,
       mark: mark,
+      secondMark: secondMark,
       heldBy: heldBy,
     ),
     build: build,
@@ -212,6 +214,114 @@ void main() {
       expect(back.build, thisBuild.stamp);
       expect(back.pendingRestore!.counterFloor, 62);
       expect(back.pendingRestore!.previous.stays, 50);
+    });
+  });
+
+  group('the mark moves with the work (story/desk-db-guards-2)', () {
+    test('the actions that move it: receipts, shifts and the drawer', () {
+      for (final action in [
+        'payment.create',
+        'refund.pay',
+        'shift.open',
+        'shift.close',
+        'drawer.start',
+        'drawer.check',
+        'drawer.collect',
+      ]) {
+        expect(movesMark({action}), isTrue, reason: action);
+      }
+      expect(movesMark({'user.login', 'guest.create'}), isFalse);
+      expect(movesMark({'stay.check_in', 'payment.create'}), isTrue);
+      expect(movesMark(const {}), isFalse);
+    });
+
+    test('highest: each figure at its highest of the two', () {
+      final a = figures(stays: 43, payments: 60, receipt: 'R-000059');
+      final b = figures(
+        audit: 950,
+        receipt: 'R-000062',
+        lastAudit: t0.add(const Duration(hours: 1)),
+      );
+      final h = DatabaseFigures.highest(a, b);
+      expect(h.stays, 43);
+      expect(h.payments, 61);
+      expect(h.auditEntries, 950);
+      expect(h.lastReceipt, 'R-000062');
+      expect(h.lastAuditAt, t0.add(const Duration(hours: 1)));
+      expect(DatabaseFigures.highest(a, null), a);
+    });
+
+    test('raising never lowers it, keeps the last backup and a pending '
+        'restore, and says when the desk last held it', () {
+      final pending = PendingRestore(
+        acceptedBy: 'owner-1',
+        acceptedAt: t0,
+        counterFloor: 62,
+        previous: figures(),
+      );
+      final before = HighWaterMark(
+        backupName: 'lodging_pos-2026-11-24-0720.sqlite',
+        takenAt: t0,
+        figures: figures(),
+        build: thisBuild.stamp,
+        pendingRestore: pending,
+      );
+      final later = t0.add(const Duration(minutes: 5));
+      final raised = HighWaterMark.raised(
+        before,
+        figures(payments: 62, receipt: 'R-000062', stays: 40),
+        at: later,
+        build: thisBuild.stamp,
+      );
+      expect(raised.figures.payments, 62);
+      expect(raised.figures.lastReceipt, 'R-000062');
+      expect(raised.figures.stays, 42, reason: 'never lowered');
+      expect(raised.backupName, before.backupName);
+      expect(raised.takenAt, t0);
+      expect(raised.heldAt, later);
+      expect(raised.pendingRestore, same(pending));
+
+      final backup = HighWaterMark.raised(
+        raised,
+        figures(),
+        at: later,
+        build: thisBuild.stamp,
+        backupName: 'lodging_pos-2026-11-24-0725.sqlite',
+      );
+      expect(backup.backupName, 'lodging_pos-2026-11-24-0725.sqlite');
+      expect(backup.takenAt, later);
+      expect(backup.figures.payments, 62, reason: 'a backup never lowers it');
+
+      final first = HighWaterMark.raised(
+        null,
+        figures(),
+        at: t0,
+        build: thisBuild.stamp,
+      );
+      expect(first.backupName, isNull);
+      expect(first.figures, figures());
+      expect(HighWaterMark.fromJson(first.toJson()).heldAt, t0);
+    });
+
+    test('the second mark (outside the data folder) refuses an older file '
+        'even when the data folder came back with its own old mark', () {
+      final old = figures(payments: 46, receipt: 'R-000050');
+      final v = judge(live: live(old), mark: mark(old), secondMark: mark());
+      expect(v, isA<OlderThanBackup>());
+      expect((v as OlderThanBackup).mark.figures.payments, 61);
+      expect(
+        judge(live: live(old), mark: mark(), secondMark: mark(old)),
+        isA<OlderThanBackup>(),
+      );
+      expect(
+        judge(live: live(), mark: mark(), secondMark: mark()),
+        isA<StartOk>(),
+      );
+    });
+
+    test('a missing file with only the second mark left: never a silent '
+        'first run', () {
+      expect(judge(secondMark: mark()), isA<DatabaseMissing>());
     });
   });
 

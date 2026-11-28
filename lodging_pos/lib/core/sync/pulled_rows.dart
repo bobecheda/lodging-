@@ -17,6 +17,19 @@ final class PullConflict implements Exception {
   String toString() => message;
 }
 
+/// A pulled decision about something this file doesn't have (a shift, a
+/// drawer count, a refund or a price request): proof the file is behind
+/// the cloud (story/desk-db-guards-2). Nothing of the page is applied.
+final class PullBehind extends PullConflict {
+  PullBehind(this.what)
+    : super('The cloud has $what, which this PC doesn’t have.');
+
+  /// "a review of shift 37441d06".
+  final String what;
+}
+
+String _short(String id) => id.length > 8 ? id.substring(0, 8) : id;
+
 /// The second write path, and the only one besides `writeWithAudit` that
 /// writes synced tables (test/policy/single_write_path_test.dart): rows the
 /// pull brings from the owner's side, written as they are. They get no
@@ -85,6 +98,12 @@ class PulledRows {
         'desk (${here.decision} here, ${d.decision} there).',
       );
     }
+    final refund = await (_db.select(
+      _db.refunds,
+    )..where((x) => x.id.equals(d.refundId))).getSingleOrNull();
+    if (refund == null) {
+      throw PullBehind('a decision on refund ${_short(d.refundId)}');
+    }
     await _db.into(_db.refundDecisions).insert(d);
     return true;
   }
@@ -99,6 +118,12 @@ class PulledRows {
         'The cloud has another decision for price request ${d.requestId} '
         'than this desk (${here.decision} here, ${d.decision} there).',
       );
+    }
+    final request = await (_db.select(
+      _db.priceRequests,
+    )..where((x) => x.id.equals(d.requestId))).getSingleOrNull();
+    if (request == null) {
+      throw PullBehind('a decision on price request ${_short(d.requestId)}');
     }
     await _db.into(_db.priceDecisions).insert(d);
     return true;
@@ -119,6 +144,20 @@ class PulledRows {
       throw PullConflict(
         'The cloud has another review of ${r.targetType} ${r.targetId} than '
         'this desk (${here.decision} here, ${r.decision} there).',
+      );
+    }
+    final shift = r.targetType == 'shift';
+    final target = shift
+        ? await (_db.select(
+            _db.shifts,
+          )..where((x) => x.id.equals(r.targetId))).getSingleOrNull()
+        : await (_db.select(
+            _db.drawerEvents,
+          )..where((x) => x.id.equals(r.targetId))).getSingleOrNull();
+    if (target == null) {
+      throw PullBehind(
+        'a review of ${shift ? 'shift' : 'drawer count'} '
+        '${_short(r.targetId)}',
       );
     }
     await _db.into(_db.cashReviews).insert(r);

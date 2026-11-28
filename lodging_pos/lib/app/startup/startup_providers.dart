@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/app_version.dart';
@@ -9,6 +11,7 @@ import '../../core/database/database_provider.dart';
 import '../../core/database/desk_meta.dart';
 import '../../core/database/desk_startup.dart';
 import '../../core/database/desk_startup_provider.dart';
+import '../../core/database/mark_keeper.dart';
 import '../../core/database/schema_check.dart';
 import '../../core/sync/sync_providers.dart';
 import '../../features/auth/presentation/auth_providers.dart';
@@ -19,26 +22,57 @@ part 'startup_providers.g.dart';
 
 /// Once the database check passes, on the real desk only (story/desk-db-
 /// guards): finish an accepted restore, raise the file's build stamp, and
-/// record the install folder on the first run. Sign-in waits for it.
+/// record the install folder on the first run. Since story/desk-db-guards-2
+/// the marks move with the work from here on, and a missing copy is written
+/// again. Sign-in waits for it.
 @Riverpod(keepAlive: true)
 Future<void> startupTasks(Ref ref) async {
   final drift = await ref.watch(schemaDriftProvider.future);
   final startup = ref.watch(deskStartupProvider);
   if (drift != null || startup.folder == null) return;
   final db = ref.watch(appDatabaseProvider);
-  final writeMark = ref.watch(markWriterProvider);
+  final marks = ref.watch(markStoreProvider);
   if (startup.inspection.mark case final mark?
-      when mark.pendingRestore != null && writeMark != null) {
+      when mark.pendingRestore != null && marks != null) {
     await applyPendingRestore(
       db,
       ref.read(auditWriterProvider),
       mark,
-      writeMark: writeMark,
+      marks: marks,
     );
   }
   await raiseBuildStamp(db, AppBuild.current);
+  if (marks != null) {
+    final clock = ref.read(clockProvider);
+    ref.read(auditWriterProvider).onCommitted = MarkKeeper(
+      db,
+      marks,
+      clock,
+    ).afterCommit;
+    await marks.raise(await liveFigures(db), at: clock.now());
+  }
   if (startup.location case LocationRecord(:final path)) {
     await recordInstallPath(db, path);
+  }
+}
+
+/// The longest sign-in waits for the cloud's answer at start.
+const cloudCheckWait = Duration(seconds: 8);
+
+/// Before sign-in, on a connected desk that is online
+/// (story/desk-db-guards-2): asks the cloud whether this file is behind it
+/// (`SyncEngine.checkCloud`). Offline, refused or slower than
+/// [cloudCheckWait], the desk opens as today; the engine asks again before
+/// it sends anything.
+@Riverpod(keepAlive: true)
+Future<void> cloudStartupCheck(Ref ref) async {
+  await ref.watch(startupTasksProvider.future);
+  final engine = ref.watch(syncEngineProvider);
+  if (engine == null) return;
+  try {
+    await engine.ready.then((_) => engine.checkCloud()).timeout(cloudCheckWait);
+  } on TimeoutException {
+    // Opens as today.
   }
 }
 
@@ -60,7 +94,7 @@ RestoreAcceptance restoreAcceptance(Ref ref) {
     hasher: ref.watch(passwordHasherProvider),
     deskConnected: () async =>
         await ref.read(deskSecretStoreProvider).read() != null,
-    writeMark: writeMarkToDataFolder,
+    marks: ref.watch(markStoreProvider) ?? const NoMarks(),
     clock: ref.watch(clockProvider),
     cloud: ref.watch(cloudProvider),
   );

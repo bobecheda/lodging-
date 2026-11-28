@@ -56,10 +56,11 @@ const testSetup = SetupInput(
   lodgingName: 'Sunrise Lodge',
 );
 
-/// An in-memory database with the real writer and a fast hasher.
+/// An in-memory database (or [executor], e.g. a real file) with the real
+/// writer and a fast hasher.
 class TestEnv {
-  TestEnv() : clock = FixedClock(testT0) {
-    db = AppDatabase(NativeDatabase.memory(), clock: clock);
+  TestEnv({QueryExecutor? executor}) : clock = FixedClock(testT0) {
+    db = AppDatabase(executor ?? NativeDatabase.memory(), clock: clock);
     audit = AuditWriter(db, clock);
     users = UserRepository(db, audit, hasher);
   }

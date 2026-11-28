@@ -221,7 +221,11 @@ The desk refuses deletes on purpose (its audit trail and money rows are append-o
 Move-Item "$env:APPDATA\com.lodging\lodging_pos" "$env:USERPROFILE\Desktop\lodging_pos-test-archive"
 ```
 
-That takes the database, its upgrade copies, the backups and the desk's cloud secret together. Keep the archive until the lodging has run for a week, then delete it. The next start is a first run ("Create the owner's account"); then connect the desk with the new install code (`docs/sync.md`, "Setting up the cloud"). If a second backup folder was set, empty it too.
+```powershell
+Move-Item "$env:LOCALAPPDATA\com.lodging\lodging_pos" "$env:USERPROFILE\Desktop\lodging_pos-test-archive\local"
+```
+
+The first takes the database, its upgrade copies, the backups and the desk's cloud secret together; the second the high-water mark's second copy (story/desk-db-guards-2). Without the second, the fresh desk refuses with "Database missing — restore from backup". Keep the archive until the lodging has run for a week, then delete it. The next start is a first run ("Create the owner's account"); then connect the desk with the new install code (`docs/sync.md`, "Setting up the cloud"). If a second backup folder was set, empty it too.
 
 ### The phone
 

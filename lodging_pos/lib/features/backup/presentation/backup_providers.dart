@@ -164,7 +164,7 @@ class Backups extends _$Backups {
       ref.read(clockProvider),
       ref.read(settingsRepositoryProvider),
       folder: folder,
-      writeMark: ref.read(markWriterProvider),
+      marks: ref.read(markStoreProvider),
     );
   }
 

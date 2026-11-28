@@ -19,10 +19,27 @@ class SplashScreen extends ConsumerWidget {
         ref.watch(startupTasksProvider).error ??
         ref.watch(setupStatusProvider).error ??
         ref.watch(currentShiftProvider).error;
+    // story/desk-db-guards-2: the cloud is asked before sign-in.
+    final checking =
+        ref.watch(startupTasksProvider).hasValue &&
+        ref.watch(cloudStartupCheckProvider).isLoading;
     return Scaffold(
       body: Center(
         child: error == null
-            ? const CircularProgressIndicator()
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  if (checking) ...[
+                    const SizedBox(height: Space.x16),
+                    Text(
+                      'Checking with the cloud…',
+                      key: const ValueKey('splash.cloudCheck'),
+                      style: LodgingType.of(context).secondary,
+                    ),
+                  ],
+                ],
+              )
             : ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: Sizes.formMaxWidth),
                 child: Note.error(

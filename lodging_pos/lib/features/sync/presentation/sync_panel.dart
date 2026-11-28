@@ -19,6 +19,7 @@ import '../../../core/sync/sync_engine.dart';
 import '../../../core/sync/sync_providers.dart';
 import '../../../core/sync/sync_status_text.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../../core/support_contact.dart';
 
 Future<void> showSyncPanel(BuildContext context) => showSidePanel(
   context,
@@ -247,6 +248,19 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
         ),
         const SizedBox(height: Space.x16),
         retry,
+      ],
+      SyncPhase.behind => [
+        Note.error(
+          behindBannerText,
+          key: const ValueKey('sync.behind'),
+          title: SyncEngine.behindProblem,
+        ),
+        const SizedBox(height: Space.x8),
+        for (final line in status.behind?.lines() ?? const <String>[])
+          Padding(
+            padding: const EdgeInsets.only(top: Space.x4),
+            child: Text(line, style: t.secondary.copyWith(color: c.inkSoft)),
+          ),
       ],
       SyncPhase.problem when status.needsReconnect => [
         Note.error(

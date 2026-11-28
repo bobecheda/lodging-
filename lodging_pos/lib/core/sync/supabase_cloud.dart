@@ -211,6 +211,24 @@ class SupabaseCloud implements Cloud {
       });
 
   @override
+  Future<DeskCloudState> deskCloudState() => _asDesk((c) async {
+    final answer = (await c.rpc('desk_cloud_state') as Map)
+        .cast<String, Object?>();
+    return DeskCloudState(
+      recentAuditIds: [
+        for (final id in (answer['recent_audit_ids'] as List?) ?? const [])
+          id as String,
+      ],
+      lastAuditAt: switch (answer['last_audit_at']) {
+        final String at => DateTime.parse(at).toUtc(),
+        _ => null,
+      },
+      topReceipt: answer['top_receipt'] as String?,
+      openShiftId: answer['open_shift'] as String?,
+    );
+  });
+
+  @override
   Future<void> signInOwner(String email, String password) => _guard(
     () => _owner.auth.signInWithPassword(email: email, password: password),
   );

@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/auth/session.dart';
 import '../core/database/schema_check.dart';
+import '../core/sync/sync_providers.dart';
 import '../features/auth/domain/setup.dart';
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/change_password_screen.dart';
@@ -34,6 +35,7 @@ import 'page_transitions.dart';
 import 'shell/desk_shell.dart';
 import 'splash_screen.dart';
 import 'startup/startup_providers.dart';
+import 'startup/behind_cloud_screen.dart';
 import 'startup/unusual_start_screen.dart';
 
 part 'router.g.dart';
@@ -46,6 +48,8 @@ GoRouter router(Ref ref) {
   ref
     ..listen(schemaDriftProvider, (_, _) => bump())
     ..listen(startupTasksProvider, (_, _) => bump())
+    ..listen(cloudStartupCheckProvider, (_, _) => bump())
+    ..listen(deskBehindProvider, (_, _) => bump())
     ..listen(unusualStartProvider, (_, _) => bump())
     ..listen(setupStatusProvider, (_, _) => bump())
     ..listen(sessionProvider, (_, _) => bump())
@@ -60,17 +64,20 @@ GoRouter router(Ref ref) {
       state.matchedLocation,
       returnTo: state.uri.queryParameters['then'],
       // A failed check falls through, so its error shows on the splash. The
-      // startup tasks (an accepted restore, the build stamp) finish first.
+      // startup tasks (an accepted restore, the build stamp) finish first,
+      // then the cloud is asked whether this file is behind it.
       schemaMatches: switch ((
         ref.read(schemaDriftProvider),
         ref.read(startupTasksProvider),
+        ref.read(cloudStartupCheckProvider),
       )) {
-        (AsyncData(:final value), _) when value != null => false,
-        (AsyncError(), _) || (_, AsyncError()) => true,
-        (AsyncData(), AsyncData()) => true,
+        (AsyncData(:final value), _, _) when value != null => false,
+        (AsyncError(), _, _) || (_, AsyncError(), _) => true,
+        (AsyncData(), AsyncData(), AsyncData() || AsyncError()) => true,
         _ => null,
       },
       unusualStart: ref.read(unusualStartProvider) != null,
+      behindCloud: ref.read(deskBehindProvider) != null,
       hasUsers: switch (ref.read(setupStatusProvider).value) {
         null => null,
         final setup => setup != SetupState.fresh,
@@ -103,6 +110,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: Routes.unusualStart,
         builder: (_, _) => const UnusualStartScreen(),
+      ),
+      GoRoute(
+        path: Routes.behindCloud,
+        builder: (_, _) => const BehindCloudScreen(),
       ),
       GoRoute(path: Routes.setup, builder: (_, _) => const SetupScreen()),
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),

@@ -204,7 +204,7 @@ final class BackupsProvider extends $NotifierProvider<Backups, BackupStatus> {
   }
 }
 
-String _$backupsHash() => r'07f15d7428081b848399a8b4a9c7b544007566fa';
+String _$backupsHash() => r'7c67bcf797cd8b7e5e52615d78b15f0e693076ad';
 
 /// The daily local backup: once the database check has passed at start,
 /// then every [backupCheckInterval], it backs up if today (Nairobi) has no

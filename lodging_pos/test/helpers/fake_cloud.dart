@@ -1,4 +1,5 @@
 import 'package:lodging_pos/core/database/desk_startup.dart' show receiptSerial;
+import 'package:lodging_pos/core/sync/desk_behind.dart' show recentAuditLimit;
 import 'package:lodging_pos/core/sync/cloud.dart';
 import 'package:lodging_pos/core/sync/sync_store.dart';
 
@@ -129,6 +130,69 @@ class FakeCloud implements Cloud {
     _stamp(r.table, key);
   }
 
+  /// The unique rule [r] breaks against what is stored, if any:
+  /// `payments_receipt_number_key`, `refunds_receipt_number_key`,
+  /// `shifts_one_open_per_device` (story/desk-db-guards-2).
+  String? _uniqueClash(CloudRow r) {
+    final key = r.row[_key(r.table)];
+    final others = [
+      for (final MapEntry(key: k, value: row)
+          in (tables[r.table] ?? const <String, Map<String, Object?>>{})
+              .entries)
+        if (k != key) row,
+    ];
+    switch (r.table) {
+      case 'payments' || 'refunds':
+        final number = r.row['receipt_number'];
+        if (number != null &&
+            others.any((o) => o['receipt_number'] == number)) {
+          return '${r.table}_receipt_number_key';
+        }
+      case 'shifts':
+        if (r.row['status'] == 'open' &&
+            others.any(
+              (o) =>
+                  o['status'] == 'open' && o['device_id'] == r.row['device_id'],
+            )) {
+          return 'shifts_one_open_per_device';
+        }
+    }
+    return null;
+  }
+
+  ({
+    Map<String, Map<String, Map<String, Object?>>> tables,
+    Map<String, int> seqs,
+    int seq,
+  })
+  _snapshot() => (
+    tables: {
+      for (final MapEntry(key: t, value: rows) in tables.entries)
+        t: {
+          for (final MapEntry(key: k, value: row) in rows.entries) k: {...row},
+        },
+    },
+    seqs: {..._seqs},
+    seq: _seq,
+  );
+
+  void _restore(
+    ({
+      Map<String, Map<String, Map<String, Object?>>> tables,
+      Map<String, int> seqs,
+      int seq,
+    })
+    s,
+  ) {
+    tables
+      ..clear()
+      ..addAll(s.tables);
+    _seqs
+      ..clear()
+      ..addAll(s.seqs);
+    _seq = s.seq;
+  }
+
   int _apply(List<CloudRow> rows, Set<String> allowed) {
     for (final (i, r) in rows.indexed) {
       if (!allowed.contains(r.table)) {
@@ -142,7 +206,18 @@ class FakeCloud implements Cloud {
         );
       }
     }
-    for (final r in rows) {
+    // The cloud's unique rules, row by row as Postgres checks them: the
+    // batch is all or nothing.
+    final before = _snapshot();
+    for (final (i, r) in rows.indexed) {
+      if (_uniqueClash(r) case final constraint?) {
+        _restore(before);
+        throw CloudRefused(
+          '${r.table} ${r.row[_key(r.table)]}: duplicate key value violates '
+          'unique constraint "$constraint"',
+          index: i,
+        );
+      }
       _upsert(r);
     }
     if (loseNextAnswer) {
@@ -271,6 +346,39 @@ class FakeCloud implements Cloud {
 
   @override
   Future<void> signOutOwner() async => _ownerSignedIn = false;
+
+  /// Calls to [deskCloudState].
+  final cloudStateAsks = <Object>[];
+
+  @override
+  Future<DeskCloudState> deskCloudState() async {
+    _asDesk();
+    cloudStateAsks.add(Object());
+    Iterable<Map<String, Object?>> mine(String table) =>
+        (tables[table]?.values ?? const <Map<String, Object?>>[]).where(
+          (r) => r['device_id'] == _deskDevice,
+        );
+    final audits = [
+      for (final r in mine('audit_log'))
+        (
+          id: r['id']! as String,
+          at: DateTime.parse(r['created_at']! as String).toUtc(),
+        ),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+    final receipts = [
+      for (final r in [...mine('payments'), ...mine('refunds')])
+        if (r['receipt_number'] case final String n) n,
+    ]..sort((a, b) => receiptSerial(b).compareTo(receiptSerial(a)));
+    return DeskCloudState(
+      recentAuditIds: [for (final a in audits.take(recentAuditLimit)) a.id],
+      lastAuditAt: audits.firstOrNull?.at,
+      topReceipt: receipts.firstOrNull,
+      openShiftId: [
+        for (final r in mine('shifts'))
+          if (r['status'] == 'open') r['id']! as String,
+      ].firstOrNull,
+    );
+  }
 
   @override
   Future<DeskInCloud> deskInCloud(String deviceId) async {
@@ -597,6 +705,14 @@ class FakeCloud implements Cloud {
   }
 
   /// An audit row written on the phone (the owner's action).
+  /// A row the cloud already holds, as if sent earlier (e.g. by a copy of
+  /// this desk's file that was later replaced; story/desk-db-guards-2).
+  void holdsAlready(String table, Map<String, Object?> row) {
+    final key = row[_key(table)]! as String;
+    tables.putIfAbsent(table, () => {})[key] = {...row};
+    _stamp(table, key);
+  }
+
   void phoneAudit(String id, {required String action, required DateTime at}) {
     tables.putIfAbsent('audit_log', () => {})[id] = {
       'id': id,

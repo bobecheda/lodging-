@@ -66,7 +66,7 @@ class RestoreAcceptance {
     required this.readOwner,
     required this.hasher,
     required this.deskConnected,
-    required this.writeMark,
+    required this.marks,
     required this.clock,
     this.cloud,
   });
@@ -76,7 +76,7 @@ class RestoreAcceptance {
 
   /// Whether this desk still has its cloud key.
   final Future<bool> Function() deskConnected;
-  final Future<void> Function(HighWaterMark mark) writeMark;
+  final MarkStore marks;
   final Clock clock;
 
   /// The cloud; null in a build without cloud keys.
@@ -120,7 +120,7 @@ class RestoreAcceptance {
       receiptSerial(inCloud?.lastReceipt) + 1,
       paper + 1,
     ].reduce(math.max);
-    await writeMark(
+    await marks.replace(
       HighWaterMark(
         backupName: 'restore accepted',
         takenAt: now,
@@ -191,7 +191,7 @@ Future<void> applyPendingRestore(
   AppDatabase db,
   AuditWriter audit,
   HighWaterMark mark, {
-  required Future<void> Function(HighWaterMark mark) writeMark,
+  required MarkStore marks,
 }) async {
   final pending = mark.pendingRestore;
   if (pending == null) return;
@@ -211,5 +211,5 @@ Future<void> applyPendingRestore(
       },
     );
   });
-  await writeMark(mark.withoutPending());
+  await marks.replace(mark.withoutPending());
 }

@@ -55,6 +55,46 @@ void main() {
     expect(go(Routes.setup), Routes.home);
   });
 
+  test('behind the cloud (story/desk-db-guards-2): nobody signs in; whoever '
+      'is signed in finishes with this guest', () {
+    for (final location in [Routes.login, Routes.home, Routes.setup, '/x']) {
+      expect(
+        redirectFor(
+          location,
+          hasUsers: true,
+          user: null,
+          shiftStart: null,
+          behindCloud: true,
+        ),
+        Routes.behindCloud,
+        reason: location,
+      );
+    }
+    expect(
+      redirectFor(
+        Routes.behindCloud,
+        hasUsers: true,
+        user: null,
+        shiftStart: null,
+        behindCloud: true,
+      ),
+      isNull,
+    );
+    expect(
+      redirectFor(
+        Routes.home,
+        hasUsers: true,
+        user: desk,
+        shiftStart: ShiftReady(shift),
+        behindCloud: true,
+      ),
+      isNull,
+      reason: 'the banner shows; the refusal waits for the next sign-in',
+    );
+    expect(Routes.gates, contains(Routes.behindCloud));
+    expect(go(Routes.behindCloud, user: null), Routes.login);
+  });
+
   test('signed out: login only', () {
     expect(go(Routes.home, user: null), Routes.login);
     expect(go(Routes.login, user: null), isNull);
